@@ -3,7 +3,7 @@ import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
 import { motion } from 'framer-motion';
-import { Search, ExternalLink, Calendar, User, Globe, CheckCircle, AlertTriangle, XCircle, Clipboard, Shield } from 'lucide-react';
+import { Search, CheckCircle, AlertTriangle, XCircle, Clipboard, Shield, Globe } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../components/ui/Card';
@@ -17,25 +17,7 @@ const schema = yup.object({
     .required('URL là bắt buộc')
 });
 
-// Helper functions for styling
-const getCredibilityBadgeClasses = (score) => {
-  if (score >= 80) return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
-  if (score >= 60) return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200';
-  if (score >= 40) return 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200';
-  return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
-};
 
-const getSourceCredibilityClasses = (level) => {
-  if (level === 'high') return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
-  if (level === 'medium') return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200';
-  return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
-};
-
-const getCredibilityLabel = (credibility) => {
-  if (credibility === 'high') return 'Cao';
-  if (credibility === 'medium') return 'Trung bình';
-  return 'Thấp';
-};
 
 const CheckLinkPage = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -64,28 +46,47 @@ const CheckLinkPage = () => {
         await new Promise(resolve => setTimeout(resolve, 2000));
 
         const domain = new URL(data.url).hostname;
+        const score = Math.floor(Math.random() * 100);
+        const status = score >= 70 ? 'safe' : score >= 40 ? 'warning' : 'dangerous';
+
         const mockResult = {
           url: data.url,
-          credibilityScore: Math.floor(Math.random() * 40) + 60, // Random score between 60-100
+          status: status,
+          credibilityScore: score,
           metadata: {
-            title: `Bài viết từ ${domain}`,
+            title: `Trang web ${domain}`,
             domain: domain,
             publishDate: new Date().toISOString(),
-            author: 'Tác giả mẫu'
+            author: 'Không xác định',
+            ip: '157.240.199.35',
+            country: 'Tuần Mỹ',
+            organization: `${domain.charAt(0).toUpperCase() + domain.slice(1)} Inc.`
           },
-          summary: `Đây là phân tích mẫu cho ${domain}. Hệ thống đã kiểm tra nội dung, nguồn gốc và độ tin cậy của bài viết. Kết quả cho thấy bài viết có độ tin cậy ở mức trung bình đến cao dựa trên các yếu tố như nguồn thông tin, tính chính xác của nội dung và uy tín của trang web.`,
-          sources: [
+          thirdPartyResults: [
             {
-              name: 'Nguồn tin đáng tin cậy',
-              url: 'https://example.com/source1',
-              credibility: 'high'
+              name: 'VirusTotal',
+              status: score >= 70 ? 'clean' : score >= 40 ? 'suspicious' : 'malicious',
+              details: score >= 70 ? 'An toàn' : score >= 40 ? 'Đáng ngờ' : 'Nguy hiểm'
             },
             {
-              name: 'Nguồn tham khảo',
-              url: 'https://example.com/source2',
-              credibility: 'medium'
+              name: 'URLScan',
+              status: score >= 60 ? 'clean' : 'suspicious',
+              details: score >= 60 ? 'An toàn' : 'Đáng ngờ'
+            },
+            {
+              name: 'ScamAdviser',
+              status: score >= 50 ? 'clean' : 'suspicious',
+              details: score >= 50 ? 'An toàn' : 'Đáng ngờ'
             }
-          ]
+          ],
+          screenshot: `https://via.placeholder.com/400x300/f0f0f0/666666?text=${encodeURIComponent(domain)}`,
+          additionalTools: [
+            { name: 'VirusTotal', color: 'blue' },
+            { name: 'URLScan', color: 'red' },
+            { name: 'ScamAdviser', color: 'orange' },
+            { name: 'Thông gia cộng đồng', color: 'green' }
+          ],
+          summary: `Kết quả phân tích cho ${domain}. ${status === 'safe' ? 'Trang web này được đánh giá là an toàn.' : status === 'warning' ? 'Trang web này có một số dấu hiệu đáng ngờ.' : 'Trang web này có thể không an toàn.'} Vui lòng thận trọng khi truy cập và không cung cấp thông tin cá nhân.`
         };
         setResult(mockResult);
       }
@@ -118,17 +119,62 @@ const CheckLinkPage = () => {
     }
   };
 
-  const getCredibilityIcon = (score) => {
-    if (score >= 80) return <CheckCircle size={20} />;
-    if (score >= 40) return <AlertTriangle size={20} />;
-    return <XCircle size={20} />;
+
+
+  const getStatusInfo = (status) => {
+    switch (status) {
+      case 'safe':
+        return {
+          text: 'An toàn',
+          bgColor: 'bg-green-100 dark:bg-green-900/30',
+          textColor: 'text-green-800 dark:text-green-200',
+          icon: CheckCircle
+        };
+      case 'warning':
+        return {
+          text: 'Đáng ngờ',
+          bgColor: 'bg-yellow-100 dark:bg-yellow-900/30',
+          textColor: 'text-yellow-800 dark:text-yellow-200',
+          icon: AlertTriangle
+        };
+      case 'dangerous':
+        return {
+          text: 'Nguy hiểm',
+          bgColor: 'bg-red-100 dark:bg-red-900/30',
+          textColor: 'text-red-800 dark:text-red-200',
+          icon: XCircle
+        };
+      default:
+        return {
+          text: 'Không xác định',
+          bgColor: 'bg-gray-100 dark:bg-gray-900/30',
+          textColor: 'text-gray-800 dark:text-gray-200',
+          icon: AlertTriangle
+        };
+    }
   };
 
-  const getCredibilityText = (score) => {
-    if (score >= 80) return 'Độ tin cậy cao';
-    if (score >= 60) return 'Độ tin cậy tốt';
-    if (score >= 40) return 'Độ tin cậy trung bình';
-    return 'Độ tin cậy thấp';
+  const getThirdPartyStatusColor = (status) => {
+    switch (status) {
+      case 'clean':
+        return 'text-green-600 dark:text-green-400';
+      case 'suspicious':
+        return 'text-yellow-600 dark:text-yellow-400';
+      case 'malicious':
+        return 'text-red-600 dark:text-red-400';
+      default:
+        return 'text-gray-600 dark:text-gray-400';
+    }
+  };
+
+  const getToolButtonColor = (color) => {
+    const colors = {
+      blue: 'bg-blue-500 hover:bg-blue-600',
+      red: 'bg-red-500 hover:bg-red-600',
+      orange: 'bg-orange-500 hover:bg-orange-600',
+      green: 'bg-green-500 hover:bg-green-600'
+    };
+    return colors[color] || 'bg-gray-500 hover:bg-gray-600';
   };
 
   return (
@@ -212,98 +258,180 @@ const CheckLinkPage = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.2 }}
+            className="space-y-6"
           >
-            <Card className="shadow-xl border-0 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm">
-              {/* Result Header */}
-              <CardHeader className="text-center pb-4">
-                <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full font-semibold text-lg ${getCredibilityBadgeClasses(result.credibilityScore)}`}>
-                  {getCredibilityIcon(result.credibilityScore)}
-                  {result.credibilityScore}% - {getCredibilityText(result.credibilityScore)}
-                </div>
-              </CardHeader>
+            {/* Main Result Card */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Overall Result */}
+              <Card className="shadow-xl border-0 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm">
+                <CardHeader className="text-center pb-4">
+                  <CardTitle className="text-lg">Kết quả tổng quan</CardTitle>
+                </CardHeader>
+                <CardContent className="text-center">
+                  {(() => {
+                    const statusInfo = getStatusInfo(result.status);
+                    const StatusIcon = statusInfo.icon;
+                    return (
+                      <div className={`inline-flex flex-col items-center gap-3 px-6 py-4 rounded-lg ${statusInfo.bgColor}`}>
+                        <StatusIcon className={`w-12 h-12 ${statusInfo.textColor}`} />
+                        <span className={`text-xl font-bold ${statusInfo.textColor}`}>
+                          {statusInfo.text}
+                        </span>
+                      </div>
+                    );
+                  })()}
+                  <div className="mt-4 text-sm text-gray-600 dark:text-gray-400">
+                    Điểm số: {result.credibilityScore}/100
+                  </div>
+                </CardContent>
+              </Card>
 
-              {/* Result Content */}
-              <CardContent className="space-y-6">
-                <div>
-                  <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
-                    {result.metadata?.title || 'Tiêu đề không xác định'}
-                  </h2>
-
-                  {/* Metadata Grid */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                    <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400 text-sm">
-                      <Globe size={16} />
-                      <span>{result.metadata?.domain || new URL(result.url).hostname}</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400 text-sm">
-                      <Calendar size={16} />
-                      <span>
-                        {result.metadata?.publishDate ?
-                          new Date(result.metadata.publishDate).toLocaleDateString('vi-VN') :
-                          'Ngày không xác định'
-                        }
+              {/* Third Party Results */}
+              <Card className="shadow-xl border-0 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm">
+                <CardHeader className="text-center pb-4">
+                  <CardTitle className="text-lg">Kết quả từ bên thứ 3</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {result.thirdPartyResults?.map((item, index) => (
+                    <div key={index} className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                      <span className="font-medium text-gray-900 dark:text-gray-100">
+                        {item.name}
+                      </span>
+                      <span className={`font-semibold ${getThirdPartyStatusColor(item.status)}`}>
+                        {item.details}
                       </span>
                     </div>
-                    <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400 text-sm">
-                      <User size={16} />
-                      <span>{result.metadata?.author || 'Tác giả không xác định'}</span>
+                  ))}
+                </CardContent>
+              </Card>
+
+              {/* Screenshot */}
+              <Card className="shadow-xl border-0 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm">
+                <CardHeader className="text-center pb-4">
+                  <CardTitle className="text-lg">Ảnh chụp màn hình</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="aspect-video bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden">
+                    <img
+                      src={result.screenshot}
+                      alt="Website screenshot"
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        e.target.src = 'https://via.placeholder.com/400x300/f0f0f0/666666?text=No+Screenshot';
+                      }}
+                    />
+                  </div>
+                  <div className="mt-3 text-center">
+                    <span className="text-sm text-gray-600 dark:text-gray-400">
+                      {result.metadata?.domain}
+                    </span>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Detailed Information */}
+            <Card className="shadow-xl border-0 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm">
+              <CardHeader>
+                <CardTitle className="text-xl">Thông tin cần biết</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600 dark:text-gray-400">URL:</span>
+                      <span className="font-medium text-gray-900 dark:text-gray-100 break-all">
+                        {result.url}
+                      </span>
                     </div>
-                    <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400 text-sm">
-                      <ExternalLink size={16} />
-                      <a
-                        href={result.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-blue-600 dark:text-blue-400 hover:underline"
-                      >
-                        Xem bài gốc
-                      </a>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600 dark:text-gray-400">IP:</span>
+                      <span className="font-medium text-gray-900 dark:text-gray-100">
+                        {result.metadata?.ip}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600 dark:text-gray-400">Quốc gia:</span>
+                      <span className="font-medium text-gray-900 dark:text-gray-100">
+                        {result.metadata?.country}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600 dark:text-gray-400">Tổ chức:</span>
+                      <span className="font-medium text-gray-900 dark:text-gray-100">
+                        {result.metadata?.organization}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600 dark:text-gray-400">Ngày kiểm tra:</span>
+                      <span className="font-medium text-gray-900 dark:text-gray-100">
+                        {new Date().toLocaleDateString('vi-VN')}
+                      </span>
                     </div>
                   </div>
                 </div>
 
-                {/* Summary Section */}
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">
-                    Tóm Tắt Phân Tích
-                  </h3>
-                  <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg">
-                    <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
-                      {result.summary || 'Không có thông tin phân tích.'}
-                    </p>
-                  </div>
+                <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                  <h4 className="font-semibold text-blue-900 dark:text-blue-200 mb-2">
+                    Lời khuyên từ chuyên gia:
+                  </h4>
+                  <p className="text-blue-800 dark:text-blue-300 text-sm leading-relaxed">
+                    {result.summary}
+                  </p>
                 </div>
+              </CardContent>
+            </Card>
 
-                {/* Sources */}
-                {result.sources && result.sources.length > 0 && (
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">
-                      Nguồn Tham Khảo
-                    </h3>
-                    <div className="space-y-3">
-                      {result.sources.map((source, index) => (
-                        <div key={`${source.name}-${index}`} className="flex justify-between items-center p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                          <div className="flex-1">
-                            <div className="font-medium text-gray-900 dark:text-white mb-1">
-                              {source.name}
-                            </div>
-                            <a
-                              href={source.url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-blue-600 dark:text-blue-400 text-sm hover:underline flex items-center gap-1"
-                            >
-                              {source.url} <ExternalLink size={12} />
-                            </a>
-                          </div>
-                          <span className={`px-3 py-1 rounded-full text-xs font-medium uppercase ${getSourceCredibilityClasses(source.credibility.toLowerCase())}`}>
-                            {getCredibilityLabel(source.credibility)}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
+            {/* Additional Tools and Actions */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Additional Checking Tools */}
+              <Card className="shadow-xl border-0 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm">
+                <CardHeader>
+                  <CardTitle className="text-lg">Kiểm tra thêm bằng</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {result.additionalTools?.map((tool, index) => (
+                    <button
+                      key={index}
+                      className={`w-full px-4 py-3 text-white rounded-lg font-medium transition-colors ${getToolButtonColor(tool.color)}`}
+                      onClick={() => {
+                        // In a real implementation, this would open the tool with the URL
+                        toast.info(`Mở ${tool.name} để kiểm tra thêm`);
+                      }}
+                    >
+                      {tool.name}
+                    </button>
+                  ))}
+                </CardContent>
+              </Card>
+
+              {/* Report and Database */}
+              <Card className="shadow-xl border-0 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm">
+                <CardHeader>
+                  <CardTitle className="text-lg">Cơ sở dữ liệu</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <button className="w-full px-4 py-3 bg-gray-800 dark:bg-gray-600 text-white rounded-lg font-medium hover:bg-gray-900 dark:hover:bg-gray-700 transition-colors">
+                    Danh sách không an toàn
+                  </button>
+                  <button className="w-full px-4 py-3 bg-gray-800 dark:bg-gray-600 text-white rounded-lg font-medium hover:bg-gray-900 dark:hover:bg-gray-700 transition-colors">
+                    Danh sách an toàn
+                  </button>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Report Website */}
+            <Card className="shadow-xl border-0 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm">
+              <CardHeader>
+                <CardTitle className="text-lg">Báo cáo trang web này nếu bạn thấy có dấu hiệu nghi ngờ!</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <button className="w-full px-6 py-4 bg-green-500 hover:bg-green-600 text-white rounded-lg font-semibold transition-colors">
+                  Báo cáo ngay
+                </button>
               </CardContent>
             </Card>
           </motion.div>

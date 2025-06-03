@@ -56,9 +56,11 @@ const LoginPage = () => {
     try {
       const result = await login(data.email, data.password);
       if (result.success) {
-        // Navigate to dashboard regardless of email verification status
-        // EmailVerificationBanner will handle showing verification prompt
+        // Navigate to dashboard only if login is successful
         navigate('/dashboard');
+      } else if (result.requiresVerification) {
+        // Stay on login page and show verification message
+        // The error message is already shown by the AuthContext
       }
     } finally {
       setIsLoading(false);

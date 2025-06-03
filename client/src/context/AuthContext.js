@@ -67,7 +67,19 @@ export const AuthProvider = ({ children }) => {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
 
-      // Set user data
+      // Check if email is verified BEFORE allowing login
+      if (!user.emailVerified) {
+        // Sign out the user immediately
+        await signOut(auth);
+        toast.error('Vui lòng xác minh email trước khi đăng nhập. Kiểm tra hộp thư của bạn.');
+        return {
+          success: false,
+          error: 'Email chưa được xác minh',
+          requiresVerification: true
+        };
+      }
+
+      // Set user data only if email is verified
       const userData = {
         id: user.uid,
         email: user.email,
@@ -78,13 +90,7 @@ export const AuthProvider = ({ children }) => {
       };
 
       setUser(userData);
-
-      // Check if email is verified and show appropriate message
-      if (!user.emailVerified) {
-        toast.warning('Login successful! Please verify your email address to access all features.');
-      } else {
-        toast.success('Login successful!');
-      }
+      toast.success('Đăng nhập thành công!');
 
       return { success: true, data: userData };
     } catch (error) {
@@ -150,13 +156,14 @@ export const AuthProvider = ({ children }) => {
       try {
         await sendEmailVerification(user, actionCodeSettings);
         console.log('Verification email sent successfully');
-        toast.success('Registration successful! Please check your email to verify your account before logging in.');
+        toast.success('Đăng ký thành công! Vui lòng kiểm tra email để xác minh tài khoản trước khi đăng nhập.');
       } catch (emailError) {
         console.error('Failed to send verification email:', emailError);
-        toast.warning('Account created but verification email failed to send. You can request a new one after logging in.');
+        toast.warning('Tài khoản đã được tạo nhưng không thể gửi email xác minh. Bạn có thể yêu cầu gửi lại sau khi đăng nhập.');
       }
 
       // Important: Sign out the user so they must verify email before logging in
+      // DO NOT save to Firestore yet - only save after email verification
       await signOut(auth);
 
       return { success: true, data: user, requiresVerification: true };
@@ -224,27 +231,61 @@ export const AuthProvider = ({ children }) => {
       // Reload user to get updated emailVerified status
       if (auth.currentUser) {
         await auth.currentUser.reload();
-        const updatedUser = {
-          ...user,
-          emailVerified: auth.currentUser.emailVerified
-        };
-        setUser(updatedUser);
-        localStorage.setItem('user', JSON.stringify(updatedUser));
+        const currentUser = auth.currentUser;
+
+        // Now that email is verified, create user data in Firestore
+        try {
+          const { doc, setDoc } = await import('firebase/firestore');
+          const { db } = await import('../config/firebase');
+
+          const userData = {
+            email: currentUser.email,
+            firstName: currentUser.displayName?.split(' ')[0] || '',
+            lastName: currentUser.displayName?.split(' ')[1] || '',
+            displayName: currentUser.displayName,
+            emailVerified: true,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+            profile: {
+              bio: '',
+              avatar: null
+            },
+            stats: {
+              linksChecked: 0,
+              joinedAt: new Date().toISOString()
+            }
+          };
+
+          // Save user to Firestore with Firebase UID as document ID
+          await setDoc(doc(db, 'users', currentUser.uid), userData);
+          console.log('User data saved to Firestore after email verification');
+
+          const updatedUser = {
+            id: currentUser.uid,
+            ...userData
+          };
+          setUser(updatedUser);
+          localStorage.setItem('user', JSON.stringify(updatedUser));
+
+        } catch (firestoreError) {
+          console.error('Failed to save user data to Firestore:', firestoreError);
+          // Still show success for email verification even if Firestore fails
+        }
       }
 
-      toast.success('Email verified successfully! You can now access all features.');
+      toast.success('Email xác minh thành công! Bạn có thể đăng nhập ngay bây giờ.');
       return { success: true };
     } catch (error) {
       console.error('Email verification error:', error);
       let message;
       if (error.code === 'auth/expired-action-code') {
-        message = 'Verification link has expired. Please request a new one.';
+        message = 'Link xác minh đã hết hạn. Vui lòng yêu cầu link mới.';
       } else if (error.code === 'auth/invalid-action-code') {
-        message = 'Invalid verification link. Please check your email for the correct link.';
+        message = 'Link xác minh không hợp lệ. Vui lòng kiểm tra email để lấy link đúng.';
       } else if (error.code === 'auth/user-disabled') {
-        message = 'This account has been disabled.';
+        message = 'Tài khoản này đã bị vô hiệu hóa.';
       } else {
-        message = error.message || 'Email verification failed';
+        message = error.message || 'Xác minh email thất bại';
       }
       toast.error(message);
       return { success: false, error: message };

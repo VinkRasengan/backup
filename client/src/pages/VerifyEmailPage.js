@@ -88,14 +88,18 @@ const VerifyEmailPage = () => {
         const result = await verifyEmail(actionCode);
         if (result.success) {
           setStatus('success');
-          setMessage('Your email has been successfully verified! You can now access all features.');
+          setMessage('Email đã được xác minh thành công! Bạn có thể đăng nhập ngay bây giờ.');
+          // Auto redirect to login after 3 seconds
+          setTimeout(() => {
+            window.location.href = '/login';
+          }, 3000);
         } else {
           setStatus('error');
-          setMessage(result.error || 'Email verification failed. Please try again.');
+          setMessage(result.error || 'Xác minh email thất bại. Vui lòng thử lại.');
         }
       } catch (error) {
         setStatus('error');
-        setMessage('An unexpected error occurred. Please try again later.');
+        setMessage('Đã xảy ra lỗi không mong muốn. Vui lòng thử lại sau.');
       }
     };
 
@@ -110,8 +114,8 @@ const VerifyEmailPage = () => {
             <IconContainer>
               <Mail size={32} />
             </IconContainer>
-            <Title>Verifying Email</Title>
-            <LoadingSpinner text="Please wait while we verify your email..." />
+            <Title>Đang Xác Minh Email</Title>
+            <LoadingSpinner text="Vui lòng đợi trong khi chúng tôi xác minh email của bạn..." />
           </>
         );
 
@@ -121,10 +125,13 @@ const VerifyEmailPage = () => {
             <IconContainer success>
               <CheckCircle size={32} />
             </IconContainer>
-            <Title>Email Verified!</Title>
+            <Title>Email Đã Được Xác Minh!</Title>
             <Message>{message}</Message>
+            <Message style={{ fontSize: '14px', color: '#666', marginTop: '10px' }}>
+              Bạn sẽ được chuyển hướng đến trang đăng nhập trong 3 giây...
+            </Message>
             <ActionButton to="/login">
-              Continue to Login
+              Đăng Nhập Ngay
               <ArrowRight size={16} />
             </ActionButton>
           </>
@@ -136,10 +143,10 @@ const VerifyEmailPage = () => {
             <IconContainer error>
               <XCircle size={32} />
             </IconContainer>
-            <Title>Verification Failed</Title>
+            <Title>Xác Minh Thất Bại</Title>
             <Message>{message}</Message>
             <ActionButton to="/register">
-              Back to Registration
+              Quay Lại Đăng Ký
               <ArrowRight size={16} />
             </ActionButton>
           </>
