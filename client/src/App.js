@@ -64,7 +64,7 @@ function App() {
             } 
           />
           <Route
-            path="/check-link"
+            path="/check"
             element={
               <EmailVerifiedRoute>
                 <CheckLinkPage />
