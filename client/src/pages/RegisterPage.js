@@ -209,13 +209,8 @@ const RegisterPage = () => {
       const { confirmPassword, ...userData } = data;
       const result = await registerUser(userData);
       if (result.success) {
-        // Navigate to login with a message about email verification
-        navigate('/login', {
-          state: {
-            message: 'Đăng ký thành công! Vui lòng kiểm tra email để xác minh tài khoản trước khi đăng nhập.',
-            type: 'info'
-          }
-        });
+        // Navigate to registration success page
+        navigate('/registration-success');
       }
     } finally {
       setIsLoading(false);

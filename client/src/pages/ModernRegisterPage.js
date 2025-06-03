@@ -65,12 +65,8 @@ const ModernRegisterPage = () => {
       const { confirmPassword, ...userData } = data;
       const result = await registerUser(userData);
       if (result.success) {
-        navigate('/login', {
-          state: {
-            message: 'Đăng ký thành công! Vui lòng kiểm tra email để xác minh tài khoản trước khi đăng nhập.',
-            type: 'info'
-          }
-        });
+        // Navigate to registration success page
+        navigate('/registration-success');
       }
     } finally {
       setIsLoading(false);

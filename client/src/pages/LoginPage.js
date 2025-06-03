@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
+import React, { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
@@ -9,7 +9,6 @@ import { Eye, EyeOff, Mail, Lock, ArrowRight } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '../components/ui/Card';
-import toast from 'react-hot-toast';
 
 
 
@@ -26,22 +25,10 @@ const schema = yup.object({
 const LoginPage = () => {
   const { login } = useAuth();
   const navigate = useNavigate();
-  const location = useLocation();
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Show message from registration if available
-  useEffect(() => {
-    if (location.state?.message) {
-      if (location.state.type === 'info') {
-        toast.success(location.state.message);
-      } else {
-        toast.error(location.state.message);
-      }
-      // Clear the state to prevent showing the message again
-      navigate(location.pathname, { replace: true });
-    }
-  }, [location, navigate]);
+
 
   const {
     register,

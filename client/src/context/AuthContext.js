@@ -89,6 +89,42 @@ export const AuthProvider = ({ children }) => {
         emailVerified: user.emailVerified
       };
 
+      // Now that user is verified and logging in, save to Firestore if not exists
+      try {
+        const { doc, setDoc, getDoc } = await import('firebase/firestore');
+        const { db } = await import('../config/firebase');
+
+        const userDocRef = doc(db, 'users', user.uid);
+        const userDoc = await getDoc(userDocRef);
+
+        if (!userDoc.exists()) {
+          // Create user data in Firestore for first time login after verification
+          const firestoreUserData = {
+            email: user.email,
+            firstName: user.displayName?.split(' ')[0] || '',
+            lastName: user.displayName?.split(' ')[1] || '',
+            displayName: user.displayName,
+            emailVerified: true,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+            profile: {
+              bio: '',
+              avatar: null
+            },
+            stats: {
+              linksChecked: 0,
+              joinedAt: new Date().toISOString()
+            }
+          };
+
+          await setDoc(userDocRef, firestoreUserData);
+          console.log('User data saved to Firestore on first login after verification');
+        }
+      } catch (firestoreError) {
+        console.error('Failed to save user data to Firestore:', firestoreError);
+        // Continue with login even if Firestore fails
+      }
+
       setUser(userData);
       toast.success('Đăng nhập thành công!');
 
@@ -226,55 +262,14 @@ export const AuthProvider = ({ children }) => {
     try {
       // Firebase Auth handles email verification with action codes
       const { applyActionCode } = await import('firebase/auth');
+
+      // Apply the action code to verify email
       await applyActionCode(auth, actionCode);
-
-      // Reload user to get updated emailVerified status
-      if (auth.currentUser) {
-        await auth.currentUser.reload();
-        const currentUser = auth.currentUser;
-
-        // Now that email is verified, create user data in Firestore
-        try {
-          const { doc, setDoc } = await import('firebase/firestore');
-          const { db } = await import('../config/firebase');
-
-          const userData = {
-            email: currentUser.email,
-            firstName: currentUser.displayName?.split(' ')[0] || '',
-            lastName: currentUser.displayName?.split(' ')[1] || '',
-            displayName: currentUser.displayName,
-            emailVerified: true,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-            profile: {
-              bio: '',
-              avatar: null
-            },
-            stats: {
-              linksChecked: 0,
-              joinedAt: new Date().toISOString()
-            }
-          };
-
-          // Save user to Firestore with Firebase UID as document ID
-          await setDoc(doc(db, 'users', currentUser.uid), userData);
-          console.log('User data saved to Firestore after email verification');
-
-          const updatedUser = {
-            id: currentUser.uid,
-            ...userData
-          };
-          setUser(updatedUser);
-          localStorage.setItem('user', JSON.stringify(updatedUser));
-
-        } catch (firestoreError) {
-          console.error('Failed to save user data to Firestore:', firestoreError);
-          // Still show success for email verification even if Firestore fails
-        }
-      }
+      console.log('Email verification applied successfully');
 
       toast.success('Email xác minh thành công! Bạn có thể đăng nhập ngay bây giờ.');
       return { success: true };
+
     } catch (error) {
       console.error('Email verification error:', error);
       let message;

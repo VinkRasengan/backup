@@ -8,6 +8,7 @@ import LoginPage from './pages/LoginPage';
 
 import ModernRegisterPage from './pages/ModernRegisterPage';
 import TestRegisterPage from './pages/TestRegisterPage';
+import RegistrationSuccessPage from './pages/RegistrationSuccessPage';
 import DashboardPage from './pages/DashboardPage';
 import ProfilePage from './pages/ProfilePage';
 import CheckLinkPage from './pages/CheckLinkPage';
@@ -49,6 +50,7 @@ function App() {
               path="/test-register"
               element={<TestRegisterPage />}
             />
+            <Route path="/registration-success" element={<RegistrationSuccessPage />} />
             <Route path="/verify-email" element={<VerifyEmailPage />} />
             <Route path="/email-verification-required" element={<EmailVerificationRequiredPage />} />
             <Route path="/forgot-password" element={<ForgotPasswordPage />} />

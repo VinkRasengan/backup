@@ -16,11 +16,61 @@ const Input = React.forwardRef(({
 }, ref) => {
   const [isFocused, setIsFocused] = useState(false);
   const [hasValue, setHasValue] = useState(false);
+  const [internalRef, setInternalRef] = useState(null);
+
+  // Combine external ref with internal ref
+  const inputRef = React.useCallback((node) => {
+    setInternalRef(node);
+    if (typeof ref === 'function') {
+      ref(node);
+    } else if (ref) {
+      ref.current = node;
+    }
+  }, [ref]);
 
   // Check if input has value on mount and when value prop changes
   useEffect(() => {
-    setHasValue(Boolean(value || props.defaultValue));
-  }, [value, props.defaultValue]);
+    const checkValue = () => {
+      if (internalRef) {
+        // Check both controlled value and actual input value (for autofill)
+        const inputValue = internalRef.value;
+        const controlledValue = value || props.defaultValue;
+        setHasValue(Boolean(inputValue || controlledValue));
+      } else {
+        setHasValue(Boolean(value || props.defaultValue));
+      }
+    };
+
+    checkValue();
+
+    // Also check after a short delay to catch autofill
+    const timer = setTimeout(checkValue, 100);
+    return () => clearTimeout(timer);
+  }, [value, props.defaultValue, internalRef]);
+
+  // Additional check for autofill detection
+  useEffect(() => {
+    if (internalRef) {
+      const checkAutofill = () => {
+        if (internalRef.value) {
+          setHasValue(true);
+        }
+      };
+
+      // Check periodically for autofill
+      const interval = setInterval(checkAutofill, 500);
+
+      // Also listen for input events
+      internalRef.addEventListener('input', checkAutofill);
+
+      return () => {
+        clearInterval(interval);
+        if (internalRef) {
+          internalRef.removeEventListener('input', checkAutofill);
+        }
+      };
+    }
+  }, [internalRef]);
 
   const handleChange = (e) => {
     setHasValue(e.target.value.length > 0);
@@ -31,6 +81,8 @@ const Input = React.forwardRef(({
 
   const handleFocus = (e) => {
     setIsFocused(true);
+    // Double check value on focus
+    setHasValue(e.target.value.length > 0);
     if (props.onFocus) {
       props.onFocus(e);
     }
@@ -86,7 +138,7 @@ const Input = React.forwardRef(({
 
         {/* Input Field */}
         <motion.input
-          ref={ref}
+          ref={inputRef}
           type={type}
           value={value}
           className={cn(
