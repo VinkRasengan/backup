@@ -3,148 +3,15 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
+import { motion } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
-import { Eye, EyeOff, Mail, Lock, Info } from 'lucide-react';
-import styled from 'styled-components';
+import { Eye, EyeOff, Mail, Lock, ArrowRight } from 'lucide-react';
+import { Button } from '../components/ui/Button';
+import { Input } from '../components/ui/Input';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '../components/ui/Card';
 import toast from 'react-hot-toast';
 
-const LoginContainer = styled.div`
-  min-height: calc(100vh - 4rem);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 2rem 1rem;
-  background: #f8fafc;
-`;
 
-const LoginCard = styled.div`
-  background: white;
-  padding: 2rem;
-  border-radius: 0.75rem;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-  width: 100%;
-  max-width: 400px;
-`;
-
-const LoginHeader = styled.div`
-  text-align: center;
-  margin-bottom: 2rem;
-`;
-
-const LoginTitle = styled.h1`
-  font-size: 1.875rem;
-  font-weight: bold;
-  color: #1a202c;
-  margin-bottom: 0.5rem;
-`;
-
-const LoginSubtitle = styled.p`
-  color: #6b7280;
-`;
-
-const Form = styled.form`
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-`;
-
-const InputGroup = styled.div`
-  position: relative;
-`;
-
-const InputIcon = styled.div`
-  position: absolute;
-  left: 0.75rem;
-  top: 50%;
-  transform: translateY(-50%);
-  color: #9ca3af;
-`;
-
-const Input = styled.input`
-  width: 100%;
-  padding: 0.75rem 0.75rem 0.75rem 2.5rem;
-  border: 2px solid ${props => props.error ? '#ef4444' : '#d1d5db'};
-  border-radius: 0.5rem;
-  font-size: 1rem;
-  transition: border-color 0.2s;
-
-  &:focus {
-    outline: none;
-    border-color: #3b82f6;
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-  }
-
-  &::placeholder {
-    color: #9ca3af;
-  }
-`;
-
-const PasswordToggle = styled.button`
-  position: absolute;
-  right: 0.75rem;
-  top: 50%;
-  transform: translateY(-50%);
-  background: none;
-  border: none;
-  color: #9ca3af;
-  cursor: pointer;
-  padding: 0.25rem;
-
-  &:hover {
-    color: #6b7280;
-  }
-`;
-
-const ErrorMessage = styled.span`
-  color: #ef4444;
-  font-size: 0.875rem;
-  margin-top: 0.25rem;
-  display: block;
-`;
-
-const SubmitButton = styled.button`
-  width: 100%;
-  padding: 0.75rem;
-  background: #3b82f6;
-  color: white;
-  border: none;
-  border-radius: 0.5rem;
-  font-size: 1rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background-color 0.2s;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-
-  &:hover:not(:disabled) {
-    background: #2563eb;
-  }
-
-  &:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-  }
-`;
-
-const LoginFooter = styled.div`
-  text-align: center;
-  margin-top: 1.5rem;
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-`;
-
-const FooterLink = styled(Link)`
-  color: #3b82f6;
-  text-decoration: none;
-  font-size: 0.875rem;
-
-  &:hover {
-    text-decoration: underline;
-  }
-`;
 
 const schema = yup.object({
   email: yup
@@ -199,73 +66,88 @@ const LoginPage = () => {
   };
 
   return (
-    <LoginContainer>
-      <LoginCard>
-        <LoginHeader>
-          <LoginTitle>Welcome Back</LoginTitle>
-          <LoginSubtitle>Sign in to your FactCheck account</LoginSubtitle>
-        </LoginHeader>
-
-        <Form onSubmit={handleSubmit(onSubmit)}>
-          <InputGroup>
-            <InputIcon>
-              <Mail size={20} />
-            </InputIcon>
-            <Input
-              type="email"
-              placeholder="Enter your email"
-              error={errors.email}
-              {...register('email')}
-            />
-            {errors.email && (
-              <ErrorMessage>{errors.email.message}</ErrorMessage>
-            )}
-          </InputGroup>
-
-          <InputGroup>
-            <InputIcon>
-              <Lock size={20} />
-            </InputIcon>
-            <Input
-              type={showPassword ? 'text' : 'password'}
-              placeholder="Enter your password"
-              error={errors.password}
-              {...register('password')}
-            />
-            <PasswordToggle
-              type="button"
-              onClick={() => setShowPassword(!showPassword)}
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex items-center justify-center p-4">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="w-full max-w-md"
+      >
+        <Card className="shadow-xl border-0 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm">
+          <CardHeader className="text-center pb-4">
+            <motion.div
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ delay: 0.2, type: 'spring', stiffness: 200 }}
+              className="mx-auto w-16 h-16 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center mb-4"
             >
-              {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-            </PasswordToggle>
-            {errors.password && (
-              <ErrorMessage>{errors.password.message}</ErrorMessage>
-            )}
-          </InputGroup>
+              <Lock className="w-8 h-8 text-white" />
+            </motion.div>
+            <CardTitle className="text-2xl bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+              Chào Mừng Trở Lại
+            </CardTitle>
+            <CardDescription className="text-gray-600 dark:text-gray-300">
+              Đăng nhập vào tài khoản FactCheck của bạn
+            </CardDescription>
+          </CardHeader>
 
-          <SubmitButton type="submit" disabled={isLoading}>
-            {isLoading ? (
-              <>
-                <div className="spinner" style={{ width: '1rem', height: '1rem' }} />
-                Signing in...
-              </>
-            ) : (
-              'Sign In'
-            )}
-          </SubmitButton>
-        </Form>
+          <CardContent className="space-y-4">
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+              {/* Email Field */}
+              <Input
+                label="Email"
+                placeholder="Nhập địa chỉ email của bạn"
+                type="email"
+                icon={Mail}
+                error={errors.email?.message}
+                {...register('email')}
+              />
 
-        <LoginFooter>
-          <FooterLink to="/forgot-password">
-            Forgot your password?
-          </FooterLink>
-          <div>
-            Don't have an account?{' '}
-            <FooterLink to="/register">Sign up here</FooterLink>
-          </div>
-        </LoginFooter>
-      </LoginCard>
-    </LoginContainer>
+              {/* Password Field */}
+              <Input
+                label="Mật khẩu"
+                placeholder="Nhập mật khẩu của bạn"
+                type={showPassword ? 'text' : 'password'}
+                icon={Lock}
+                rightIcon={showPassword ? EyeOff : Eye}
+                onRightIconClick={() => setShowPassword(!showPassword)}
+                error={errors.password?.message}
+                {...register('password')}
+              />
+
+              {/* Submit Button */}
+              <Button
+                type="submit"
+                loading={isLoading}
+                className="w-full h-12 text-base font-semibold bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+                size="lg"
+              >
+                {!isLoading && <ArrowRight className="w-5 h-5 ml-2" />}
+                Đăng Nhập
+              </Button>
+            </form>
+          </CardContent>
+
+          <CardFooter className="flex flex-col space-y-3 text-center">
+            <Link
+              to="/forgot-password"
+              className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-500 dark:hover:text-blue-300 transition-colors"
+            >
+              Quên mật khẩu?
+            </Link>
+            <p className="text-sm text-gray-600 dark:text-gray-300">
+              Chưa có tài khoản?{' '}
+              <Link
+                to="/register"
+                className="font-medium text-blue-600 dark:text-blue-400 hover:text-blue-500 dark:hover:text-blue-300 transition-colors"
+              >
+                Đăng ký tại đây
+              </Link>
+            </p>
+          </CardFooter>
+        </Card>
+      </motion.div>
+    </div>
   );
 };
 

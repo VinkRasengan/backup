@@ -3,165 +3,14 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
+import { motion } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
 import { Lock, Eye, EyeOff, CheckCircle } from 'lucide-react';
-import styled from 'styled-components';
+import { Button } from '../components/ui/Button';
+import { Input } from '../components/ui/Input';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../components/ui/Card';
 
-const ResetPasswordContainer = styled.div`
-  min-height: calc(100vh - 4rem);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 2rem 1rem;
-  background: #f8fafc;
-`;
 
-const ResetPasswordCard = styled.div`
-  background: white;
-  padding: 2rem;
-  border-radius: 0.75rem;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-  width: 100%;
-  max-width: 400px;
-`;
-
-const Header = styled.div`
-  text-align: center;
-  margin-bottom: 2rem;
-`;
-
-const IconContainer = styled.div`
-  width: 4rem;
-  height: 4rem;
-  border-radius: 50%;
-  background: #e0e7ff;
-  color: #3b82f6;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin: 0 auto 1.5rem;
-`;
-
-const Title = styled.h1`
-  font-size: 1.875rem;
-  font-weight: bold;
-  color: #1a202c;
-  margin-bottom: 0.5rem;
-`;
-
-const Subtitle = styled.p`
-  color: #6b7280;
-  line-height: 1.6;
-`;
-
-const Form = styled.form`
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-`;
-
-const InputGroup = styled.div`
-  position: relative;
-`;
-
-const InputIcon = styled.div`
-  position: absolute;
-  left: 0.75rem;
-  top: 50%;
-  transform: translateY(-50%);
-  color: #9ca3af;
-`;
-
-const Input = styled.input`
-  width: 100%;
-  padding: 0.75rem 0.75rem 0.75rem 2.5rem;
-  border: 2px solid ${props => props.error ? '#ef4444' : '#d1d5db'};
-  border-radius: 0.5rem;
-  font-size: 1rem;
-  transition: border-color 0.2s;
-
-  &:focus {
-    outline: none;
-    border-color: #3b82f6;
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-  }
-
-  &::placeholder {
-    color: #9ca3af;
-  }
-`;
-
-const PasswordToggle = styled.button`
-  position: absolute;
-  right: 0.75rem;
-  top: 50%;
-  transform: translateY(-50%);
-  background: none;
-  border: none;
-  color: #9ca3af;
-  cursor: pointer;
-  padding: 0.25rem;
-
-  &:hover {
-    color: #6b7280;
-  }
-`;
-
-const ErrorMessage = styled.span`
-  color: #ef4444;
-  font-size: 0.875rem;
-  margin-top: 0.25rem;
-  display: block;
-`;
-
-const SubmitButton = styled.button`
-  width: 100%;
-  padding: 0.75rem;
-  background: #3b82f6;
-  color: white;
-  border: none;
-  border-radius: 0.5rem;
-  font-size: 1rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background-color 0.2s;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-
-  &:hover:not(:disabled) {
-    background: #2563eb;
-  }
-
-  &:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-  }
-`;
-
-const SuccessMessage = styled.div`
-  background: #dcfce7;
-  border: 1px solid #bbf7d0;
-  color: #166534;
-  padding: 1rem;
-  border-radius: 0.5rem;
-  text-align: center;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-`;
-
-const ErrorAlert = styled.div`
-  background: #fecaca;
-  border: 1px solid #fca5a5;
-  color: #dc2626;
-  padding: 1rem;
-  border-radius: 0.5rem;
-  margin-bottom: 1.5rem;
-  text-align: center;
-`;
 
 const schema = yup.object({
   newPassword: yup
@@ -220,117 +69,147 @@ const ResetPasswordPage = () => {
 
   if (!token) {
     return (
-      <ResetPasswordContainer>
-        <ResetPasswordCard>
-          <Header>
-            <IconContainer>
-              <Lock size={32} />
-            </IconContainer>
-            <Title>Invalid Reset Link</Title>
-            <Subtitle>
-              This password reset link is invalid or has expired. Please request a new one.
-            </Subtitle>
-          </Header>
-        </ResetPasswordCard>
-      </ResetPasswordContainer>
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex items-center justify-center p-4">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="w-full max-w-md"
+        >
+          <Card className="shadow-xl border-0 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm">
+            <CardHeader className="text-center pb-4">
+              <motion.div
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ delay: 0.2, type: 'spring', stiffness: 200 }}
+                className="mx-auto w-16 h-16 bg-gradient-to-r from-red-500 to-orange-600 rounded-full flex items-center justify-center mb-4"
+              >
+                <Lock className="w-8 h-8 text-white" />
+              </motion.div>
+              <CardTitle className="text-2xl bg-gradient-to-r from-red-600 to-orange-600 bg-clip-text text-transparent">
+                Liên Kết Không Hợp Lệ
+              </CardTitle>
+              <CardDescription className="text-gray-600 dark:text-gray-300">
+                Liên kết đặt lại mật khẩu này không hợp lệ hoặc đã hết hạn. Vui lòng yêu cầu một liên kết mới.
+              </CardDescription>
+            </CardHeader>
+          </Card>
+        </motion.div>
+      </div>
     );
   }
 
   if (isSuccess) {
     return (
-      <ResetPasswordContainer>
-        <ResetPasswordCard>
-          <Header>
-            <IconContainer>
-              <CheckCircle size={32} />
-            </IconContainer>
-            <Title>Password Reset Successful</Title>
-            <Subtitle>
-              Your password has been successfully reset. You will be redirected to the login page.
-            </Subtitle>
-          </Header>
-          <SuccessMessage>
-            <CheckCircle size={20} />
-            Redirecting to login page...
-          </SuccessMessage>
-        </ResetPasswordCard>
-      </ResetPasswordContainer>
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex items-center justify-center p-4">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="w-full max-w-md"
+        >
+          <Card className="shadow-xl border-0 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm">
+            <CardHeader className="text-center pb-4">
+              <motion.div
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ delay: 0.2, type: 'spring', stiffness: 200 }}
+                className="mx-auto w-16 h-16 bg-gradient-to-r from-green-500 to-blue-600 rounded-full flex items-center justify-center mb-4"
+              >
+                <CheckCircle className="w-8 h-8 text-white" />
+              </motion.div>
+              <CardTitle className="text-2xl bg-gradient-to-r from-green-600 to-blue-600 bg-clip-text text-transparent">
+                Đặt Lại Mật Khẩu Thành Công
+              </CardTitle>
+              <CardDescription className="text-gray-600 dark:text-gray-300">
+                Mật khẩu của bạn đã được đặt lại thành công. Bạn sẽ được chuyển hướng đến trang đăng nhập.
+              </CardDescription>
+            </CardHeader>
+
+            <CardContent>
+              <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 text-green-800 dark:text-green-200 p-4 rounded-lg text-center flex items-center justify-center space-x-2">
+                <CheckCircle className="w-5 h-5" />
+                <span>Đang chuyển hướng đến trang đăng nhập...</span>
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+      </div>
     );
   }
 
   return (
-    <ResetPasswordContainer>
-      <ResetPasswordCard>
-        <Header>
-          <IconContainer>
-            <Lock size={32} />
-          </IconContainer>
-          <Title>Reset Password</Title>
-          <Subtitle>
-            Enter your new password below to complete the reset process.
-          </Subtitle>
-        </Header>
-
-        {error && (
-          <ErrorAlert>{error}</ErrorAlert>
-        )}
-
-        <Form onSubmit={handleSubmit(onSubmit)}>
-          <InputGroup>
-            <InputIcon>
-              <Lock size={20} />
-            </InputIcon>
-            <Input
-              type={showPassword ? 'text' : 'password'}
-              placeholder="Enter new password"
-              error={errors.newPassword}
-              {...register('newPassword')}
-            />
-            <PasswordToggle
-              type="button"
-              onClick={() => setShowPassword(!showPassword)}
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex items-center justify-center p-4">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="w-full max-w-md"
+      >
+        <Card className="shadow-xl border-0 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm">
+          <CardHeader className="text-center pb-4">
+            <motion.div
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ delay: 0.2, type: 'spring', stiffness: 200 }}
+              className="mx-auto w-16 h-16 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center mb-4"
             >
-              {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-            </PasswordToggle>
-            {errors.newPassword && (
-              <ErrorMessage>{errors.newPassword.message}</ErrorMessage>
-            )}
-          </InputGroup>
+              <Lock className="w-8 h-8 text-white" />
+            </motion.div>
+            <CardTitle className="text-2xl bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+              Đặt Lại Mật Khẩu
+            </CardTitle>
+            <CardDescription className="text-gray-600 dark:text-gray-300">
+              Nhập mật khẩu mới bên dưới để hoàn tất quá trình đặt lại.
+            </CardDescription>
+          </CardHeader>
 
-          <InputGroup>
-            <InputIcon>
-              <Lock size={20} />
-            </InputIcon>
-            <Input
-              type={showConfirmPassword ? 'text' : 'password'}
-              placeholder="Confirm new password"
-              error={errors.confirmPassword}
-              {...register('confirmPassword')}
-            />
-            <PasswordToggle
-              type="button"
-              onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-            >
-              {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-            </PasswordToggle>
-            {errors.confirmPassword && (
-              <ErrorMessage>{errors.confirmPassword.message}</ErrorMessage>
+          <CardContent className="space-y-4">
+            {error && (
+              <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-800 dark:text-red-200 p-4 rounded-lg text-center">
+                {error}
+              </div>
             )}
-          </InputGroup>
 
-          <SubmitButton type="submit" disabled={isLoading}>
-            {isLoading ? (
-              <>
-                <div className="spinner" style={{ width: '1rem', height: '1rem' }} />
-                Resetting...
-              </>
-            ) : (
-              'Reset Password'
-            )}
-          </SubmitButton>
-        </Form>
-      </ResetPasswordCard>
-    </ResetPasswordContainer>
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+              {/* New Password Field */}
+              <Input
+                label="Mật khẩu mới"
+                placeholder="Nhập mật khẩu mới"
+                type={showPassword ? 'text' : 'password'}
+                icon={Lock}
+                rightIcon={showPassword ? EyeOff : Eye}
+                onRightIconClick={() => setShowPassword(!showPassword)}
+                error={errors.newPassword?.message}
+                {...register('newPassword')}
+              />
+
+              {/* Confirm Password Field */}
+              <Input
+                label="Xác nhận mật khẩu"
+                placeholder="Nhập lại mật khẩu mới"
+                type={showConfirmPassword ? 'text' : 'password'}
+                icon={Lock}
+                rightIcon={showConfirmPassword ? EyeOff : Eye}
+                onRightIconClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                error={errors.confirmPassword?.message}
+                {...register('confirmPassword')}
+              />
+
+              {/* Submit Button */}
+              <Button
+                type="submit"
+                loading={isLoading}
+                className="w-full h-12 text-base font-semibold bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+                size="lg"
+              >
+                Đặt Lại Mật Khẩu
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+      </motion.div>
+    </div>
   );
 };
 

@@ -78,14 +78,14 @@ const ModernRegisterPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex items-center justify-center p-4">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
         className="w-full max-w-md"
       >
-        <Card className="shadow-xl border-0 bg-white/80 backdrop-blur-sm">
+        <Card className="shadow-xl border-0 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm">
           <CardHeader className="text-center pb-4">
             <motion.div
               initial={{ scale: 0 }}
@@ -98,7 +98,7 @@ const ModernRegisterPage = () => {
             <CardTitle className="text-2xl bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
               Tạo Tài Khoản Mới
             </CardTitle>
-            <CardDescription className="text-gray-600">
+            <CardDescription className="text-gray-600 dark:text-gray-300">
               Tham gia FactCheck để bắt đầu xác minh thông tin
             </CardDescription>
           </CardHeader>
@@ -177,11 +177,11 @@ const ModernRegisterPage = () => {
           </CardContent>
 
           <CardFooter className="justify-center">
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-gray-600 dark:text-gray-300">
               Đã có tài khoản?{' '}
-              <Link 
-                to="/login" 
-                className="font-medium text-blue-600 hover:text-blue-500 transition-colors"
+              <Link
+                to="/login"
+                className="font-medium text-blue-600 dark:text-blue-400 hover:text-blue-500 dark:hover:text-blue-300 transition-colors"
               >
                 Đăng nhập tại đây
               </Link>
