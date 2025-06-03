@@ -1,0 +1,57 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isValidUser() {
+      return isAuthenticated() &&
+             request.auth.token.email_verified == true;
+    }
+
+    function isVerifiedUser() {
+      return isAuthenticated() &&
+             request.auth.token.email_verified == true;
+    }
+
+    // Users collection - users can only access their own data
+    match /users/{userId} {
+      allow read, write: if isOwner(userId);
+      allow create: if isAuthenticated() &&
+                       request.auth.uid == userId &&
+                       request.resource.data.keys().hasAll(['email', 'firstName', 'lastName']) &&
+                       request.resource.data.email == request.auth.token.email;
+    }
+
+    // Links collection - users can only access their own links and must have verified email
+    match /links/{linkId} {
+      allow read, write: if isVerifiedUser() &&
+                            resource.data.userId == request.auth.uid;
+      allow create: if isVerifiedUser() &&
+                       request.resource.data.userId == request.auth.uid &&
+                       request.resource.data.keys().hasAll(['url', 'userId']);
+    }
+
+    // Verification tokens - only server can access
+    match /verification_tokens/{tokenId} {
+      allow read, write: if false; // Only server-side access via Admin SDK
+    }
+
+    // Password reset tokens - only server can access
+    match /password_reset_tokens/{tokenId} {
+      allow read, write: if false; // Only server-side access via Admin SDK
+    }
+
+    // Admin collection (if needed for future features)
+    match /admin/{document=**} {
+      allow read, write: if false; // Only server-side access
+    }
+  }
+}

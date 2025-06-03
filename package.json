@@ -1,0 +1,48 @@
+{
+  "name": "factcheck-app",
+  "version": "1.0.0",
+  "description": "FactCheck - A web application for verifying news credibility",
+  "scripts": {
+    "setup": "setup.bat",
+    "setup:unix": "chmod +x setup.sh && ./setup.sh",
+    "dev": "start-dev.bat",
+    "dev:unix": "chmod +x start-dev.sh && ./start-dev.sh",
+    "build": "cd client && npm run build",
+    "deploy": "deploy.bat",
+    "deploy:unix": "chmod +x deploy.sh && ./deploy.sh",
+    "emulators": "firebase emulators:start",
+    "server": "cd server && npm run dev",
+    "client": "cd client && npm start",
+    "functions": "cd functions && npm run serve",
+    "test": "npm run test:server && npm run test:client",
+    "test:server": "cd server && npm test",
+    "test:client": "cd client && npm test",
+    "lint": "npm run lint:server && npm run lint:client && npm run lint:functions",
+    "lint:server": "cd server && npm run lint",
+    "lint:client": "cd client && npm run lint",
+    "lint:functions": "cd functions && npm run lint",
+    "install:all": "npm install && cd server && npm install && cd ../client && npm install && cd ../functions && npm install"
+  },
+  "keywords": [
+    "factcheck",
+    "news",
+    "credibility",
+    "verification",
+    "react",
+    "express",
+    "firebase"
+  ],
+  "author": "FactCheck Team",
+  "license": "MIT",
+  "dependencies": {
+    "@firebasegen/default-connector": "file:dataconnect-generated/js/default-connector",
+    "firebase": "^11.8.1"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.0"
+  },
+  "engines": {
+    "node": ">=16.0.0",
+    "npm": ">=8.0.0"
+  }
+}
