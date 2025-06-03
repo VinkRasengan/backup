@@ -1,8 +1,11 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Search, Shield, Users, BarChart3 } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 
 const HomePage = () => {
+  const { user } = useAuth();
+
   const features = [
     {
       icon: <Search size={24} />,
@@ -46,12 +49,21 @@ const HomePage = () => {
               <Search size={20} />
               Kiểm Tra Ngay
             </Link>
-            <Link
-              to="/register"
-              className="px-8 py-4 bg-transparent border-2 border-white text-white rounded-lg font-semibold hover:bg-white hover:text-blue-600 transition-all duration-200"
-            >
-              Đăng Ký Miễn Phí
-            </Link>
+            {user ? (
+              <Link
+                to="/dashboard"
+                className="px-8 py-4 bg-transparent border-2 border-white text-white rounded-lg font-semibold hover:bg-white hover:text-blue-600 transition-all duration-200"
+              >
+                Xem Dashboard
+              </Link>
+            ) : (
+              <Link
+                to="/register"
+                className="px-8 py-4 bg-transparent border-2 border-white text-white rounded-lg font-semibold hover:bg-white hover:text-blue-600 transition-all duration-200"
+              >
+                Đăng Ký Miễn Phí
+              </Link>
+            )}
           </div>
         </div>
       </section>

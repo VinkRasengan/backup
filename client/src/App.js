@@ -35,7 +35,7 @@ function App() {
             {/* Public routes */}
             <Route
               path="/"
-              element={user ? <Navigate to="/dashboard" /> : <HomePage />}
+              element={<HomePage />}
             />
             <Route
               path="/login"

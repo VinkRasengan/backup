@@ -91,6 +91,10 @@ const CheckLinkPage = () => {
       }
 
       toast.success('Kiểm tra link thành công!');
+
+      // Optionally save to history (this would be handled by the API in real implementation)
+      // The dashboard will automatically update when the user navigates to it
+
     } catch (error) {
       console.error('Error checking link:', error);
       toast.error('Không thể kiểm tra link');
