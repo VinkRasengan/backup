@@ -18,7 +18,9 @@ const collections = {
   USERS: 'users',
   LINKS: 'links',
   VERIFICATION_TOKENS: 'verification_tokens',
-  PASSWORD_RESET_TOKENS: 'password_reset_tokens'
+  PASSWORD_RESET_TOKENS: 'password_reset_tokens',
+  CONVERSATIONS: 'conversations',
+  CHAT_MESSAGES: 'chat_messages'
 };
 
 module.exports = {

@@ -51,6 +51,7 @@ app.get('/health', (req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/users', authenticateToken, userRoutes);
 app.use('/api/links', authenticateToken, linkRoutes);
+app.use('/api/chat', require('./routes/chat'));
 
 // 404 handler
 app.use('*', (req, res) => {

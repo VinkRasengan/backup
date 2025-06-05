@@ -1,17 +1,18 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  BarChart3, 
-  Sun, 
-  Moon, 
-  Menu, 
-  X, 
-  User, 
+import {
+  BarChart3,
+  Sun,
+  Moon,
+  Menu,
+  X,
+  User,
   LogIn,
   UserPlus,
   Home,
-  Search
+  Search,
+  MessageCircle
 } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
@@ -26,6 +27,7 @@ const ModernNavigation = () => {
   const navigation = [
     { name: 'Trang chủ', href: '/', icon: Home },
     { name: 'Kiểm tra', href: '/check', icon: Search },
+    { name: 'Trợ lý AI', href: '/chat', icon: MessageCircle, requireAuth: true },
     { name: 'Dashboard', href: '/dashboard', icon: BarChart3, requireAuth: true },
   ];
 

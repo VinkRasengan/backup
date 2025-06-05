@@ -3,16 +3,35 @@ import Cookies from 'js-cookie';
 
 // Create axios instance
 const api = axios.create({
-  baseURL: process.env.REACT_APP_API_URL || '/api',
-  timeout: 10000,
+  baseURL: process.env.REACT_APP_API_URL || 'http://localhost:5000/api',
+  timeout: 30000,
 });
 
-// Request interceptor to add auth token
+// Request interceptor to add Firebase ID token
 api.interceptors.request.use(
-  (config) => {
-    const token = Cookies.get('token');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+  async (config) => {
+    try {
+      // Get fresh Firebase ID token
+      const { auth } = await import('../config/firebase');
+      const user = auth.currentUser;
+
+      if (user) {
+        const token = await user.getIdToken(true); // Force refresh
+        config.headers.Authorization = `Bearer ${token}`;
+      } else {
+        // Fallback to stored token
+        const token = localStorage.getItem('token');
+        if (token) {
+          config.headers.Authorization = `Bearer ${token}`;
+        }
+      }
+    } catch (error) {
+      console.error('Error getting Firebase token:', error);
+      // Fallback to stored token
+      const token = localStorage.getItem('token');
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
     }
     return config;
   },
@@ -59,6 +78,16 @@ export const linkAPI = {
   getHistory: (page = 1, limit = 20) => api.get(`/links/history?page=${page}&limit=${limit}`),
   getLinkResult: (linkId) => api.get(`/links/${linkId}`),
   deleteLinkResult: (linkId) => api.delete(`/links/${linkId}`),
+};
+
+// Chat API endpoints
+export const chatAPI = {
+  sendMessage: (data) => api.post('/chat/message', data),
+  getConversations: (params) => api.get('/chat/conversations', { params }),
+  getConversation: (id) => api.get(`/chat/conversations/${id}`),
+  deleteConversation: (id) => api.delete(`/chat/conversations/${id}`),
+  getConversationStarters: () => api.get('/chat/starters'),
+  getSecurityTips: (params) => api.get('/chat/tips', { params })
 };
 
 export default api;

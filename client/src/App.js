@@ -12,6 +12,7 @@ import RegistrationSuccessPage from './pages/RegistrationSuccessPage';
 import DashboardPage from './pages/DashboardPage';
 import ProfilePage from './pages/ProfilePage';
 import CheckLinkPage from './pages/CheckLinkPage';
+import ChatPage from './pages/ChatPage';
 import VerifyEmailPage from './pages/VerifyEmailPage';
 import EmailVerificationRequiredPage from './pages/EmailVerificationRequiredPage';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
@@ -74,13 +75,23 @@ function App() {
               </EmailVerifiedRoute>
             }
           />
-          <Route 
-            path="/profile" 
+          <Route
+            path="/profile"
             element={
               <ProtectedRoute>
                 <ProfilePage />
               </ProtectedRoute>
-            } 
+            }
+          />
+          <Route
+            path="/chat"
+            element={
+              <ProtectedRoute>
+                <EmailVerifiedRoute>
+                  <ChatPage />
+                </EmailVerifiedRoute>
+              </ProtectedRoute>
+            }
           />
 
           {/* Catch all route */}

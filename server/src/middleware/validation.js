@@ -79,10 +79,63 @@ const schemas = {
       'string.uri': 'Please provide a valid URL',
       'any.required': 'URL is required'
     })
+  }),
+
+  chatMessage: Joi.object({
+    message: Joi.string().trim().min(1).max(1000).required().messages({
+      'string.empty': 'Tin nhắn không được để trống',
+      'string.min': 'Tin nhắn quá ngắn',
+      'string.max': 'Tin nhắn quá dài (tối đa 1000 ký tự)',
+      'any.required': 'Tin nhắn là bắt buộc'
+    }),
+    conversationId: Joi.string().optional().allow('').messages({
+      'string.base': 'ID cuộc trò chuyện không hợp lệ'
+    })
   })
+};
+
+// Specific validation middleware functions
+const validateRegistration = validateRequest(schemas.register);
+const validateLogin = validateRequest(schemas.login);
+const validateForgotPassword = validateRequest(schemas.forgotPassword);
+const validateResetPassword = validateRequest(schemas.resetPassword);
+const validateProfileUpdate = validateRequest(schemas.updateProfile);
+const validateLinkCheck = validateRequest(schemas.checkLink);
+const validateChatMessage = validateRequest(schemas.chatMessage);
+
+// Pagination validation
+const validatePagination = (req, res, next) => {
+  const { page = 1, limit = 20 } = req.query;
+
+  const pageNum = parseInt(page);
+  const limitNum = parseInt(limit);
+
+  if (isNaN(pageNum) || pageNum < 1) {
+    return res.status(400).json({
+      error: 'Page must be a positive number',
+      code: 'VALIDATION_ERROR'
+    });
+  }
+
+  if (isNaN(limitNum) || limitNum < 1 || limitNum > 100) {
+    return res.status(400).json({
+      error: 'Limit must be between 1 and 100',
+      code: 'VALIDATION_ERROR'
+    });
+  }
+
+  next();
 };
 
 module.exports = {
   validateRequest,
-  schemas
+  schemas,
+  validateRegistration,
+  validateLogin,
+  validateForgotPassword,
+  validateResetPassword,
+  validateProfileUpdate,
+  validateLinkCheck,
+  validateChatMessage,
+  validatePagination
 };
