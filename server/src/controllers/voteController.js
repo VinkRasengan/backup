@@ -1,30 +1,27 @@
-// Use production config based on environment
-const firebaseConfig = process.env.NODE_ENV === 'production'
-  ? require('../config/firebase-production')
-  : require('../config/firebase-emulator');
-
-const { db, collections, admin } = firebaseConfig;
+// Community Voting Controller - Firebase-Backend Bridge
+const database = require('../config/database');
+const { v4: uuidv4 } = require('uuid');
 
 class VoteController {
   // Submit or update a vote for a link
   async submitVote(req, res, next) {
     try {
       const { linkId } = req.params;
-      const { voteType } = req.body; // 'trusted', 'suspicious', 'untrusted'
+      const { voteType } = req.body; // 'safe', 'unsafe', 'suspicious'
       const userId = req.user.userId;
 
       // Validate vote type
-      const validVoteTypes = ['trusted', 'suspicious', 'untrusted'];
+      const validVoteTypes = ['safe', 'unsafe', 'suspicious'];
       if (!validVoteTypes.includes(voteType)) {
         return res.status(400).json({
-          error: 'Invalid vote type. Must be: trusted, suspicious, or untrusted',
+          error: 'Invalid vote type. Must be: safe, unsafe, or suspicious',
           code: 'INVALID_VOTE_TYPE'
         });
       }
 
       // Check if link exists
-      const linkDoc = await db.collection(collections.LINKS).doc(linkId).get();
-      if (!linkDoc.exists) {
+      const link = await this.findLinkById(linkId);
+      if (!link) {
         return res.status(404).json({
           error: 'Link not found',
           code: 'LINK_NOT_FOUND'
@@ -32,129 +29,113 @@ class VoteController {
       }
 
       // Check if user already voted on this link
-      const existingVoteQuery = await db.collection(collections.VOTES)
-        .where('linkId', '==', linkId)
-        .where('userId', '==', userId)
-        .limit(1)
-        .get();
+      const existingVote = await this.findUserVoteOnLink(userId, linkId);
 
-      const batch = db.batch();
-      let voteRef;
-      let isUpdate = false;
-
-      if (!existingVoteQuery.empty) {
+      if (existingVote) {
         // Update existing vote
-        voteRef = existingVoteQuery.docs[0].ref;
-        const oldVoteData = existingVoteQuery.docs[0].data();
-        
-        batch.update(voteRef, {
-          voteType,
-          updatedAt: new Date().toISOString()
-        });
+        await this.updateVote(existingVote.id, voteType);
 
-        // Update link vote counts (decrement old, increment new)
-        const linkRef = db.collection(collections.LINKS).doc(linkId);
-        batch.update(linkRef, {
-          [`communityStats.votes.${oldVoteData.voteType}`]: admin.firestore.FieldValue.increment(-1),
-          [`communityStats.votes.${voteType}`]: admin.firestore.FieldValue.increment(1),
-          'communityStats.lastVoteAt': new Date().toISOString()
-        });
+        // Get updated vote summary
+        const voteSummary = await this.getVoteSummary(linkId);
 
-        isUpdate = true;
+        return res.json({
+          message: 'Vote updated successfully',
+          vote: {
+            id: existingVote.id,
+            linkId,
+            voteType,
+            updatedAt: new Date().toISOString()
+          },
+          summary: voteSummary
+        });
       } else {
         // Create new vote
-        voteRef = db.collection(collections.VOTES).doc();
+        const voteId = uuidv4();
         const voteData = {
-          linkId,
+          id: voteId,
           userId,
+          linkId,
           voteType,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString()
+          createdAt: new Date().toISOString()
         };
 
-        batch.set(voteRef, voteData);
+        await this.saveVote(voteData);
 
-        // Update link vote counts and total
-        const linkRef = db.collection(collections.LINKS).doc(linkId);
-        batch.update(linkRef, {
-          [`communityStats.votes.${voteType}`]: admin.firestore.FieldValue.increment(1),
-          'communityStats.totalVotes': admin.firestore.FieldValue.increment(1),
-          'communityStats.lastVoteAt': new Date().toISOString()
+        // Increment user stats
+        try {
+          const firebaseBackendController = require('./firebaseBackendController');
+          await firebaseBackendController.incrementUserStats(userId, 'votesSubmitted');
+        } catch (statsError) {
+          console.warn('⚠️ Failed to increment vote stats:', statsError.message);
+        }
+
+        // Get updated vote summary
+        const voteSummary = await this.getVoteSummary(linkId);
+
+        return res.status(201).json({
+          message: 'Vote submitted successfully',
+          vote: voteData,
+          summary: voteSummary
         });
       }
-
-      await batch.commit();
-
-      // Get updated vote statistics
-      const updatedStats = await this.getVoteStatistics(linkId);
-
-      res.json({
-        message: isUpdate ? 'Vote updated successfully' : 'Vote submitted successfully',
-        voteId: voteRef.id,
-        statistics: updatedStats
-      });
 
     } catch (error) {
       next(error);
     }
   }
 
-  // Get vote statistics for a link
-  async getVoteStatistics(linkId) {
-    try {
-      const linkDoc = await db.collection(collections.LINKS).doc(linkId).get();
-      
-      if (!linkDoc.exists) {
-        throw new Error('Link not found');
+  // Get vote summary for a link
+  async getVoteSummary(linkId) {
+    if (database.isConnected) {
+      try {
+        const result = await database.query(
+          `SELECT vote_type, COUNT(*) as count
+           FROM votes
+           WHERE link_id = $1
+           GROUP BY vote_type`,
+          [linkId]
+        );
+
+        const summary = {
+          safe: 0,
+          unsafe: 0,
+          suspicious: 0,
+          total: 0
+        };
+
+        result.rows.forEach(row => {
+          summary[row.vote_type] = parseInt(row.count);
+          summary.total += parseInt(row.count);
+        });
+
+        // Calculate trust label
+        summary.trustLabel = this.calculateTrustLabel(summary);
+
+        return summary;
+      } catch (error) {
+        console.error('Database error in getVoteSummary:', error);
+        return this.getVoteSummaryInMemory(linkId);
       }
-
-      const linkData = linkDoc.data();
-      const communityStats = linkData.communityStats || {
-        votes: { trusted: 0, suspicious: 0, untrusted: 0 },
-        totalVotes: 0
-      };
-
-      // Calculate community consensus
-      const { trusted = 0, suspicious = 0, untrusted = 0 } = communityStats.votes || {};
-      const total = trusted + suspicious + untrusted;
-      
-      let consensus = 'unknown';
-      let consensusPercentage = 0;
-
-      if (total > 0) {
-        const trustedPercent = (trusted / total) * 100;
-        const suspiciousPercent = (suspicious / total) * 100;
-        const untrustedPercent = (untrusted / total) * 100;
-
-        if (trustedPercent >= 60) {
-          consensus = 'trusted';
-          consensusPercentage = trustedPercent;
-        } else if (untrustedPercent >= 60) {
-          consensus = 'untrusted';
-          consensusPercentage = untrustedPercent;
-        } else if (suspiciousPercent >= 40 || (trustedPercent < 60 && untrustedPercent < 60)) {
-          consensus = 'suspicious';
-          consensusPercentage = suspiciousPercent;
-        }
-      }
-
-      return {
-        votes: {
-          trusted,
-          suspicious,
-          untrusted
-        },
-        totalVotes: total,
-        consensus: {
-          type: consensus,
-          percentage: Math.round(consensusPercentage)
-        },
-        lastVoteAt: communityStats.lastVoteAt || null
-      };
-
-    } catch (error) {
-      throw error;
+    } else {
+      return this.getVoteSummaryInMemory(linkId);
     }
+  }
+
+  // Calculate trust label based on votes
+  calculateTrustLabel(summary) {
+    if (summary.total === 0) return 'unrated';
+
+    const safePercentage = (summary.safe / summary.total) * 100;
+    const unsafePercentage = (summary.unsafe / summary.total) * 100;
+    const suspiciousPercentage = (summary.suspicious / summary.total) * 100;
+
+    if (safePercentage >= 60) return 'trusted';
+    if (unsafePercentage >= 60) return 'dangerous';
+    if (suspiciousPercentage >= 60) return 'suspicious';
+    if (safePercentage >= 40) return 'likely-safe';
+    if (unsafePercentage >= 40) return 'likely-dangerous';
+
+    return 'mixed-reviews';
   }
 
   // Get vote statistics endpoint

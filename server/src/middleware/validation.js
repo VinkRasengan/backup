@@ -94,8 +94,8 @@ const schemas = {
   }),
 
   submitVote: Joi.object({
-    voteType: Joi.string().valid('trusted', 'suspicious', 'untrusted').required().messages({
-      'any.only': 'Vote type must be: trusted, suspicious, or untrusted',
+    voteType: Joi.string().valid('safe', 'unsafe', 'suspicious').required().messages({
+      'any.only': 'Vote type must be: safe, unsafe, or suspicious',
       'any.required': 'Vote type is required'
     })
   }),
@@ -119,9 +119,9 @@ const schemas = {
   }),
 
   submitReport: Joi.object({
-    category: Joi.string().valid('fake_news', 'scam', 'malicious_content', 'spam', 'other').required().messages({
-      'any.only': 'Invalid report category',
-      'any.required': 'Report category is required'
+    reason: Joi.string().valid('fake_news', 'scam', 'malicious_content', 'spam', 'inappropriate', 'other').required().messages({
+      'any.only': 'Invalid report reason',
+      'any.required': 'Report reason is required'
     }),
     description: Joi.string().trim().min(1).max(500).required().messages({
       'string.empty': 'Report description is required',

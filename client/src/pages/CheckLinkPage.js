@@ -3,11 +3,14 @@ import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
 import { motion } from 'framer-motion';
-import { Search, CheckCircle, AlertTriangle, XCircle, Clipboard, Shield, Globe, Lock, AlertOctagon } from 'lucide-react';
+import { Search, CheckCircle, AlertTriangle, XCircle, Clipboard, Shield, Globe, Lock, AlertOctagon, Flag } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../components/ui/Card';
 import { linkAPI } from '../services/api';
+import VoteComponent from '../components/Community/VoteComponent';
+import CommentsSection from '../components/Community/CommentsSection';
+import ReportModal from '../components/Community/ReportModal';
 import toast from 'react-hot-toast';
 
 const schema = yup.object({
@@ -22,6 +25,7 @@ const schema = yup.object({
 const CheckLinkPage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [result, setResult] = useState(null);
+  const [showReportModal, setShowReportModal] = useState(false);
 
   const {
     register,
@@ -622,19 +626,52 @@ const CheckLinkPage = () => {
               </Card>
             </div>
 
-            {/* Report Website */}
-            <Card className="shadow-xl border-0 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm">
-              <CardHeader>
-                <CardTitle className="text-lg">Báo cáo trang web này nếu bạn thấy có dấu hiệu nghi ngờ!</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <button className="w-full px-6 py-4 bg-green-500 hover:bg-green-600 text-white rounded-lg font-semibold transition-colors">
-                  Báo cáo ngay
-                </button>
-              </CardContent>
-            </Card>
+            {/* Community Features */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Vote Component */}
+              <VoteComponent
+                linkId={result.id}
+                className="shadow-xl border-0 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm"
+              />
+
+              {/* Report Website */}
+              <Card className="shadow-xl border-0 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm">
+                <CardHeader>
+                  <CardTitle className="text-lg flex items-center">
+                    <Flag className="w-5 h-5 mr-2" />
+                    Báo cáo trang web
+                  </CardTitle>
+                  <CardDescription>
+                    Báo cáo nếu bạn thấy có dấu hiệu nghi ngờ
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <button
+                    onClick={() => setShowReportModal(true)}
+                    className="w-full px-6 py-4 bg-red-500 hover:bg-red-600 text-white rounded-lg font-semibold transition-colors flex items-center justify-center"
+                  >
+                    <Flag className="w-5 h-5 mr-2" />
+                    Báo cáo ngay
+                  </button>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Comments Section */}
+            <CommentsSection
+              linkId={result.id}
+              className="shadow-xl border-0 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm"
+            />
           </motion.div>
         )}
+
+        {/* Report Modal */}
+        <ReportModal
+          isOpen={showReportModal}
+          onClose={() => setShowReportModal(false)}
+          linkId={result?.id}
+          linkUrl={result?.url}
+        />
       </div>
     </div>
   );

@@ -13,6 +13,7 @@ import DashboardPage from './pages/DashboardPage';
 import ProfilePage from './pages/ProfilePage';
 import CheckLinkPage from './pages/CheckLinkPage';
 import ChatPage from './pages/ChatPage';
+import AdminDashboard from './pages/AdminDashboard';
 import VerifyEmailPage from './pages/VerifyEmailPage';
 import EmailVerificationRequiredPage from './pages/EmailVerificationRequiredPage';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
@@ -90,6 +91,14 @@ function App() {
                 <EmailVerifiedRoute>
                   <ChatPage />
                 </EmailVerifiedRoute>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin"
+            element={
+              <ProtectedRoute>
+                <AdminDashboard />
               </ProtectedRoute>
             }
           />

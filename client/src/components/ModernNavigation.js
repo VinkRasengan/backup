@@ -15,7 +15,8 @@ import {
   MessageCircle,
   Settings,
   ChevronDown,
-  LogOut
+  LogOut,
+  Shield
 } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
@@ -155,6 +156,17 @@ const ModernNavigation = () => {
                           <BarChart3 className="w-4 h-4" />
                           <span>Dashboard</span>
                         </Link>
+                        {/* Admin Link - only show for admin users */}
+                        {user?.email?.endsWith('@factcheck.com') && (
+                          <Link
+                            to="/admin"
+                            onClick={() => setUserDropdownOpen(false)}
+                            className="flex items-center space-x-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                          >
+                            <Shield className="w-4 h-4" />
+                            <span>Admin Dashboard</span>
+                          </Link>
+                        )}
                         <hr className="my-1 border-gray-200 dark:border-gray-700" />
                         <button
                           onClick={() => {
@@ -252,6 +264,17 @@ const ModernNavigation = () => {
                     <Settings className="w-4 h-4" />
                     <span>Cài đặt tài khoản</span>
                   </Link>
+                  {/* Admin Link for mobile */}
+                  {user?.email?.endsWith('@factcheck.com') && (
+                    <Link
+                      to="/admin"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                      className="flex items-center space-x-2 w-full px-3 py-2 rounded-lg text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                    >
+                      <Shield className="w-4 h-4" />
+                      <span>Admin Dashboard</span>
+                    </Link>
+                  )}
                   <button
                     onClick={handleLogout}
                     className="flex items-center space-x-2 w-full text-left px-3 py-2 rounded-lg text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
