@@ -13,8 +13,18 @@ let errorHandler, authenticateToken, authRoutes, userRoutes, linkRoutes;
 
 try {
   errorHandler = require('./middleware/errorHandler');
-  const authMiddleware = require('./middleware/auth');
-  authenticateToken = authMiddleware.authenticateToken;
+
+  // Try hybrid auth first, fallback to regular auth
+  try {
+    const hybridAuth = require('./middleware/hybridAuth');
+    authenticateToken = hybridAuth.authenticateToken;
+    console.log('✅ Using hybrid authentication (Firebase + JWT)');
+  } catch (hybridError) {
+    console.warn('⚠️ Hybrid auth not available, trying regular auth...');
+    const authMiddleware = require('./middleware/auth');
+    authenticateToken = authMiddleware.authenticateToken;
+    console.log('✅ Using regular authentication');
+  }
 
   authRoutes = require('./routes/auth');
   userRoutes = require('./routes/users');
@@ -30,6 +40,7 @@ try {
 
   authenticateToken = (req, res, next) => {
     // Skip auth for now
+    req.user = { userId: 'demo-user', email: 'demo@example.com' };
     next();
   };
 }
@@ -89,7 +100,16 @@ app.get('/api/health', (req, res) => {
 
 // API routes (with error handling)
 try {
-  if (authRoutes) app.use('/api/auth', authRoutes);
+  // Try hybrid auth routes first
+  try {
+    const hybridAuthRoutes = require('./routes/hybridAuth');
+    app.use('/api/auth', hybridAuthRoutes);
+    console.log('✅ Using hybrid auth routes');
+  } catch (hybridError) {
+    console.warn('⚠️ Hybrid auth routes not available, using regular auth routes');
+    if (authRoutes) app.use('/api/auth', authRoutes);
+  }
+
   if (userRoutes) app.use('/api/users', authenticateToken, userRoutes);
   if (linkRoutes) app.use('/api/links', authenticateToken, linkRoutes);
 } catch (error) {
