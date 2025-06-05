@@ -1,251 +1,33 @@
 import React, { useState } from 'react';
+import { motion } from 'framer-motion';
 import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
 import { useAuth } from '../context/AuthContext';
-import { User, Mail, Calendar, Edit3, Save, X } from 'lucide-react';
-import styled from 'styled-components';
+import { User, Mail, Calendar, Edit3, Save, X, Settings, Shield, Bell } from 'lucide-react';
+import { Button } from '../components/ui/Button';
+import { Input } from '../components/ui/Input';
+import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/Card';
+import toast from 'react-hot-toast';
 
-const ProfileContainer = styled.div`
-  max-width: 800px;
-  margin: 0 auto;
-  padding: 2rem 1rem;
-`;
-
-const ProfileHeader = styled.div`
-  text-align: center;
-  margin-bottom: 2rem;
-`;
-
-const ProfileTitle = styled.h1`
-  font-size: 2rem;
-  font-weight: bold;
-  color: #1a202c;
-  margin-bottom: 0.5rem;
-`;
-
-const ProfileSubtitle = styled.p`
-  color: #6b7280;
-`;
-
-const ProfileCard = styled.div`
-  background: white;
-  border-radius: 0.75rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  overflow: hidden;
-`;
-
-const ProfileInfo = styled.div`
-  padding: 2rem;
-  text-align: center;
-  border-bottom: 1px solid #e5e7eb;
-`;
-
-const Avatar = styled.div`
-  width: 5rem;
-  height: 5rem;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin: 0 auto 1rem;
-  color: white;
-  font-size: 1.5rem;
-  font-weight: bold;
-`;
-
-const UserName = styled.h2`
-  font-size: 1.5rem;
-  font-weight: 600;
-  color: #1a202c;
-  margin-bottom: 0.5rem;
-`;
-
-const UserEmail = styled.p`
-  color: #6b7280;
-  margin-bottom: 1rem;
-`;
-
-const UserStats = styled.div`
-  display: flex;
-  justify-content: center;
-  gap: 2rem;
-  margin-top: 1rem;
-`;
-
-const StatItem = styled.div`
-  text-align: center;
-`;
-
-const StatValue = styled.div`
-  font-size: 1.25rem;
-  font-weight: bold;
-  color: #1a202c;
-`;
-
-const StatLabel = styled.div`
-  font-size: 0.875rem;
-  color: #6b7280;
-`;
-
-const ProfileDetails = styled.div`
-  padding: 2rem;
-`;
-
-const SectionHeader = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1.5rem;
-`;
-
-const SectionTitle = styled.h3`
-  font-size: 1.25rem;
-  font-weight: 600;
-  color: #1a202c;
-`;
-
-const EditButton = styled.button`
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.5rem 1rem;
-  background: #3b82f6;
-  color: white;
-  border: none;
-  border-radius: 0.375rem;
-  font-size: 0.875rem;
-  cursor: pointer;
-  transition: background-color 0.2s;
-
-  &:hover {
-    background: #2563eb;
-  }
-`;
-
-const CancelButton = styled.button`
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.5rem 1rem;
-  background: #6b7280;
-  color: white;
-  border: none;
-  border-radius: 0.375rem;
-  font-size: 0.875rem;
-  cursor: pointer;
-  transition: background-color 0.2s;
-  margin-right: 0.5rem;
-
-  &:hover {
-    background: #4b5563;
-  }
-`;
-
-const DetailItem = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  margin-bottom: 1rem;
-  padding: 0.75rem;
-  background: #f8fafc;
-  border-radius: 0.5rem;
-`;
-
-const DetailIcon = styled.div`
-  color: #6b7280;
-`;
-
-const DetailContent = styled.div`
-  flex: 1;
-`;
-
-const DetailLabel = styled.div`
-  font-size: 0.875rem;
-  color: #6b7280;
-  margin-bottom: 0.25rem;
-`;
-
-const DetailValue = styled.div`
-  font-weight: 500;
-  color: #1a202c;
-`;
-
-const Form = styled.form`
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-`;
-
-const FormGroup = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-`;
-
-const Label = styled.label`
-  font-weight: 500;
-  color: #374151;
-  font-size: 0.875rem;
-`;
-
-const Input = styled.input`
-  padding: 0.75rem;
-  border: 2px solid ${props => props.error ? '#ef4444' : '#d1d5db'};
-  border-radius: 0.375rem;
-  font-size: 1rem;
-  transition: border-color 0.2s;
-
-  &:focus {
-    outline: none;
-    border-color: #3b82f6;
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-  }
-`;
-
-const TextArea = styled.textarea`
-  padding: 0.75rem;
-  border: 2px solid ${props => props.error ? '#ef4444' : '#d1d5db'};
-  border-radius: 0.375rem;
-  font-size: 1rem;
-  resize: vertical;
-  min-height: 100px;
-  transition: border-color 0.2s;
-
-  &:focus {
-    outline: none;
-    border-color: #3b82f6;
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-  }
-`;
-
-const ErrorMessage = styled.span`
-  color: #ef4444;
-  font-size: 0.875rem;
-`;
-
-const FormActions = styled.div`
-  display: flex;
-  gap: 0.5rem;
-  margin-top: 1rem;
-`;
-
+// Validation schema
 const schema = yup.object({
   firstName: yup
     .string()
-    .min(2, 'First name must be at least 2 characters')
-    .max(50, 'First name cannot exceed 50 characters')
-    .required('First name is required'),
+    .min(2, 'Tên phải có ít nhất 2 ký tự')
+    .max(50, 'Tên không được vượt quá 50 ký tự')
+    .required('Tên là bắt buộc'),
   lastName: yup
     .string()
-    .min(2, 'Last name must be at least 2 characters')
-    .max(50, 'Last name cannot exceed 50 characters')
-    .required('Last name is required'),
+    .min(2, 'Họ phải có ít nhất 2 ký tự')
+    .max(50, 'Họ không được vượt quá 50 ký tự')
+    .required('Họ là bắt buộc'),
   bio: yup
     .string()
-    .max(500, 'Bio cannot exceed 500 characters')
+    .max(500, 'Tiểu sử không được vượt quá 500 ký tự')
 });
+
+
 
 const ProfilePage = () => {
   const { user, updateProfile } = useAuth();
@@ -272,7 +54,13 @@ const ProfilePage = () => {
       const result = await updateProfile(data);
       if (result.success) {
         setIsEditing(false);
+        toast.success('Cập nhật thông tin thành công!');
+      } else {
+        toast.error(result.error || 'Có lỗi xảy ra khi cập nhật thông tin');
       }
+    } catch (error) {
+      console.error('Profile update error:', error);
+      toast.error('Có lỗi xảy ra khi cập nhật thông tin');
     } finally {
       setIsLoading(false);
     }
@@ -294,161 +82,267 @@ const ProfilePage = () => {
 
   if (!user) {
     return (
-      <ProfileContainer>
-        <div className="card">
-          <p>Loading profile...</p>
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+        <div className="max-w-4xl mx-auto p-4 md:p-8">
+          <Card>
+            <CardContent className="p-8 text-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-4"></div>
+              <p className="text-gray-600 dark:text-gray-400">Đang tải thông tin...</p>
+            </CardContent>
+          </Card>
         </div>
-      </ProfileContainer>
+      </div>
     );
   }
 
   return (
-    <ProfileContainer>
-      <ProfileHeader>
-        <ProfileTitle>Profile Settings</ProfileTitle>
-        <ProfileSubtitle>Manage your account information and preferences</ProfileSubtitle>
-      </ProfileHeader>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+      <div className="max-w-4xl mx-auto p-4 md:p-8">
+        {/* Page Header */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="text-center mb-8"
+        >
+          <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">
+            Cài đặt tài khoản
+          </h1>
+          <p className="text-lg text-gray-600 dark:text-gray-300">
+            Quản lý thông tin tài khoản và tùy chọn cá nhân của bạn
+          </p>
+        </motion.div>
 
-      <ProfileCard>
-        <ProfileInfo>
-          <Avatar>
-            {getInitials()}
-          </Avatar>
-          <UserName>{user.firstName} {user.lastName}</UserName>
-          <UserEmail>{user.email}</UserEmail>
-          <UserStats>
-            <StatItem>
-              <StatValue>{user.stats?.linksChecked || 0}</StatValue>
-              <StatLabel>Links Checked</StatLabel>
-            </StatItem>
-            <StatItem>
-              <StatValue>
-                {user.stats?.joinedAt ? 
-                  new Date(user.stats.joinedAt).toLocaleDateString() : 
-                  'Unknown'
-                }
-              </StatValue>
-              <StatLabel>Member Since</StatLabel>
-            </StatItem>
-          </UserStats>
-        </ProfileInfo>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Profile Card */}
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.5, delay: 0.1 }}
+            className="lg:col-span-1"
+          >
+            <Card className="shadow-xl border-0 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm">
+              <CardContent className="p-6 text-center">
+                {/* Avatar */}
+                <div className="w-24 h-24 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center mx-auto mb-4 text-white text-2xl font-bold shadow-lg">
+                  {getInitials()}
+                </div>
 
-        <ProfileDetails>
-          <SectionHeader>
-            <SectionTitle>Personal Information</SectionTitle>
-            {!isEditing && (
-              <EditButton onClick={() => setIsEditing(true)}>
-                <Edit3 size={16} />
-                Edit Profile
-              </EditButton>
-            )}
-          </SectionHeader>
+                {/* User Info */}
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+                  {user.firstName} {user.lastName}
+                </h2>
+                <p className="text-gray-600 dark:text-gray-400 mb-4">
+                  {user.email}
+                </p>
 
-          {isEditing ? (
-            <Form onSubmit={handleSubmit(onSubmit)}>
-              <FormGroup>
-                <Label htmlFor="firstName">First Name</Label>
-                <Input
-                  id="firstName"
-                  type="text"
-                  error={errors.firstName}
-                  {...register('firstName')}
-                />
-                {errors.firstName && (
-                  <ErrorMessage>{errors.firstName.message}</ErrorMessage>
-                )}
-              </FormGroup>
+                {/* Stats */}
+                <div className="grid grid-cols-2 gap-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                      {user.stats?.linksChecked || 0}
+                    </div>
+                    <div className="text-sm text-gray-600 dark:text-gray-400">
+                      Links đã kiểm tra
+                    </div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-purple-600 dark:text-purple-400">
+                      {user.stats?.chatMessages || 0}
+                    </div>
+                    <div className="text-sm text-gray-600 dark:text-gray-400">
+                      Tin nhắn chat
+                    </div>
+                  </div>
+                </div>
 
-              <FormGroup>
-                <Label htmlFor="lastName">Last Name</Label>
-                <Input
-                  id="lastName"
-                  type="text"
-                  error={errors.lastName}
-                  {...register('lastName')}
-                />
-                {errors.lastName && (
-                  <ErrorMessage>{errors.lastName.message}</ErrorMessage>
-                )}
-              </FormGroup>
-
-              <FormGroup>
-                <Label htmlFor="bio">Bio</Label>
-                <TextArea
-                  id="bio"
-                  placeholder="Tell us about yourself..."
-                  error={errors.bio}
-                  {...register('bio')}
-                />
-                {errors.bio && (
-                  <ErrorMessage>{errors.bio.message}</ErrorMessage>
-                )}
-              </FormGroup>
-
-              <FormActions>
-                <CancelButton type="button" onClick={handleCancel}>
-                  <X size={16} />
-                  Cancel
-                </CancelButton>
-                <EditButton type="submit" disabled={isLoading}>
-                  <Save size={16} />
-                  {isLoading ? 'Saving...' : 'Save Changes'}
-                </EditButton>
-              </FormActions>
-            </Form>
-          ) : (
-            <>
-              <DetailItem>
-                <DetailIcon>
-                  <User size={20} />
-                </DetailIcon>
-                <DetailContent>
-                  <DetailLabel>Full Name</DetailLabel>
-                  <DetailValue>{user.firstName} {user.lastName}</DetailValue>
-                </DetailContent>
-              </DetailItem>
-
-              <DetailItem>
-                <DetailIcon>
-                  <Mail size={20} />
-                </DetailIcon>
-                <DetailContent>
-                  <DetailLabel>Email Address</DetailLabel>
-                  <DetailValue>{user.email}</DetailValue>
-                </DetailContent>
-              </DetailItem>
-
-              <DetailItem>
-                <DetailIcon>
-                  <Calendar size={20} />
-                </DetailIcon>
-                <DetailContent>
-                  <DetailLabel>Member Since</DetailLabel>
-                  <DetailValue>
-                    {user.createdAt ? 
-                      new Date(user.createdAt).toLocaleDateString() : 
-                      'Unknown'
+                {/* Member Since */}
+                <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                  <div className="flex items-center justify-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                    <Calendar className="w-4 h-4" />
+                    Thành viên từ {user.createdAt ?
+                      new Date(user.createdAt).toLocaleDateString('vi-VN') :
+                      'N/A'
                     }
-                  </DetailValue>
-                </DetailContent>
-              </DetailItem>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
 
-              {user.profile?.bio && (
-                <DetailItem>
-                  <DetailIcon>
-                    <Edit3 size={20} />
-                  </DetailIcon>
-                  <DetailContent>
-                    <DetailLabel>Bio</DetailLabel>
-                    <DetailValue>{user.profile.bio}</DetailValue>
-                  </DetailContent>
-                </DetailItem>
-              )}
-            </>
-          )}
-        </ProfileDetails>
-      </ProfileCard>
-    </ProfileContainer>
+          {/* Settings Panel */}
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+            className="lg:col-span-2"
+          >
+            <Card className="shadow-xl border-0 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm">
+              <CardHeader className="pb-4">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-xl flex items-center gap-2">
+                    <Settings className="w-5 h-5 text-blue-500" />
+                    Thông tin cá nhân
+                  </CardTitle>
+                  {!isEditing && (
+                    <Button
+                      onClick={() => setIsEditing(true)}
+                      className="flex items-center gap-2"
+                      variant="outline"
+                    >
+                      <Edit3 className="w-4 h-4" />
+                      Chỉnh sửa
+                    </Button>
+                  )}
+                </div>
+              </CardHeader>
+
+              <CardContent>
+                {isEditing ? (
+                  <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <Input
+                          label="Tên"
+                          placeholder="Nhập tên của bạn"
+                          error={errors.firstName?.message}
+                          {...register('firstName')}
+                        />
+                      </div>
+                      <div>
+                        <Input
+                          label="Họ"
+                          placeholder="Nhập họ của bạn"
+                          error={errors.lastName?.message}
+                          {...register('lastName')}
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label htmlFor="bio" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Tiểu sử
+                      </label>
+                      <textarea
+                        id="bio"
+                        {...register('bio')}
+                        placeholder="Giới thiệu về bản thân..."
+                        rows={4}
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
+                      />
+                      {errors.bio && (
+                        <p className="mt-1 text-sm text-red-600 dark:text-red-400">
+                          {errors.bio.message}
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="flex gap-3 pt-4">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={handleCancel}
+                        className="flex items-center gap-2"
+                      >
+                        <X className="w-4 h-4" />
+                        Hủy
+                      </Button>
+                      <Button
+                        type="submit"
+                        loading={isLoading}
+                        className="flex items-center gap-2"
+                      >
+                        <Save className="w-4 h-4" />
+                        {isLoading ? 'Đang lưu...' : 'Lưu thay đổi'}
+                      </Button>
+                    </div>
+                  </form>
+                ) : (
+                  <div className="space-y-6">
+                    {/* Personal Information */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="flex items-center gap-3 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                        <div className="p-2 bg-blue-100 dark:bg-blue-900/50 rounded-lg">
+                          <User className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                        </div>
+                        <div>
+                          <div className="text-sm text-gray-600 dark:text-gray-400">Họ và tên</div>
+                          <div className="font-medium text-gray-900 dark:text-white">
+                            {user.firstName} {user.lastName}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-3 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                        <div className="p-2 bg-green-100 dark:bg-green-900/50 rounded-lg">
+                          <Mail className="w-5 h-5 text-green-600 dark:text-green-400" />
+                        </div>
+                        <div>
+                          <div className="text-sm text-gray-600 dark:text-gray-400">Email</div>
+                          <div className="font-medium text-gray-900 dark:text-white">
+                            {user.email}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Bio */}
+                    {user.profile?.bio && (
+                      <div className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                        <div className="flex items-start gap-3">
+                          <div className="p-2 bg-purple-100 dark:bg-purple-900/50 rounded-lg">
+                            <Edit3 className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+                          </div>
+                          <div className="flex-1">
+                            <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">Tiểu sử</div>
+                            <div className="text-gray-900 dark:text-white">
+                              {user.profile.bio}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Account Security */}
+                    <div className="border-t border-gray-200 dark:border-gray-700 pt-6">
+                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                        <Shield className="w-5 h-5 text-green-500" />
+                        Bảo mật tài khoản
+                      </h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
+                          <div className="flex items-center gap-2 mb-2">
+                            <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                            <span className="text-sm font-medium text-green-800 dark:text-green-200">
+                              Email đã xác thực
+                            </span>
+                          </div>
+                          <p className="text-sm text-green-700 dark:text-green-300">
+                            Tài khoản của bạn đã được xác thực
+                          </p>
+                        </div>
+
+                        <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                          <div className="flex items-center gap-2 mb-2">
+                            <Bell className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                            <span className="text-sm font-medium text-blue-800 dark:text-blue-200">
+                              Thông báo bảo mật
+                            </span>
+                          </div>
+                          <p className="text-sm text-blue-700 dark:text-blue-300">
+                            Nhận cảnh báo về hoạt động đáng ngờ
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </motion.div>
+        </div>
+      </div>
+    </div>
   );
 };
 

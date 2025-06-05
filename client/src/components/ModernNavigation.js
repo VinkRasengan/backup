@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -12,7 +12,10 @@ import {
   UserPlus,
   Home,
   Search,
-  MessageCircle
+  MessageCircle,
+  Settings,
+  ChevronDown,
+  LogOut
 } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
@@ -23,6 +26,22 @@ const ModernNavigation = () => {
   const { user, logout } = useAuth();
   const location = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [userDropdownOpen, setUserDropdownOpen] = useState(false);
+  const dropdownRef = useRef(null);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setUserDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   const navigation = [
     { name: 'Trang chủ', href: '/', icon: Home },
@@ -100,17 +119,57 @@ const ModernNavigation = () => {
             {/* User Actions */}
             {user ? (
               <div className="hidden md:flex items-center space-x-3">
-                <span className="text-sm text-gray-600 dark:text-gray-300">
-                  Xin chào, {user.firstName}
-                </span>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleLogout}
-                  className="text-sm"
-                >
-                  Đăng xuất
-                </Button>
+                {/* User Dropdown */}
+                <div className="relative" ref={dropdownRef}>
+                  <button
+                    onClick={() => setUserDropdownOpen(!userDropdownOpen)}
+                    className="flex items-center space-x-2 px-3 py-2 rounded-lg text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                  >
+                    <span>Xin chào, {user.firstName}</span>
+                    <ChevronDown className={`w-4 h-4 transition-transform ${userDropdownOpen ? 'rotate-180' : ''}`} />
+                  </button>
+
+                  {/* Dropdown Menu */}
+                  <AnimatePresence>
+                    {userDropdownOpen && (
+                      <motion.div
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -10 }}
+                        transition={{ duration: 0.2 }}
+                        className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-1 z-50"
+                      >
+                        <Link
+                          to="/profile"
+                          onClick={() => setUserDropdownOpen(false)}
+                          className="flex items-center space-x-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                        >
+                          <Settings className="w-4 h-4" />
+                          <span>Cài đặt tài khoản</span>
+                        </Link>
+                        <Link
+                          to="/dashboard"
+                          onClick={() => setUserDropdownOpen(false)}
+                          className="flex items-center space-x-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                        >
+                          <BarChart3 className="w-4 h-4" />
+                          <span>Dashboard</span>
+                        </Link>
+                        <hr className="my-1 border-gray-200 dark:border-gray-700" />
+                        <button
+                          onClick={() => {
+                            setUserDropdownOpen(false);
+                            handleLogout();
+                          }}
+                          className="flex items-center space-x-2 w-full px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                        >
+                          <LogOut className="w-4 h-4" />
+                          <span>Đăng xuất</span>
+                        </button>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
               </div>
             ) : (
               <div className="hidden md:flex items-center space-x-2">
@@ -185,11 +244,20 @@ const ModernNavigation = () => {
                   <div className="px-3 py-2 text-sm text-gray-600 dark:text-gray-300">
                     Xin chào, {user.firstName}
                   </div>
+                  <Link
+                    to="/profile"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="flex items-center space-x-2 w-full px-3 py-2 rounded-lg text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                  >
+                    <Settings className="w-4 h-4" />
+                    <span>Cài đặt tài khoản</span>
+                  </Link>
                   <button
                     onClick={handleLogout}
-                    className="w-full text-left px-3 py-2 rounded-lg text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                    className="flex items-center space-x-2 w-full text-left px-3 py-2 rounded-lg text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
                   >
-                    Đăng xuất
+                    <LogOut className="w-4 h-4" />
+                    <span>Đăng xuất</span>
                   </button>
                 </div>
               ) : (
