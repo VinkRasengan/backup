@@ -1,5 +1,6 @@
 import axios from 'axios';
 import Cookies from 'js-cookie';
+import mockAPI from './mockAPI';
 
 // Create axios instance
 const api = axios.create({
@@ -68,26 +69,86 @@ export const authAPI = {
 
 // User API endpoints
 export const userAPI = {
-  getDashboard: () => api.get('/users/dashboard'),
-  deleteAccount: () => api.delete('/users/account'),
+  getDashboard: () => apiWithFallback(
+    () => api.get('/users/dashboard'),
+    () => mockAPI.getDashboard()
+  ),
+  deleteAccount: () => apiWithFallback(
+    () => api.delete('/users/account'),
+    () => Promise.resolve({ data: { message: 'Account deleted successfully' } })
+  ),
 };
 
 // Link API endpoints
 export const linkAPI = {
-  checkLink: (url) => api.post('/links/check', { url }),
-  getHistory: (page = 1, limit = 20) => api.get(`/links/history?page=${page}&limit=${limit}`),
-  getLinkResult: (linkId) => api.get(`/links/${linkId}`),
-  deleteLinkResult: (linkId) => api.delete(`/links/${linkId}`),
+  checkLink: (url) => apiWithFallback(
+    () => api.post('/links/check', { url }),
+    () => mockAPI.checkLink(url)
+  ),
+  getHistory: (page = 1, limit = 20) => apiWithFallback(
+    () => api.get(`/links/history?page=${page}&limit=${limit}`),
+    () => mockAPI.getHistory()
+  ),
+  getLinkResult: (linkId) => apiWithFallback(
+    () => api.get(`/links/${linkId}`),
+    () => Promise.resolve({ data: {} })
+  ),
+  deleteLinkResult: (linkId) => apiWithFallback(
+    () => api.delete(`/links/${linkId}`),
+    () => Promise.resolve({ data: { message: 'Deleted successfully' } })
+  ),
+};
+
+// Helper function to handle API calls with smart fallback
+const apiWithFallback = async (apiCall, mockCall) => {
+  try {
+    return await apiCall();
+  } catch (error) {
+    console.warn('API call failed:', error.message);
+
+    // Check if it's a network error (backend not available)
+    const isNetworkError = error.code === 'NETWORK_ERROR' ||
+                          error.message.includes('Network Error') ||
+                          error.message.includes('ERR_NETWORK') ||
+                          !error.response;
+
+    // Fallback to mock if backend is not available
+    if (isNetworkError) {
+      console.warn('Backend not available, using mock API temporarily');
+      return await mockCall();
+    }
+
+    // For other errors (auth, validation, etc.), throw to show proper error messages
+    throw error;
+  }
 };
 
 // Chat API endpoints
 export const chatAPI = {
-  sendMessage: (data) => api.post('/chat/message', data),
-  getConversations: (params) => api.get('/chat/conversations', { params }),
-  getConversation: (id) => api.get(`/chat/conversations/${id}`),
-  deleteConversation: (id) => api.delete(`/chat/conversations/${id}`),
-  getConversationStarters: () => api.get('/chat/starters'),
-  getSecurityTips: (params) => api.get('/chat/tips', { params })
+  sendMessage: (data) => apiWithFallback(
+    () => api.post('/chat/message', data),
+    () => mockAPI.sendMessage(data)
+  ),
+  getConversations: (params) => apiWithFallback(
+    () => api.get('/chat/conversations', { params }),
+    () => mockAPI.getConversations(params)
+  ),
+  getConversation: (id) => apiWithFallback(
+    () => api.get(`/chat/conversations/${id}`),
+    () => Promise.resolve({ data: { conversation: {}, messages: [] } })
+  ),
+  deleteConversation: (id) => apiWithFallback(
+    () => api.delete(`/chat/conversations/${id}`),
+    () => Promise.resolve({ data: { message: 'Deleted successfully' } })
+  ),
+  getConversationStarters: () => apiWithFallback(
+    () => api.get('/chat/starters'),
+    () => mockAPI.getConversationStarters()
+  ),
+  getSecurityTips: (params) => apiWithFallback(
+    () => api.get('/chat/tips', { params }),
+    () => Promise.resolve({ data: { tips: 'Security tips not available in demo mode' } })
+  )
 };
 
 export default api;

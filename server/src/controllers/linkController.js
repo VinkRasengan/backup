@@ -1,4 +1,9 @@
-const { db, collections } = require('../config/firebase-emulator');
+// Use production config based on environment
+const firebaseConfig = process.env.NODE_ENV === 'production'
+  ? require('../config/firebase-production')
+  : require('../config/firebase-emulator');
+
+const { db, collections } = firebaseConfig;
 const crawlerService = require('../services/crawlerService');
 
 class LinkController {

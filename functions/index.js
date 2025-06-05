@@ -11,6 +11,7 @@ const {onSchedule} = require("firebase-functions/v2/scheduler");
 const logger = require("firebase-functions/logger");
 const admin = require("firebase-admin");
 const express = require("express");
+const openaiService = require("./services/openaiService");
 
 // Initialize Firebase Admin
 admin.initializeApp();
@@ -267,6 +268,179 @@ app.get("/users/dashboard", authenticateToken, async (req, res) => {
     res.status(500).json({ error: "Failed to get dashboard" });
   }
 });
+
+// Chat routes
+app.get("/chat/starters", (req, res) => {
+  try {
+    const starters = openaiService.getConversationStarters();
+    res.json({ starters });
+  } catch (error) {
+    logger.error("Get starters error:", error);
+    res.status(500).json({ error: "Không thể tải danh sách câu hỏi gợi ý" });
+  }
+});
+
+app.get("/chat/conversations", authenticateToken, async (req, res) => {
+  try {
+    const { page = 1, limit = 20 } = req.query;
+
+    const conversationsQuery = await db.collection("conversations")
+      .where("userId", "==", req.user.userId)
+      .orderBy("updatedAt", "desc")
+      .limit(parseInt(limit))
+      .get();
+
+    const conversations = conversationsQuery.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
+
+    res.json({
+      conversations,
+      pagination: {
+        currentPage: parseInt(page),
+        totalCount: conversations.length,
+        hasNext: false,
+        hasPrev: false
+      }
+    });
+
+  } catch (error) {
+    logger.error("Get conversations error:", error);
+    res.status(500).json({ error: "Không thể tải danh sách cuộc trò chuyện" });
+  }
+});
+
+app.post("/chat/message", authenticateToken, async (req, res) => {
+  try {
+    const { message, conversationId } = req.body;
+    const userId = req.user.userId;
+
+    // Validate message using OpenAI service
+    const validation = openaiService.validateMessage(message);
+    if (!validation.valid) {
+      return res.status(400).json({
+        error: validation.error,
+        code: 'INVALID_MESSAGE'
+      });
+    }
+
+    // Get or create conversation
+    let conversation;
+    if (conversationId) {
+      const conversationDoc = await db.collection("conversations").doc(conversationId).get();
+      if (!conversationDoc.exists || conversationDoc.data().userId !== userId) {
+        return res.status(404).json({ error: "Cuộc trò chuyện không tồn tại" });
+      }
+      conversation = { id: conversationId, ...conversationDoc.data() };
+    } else {
+      // Create new conversation
+      const newConversation = {
+        userId,
+        title: validation.message.substring(0, 50) + (validation.message.length > 50 ? '...' : ''),
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        messageCount: 0
+      };
+
+      const conversationRef = await db.collection("conversations").add(newConversation);
+      conversation = { id: conversationRef.id, ...newConversation };
+    }
+
+    // Get conversation history for context
+    const messagesQuery = await db.collection("chat_messages")
+      .where("conversationId", "==", conversation.id)
+      .orderBy("createdAt", "asc")
+      .limit(20)
+      .get();
+
+    const conversationHistory = messagesQuery.docs.map(doc => {
+      const data = doc.data();
+      return {
+        role: data.role,
+        content: data.content
+      };
+    });
+
+    // Send message to OpenAI
+    logger.info('Sending message to OpenAI service', {
+      userId,
+      conversationId: conversation.id,
+      messageLength: validation.message.length
+    });
+
+    const aiResponse = await openaiService.sendMessage(validation.message, conversationHistory);
+
+    if (!aiResponse.success) {
+      return res.status(500).json({
+        error: aiResponse.error,
+        code: 'AI_SERVICE_ERROR'
+      });
+    }
+
+    // Save user message
+    const userMessage = {
+      conversationId: conversation.id,
+      userId,
+      role: 'user',
+      content: validation.message,
+      createdAt: new Date().toISOString()
+    };
+    await db.collection("chat_messages").add(userMessage);
+
+    // Save AI response
+    const assistantMessage = {
+      conversationId: conversation.id,
+      userId,
+      role: 'assistant',
+      content: aiResponse.message,
+      createdAt: new Date().toISOString(),
+      metadata: {
+        model: aiResponse.model,
+        usage: aiResponse.usage
+      }
+    };
+    await db.collection("chat_messages").add(assistantMessage);
+
+    // Update conversation
+    await db.collection("conversations").doc(conversation.id).update({
+      updatedAt: new Date().toISOString(),
+      messageCount: admin.firestore.FieldValue.increment(2),
+      lastMessage: validation.message
+    });
+
+    // Update user stats
+    await db.collection("users").doc(userId).update({
+      "stats.chatMessages": admin.firestore.FieldValue.increment(1),
+      updatedAt: new Date().toISOString()
+    });
+
+    logger.info('Message processed successfully', {
+      userId,
+      conversationId: conversation.id,
+      model: aiResponse.model,
+      usage: aiResponse.usage
+    });
+
+    res.json({
+      message: 'Tin nhắn đã được gửi thành công',
+      conversation: {
+        id: conversation.id,
+        title: conversation.title
+      },
+      response: {
+        content: aiResponse.message,
+        createdAt: assistantMessage.createdAt
+      }
+    });
+
+  } catch (error) {
+    logger.error("Send message error:", error);
+    res.status(500).json({ error: "Không thể gửi tin nhắn" });
+  }
+});
+
+
 
 // Health check endpoint
 app.get("/health", (req, res) => {

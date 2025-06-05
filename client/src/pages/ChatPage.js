@@ -12,7 +12,7 @@ import {
   Clock
 } from 'lucide-react';
 import { Button } from '../components/ui/Button';
-import { Input } from '../components/ui/Input';
+import { ChatInput } from '../components/ui/ChatInput';
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/Card';
 import { chatAPI } from '../services/api';
 import { useAuth } from '../context/AuthContext';
@@ -50,6 +50,7 @@ const ChatPage = () => {
   const [isSending, setIsSending] = useState(false);
   const [conversationStarters, setConversationStarters] = useState([]);
   const messagesEndRef = useRef(null);
+  const inputRef = useRef(null);
 
   // Scroll to bottom when new messages arrive
   const scrollToBottom = () => {
@@ -62,6 +63,9 @@ const ChatPage = () => {
 
   // Load conversations and starters on mount
   useEffect(() => {
+    // Make toast available globally for mock API notifications
+    window.toast = toast;
+
     loadConversations();
     loadConversationStarters();
   }, []);
@@ -140,12 +144,36 @@ const ChatPage = () => {
       }
 
       setNewMessage('');
+
+      // Focus back to input after sending
+      setTimeout(() => {
+        if (inputRef.current) {
+          inputRef.current.focus();
+        }
+      }, 100);
+
       toast.success('Tin nhắn đã được gửi');
 
     } catch (error) {
       console.error('❌ Error sending message:', error);
       console.error('Error details:', error.response?.data || error.message);
-      toast.error(`Không thể gửi tin nhắn: ${error.response?.data?.error || error.message}`);
+
+      // Show appropriate error message based on error type
+      let errorMessage = 'Không thể gửi tin nhắn';
+
+      if (error.response?.data?.error) {
+        errorMessage = error.response.data.error;
+      } else if (error.code === 'NETWORK_ERROR') {
+        errorMessage = 'Lỗi kết nối mạng. Vui lòng kiểm tra internet và thử lại.';
+      } else if (error.response?.status === 401) {
+        errorMessage = 'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.';
+      } else if (error.response?.status === 429) {
+        errorMessage = 'Đã vượt quá giới hạn. Vui lòng thử lại sau ít phút.';
+      } else if (error.response?.status >= 500) {
+        errorMessage = 'Lỗi máy chủ. Vui lòng thử lại sau.';
+      }
+
+      toast.error(errorMessage);
     } finally {
       setIsSending(false);
     }
@@ -211,6 +239,18 @@ const ChatPage = () => {
           <p className="text-gray-600 dark:text-gray-300 text-lg">
             Hỏi đáp về bảo mật mạng, phishing, malware và các mối đe dọa trực tuyến
           </p>
+
+          {/* Production Mode Notice - Only show in development */}
+          {process.env.NODE_ENV === 'development' && (
+            <div className="mt-4 p-3 bg-blue-100 dark:bg-blue-900/20 rounded-lg border border-blue-300 dark:border-blue-700 max-w-md mx-auto">
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-sm font-medium text-blue-800 dark:text-blue-200">🔧 Development Mode</span>
+              </div>
+              <p className="text-xs text-blue-700 dark:text-blue-300">
+                Đang chạy ở chế độ development với fallback sang mock API khi cần thiết.
+              </p>
+            </div>
+          )}
 
           {/* Debug Panel */}
           {process.env.NODE_ENV === 'development' && (
@@ -431,11 +471,12 @@ const ChatPage = () => {
                   className="flex gap-3 items-end"
                 >
                   <div className="flex-1">
-                    <Input
+                    <ChatInput
+                      ref={inputRef}
                       value={newMessage}
                       onChange={(e) => setNewMessage(e.target.value)}
                       placeholder="Nhập câu hỏi về bảo mật..."
-                      className="w-full min-h-[44px] resize-none"
+                      className="w-full h-11"
                       disabled={isSending}
                       maxLength={1000}
                       onKeyDown={(e) => {
@@ -444,6 +485,8 @@ const ChatPage = () => {
                           sendMessage();
                         }
                       }}
+                      autoComplete="off"
+                      spellCheck="false"
                     />
                     <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                       Chỉ hỏi về các vấn đề bảo mật để bảo vệ bản thân. Tối đa 1000 ký tự.
