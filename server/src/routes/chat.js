@@ -60,6 +60,16 @@ try {
           const response = await openaiService.sendMessage(message, []);
 
           if (response.success) {
+            // Increment user chat stats if user is authenticated
+            if (req.user && req.user.userId) {
+              try {
+                const firebaseBackendController = require('../controllers/firebaseBackendController');
+                await firebaseBackendController.incrementUserStats(req.user.userId, 'chatMessages');
+              } catch (statsError) {
+                console.warn('⚠️ Failed to increment chat stats:', statsError.message);
+              }
+            }
+
             return res.json({
               data: {
                 message: 'Phản hồi từ FactCheck AI',

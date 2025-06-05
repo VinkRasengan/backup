@@ -107,8 +107,10 @@ app.get('/api/health', async (req, res) => {
         virustotal: !!process.env.VIRUSTOTAL_API_KEY
       },
       authentication: {
-        type: 'pure-backend',
-        firebase: false,
+        type: 'firebase-backend-bridge',
+        frontend: 'Firebase Auth (login/email verification)',
+        backend: 'JWT tokens (API access)',
+        database: dbHealth.type,
         jwt: !!process.env.JWT_SECRET
       }
     });
@@ -123,20 +125,27 @@ app.get('/api/health', async (req, res) => {
 
 // API routes (with error handling)
 try {
-  // Try pure auth routes first (no Firebase), then hybrid, then regular
+  // Try Firebase-Backend bridge first, then pure auth, then fallbacks
   try {
-    const pureAuthRoutes = require('./routes/pureAuth');
-    app.use('/api/auth', pureAuthRoutes);
-    console.log('✅ Using pure backend auth routes (No Firebase)');
-  } catch (pureError) {
-    console.warn('⚠️ Pure auth routes not available, trying hybrid auth routes...');
+    const firebaseBackendRoutes = require('./routes/firebaseBackend');
+    app.use('/api/auth', firebaseBackendRoutes);
+    console.log('✅ Using Firebase-Backend bridge routes (Firebase Auth + Backend Features)');
+  } catch (firebaseBackendError) {
+    console.warn('⚠️ Firebase-Backend bridge not available, trying pure auth...');
     try {
-      const hybridAuthRoutes = require('./routes/hybridAuth');
-      app.use('/api/auth', hybridAuthRoutes);
-      console.log('✅ Using hybrid auth routes');
-    } catch (hybridError) {
-      console.warn('⚠️ Hybrid auth routes not available, using regular auth routes');
-      if (authRoutes) app.use('/api/auth', authRoutes);
+      const pureAuthRoutes = require('./routes/pureAuth');
+      app.use('/api/auth', pureAuthRoutes);
+      console.log('✅ Using pure backend auth routes (No Firebase)');
+    } catch (pureError) {
+      console.warn('⚠️ Pure auth not available, trying hybrid auth routes...');
+      try {
+        const hybridAuthRoutes = require('./routes/hybridAuth');
+        app.use('/api/auth', hybridAuthRoutes);
+        console.log('✅ Using hybrid auth routes');
+      } catch (hybridError) {
+        console.warn('⚠️ Hybrid auth routes not available, using regular auth routes');
+        if (authRoutes) app.use('/api/auth', authRoutes);
+      }
     }
   }
 

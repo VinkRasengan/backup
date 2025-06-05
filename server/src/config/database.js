@@ -92,16 +92,18 @@ class Database {
     if (!this.isConnected) return;
 
     const createTablesSQL = `
-      -- Users table
+      -- Users table (supports both Firebase and pure backend auth)
       CREATE TABLE IF NOT EXISTS users (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
         email VARCHAR(255) UNIQUE NOT NULL,
-        password_hash VARCHAR(255),
+        password_hash VARCHAR(255), -- NULL for Firebase users
+        firebase_uid VARCHAR(255) UNIQUE, -- Firebase UID for Firebase users
         first_name VARCHAR(100),
         last_name VARCHAR(100),
         is_verified BOOLEAN DEFAULT FALSE,
         avatar_url TEXT,
         bio TEXT,
+        auth_provider VARCHAR(20) DEFAULT 'backend' CHECK (auth_provider IN ('firebase', 'backend')),
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         last_login_at TIMESTAMP,
@@ -179,6 +181,8 @@ class Database {
 
       -- Indexes for better performance
       CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+      CREATE INDEX IF NOT EXISTS idx_users_firebase_uid ON users(firebase_uid);
+      CREATE INDEX IF NOT EXISTS idx_users_auth_provider ON users(auth_provider);
       CREATE INDEX IF NOT EXISTS idx_conversations_user_id ON conversations(user_id);
       CREATE INDEX IF NOT EXISTS idx_chat_messages_conversation_id ON chat_messages(conversation_id);
       CREATE INDEX IF NOT EXISTS idx_links_user_id ON links(user_id);
