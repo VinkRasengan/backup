@@ -4,14 +4,15 @@ import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
 import { useAuth } from '../context/AuthContext';
-import { User, Mail, Calendar, Edit3, Save, X, Settings, Shield, Bell } from 'lucide-react';
+import { User, Mail, Calendar, Edit3, Save, X, Settings, Shield, Bell, Key, Lock, Eye, EyeOff } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/Card';
+import PasswordStrengthIndicator from '../components/PasswordStrengthIndicator';
 import toast from 'react-hot-toast';
 
-// Validation schema
-const schema = yup.object({
+// Validation schemas
+const profileSchema = yup.object({
   firstName: yup
     .string()
     .min(2, 'Tên phải có ít nhất 2 ký tự')
@@ -27,20 +28,44 @@ const schema = yup.object({
     .max(500, 'Tiểu sử không được vượt quá 500 ký tự')
 });
 
+const passwordSchema = yup.object({
+  currentPassword: yup
+    .string()
+    .required('Mật khẩu hiện tại là bắt buộc'),
+  newPassword: yup
+    .string()
+    .min(8, 'Mật khẩu mới phải có ít nhất 8 ký tự')
+    .matches(/[a-z]/, 'Mật khẩu phải có ít nhất 1 chữ thường')
+    .matches(/[A-Z]/, 'Mật khẩu phải có ít nhất 1 chữ hoa')
+    .matches(/[0-9]/, 'Mật khẩu phải có ít nhất 1 số')
+    .matches(/[^a-zA-Z0-9]/, 'Mật khẩu phải có ít nhất 1 ký tự đặc biệt')
+    .required('Mật khẩu mới là bắt buộc'),
+  confirmPassword: yup
+    .string()
+    .oneOf([yup.ref('newPassword')], 'Xác nhận mật khẩu không khớp')
+    .required('Xác nhận mật khẩu là bắt buộc')
+});
+
 
 
 const ProfilePage = () => {
-  const { user, updateProfile } = useAuth();
+  const { user, updateProfile, changePassword, sendPasswordResetEmail } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
+  const [isPasswordLoading, setIsPasswordLoading] = useState(false);
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
+  // Profile form
   const {
-    register,
-    handleSubmit,
-    formState: { errors },
-    reset
+    register: registerProfile,
+    handleSubmit: handleProfileSubmit,
+    formState: { errors: profileErrors },
+    reset: resetProfile
   } = useForm({
-    resolver: yupResolver(schema),
+    resolver: yupResolver(profileSchema),
     defaultValues: {
       firstName: user?.firstName || '',
       lastName: user?.lastName || '',
@@ -48,7 +73,26 @@ const ProfilePage = () => {
     }
   });
 
-  const onSubmit = async (data) => {
+  // Password form
+  const {
+    register: registerPassword,
+    handleSubmit: handlePasswordSubmit,
+    formState: { errors: passwordErrors },
+    reset: resetPassword,
+    watch: watchPassword
+  } = useForm({
+    resolver: yupResolver(passwordSchema),
+    defaultValues: {
+      currentPassword: '',
+      newPassword: '',
+      confirmPassword: ''
+    }
+  });
+
+  const newPassword = watchPassword('newPassword');
+
+  // Profile handlers
+  const onProfileSubmit = async (data) => {
     setIsLoading(true);
     try {
       const result = await updateProfile(data);
@@ -66,13 +110,52 @@ const ProfilePage = () => {
     }
   };
 
-  const handleCancel = () => {
-    reset({
+  const handleProfileCancel = () => {
+    resetProfile({
       firstName: user?.firstName || '',
       lastName: user?.lastName || '',
       bio: user?.profile?.bio || ''
     });
     setIsEditing(false);
+  };
+
+  // Password handlers
+  const onPasswordSubmit = async (data) => {
+    setIsPasswordLoading(true);
+    try {
+      const result = await changePassword(data.currentPassword, data.newPassword);
+      if (result.success) {
+        setIsChangingPassword(false);
+        resetPassword();
+        toast.success('Đổi mật khẩu thành công!');
+      } else {
+        toast.error(result.error || 'Có lỗi xảy ra khi đổi mật khẩu');
+      }
+    } catch (error) {
+      console.error('Password change error:', error);
+      toast.error('Có lỗi xảy ra khi đổi mật khẩu');
+    } finally {
+      setIsPasswordLoading(false);
+    }
+  };
+
+  const handlePasswordCancel = () => {
+    resetPassword();
+    setIsChangingPassword(false);
+  };
+
+  const handleForgotPassword = async () => {
+    try {
+      const result = await sendPasswordResetEmail(user.email);
+      if (result.success) {
+        toast.success('Email đặt lại mật khẩu đã được gửi!');
+      } else {
+        toast.error(result.error || 'Có lỗi xảy ra khi gửi email');
+      }
+    } catch (error) {
+      console.error('Password reset error:', error);
+      toast.error('Có lỗi xảy ra khi gửi email đặt lại mật khẩu');
+    }
   };
 
   const getInitials = () => {
@@ -199,22 +282,22 @@ const ProfilePage = () => {
 
               <CardContent>
                 {isEditing ? (
-                  <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+                  <form onSubmit={handleProfileSubmit(onProfileSubmit)} className="space-y-6">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
                         <Input
                           label="Tên"
                           placeholder="Nhập tên của bạn"
-                          error={errors.firstName?.message}
-                          {...register('firstName')}
+                          error={profileErrors.firstName?.message}
+                          {...registerProfile('firstName')}
                         />
                       </div>
                       <div>
                         <Input
                           label="Họ"
                           placeholder="Nhập họ của bạn"
-                          error={errors.lastName?.message}
-                          {...register('lastName')}
+                          error={profileErrors.lastName?.message}
+                          {...registerProfile('lastName')}
                         />
                       </div>
                     </div>
@@ -225,14 +308,14 @@ const ProfilePage = () => {
                       </label>
                       <textarea
                         id="bio"
-                        {...register('bio')}
+                        {...registerProfile('bio')}
                         placeholder="Giới thiệu về bản thân..."
                         rows={4}
                         className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
                       />
-                      {errors.bio && (
+                      {profileErrors.bio && (
                         <p className="mt-1 text-sm text-red-600 dark:text-red-400">
-                          {errors.bio.message}
+                          {profileErrors.bio.message}
                         </p>
                       )}
                     </div>
@@ -241,7 +324,7 @@ const ProfilePage = () => {
                       <Button
                         type="button"
                         variant="outline"
-                        onClick={handleCancel}
+                        onClick={handleProfileCancel}
                         className="flex items-center gap-2"
                       >
                         <X className="w-4 h-4" />
@@ -334,6 +417,156 @@ const ProfilePage = () => {
                           </p>
                         </div>
                       </div>
+                    </div>
+
+                    {/* Password Security */}
+                    <div className="border-t border-gray-200 dark:border-gray-700 pt-6">
+                      <div className="flex items-center justify-between mb-4">
+                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                          <Key className="w-5 h-5 text-orange-500" />
+                          Mật khẩu
+                        </h3>
+                        {!isChangingPassword && (
+                          <div className="flex gap-2">
+                            <Button
+                              onClick={handleForgotPassword}
+                              variant="ghost"
+                              size="sm"
+                              className="text-blue-600 dark:text-blue-400"
+                            >
+                              Quên mật khẩu?
+                            </Button>
+                            <Button
+                              onClick={() => setIsChangingPassword(true)}
+                              variant="outline"
+                              size="sm"
+                              className="flex items-center gap-2"
+                            >
+                              <Lock className="w-4 h-4" />
+                              Đổi mật khẩu
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+
+                      {isChangingPassword ? (
+                        <form onSubmit={handlePasswordSubmit(onPasswordSubmit)} className="space-y-4">
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                              Mật khẩu hiện tại
+                            </label>
+                            <div className="relative">
+                              <input
+                                type={showCurrentPassword ? 'text' : 'password'}
+                                {...registerPassword('currentPassword')}
+                                placeholder="Nhập mật khẩu hiện tại"
+                                className="w-full px-3 py-2 pr-10 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                                className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                              >
+                                {showCurrentPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                              </button>
+                            </div>
+                            {passwordErrors.currentPassword && (
+                              <p className="mt-1 text-sm text-red-600 dark:text-red-400">
+                                {passwordErrors.currentPassword.message}
+                              </p>
+                            )}
+                          </div>
+
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                              Mật khẩu mới
+                            </label>
+                            <div className="relative">
+                              <input
+                                type={showNewPassword ? 'text' : 'password'}
+                                {...registerPassword('newPassword')}
+                                placeholder="Nhập mật khẩu mới"
+                                className="w-full px-3 py-2 pr-10 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => setShowNewPassword(!showNewPassword)}
+                                className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                              >
+                                {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                              </button>
+                            </div>
+                            {passwordErrors.newPassword && (
+                              <p className="mt-1 text-sm text-red-600 dark:text-red-400">
+                                {passwordErrors.newPassword.message}
+                              </p>
+                            )}
+                            {newPassword && (
+                              <div className="mt-2">
+                                <PasswordStrengthIndicator password={newPassword} />
+                              </div>
+                            )}
+                          </div>
+
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                              Xác nhận mật khẩu mới
+                            </label>
+                            <div className="relative">
+                              <input
+                                type={showConfirmPassword ? 'text' : 'password'}
+                                {...registerPassword('confirmPassword')}
+                                placeholder="Nhập lại mật khẩu mới"
+                                className="w-full px-3 py-2 pr-10 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                              >
+                                {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                              </button>
+                            </div>
+                            {passwordErrors.confirmPassword && (
+                              <p className="mt-1 text-sm text-red-600 dark:text-red-400">
+                                {passwordErrors.confirmPassword.message}
+                              </p>
+                            )}
+                          </div>
+
+                          <div className="flex gap-3 pt-4">
+                            <Button
+                              type="button"
+                              variant="outline"
+                              onClick={handlePasswordCancel}
+                              className="flex items-center gap-2"
+                            >
+                              <X className="w-4 h-4" />
+                              Hủy
+                            </Button>
+                            <Button
+                              type="submit"
+                              loading={isPasswordLoading}
+                              className="flex items-center gap-2"
+                            >
+                              <Save className="w-4 h-4" />
+                              {isPasswordLoading ? 'Đang đổi...' : 'Đổi mật khẩu'}
+                            </Button>
+                          </div>
+                        </form>
+                      ) : (
+                        <div className="p-4 bg-orange-50 dark:bg-orange-900/20 rounded-lg border border-orange-200 dark:border-orange-800">
+                          <div className="flex items-center gap-2 mb-2">
+                            <Lock className="w-4 h-4 text-orange-600 dark:text-orange-400" />
+                            <span className="text-sm font-medium text-orange-800 dark:text-orange-200">
+                              Mật khẩu được bảo vệ
+                            </span>
+                          </div>
+                          <p className="text-sm text-orange-700 dark:text-orange-300">
+                            Mật khẩu của bạn được mã hóa và bảo mật. Thay đổi định kỳ để tăng cường bảo mật.
+                          </p>
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}

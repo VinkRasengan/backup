@@ -7,8 +7,11 @@ import {
   signOut,
   onAuthStateChanged,
   updateProfile as firebaseUpdateProfile,
-  sendPasswordResetEmail,
-  sendEmailVerification
+  sendPasswordResetEmail as firebaseSendPasswordResetEmail,
+  sendEmailVerification,
+  updatePassword,
+  reauthenticateWithCredential,
+  EmailAuthProvider
 } from 'firebase/auth';
 import { auth } from '../config/firebase';
 import { authAPI } from '../services/api';
@@ -347,7 +350,7 @@ export const AuthProvider = ({ children }) => {
 
   const forgotPassword = async (email) => {
     try {
-      await sendPasswordResetEmail(auth, email);
+      await firebaseSendPasswordResetEmail(auth, email);
       toast.success('Email đặt lại mật khẩu đã được gửi! Vui lòng kiểm tra hộp thư.');
       return { success: true };
     } catch (error) {
@@ -418,6 +421,55 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const changePassword = async (currentPassword, newPassword) => {
+    try {
+      const currentUser = auth.currentUser;
+      if (!currentUser) {
+        throw new Error('No user logged in');
+      }
+
+      // Create credential for reauthentication
+      const credential = EmailAuthProvider.credential(currentUser.email, currentPassword);
+
+      // Reauthenticate user
+      await reauthenticateWithCredential(currentUser, credential);
+
+      // Update password
+      await updatePassword(currentUser, newPassword);
+
+      toast.success('Mật khẩu đã được thay đổi thành công!');
+      return { success: true };
+    } catch (error) {
+      console.error('Change password error:', error);
+      let message;
+
+      switch (error.code) {
+        case 'auth/wrong-password':
+          message = 'Mật khẩu hiện tại không chính xác.';
+          break;
+        case 'auth/weak-password':
+          message = 'Mật khẩu mới quá yếu. Vui lòng chọn mật khẩu mạnh hơn.';
+          break;
+        case 'auth/requires-recent-login':
+          message = 'Vui lòng đăng nhập lại để thay đổi mật khẩu.';
+          break;
+        case 'auth/too-many-requests':
+          message = 'Quá nhiều yêu cầu. Vui lòng thử lại sau ít phút.';
+          break;
+        case 'auth/network-request-failed':
+          message = 'Lỗi kết nối mạng. Vui lòng kiểm tra internet và thử lại.';
+          break;
+        default:
+          message = error.message || 'Không thể thay đổi mật khẩu. Vui lòng thử lại.';
+      }
+
+      toast.error(message);
+      return { success: false, error: message };
+    }
+  };
+
+
+
   const value = {
     user,
     loading,
@@ -428,7 +480,9 @@ export const AuthProvider = ({ children }) => {
     resendVerificationEmail,
     forgotPassword,
     resetPassword,
-    updateProfile
+    updateProfile,
+    changePassword,
+    sendPasswordResetEmail: forgotPassword // Alias for consistency
   };
 
   return (
