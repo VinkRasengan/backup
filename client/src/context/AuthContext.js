@@ -65,10 +65,17 @@ export const AuthProvider = ({ children }) => {
   const login = async (email, password) => {
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      const user = userCredential.user;
+      let user = userCredential.user;
+
+      // Force reload user to get latest emailVerified status
+      await user.reload();
+      user = auth.currentUser; // Get fresh user object after reload
+
+      console.log('Login attempt - User:', user.email, 'Email verified:', user.emailVerified);
 
       // Check if email is verified BEFORE allowing login
       if (!user.emailVerified) {
+        console.log('Email not verified, signing out user');
         // Sign out the user immediately
         await signOut(auth);
         toast.error('Vui lòng xác minh email trước khi đăng nhập. Kiểm tra hộp thư của bạn.');
@@ -78,6 +85,8 @@ export const AuthProvider = ({ children }) => {
           requiresVerification: true
         };
       }
+
+      console.log('Email verified, proceeding with login');
 
       // Set user data only if email is verified
       const userData = {
@@ -260,8 +269,19 @@ export const AuthProvider = ({ children }) => {
 
   const verifyEmail = async (actionCode) => {
     try {
+      console.log('Starting email verification with action code:', actionCode);
+
       // Firebase Auth handles email verification with action codes
-      const { applyActionCode } = await import('firebase/auth');
+      const { applyActionCode, checkActionCode } = await import('firebase/auth');
+
+      // First check the action code to get info
+      try {
+        const actionCodeInfo = await checkActionCode(auth, actionCode);
+        console.log('Action code info:', actionCodeInfo);
+      } catch (checkError) {
+        console.log('Action code check failed:', checkError);
+        // Continue anyway, applyActionCode will give us the real error
+      }
 
       // Apply the action code to verify email
       await applyActionCode(auth, actionCode);
@@ -272,6 +292,9 @@ export const AuthProvider = ({ children }) => {
 
     } catch (error) {
       console.error('Email verification error:', error);
+      console.error('Error code:', error.code);
+      console.error('Error message:', error.message);
+
       let message;
       if (error.code === 'auth/expired-action-code') {
         message = 'Link xác minh đã hết hạn. Vui lòng yêu cầu link mới.';

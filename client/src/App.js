@@ -19,6 +19,7 @@ import ResetPasswordPage from './pages/ResetPasswordPage';
 import ProtectedRoute from './components/ProtectedRoute';
 import EmailVerifiedRoute from './components/EmailVerifiedRoute';
 import LoadingSpinner from './components/LoadingSpinner';
+import ChatBot from './components/ChatBot/ChatBot';
 
 function App() {
   const { user, loading } = useAuth();
@@ -86,6 +87,9 @@ function App() {
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>
       </main>
+
+      {/* ChatBot - hiển thị trên tất cả các trang */}
+      <ChatBot />
       </div>
     </ThemeProvider>
   );
