@@ -14,16 +14,23 @@ let errorHandler, authenticateToken, authRoutes, userRoutes, linkRoutes;
 try {
   errorHandler = require('./middleware/errorHandler');
 
-  // Try hybrid auth first, fallback to regular auth
+  // Try pure auth first (no Firebase), then hybrid, then regular
   try {
-    const hybridAuth = require('./middleware/hybridAuth');
-    authenticateToken = hybridAuth.authenticateToken;
-    console.log('✅ Using hybrid authentication (Firebase + JWT)');
-  } catch (hybridError) {
-    console.warn('⚠️ Hybrid auth not available, trying regular auth...');
-    const authMiddleware = require('./middleware/auth');
-    authenticateToken = authMiddleware.authenticateToken;
-    console.log('✅ Using regular authentication');
+    const pureAuth = require('./middleware/pureAuth');
+    authenticateToken = pureAuth.authenticateToken;
+    console.log('✅ Using pure backend authentication (No Firebase)');
+  } catch (pureError) {
+    console.warn('⚠️ Pure auth not available, trying hybrid auth...');
+    try {
+      const hybridAuth = require('./middleware/hybridAuth');
+      authenticateToken = hybridAuth.authenticateToken;
+      console.log('✅ Using hybrid authentication (Firebase + JWT)');
+    } catch (hybridError) {
+      console.warn('⚠️ Hybrid auth not available, trying regular auth...');
+      const authMiddleware = require('./middleware/auth');
+      authenticateToken = authMiddleware.authenticateToken;
+      console.log('✅ Using regular authentication');
+    }
   }
 
   authRoutes = require('./routes/auth');
@@ -86,28 +93,51 @@ app.get('/health', (req, res) => {
 });
 
 // API health check
-app.get('/api/health', (req, res) => {
-  res.status(200).json({
-    status: 'OK',
-    timestamp: new Date().toISOString(),
-    apis: {
-      openai: !!process.env.OPENAI_API_KEY,
-      virustotal: !!process.env.VIRUSTOTAL_API_KEY,
-      firebase: !!process.env.FIREBASE_PROJECT_ID
-    }
-  });
+app.get('/api/health', async (req, res) => {
+  try {
+    const database = require('./config/database');
+    const dbHealth = await database.healthCheck();
+
+    res.status(200).json({
+      status: 'OK',
+      timestamp: new Date().toISOString(),
+      database: dbHealth,
+      apis: {
+        openai: !!process.env.OPENAI_API_KEY,
+        virustotal: !!process.env.VIRUSTOTAL_API_KEY
+      },
+      authentication: {
+        type: 'pure-backend',
+        firebase: false,
+        jwt: !!process.env.JWT_SECRET
+      }
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: 'ERROR',
+      timestamp: new Date().toISOString(),
+      error: error.message
+    });
+  }
 });
 
 // API routes (with error handling)
 try {
-  // Try hybrid auth routes first
+  // Try pure auth routes first (no Firebase), then hybrid, then regular
   try {
-    const hybridAuthRoutes = require('./routes/hybridAuth');
-    app.use('/api/auth', hybridAuthRoutes);
-    console.log('✅ Using hybrid auth routes');
-  } catch (hybridError) {
-    console.warn('⚠️ Hybrid auth routes not available, using regular auth routes');
-    if (authRoutes) app.use('/api/auth', authRoutes);
+    const pureAuthRoutes = require('./routes/pureAuth');
+    app.use('/api/auth', pureAuthRoutes);
+    console.log('✅ Using pure backend auth routes (No Firebase)');
+  } catch (pureError) {
+    console.warn('⚠️ Pure auth routes not available, trying hybrid auth routes...');
+    try {
+      const hybridAuthRoutes = require('./routes/hybridAuth');
+      app.use('/api/auth', hybridAuthRoutes);
+      console.log('✅ Using hybrid auth routes');
+    } catch (hybridError) {
+      console.warn('⚠️ Hybrid auth routes not available, using regular auth routes');
+      if (authRoutes) app.use('/api/auth', authRoutes);
+    }
   }
 
   if (userRoutes) app.use('/api/users', authenticateToken, userRoutes);
