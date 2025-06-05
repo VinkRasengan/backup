@@ -11,6 +11,16 @@ router.get('/test', (req, res) => {
   });
 });
 
+// Try to load OpenAI service directly (bypass Firebase dependency)
+let openaiService;
+try {
+  openaiService = require('../services/openaiService');
+  console.log('✅ OpenAI service loaded successfully');
+} catch (error) {
+  console.warn('⚠️ OpenAI service failed to load:', error.message);
+  openaiService = null;
+}
+
 // Try to load chat controller with error handling
 let chatController;
 try {
@@ -20,7 +30,7 @@ try {
   console.error('❌ Chat controller failed to load:', error.message);
   console.error('Stack:', error.stack);
 
-  // Fallback controller
+  // Fallback controller (no Firebase dependency)
   chatController = {
     getConversationStarters: (req, res) => {
       res.json({
@@ -37,17 +47,56 @@ try {
         tips: 'Luôn cập nhật phần mềm và sử dụng mật khẩu mạnh.'
       });
     },
-    sendOpenAIMessage: (req, res) => {
-      res.json({
-        data: {
-          message: 'Phản hồi từ FactCheck AI (Fallback Mode)',
-          response: {
-            content: 'Xin chào! Tôi là FactCheck AI. Hiện tại hệ thống đang trong chế độ fallback. Vui lòng thử lại sau.',
-            createdAt: new Date().toISOString(),
-            source: 'fallback'
+    sendOpenAIMessage: async (req, res) => {
+      try {
+        const { message } = req.body;
+
+        if (!message) {
+          return res.status(400).json({ error: 'Message is required' });
+        }
+
+        // Try OpenAI service directly if available
+        if (openaiService && openaiService.isConfigured()) {
+          const response = await openaiService.sendMessage(message, []);
+
+          if (response.success) {
+            return res.json({
+              data: {
+                message: 'Phản hồi từ FactCheck AI',
+                response: {
+                  content: response.message,
+                  createdAt: new Date().toISOString(),
+                  source: 'openai'
+                }
+              }
+            });
           }
         }
-      });
+
+        // Fallback response
+        res.json({
+          data: {
+            message: 'Phản hồi từ FactCheck AI (Fallback Mode)',
+            response: {
+              content: 'Xin chào! Tôi là FactCheck AI. Hiện tại hệ thống đang trong chế độ fallback. Vui lòng thử lại sau.',
+              createdAt: new Date().toISOString(),
+              source: 'fallback'
+            }
+          }
+        });
+      } catch (error) {
+        console.error('OpenAI fallback error:', error);
+        res.json({
+          data: {
+            message: 'Phản hồi từ FactCheck AI (Error Mode)',
+            response: {
+              content: 'Xin lỗi, có lỗi xảy ra. Vui lòng thử lại sau.',
+              createdAt: new Date().toISOString(),
+              source: 'error'
+            }
+          }
+        });
+      }
     },
     sendMessage: (req, res) => {
       res.status(503).json({
