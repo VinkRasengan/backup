@@ -170,70 +170,28 @@ const apiWithFallback = async (apiCall, mockCall) => {
   }
 };
 
-// Chat API endpoints
+// Chat API endpoints - Simplified to use backend only
 export const chatAPI = {
+  // Send message to authenticated chat (requires login)
   sendMessage: async (data) => {
-    console.log('🚀 Sending message to OpenAI directly from frontend');
-
-    // Try backend first, then fallback to direct OpenAI call
-    try {
-      return await api.post('/chat/message', data);
-    } catch (error) {
-      console.log('🔄 Backend unavailable, calling OpenAI directly...');
-
-      // Try direct OpenAI API call with CORS proxy
-      try {
-        console.log('🤖 Attempting OpenAI API call...');
-
-        // Try backend OpenAI API (no CORS issues on Render)
-        console.log('🤖 Calling OpenAI via backend...');
-        const backendResponse = await api.post('/chat/openai', { message: data.message });
-
-        if (backendResponse.data) {
-          return backendResponse;
-        }
-
-        throw new Error('Backend OpenAI API failed');
-
-
-      } catch (openaiError) {
-        console.log('🔄 OpenAI API unavailable, using enhanced mock...');
-
-        // Enhanced fallback with better responses
-        const { enhancedMockChat } = await import('./enhancedMockChat');
-        const response = enhancedMockChat.getResponse(data.message);
-        return {
-          data: {
-            message: 'Tin nhắn đã được gửi thành công',
-            response: {
-              content: response,
-              createdAt: new Date().toISOString()
-            }
-          }
-        };
-      }
-    }
+    console.log('🚀 Sending authenticated message to backend');
+    return await api.post('/chat/message', data);
   },
-  getConversations: (params) => apiWithFallback(
-    () => api.get('/chat/conversations', { params }),
-    () => mockAPI.getConversations(params)
-  ),
-  getConversation: (id) => apiWithFallback(
-    () => api.get(`/chat/conversations/${id}`),
-    () => Promise.resolve({ data: { conversation: {}, messages: [] } })
-  ),
-  deleteConversation: (id) => apiWithFallback(
-    () => api.delete(`/chat/conversations/${id}`),
-    () => Promise.resolve({ data: { message: 'Deleted successfully' } })
-  ),
-  getConversationStarters: () => apiWithFallback(
-    () => api.get('/chat/starters'),
-    () => mockAPI.getConversationStarters()
-  ),
-  getSecurityTips: (params) => apiWithFallback(
-    () => api.get('/chat/tips', { params }),
-    () => Promise.resolve({ data: { tips: 'Security tips not available in demo mode' } })
-  )
+
+  // Send message to public OpenAI endpoint (no auth required)
+  sendOpenAIMessage: async (data) => {
+    console.log('🤖 Sending public message to OpenAI via backend');
+    return await api.post('/chat/openai', { message: data.message });
+  },
+
+  // Conversation management (requires auth)
+  getConversations: (params) => api.get('/chat/conversations', { params }),
+  getConversation: (id) => api.get(`/chat/conversations/${id}`),
+  deleteConversation: (id) => api.delete(`/chat/conversations/${id}`),
+
+  // Public endpoints
+  getConversationStarters: () => api.get('/chat/starters'),
+  getSecurityTips: (params) => api.get('/chat/tips', { params })
 };
 
 export default api;

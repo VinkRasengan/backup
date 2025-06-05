@@ -47,9 +47,9 @@ const ChatBot = () => {
     setIsTyping(true);
 
         try {
-      // Send message to API
-      console.log('📤 Sending to API:', text.trim());
-      const response = await chatAPI.sendMessage({
+      // Send message to public OpenAI endpoint (no auth required)
+      console.log('📤 Sending to public OpenAI API:', text.trim());
+      const response = await chatAPI.sendOpenAIMessage({
         message: text.trim()
       });
 
@@ -67,18 +67,15 @@ const ChatBot = () => {
     } catch (error) {
       console.error('❌ API Error:', error);
 
-      // Fallback to enhanced mock response
-      const { enhancedMockChat } = await import('../../services/enhancedMockChat');
-      const fallbackResponse = enhancedMockChat.getResponse(text.trim());
-
-      const botMessage = {
+      // Show error message to user
+      const errorMessage = {
         id: Date.now() + 1,
-        text: fallbackResponse,
+        text: '⚠️ Xin lỗi, hiện tại tôi không thể kết nối được với server. Vui lòng thử lại sau hoặc liên hệ quản trị viên.',
         isBot: true,
         timestamp: new Date()
       };
 
-      setMessages(prev => [...prev, botMessage]);
+      setMessages(prev => [...prev, errorMessage]);
       setIsTyping(false);
     }
   };
