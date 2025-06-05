@@ -10,6 +10,10 @@ FactCheck là một ứng dụng web để kiểm tra độ tin cậy của thô
 - **Đăng nhập**: Người dùng có thể đăng nhập vào hệ thống
 - **Quên mật khẩu**: Tính năng đặt lại mật khẩu qua email
 - **Kiểm tra link**: Dán link để kiểm tra độ tin cậy từ crawler API
+- **🆕 VirusTotal Integration**: Phân tích bảo mật URL/domain với 70+ antivirus engines
+- **🆕 Security Scoring**: Điểm bảo mật từ 0-100 dựa trên VirusTotal analysis
+- **🆕 Threat Detection**: Phát hiện malware, phishing và các mối đe dọa bảo mật
+- **🆕 Enhanced Scoring**: Điểm tổng hợp (60% credibility + 40% security)
 - **Dashboard cá nhân**: Giao diện tổng quan hoạt động của người dùng
 - **Chỉnh sửa hồ sơ**: Cập nhật thông tin cá nhân cơ bản
 
