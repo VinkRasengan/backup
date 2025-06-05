@@ -146,6 +146,33 @@ const schemas = {
       'any.only': 'Role must be: user or admin',
       'any.required': 'Role is required'
     })
+  }),
+
+  submitToCommunity: Joi.object({
+    url: Joi.string().uri().required().messages({
+      'string.uri': 'Please provide a valid URL',
+      'any.required': 'URL is required'
+    }),
+    title: Joi.string().min(10).max(200).optional().messages({
+      'string.min': 'Title must be at least 10 characters long',
+      'string.max': 'Title cannot exceed 200 characters'
+    }),
+    description: Joi.string().max(500).optional().messages({
+      'string.max': 'Description cannot exceed 500 characters'
+    }),
+    category: Joi.string().valid(
+      'politics', 'health', 'technology', 'education', 'economy',
+      'society', 'environment', 'sports', 'entertainment', 'other'
+    ).required().messages({
+      'any.only': 'Invalid category',
+      'any.required': 'Category is required'
+    }),
+    checkResult: Joi.object().required().messages({
+      'any.required': 'Check result is required'
+    }),
+    credibilityScore: Joi.number().min(0).max(100).optional(),
+    securityScore: Joi.number().min(0).max(100).optional(),
+    status: Joi.string().valid('safe', 'warning', 'dangerous').optional()
   })
 };
 

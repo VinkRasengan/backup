@@ -1,7 +1,8 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Search, Shield, Users, BarChart3 } from 'lucide-react';
+import { Search, Shield, Users, BarChart3, BookOpen, MessageCircle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import TrendingArticles from '../components/TrendingArticles';
 
 const HomePage = () => {
   const { user } = useAuth();
@@ -64,6 +65,62 @@ const HomePage = () => {
                 Đăng Ký Miễn Phí
               </Link>
             )}
+          </div>
+        </div>
+      </section>
+
+      {/* Trending Articles Section */}
+      <section className="py-16 bg-white dark:bg-gray-900">
+        <div className="max-w-6xl mx-auto px-4">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* Main Content */}
+            <div className="lg:col-span-2">
+              <h2 className="text-3xl md:text-4xl font-bold mb-8 text-gray-900 dark:text-white">
+                Hoạt động cộng đồng
+              </h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <Link
+                  to="/community"
+                  className="bg-gradient-to-br from-blue-500 to-blue-600 text-white p-6 rounded-xl hover:from-blue-600 hover:to-blue-700 transition-all duration-200 hover:-translate-y-1 hover:shadow-lg"
+                >
+                  <Users className="w-8 h-8 mb-4" />
+                  <h3 className="text-xl font-semibold mb-2">Cộng đồng kiểm tin</h3>
+                  <p className="opacity-90">Tham gia cùng cộng đồng đánh giá và xác minh thông tin</p>
+                </Link>
+
+                <Link
+                  to="/knowledge"
+                  className="bg-gradient-to-br from-green-500 to-green-600 text-white p-6 rounded-xl hover:from-green-600 hover:to-green-700 transition-all duration-200 hover:-translate-y-1 hover:shadow-lg"
+                >
+                  <BookOpen className="w-8 h-8 mb-4" />
+                  <h3 className="text-xl font-semibold mb-2">Kiến thức nền</h3>
+                  <p className="opacity-90">Học cách nhận biết và kiểm tra thông tin sai lệch</p>
+                </Link>
+
+                <Link
+                  to="/chat"
+                  className="bg-gradient-to-br from-purple-500 to-purple-600 text-white p-6 rounded-xl hover:from-purple-600 hover:to-purple-700 transition-all duration-200 hover:-translate-y-1 hover:shadow-lg"
+                >
+                  <MessageCircle className="w-8 h-8 mb-4" />
+                  <h3 className="text-xl font-semibold mb-2">Trợ lý AI</h3>
+                  <p className="opacity-90">Hỏi đáp với AI về cách kiểm tra thông tin</p>
+                </Link>
+
+                <Link
+                  to="/submit"
+                  className="bg-gradient-to-br from-orange-500 to-orange-600 text-white p-6 rounded-xl hover:from-orange-600 hover:to-orange-700 transition-all duration-200 hover:-translate-y-1 hover:shadow-lg"
+                >
+                  <Search className="w-8 h-8 mb-4" />
+                  <h3 className="text-xl font-semibold mb-2">Gửi bài viết</h3>
+                  <p className="opacity-90">Chia sẻ bài viết để cộng đồng cùng đánh giá</p>
+                </Link>
+              </div>
+            </div>
+
+            {/* Sidebar */}
+            <div className="lg:col-span-1">
+              <TrendingArticles />
+            </div>
           </div>
         </div>
       </section>

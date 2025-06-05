@@ -16,7 +16,9 @@ import {
   Settings,
   ChevronDown,
   LogOut,
-  Shield
+  Shield,
+  Users,
+  BookOpen
 } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
@@ -47,6 +49,8 @@ const ModernNavigation = () => {
   const navigation = [
     { name: 'Trang chủ', href: '/', icon: Home },
     { name: 'Kiểm tra', href: '/check', icon: Search },
+    { name: 'Cộng đồng', href: '/community', icon: Users, requireAuth: true },
+    { name: 'Kiến thức', href: '/knowledge', icon: BookOpen },
     { name: 'Trợ lý AI', href: '/chat', icon: MessageCircle, requireAuth: true },
     { name: 'Dashboard', href: '/dashboard', icon: BarChart3, requireAuth: true },
   ];

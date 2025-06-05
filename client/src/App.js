@@ -14,6 +14,9 @@ import ProfilePage from './pages/ProfilePage';
 import CheckLinkPage from './pages/CheckLinkPage';
 import ChatPage from './pages/ChatPage';
 import AdminDashboard from './pages/AdminDashboard';
+import CommunityFeedPage from './pages/CommunityFeedPage';
+import SubmitArticlePage from './pages/SubmitArticlePage';
+import KnowledgeBasePage from './pages/KnowledgeBasePage';
 import VerifyEmailPage from './pages/VerifyEmailPage';
 import EmailVerificationRequiredPage from './pages/EmailVerificationRequiredPage';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
@@ -101,6 +104,30 @@ function App() {
                 <AdminDashboard />
               </ProtectedRoute>
             }
+          />
+          <Route
+            path="/community"
+            element={
+              <ProtectedRoute>
+                <EmailVerifiedRoute>
+                  <CommunityFeedPage />
+                </EmailVerifiedRoute>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/submit"
+            element={
+              <ProtectedRoute>
+                <EmailVerifiedRoute>
+                  <SubmitArticlePage />
+                </EmailVerifiedRoute>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/knowledge"
+            element={<KnowledgeBasePage />}
           />
 
           {/* Catch all route */}

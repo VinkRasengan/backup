@@ -26,4 +26,22 @@ router.get('/:linkId', linkController.getLinkResult);
 // @access  Private
 router.delete('/:linkId', linkController.deleteLinkResult);
 
+// @route   GET /api/links/community-feed
+// @desc    Get community feed of links with votes and comments
+// @access  Private
+router.get('/community-feed', linkController.getCommunityFeed);
+
+// @route   POST /api/links/submit-to-community
+// @desc    Submit article to community for verification
+// @access  Private
+router.post('/submit-to-community',
+  validateRequest(schemas.submitToCommunity),
+  linkController.submitToCommunity
+);
+
+// @route   GET /api/links/trending
+// @desc    Get trending/hot articles
+// @access  Public
+router.get('/trending', linkController.getTrendingArticles);
+
 module.exports = router;
