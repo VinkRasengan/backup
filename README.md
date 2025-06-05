@@ -1,232 +1,302 @@
-# FactCheck - Sprint 1 Implementation
+# FactCheck - Anti-Fraud Platform
 
-FactCheck là một ứng dụng web để kiểm tra độ tin cậy của thông tin và tin tức. Đây là implementation của Sprint 1 với các tính năng cơ bản.
+FactCheck là một nền tảng chống lừa đảo trực tuyến, giúp người dùng kiểm tra độ tin cậy của thông tin, website và bảo vệ khỏi các mối đe dọa bảo mật.
 
-## 🚀 Tính năng Sprint 1
+## 🌟 Tính năng chính
 
-### ✅ Đã hoàn thành:
-- **Đăng ký tài khoản**: Người dùng có thể tạo tài khoản mới
-- **Xác minh email**: Hệ thống gửi email xác minh để kích hoạt tài khoản
-- **Đăng nhập**: Người dùng có thể đăng nhập vào hệ thống
-- **Quên mật khẩu**: Tính năng đặt lại mật khẩu qua email
-- **Kiểm tra link**: Dán link để kiểm tra độ tin cậy từ crawler API
-- **🆕 VirusTotal Integration**: Phân tích bảo mật URL/domain với 70+ antivirus engines
-- **🆕 Security Scoring**: Điểm bảo mật từ 0-100 dựa trên VirusTotal analysis
-- **🆕 Threat Detection**: Phát hiện malware, phishing và các mối đe dọa bảo mật
-- **🆕 Enhanced Scoring**: Điểm tổng hợp (60% credibility + 40% security)
-- **Dashboard cá nhân**: Giao diện tổng quan hoạt động của người dùng
-- **Chỉnh sửa hồ sơ**: Cập nhật thông tin cá nhân cơ bản
+### 🔐 Xác thực & Bảo mật
+- **Đăng ký tài khoản** với xác minh email bắt buộc
+- **Đăng nhập an toàn** với Firebase Authentication
+- **Đổi mật khẩu** với validation mạnh mẽ
+- **Quên mật khẩu** qua email reset
+- **Profile Settings** với TailwindCSS UI hiện đại
 
-## 🏗️ Architecture
+### 🔍 Kiểm tra bảo mật
+- **Kiểm tra URL/Website** với phân tích toàn diện
+- **VirusTotal Integration** - Quét với 70+ antivirus engines
+- **Security Scoring** - Điểm bảo mật từ 0-100
+- **Threat Detection** - Phát hiện malware, phishing, scam
+- **Real-time Results** - Kết quả hiển thị ngay lập tức
 
-### Backend (Express.js)
+### 🤖 AI Security Assistant
+- **Chatbot tư vấn bảo mật** với OpenAI GPT
+- **Câu hỏi thông minh** về an toàn mạng
+- **Hướng dẫn phòng chống** lừa đảo trực tuyến
+- **Quick replies** cho các tình huống phổ biến
+
+### 📊 Dashboard & Analytics
+- **Dashboard cá nhân** theo dõi hoạt động
+- **Lịch sử kiểm tra** với filter và search
+- **Thống kê bảo mật** cá nhân
+- **Responsive design** cho mọi thiết bị
+
+## 🏗️ Kiến trúc hệ thống
+
+### Frontend (React + Firebase)
+
 ```
-backup/server/
-├── src/
-│   ├── app.js                 # Main application file
-│   ├── config/
-│   │   └── firebase.js        # Firebase configuration
-│   ├── controllers/
-│   │   ├── authController.js  # Authentication logic
-│   │   ├── userController.js  # User management
-│   │   └── linkController.js  # Link checking logic
-│   ├── middleware/
-│   │   ├── auth.js           # Authentication middleware
-│   │   ├── validation.js     # Request validation
-│   │   └── errorHandler.js   # Error handling
-│   ├── routes/
-│   │   ├── auth.js           # Auth routes
-│   │   ├── users.js          # User routes
-│   │   └── links.js          # Link routes
-│   ├── services/
-│   │   ├── emailService.js   # Email sending
-│   │   └── crawlerService.js # Link crawling/checking
-│   └── utils/                # Utility functions
-├── package.json
-└── .env.example
-```
-
-### Frontend (React)
-```
-backup/client/
+client/
 ├── src/
 │   ├── components/
-│   │   ├── Navbar.js         # Navigation component
-│   │   ├── ProtectedRoute.js # Route protection
-│   │   └── LoadingSpinner.js # Loading indicator
+│   │   ├── ModernNavigation.js    # Navigation với dropdown
+│   │   ├── ui/                    # UI components
+│   │   │   ├── Button.js          # Button component
+│   │   │   ├── Input.js           # Input với validation
+│   │   │   ├── Card.js            # Card layout
+│   │   │   └── ChatInput.js       # Chat input field
+│   │   ├── ChatBot/               # Chatbot components
+│   │   └── PasswordStrengthIndicator.js
 │   ├── pages/
-│   │   ├── HomePage.js       # Landing page
-│   │   ├── LoginPage.js      # Login form
-│   │   ├── RegisterPage.js   # Registration form
-│   │   ├── DashboardPage.js  # User dashboard
-│   │   ├── CheckLinkPage.js  # Link checking
-│   │   ├── ProfilePage.js    # Profile management
-│   │   ├── VerifyEmailPage.js # Email verification
-│   │   ├── ForgotPasswordPage.js # Password reset request
-│   │   └── ResetPasswordPage.js  # Password reset form
+│   │   ├── HomePage.js            # Landing page
+│   │   ├── ModernLoginPage.js     # Login với TailwindCSS
+│   │   ├── ModernRegisterPage.js  # Register với validation
+│   │   ├── ProfilePage.js         # Profile settings
+│   │   ├── DashboardPage.js       # User dashboard
+│   │   ├── CheckLinkPage.js       # URL checking
+│   │   ├── ChatPage.js            # AI chatbot
+│   │   └── VerifyEmailPage.js     # Email verification
 │   ├── context/
-│   │   └── AuthContext.js    # Authentication context
+│   │   ├── AuthContext.js         # Firebase Auth
+│   │   └── ThemeContext.js        # Dark/Light mode
 │   ├── services/
-│   │   └── api.js           # API client
-│   ├── App.js               # Main app component
-│   └── index.js             # App entry point
-├── public/
+│   │   ├── api.js                 # API client
+│   │   └── mockAPI.js             # Fallback API
+│   └── config/
+│       └── firebase.js            # Firebase config
+```
+
+### Backend Options
+
+**Option 1: Firebase Functions** (Recommended)
+```
+functions/
+├── index.js                       # Cloud Functions entry
+├── services/
+│   └── openaiService.js          # OpenAI integration
 └── package.json
 ```
 
-## 🛠️ Tech Stack
+**Option 2: Express.js Server** (Alternative)
+```
+server/
+├── src/
+│   ├── controllers/               # API controllers
+│   ├── middleware/                # Auth & validation
+│   ├── routes/                    # API routes
+│   └── services/                  # External services
+└── package.json
+```
 
-### Backend:
-- **Express.js**: Web framework
-- **Firebase Firestore**: Database
-- **Firebase Admin**: Server-side Firebase SDK
-- **JWT**: Authentication tokens
-- **Bcrypt**: Password hashing
-- **Nodemailer**: Email sending
-- **Joi**: Request validation
-- **Axios**: HTTP client for crawler API
+## 🛠️ Công nghệ sử dụng
 
-### Frontend:
-- **React 18**: UI framework
-- **React Router**: Client-side routing
-- **React Hook Form**: Form handling
-- **React Query**: Data fetching and caching
-- **Styled Components**: CSS-in-JS styling
-- **Yup**: Form validation
-- **Lucide React**: Icons
-- **React Hot Toast**: Notifications
+### Frontend
+- **React 18** - UI framework hiện đại
+- **TailwindCSS** - Utility-first CSS framework
+- **Framer Motion** - Animation library
+- **React Router** - Client-side routing
+- **React Hook Form** - Form handling với validation
+- **Firebase SDK** - Authentication & Firestore
+- **Yup** - Schema validation
+- **Lucide React** - Modern icon library
+- **React Hot Toast** - Notification system
 
-## 🚀 Quick Start
+### Backend & Services
+- **Firebase Authentication** - User management
+- **Firebase Firestore** - NoSQL database
+- **Firebase Hosting** - Static site hosting
+- **Firebase Functions** - Serverless backend (optional)
+- **OpenAI API** - AI chatbot integration
+- **VirusTotal API** - Security scanning
+- **Express.js** - Alternative backend option
 
-### Prerequisites:
-- Node.js 16+ và npm 8+
-- Firebase CLI (`npm install -g firebase-tools`)
-- Firebase project với Firestore enabled
-- Email service (Gmail với App Password)
+### Development Tools
+- **Vite** - Fast build tool
+- **ESLint** - Code linting
+- **Prettier** - Code formatting
+- **Firebase CLI** - Deployment tools
 
-### 🛠️ Development Setup
+## 🚀 Hướng dẫn cài đặt
 
-1. **Clone và setup:**
+### Yêu cầu hệ thống
+
+- **Node.js** 18+ và npm 9+
+- **Firebase CLI**: `npm install -g firebase-tools`
+- **Git** để clone repository
+
+### 🔧 Cài đặt Development
+
+1. **Clone repository:**
+
 ```bash
-git clone <repository-url>
+git clone https://github.com/VinkRasengan/backup.git
 cd backup
-npm run setup
 ```
 
-2. **Cấu hình environment:**
+2. **Cài đặt dependencies:**
+
 ```bash
-# Cập nhật server/.env với thông tin Firebase và email
-cp server/.env.example server/.env
-# Chỉnh sửa server/.env với thông tin thực tế
+# Install client dependencies
+cd client
+npm install
+
+# Install server dependencies (nếu sử dụng Express backend)
+cd ../server
+npm install
+
+# Install functions dependencies (nếu sử dụng Firebase Functions)
+cd ../functions
+npm install
 ```
 
-3. **Khởi động development:**
+3. **Cấu hình Firebase:**
+
 ```bash
+# Login to Firebase
+firebase login
+
+# Initialize project (nếu chưa có)
+firebase init
+
+# Set project
+firebase use your-project-id
+```
+
+4. **Cấu hình environment:**
+
+Tạo file `client/.env.local`:
+
+```env
+REACT_APP_FIREBASE_API_KEY=your-api-key
+REACT_APP_FIREBASE_AUTH_DOMAIN=your-project.firebaseapp.com
+REACT_APP_FIREBASE_PROJECT_ID=your-project-id
+REACT_APP_FIREBASE_STORAGE_BUCKET=your-project.appspot.com
+REACT_APP_FIREBASE_MESSAGING_SENDER_ID=123456789
+REACT_APP_FIREBASE_APP_ID=your-app-id
+```
+
+5. **Khởi động development:**
+
+```bash
+# Start frontend
+cd client
+npm start
+
+# Start backend (nếu sử dụng Express)
+cd server
 npm run dev
 ```
 
-Hoặc khởi động từng service riêng:
-```bash
-# Terminal 1: Firebase Emulators
-npm run emulators
+### 🌐 URLs Development
 
-# Terminal 2: Backend Server
-npm run server
-
-# Terminal 3: Frontend
-npm run client
-```
-
-### 🌐 Access URLs:
 - **Frontend**: http://localhost:3000
-- **Backend API**: http://localhost:5000
-- **Firebase Emulator UI**: http://localhost:4000
-- **Firestore Emulator**: http://localhost:8080
+- **Backend API**: http://localhost:5000 (nếu sử dụng Express)
+- **Firebase Console**: https://console.firebase.google.com
 
-### 📦 Production Deployment
+### 🚀 Production Deployment
 
-1. **Build và deploy:**
+**Deploy lên Firebase Hosting:**
+
 ```bash
-npm run deploy
-```
-
-2. **Hoặc deploy từng phần:**
-```bash
-# Build client
+# Build và deploy
+cd client
 npm run build
-
-# Deploy Firestore rules
-firebase deploy --only firestore
-
-# Deploy Functions
-firebase deploy --only functions
-
-# Deploy Hosting
 firebase deploy --only hosting
 ```
 
-## 🔧 Cấu hình
+**Deploy Firebase Functions (nếu sử dụng):**
 
-### Firebase Setup:
-1. Tạo Firebase project tại https://console.firebase.google.com
-2. Enable Firestore Database
-3. Tạo Service Account và download JSON key
-4. Cấu hình thông tin trong `.env`
-
-### Email Setup:
-1. Sử dụng Gmail với App Password
-2. Cấu hình SMTP settings trong `.env`
-
-### Environment Variables:
-```env
-# Server
-PORT=5000
-NODE_ENV=development
-
-# Firebase
-FIREBASE_PROJECT_ID=your-project-id
-FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n"
-FIREBASE_CLIENT_EMAIL=your-service-account@project.iam.gserviceaccount.com
-
-# JWT
-JWT_SECRET=your-super-secret-jwt-key
-JWT_EXPIRE=7d
-
-# Email
-EMAIL_HOST=smtp.gmail.com
-EMAIL_PORT=587
-EMAIL_USER=your-email@gmail.com
-EMAIL_PASS=your-app-password
-
-# Crawler API
-CRAWLER_API_URL=https://api.example.com/crawler
-CRAWLER_API_KEY=your-api-key
-
-# Frontend URL
-FRONTEND_URL=http://localhost:3000
+```bash
+cd functions
+firebase deploy --only functions
 ```
 
-## 📊 Database Schema
+### 🌍 Production URLs
 
-### Collections:
+- **Website**: https://factcheck-1d6e8.web.app
+- **API**: https://us-central1-factcheck-1d6e8.cloudfunctions.net/api
+
+## ⚙️ Cấu hình chi tiết
+
+### Firebase Setup
+
+1. **Tạo Firebase Project:**
+   - Truy cập [Firebase Console](https://console.firebase.google.com)
+   - Tạo project mới hoặc sử dụng project có sẵn
+   - Enable Authentication và Firestore Database
+
+2. **Cấu hình Authentication:**
+   - Vào Authentication > Sign-in method
+   - Enable Email/Password provider
+   - Cấu hình domain cho production
+
+3. **Cấu hình Firestore:**
+   - Tạo database trong test mode
+   - Cập nhật security rules khi deploy production
+
+### API Keys Setup
+
+**OpenAI API (cho chatbot):**
+```env
+OPENAI_API_KEY=sk-proj-your-openai-api-key
+```
+
+**VirusTotal API (cho security scanning):**
+```env
+VIRUSTOTAL_API_KEY=your-virustotal-api-key
+```
+
+### Environment Variables
+
+**Client (.env.local):**
+```env
+# Firebase Config
+REACT_APP_FIREBASE_API_KEY=your-api-key
+REACT_APP_FIREBASE_AUTH_DOMAIN=your-project.firebaseapp.com
+REACT_APP_FIREBASE_PROJECT_ID=your-project-id
+REACT_APP_FIREBASE_STORAGE_BUCKET=your-project.appspot.com
+REACT_APP_FIREBASE_MESSAGING_SENDER_ID=123456789
+REACT_APP_FIREBASE_APP_ID=your-app-id
+
+# API URLs
+REACT_APP_API_URL=http://localhost:5000/api
+REACT_APP_USE_EMULATOR=false
+REACT_APP_OPENAI_ENABLED=true
+```
+
+**Functions (.env):**
+```env
+OPENAI_API_KEY=sk-proj-your-openai-api-key
+VIRUSTOTAL_API_KEY=your-virustotal-api-key
+```
+
+## 📊 Cấu trúc Database
+
+### Firestore Collections
 
 #### users
 ```javascript
 {
+  uid: string,                    // Firebase Auth UID
   email: string,
-  password: string (hashed),
   firstName: string,
   lastName: string,
-  isVerified: boolean,
+  displayName: string,
+  emailVerified: boolean,
   createdAt: timestamp,
   updatedAt: timestamp,
   profile: {
     bio: string,
-    avatar: string
+    avatar: string,
+    preferences: {
+      theme: 'light' | 'dark',
+      notifications: boolean
+    }
   },
   stats: {
     linksChecked: number,
-    joinedAt: timestamp
+    chatMessages: number,
+    joinedAt: timestamp,
+    lastActive: timestamp
   }
 }
 ```
@@ -234,95 +304,149 @@ FRONTEND_URL=http://localhost:3000
 #### links
 ```javascript
 {
+  id: string,
   userId: string,
   url: string,
-  credibilityScore: number,
-  status: string,
-  summary: string,
-  sources: array,
+  domain: string,
+  credibilityScore: number,       // 0-100
+  securityScore: number,          // 0-100 (VirusTotal)
+  overallScore: number,           // Combined score
+  status: 'safe' | 'suspicious' | 'malicious',
+  analysis: {
+    virusTotal: {
+      positives: number,
+      total: number,
+      scanDate: timestamp,
+      permalink: string
+    },
+    threats: string[],            // ['malware', 'phishing', etc.]
+    summary: string
+  },
   metadata: {
     title: string,
-    domain: string,
-    publishDate: timestamp,
-    author: string
+    description: string,
+    favicon: string,
+    publishDate: timestamp
   },
-  checkedAt: timestamp
-}
-```
-
-#### verification_tokens
-```javascript
-{
-  userId: string,
-  token: string,
-  email: string,
-  expiresAt: timestamp,
+  checkedAt: timestamp,
   createdAt: timestamp
 }
 ```
 
-#### password_reset_tokens
+#### conversations
 ```javascript
 {
+  id: string,
   userId: string,
-  token: string,
-  email: string,
-  expiresAt: timestamp,
-  createdAt: timestamp
+  title: string,
+  messages: [
+    {
+      id: string,
+      role: 'user' | 'assistant',
+      content: string,
+      timestamp: timestamp
+    }
+  ],
+  createdAt: timestamp,
+  updatedAt: timestamp
 }
 ```
 
-## 🔗 API Endpoints
+## 🔗 Tính năng chính
 
-### Authentication:
-- `POST /api/auth/register` - Đăng ký
-- `POST /api/auth/login` - Đăng nhập
-- `POST /api/auth/verify-email` - Xác minh email
-- `POST /api/auth/forgot-password` - Quên mật khẩu
-- `POST /api/auth/reset-password` - Đặt lại mật khẩu
+### 🔐 Authentication & Security
+- **Firebase Authentication** - Đăng ký, đăng nhập, xác minh email
+- **Password Management** - Đổi mật khẩu, quên mật khẩu
+- **Profile Settings** - Cập nhật thông tin cá nhân
+- **Session Management** - Tự động logout khi hết hạn
 
-### Users:
-- `GET /api/users/profile` - Lấy thông tin profile
-- `PUT /api/users/profile` - Cập nhật profile
-- `GET /api/users/dashboard` - Lấy dữ liệu dashboard
-- `DELETE /api/users/account` - Xóa tài khoản
+### 🔍 URL Security Checking
+- **Real-time Analysis** - Kiểm tra URL ngay lập tức
+- **VirusTotal Integration** - Quét với 70+ antivirus engines
+- **Security Scoring** - Điểm bảo mật từ 0-100
+- **Threat Detection** - Phát hiện malware, phishing, scam
+- **History Tracking** - Lưu lịch sử kiểm tra
 
-### Links:
-- `POST /api/links/check` - Kiểm tra link
-- `GET /api/links/history` - Lịch sử kiểm tra
-- `GET /api/links/:linkId` - Chi tiết kết quả
-- `DELETE /api/links/:linkId` - Xóa kết quả
+### 🤖 AI Security Assistant
+- **OpenAI Integration** - Chatbot tư vấn bảo mật
+- **Security Guidance** - Hướng dẫn phòng chống lừa đảo
+- **Quick Replies** - Câu trả lời nhanh cho tình huống phổ biến
+- **Conversation History** - Lưu lịch sử chat
 
-## 🧪 Testing
+### 📊 Dashboard & Analytics
+- **Personal Dashboard** - Tổng quan hoạt động cá nhân
+- **Statistics** - Thống kê links đã kiểm tra, tin nhắn chat
+- **Recent Activity** - Hoạt động gần đây
+- **Security Insights** - Phân tích xu hướng bảo mật
 
-```bash
-# Backend tests
-cd backup/server
-npm test
+## 🎨 UI/UX Features
 
-# Frontend tests
-cd backup/client
-npm test
-```
+### 🌓 Theme Support
+- **Light/Dark Mode** - Chuyển đổi theme tự động
+- **Responsive Design** - Tối ưu cho mọi thiết bị
+- **Modern UI** - TailwindCSS với animations
+- **Accessibility** - Hỗ trợ screen readers
 
-## 📝 Next Steps (Sprint 2+)
+### 📱 Mobile Experience
+- **Touch-friendly** - Tối ưu cho mobile
+- **Progressive Web App** - Có thể cài đặt như app
+- **Offline Support** - Hoạt động khi mất mạng
+- **Fast Loading** - Tối ưu performance
 
-- Community features
-- Advanced filtering
-- Expert verification
-- Chatbot integration
-- Admin panel
-- Mobile app
-- Advanced analytics
+## 🧪 Testing & Quality
+
+### Code Quality
+- **ESLint** - Code linting
+- **Prettier** - Code formatting
+- **TypeScript** - Type safety (optional)
+- **Error Boundaries** - Graceful error handling
+
+### Testing Strategy
+- **Unit Tests** - Component testing
+- **Integration Tests** - API testing
+- **E2E Tests** - User flow testing
+- **Security Tests** - Vulnerability scanning
+
+## 🚀 Roadmap
+
+### Phase 1 (Completed) ✅
+- ✅ User authentication
+- ✅ URL security checking
+- ✅ AI chatbot integration
+- ✅ Modern UI/UX
+
+### Phase 2 (Planned)
+- [ ] Advanced threat intelligence
+- [ ] Community reporting
+- [ ] Browser extension
+- [ ] Mobile app
+
+### Phase 3 (Future)
+- [ ] Enterprise features
+- [ ] API for developers
+- [ ] Advanced analytics
+- [ ] Machine learning integration
 
 ## 🤝 Contributing
 
-1. Fork the repository
-2. Create feature branch
-3. Commit changes
-4. Push to branch
-5. Create Pull Request
+Chúng tôi hoan nghênh mọi đóng góp! Vui lòng:
+
+1. Fork repository
+2. Tạo feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to branch (`git push origin feature/AmazingFeature`)
+5. Tạo Pull Request
 
 ## 📄 License
 
-MIT License - see LICENSE file for details
+Dự án này được phân phối dưới giấy phép MIT. Xem file `LICENSE` để biết thêm chi tiết.
+
+## 📞 Support
+
+- **Website**: [https://factcheck-1d6e8.web.app](https://factcheck-1d6e8.web.app)
+- **Issues**: [GitHub Issues](https://github.com/VinkRasengan/backup/issues)
+- **Email**: support@factcheck.com
+
+---
+
+**Made with ❤️ by FactCheck Team**

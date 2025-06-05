@@ -113,3 +113,30 @@ firestore-debug.log
 # Temporary files
 tmp/
 temp/
+
+# Documentation and test files (generated)
+*_GUIDE.md
+*_FIX.md
+test-*.js
+deploy-*.sh
+deploy-*.bat
+setup-*.sh
+setup-*.bat
+
+# API keys and sensitive data
+*.key
+*.pem
+service-account-*.json
+
+# Build artifacts
+*.zip
+*.tar
+*.rar
+
+# Editor files
+*.sublime-*
+.atom/
+
+# Local development
+.env.backup
+.env.example.local
