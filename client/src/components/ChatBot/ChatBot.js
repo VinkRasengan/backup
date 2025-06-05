@@ -91,12 +91,11 @@ const ChatBot = () => {
       return 'bottom-2 right-4 sm:bottom-4 sm:right-6 w-24 h-20 cursor-pointer';
     }
 
-    // Kích thước cố định cho layout ổn định
-    const height = showQuickReplies
-      ? 'h-[min(700px,calc(100vh-2rem))]'
-      : 'h-[min(600px,calc(100vh-2rem))]';
+    // Kích thước cố định để tránh layout shift
+    const height = 'h-[500px]';
+    const maxHeight = 'max-h-[calc(100vh-2rem)]';
 
-    return `bottom-2 right-4 w-96 max-w-[calc(100vw-2rem)] ${height} sm:w-96 sm:bottom-4 sm:right-6`;
+    return `bottom-2 right-4 w-96 max-w-[calc(100vw-2rem)] ${height} ${maxHeight} sm:w-96 sm:bottom-4 sm:right-6`;
   };
 
   return (
@@ -187,8 +186,13 @@ const ChatBot = () => {
             {/* Content - chỉ hiển thị khi không minimize */}
             {!isMinimized && (
               <div className="flex flex-col flex-1 min-h-0">
-                {/* Messages Area - Flexbox layout ổn định */}
-                <div className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-transparent min-h-0">
+                {/* Messages Area - Flexible height */}
+                <div
+                  className="flex-1 overflow-y-auto p-3 space-y-3 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-transparent min-h-0"
+                  style={{
+                    maxHeight: showQuickReplies ? '240px' : '360px'
+                  }}
+                >
                   {messages.map((message) => (
                     <ChatMessage key={message.id} message={message} />
                   ))}
@@ -223,15 +227,15 @@ const ChatBot = () => {
                   <div ref={messagesEndRef} />
                 </div>
 
-                {/* Quick Replies - Conditional rendering */}
+                {/* Quick Replies - Compact design */}
                 {showQuickReplies && (
-                  <div className="flex-shrink-0">
+                  <div className="flex-shrink-0 px-3 py-2">
                     <QuickReplies onQuickReply={handleQuickReply} disabled={isTyping} />
                   </div>
                 )}
 
-                {/* Input Area - Fixed at bottom */}
-                <div className="flex-shrink-0 border-t border-gray-200 dark:border-gray-700 p-4 bg-white dark:bg-gray-800 rounded-b-2xl">
+                {/* Input Area - Compact design */}
+                <div className="flex-shrink-0 border-t border-gray-200 dark:border-gray-700 p-3 bg-white dark:bg-gray-800 rounded-b-2xl">
                   <ChatInput onSendMessage={handleSendMessage} disabled={isTyping} />
                 </div>
               </div>
