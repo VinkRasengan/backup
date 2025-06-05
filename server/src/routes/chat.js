@@ -24,14 +24,19 @@ try {
 // Try to load chat controller with error handling
 let chatController;
 try {
-  chatController = require('../controllers/chatController');
-  console.log('✅ Chat controller loaded successfully');
-} catch (error) {
-  console.error('❌ Chat controller failed to load:', error.message);
-  console.error('Stack:', error.stack);
+  // Try simple chat controller first (no Firebase dependency)
+  chatController = require('../controllers/simpleChatController');
+  console.log('✅ Simple chat controller loaded successfully');
+} catch (simpleError) {
+  console.warn('⚠️ Simple chat controller failed, trying original:', simpleError.message);
+  try {
+    chatController = require('../controllers/chatController');
+    console.log('✅ Original chat controller loaded successfully');
+  } catch (error) {
+    console.error('❌ Both chat controllers failed to load:', error.message);
 
-  // Fallback controller (no Firebase dependency)
-  chatController = {
+    // Fallback controller (no dependencies)
+    chatController = {
     getConversationStarters: (req, res) => {
       res.json({
         starters: [

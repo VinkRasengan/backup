@@ -150,7 +150,7 @@ try {
   }
 
   if (userRoutes) app.use('/api/users', authenticateToken, userRoutes);
-  if (linkRoutes) app.use('/api/links', authenticateToken, linkRoutes);
+  if (linkRoutes) app.use('/api/links', linkRoutes); // Remove auth requirement for some link endpoints
 } catch (error) {
   console.error('❌ Error loading main routes:', error.message);
 }
@@ -163,6 +163,38 @@ app.get('/api/chat/test', (req, res) => {
     timestamp: new Date().toISOString(),
     environment: process.env.NODE_ENV
   });
+});
+
+// Test OpenAI configuration
+app.get('/api/chat/test-openai', async (req, res) => {
+  try {
+    const openaiService = require('./services/openaiService');
+    const isConfigured = openaiService.isConfigured();
+
+    if (!isConfigured) {
+      return res.json({
+        status: 'NOT_CONFIGURED',
+        message: 'OpenAI API key not configured',
+        configured: false
+      });
+    }
+
+    // Test a simple message
+    const testResponse = await openaiService.sendMessage('Hello, this is a test message');
+
+    res.json({
+      status: 'OK',
+      message: 'OpenAI API working!',
+      configured: true,
+      testResponse: testResponse.success ? 'Success' : testResponse.error
+    });
+  } catch (error) {
+    res.json({
+      status: 'ERROR',
+      message: 'OpenAI test failed',
+      error: error.message
+    });
+  }
 });
 
 // Chat routes (essential for frontend) - Load separately with detailed error handling
