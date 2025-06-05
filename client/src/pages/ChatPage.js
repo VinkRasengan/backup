@@ -48,7 +48,12 @@ const ChatPage = () => {
   const [newMessage, setNewMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isSending, setIsSending] = useState(false);
-  const [conversationStarters, setConversationStarters] = useState([]);
+  const [conversationStarters, setConversationStarters] = useState([
+    "Làm thế nào để nhận biết email lừa đảo?",
+    "Cách tạo mật khẩu mạnh và an toàn?",
+    "Dấu hiệu nhận biết website giả mạo?",
+    "Cách kiểm tra link có an toàn không?"
+  ]);
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
 
@@ -89,9 +94,12 @@ const ChatPage = () => {
   const loadConversationStarters = async () => {
     try {
       const response = await chatAPI.getConversationStarters();
-      setConversationStarters(response.data.starters);
+      if (response.data.starters && response.data.starters.length > 0) {
+        setConversationStarters(response.data.starters);
+      }
     } catch (error) {
       console.error('Error loading conversation starters:', error);
+      // Keep default starters if API fails
     }
   };
 
@@ -222,35 +230,25 @@ const ChatPage = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
-      <div className="max-w-7xl mx-auto p-4 md:p-8 h-screen flex flex-col">
+      <div className="max-w-7xl mx-auto p-4 md:p-6 h-screen flex flex-col">
         {/* Page Header */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className="text-center mb-6 flex-shrink-0"
+          className="text-center mb-4 flex-shrink-0"
         >
-          <div className="mx-auto w-16 h-16 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center mb-4">
-            <Shield className="w-8 h-8 text-white" />
+          <div className="mx-auto w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center mb-3">
+            <Shield className="w-6 h-6 text-white" />
           </div>
-          <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-2">
-            Trợ lý Bảo mật AI
+          <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-2">
+            FactCheck AI
           </h1>
-          <p className="text-gray-600 dark:text-gray-300 text-lg">
-            Hỏi đáp về bảo mật mạng, phishing, malware và các mối đe dọa trực tuyến
+          <p className="text-gray-600 dark:text-gray-300 text-sm md:text-base">
+            Trợ lý bảo mật thông minh - Phân tích mối đe dọa & Kiểm tra độ tin cậy
           </p>
 
-          {/* Production Mode Notice - Only show in development */}
-          {process.env.NODE_ENV === 'development' && (
-            <div className="mt-4 p-3 bg-blue-100 dark:bg-blue-900/20 rounded-lg border border-blue-300 dark:border-blue-700 max-w-md mx-auto">
-              <div className="flex items-center gap-2 mb-1">
-                <span className="text-sm font-medium text-blue-800 dark:text-blue-200">🔧 Development Mode</span>
-              </div>
-              <p className="text-xs text-blue-700 dark:text-blue-300">
-                Đang chạy ở chế độ development với fallback sang mock API khi cần thiết.
-              </p>
-            </div>
-          )}
+
 
           {/* Debug Panel */}
           {process.env.NODE_ENV === 'development' && (
@@ -374,36 +372,36 @@ const ChatPage = () => {
                 </CardTitle>
               </CardHeader>
 
-              {/* Messages Area */}
-              <CardContent className="flex-1 overflow-y-auto p-4 min-h-0">
+              {/* Messages Area - Optimized layout */}
+              <CardContent className="flex-1 overflow-y-auto p-3 min-h-0" style={{ maxHeight: 'calc(100vh - 280px)' }}>
                 {messages.length === 0 && !currentConversation && (
                   <div className="h-full flex flex-col items-center justify-center">
-                    <Bot className="w-16 h-16 text-blue-500 mb-4" />
-                    <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">
-                      Chào mừng đến với Trợ lý Bảo mật AI!
+                    <Bot className="w-12 h-12 text-blue-500 mb-3" />
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">
+                      Chào mừng đến với FactCheck AI! 🛡️
                     </h3>
-                    <p className="text-gray-600 dark:text-gray-300 text-center mb-6 max-w-md">
-                      Tôi có thể giúp bạn về các vấn đề bảo mật mạng, phishing, malware và nhiều hơn nữa.
+                    <p className="text-gray-600 dark:text-gray-300 text-center mb-4 max-w-md text-sm">
+                      Tôi là chuyên gia bảo mật AI, sẵn sàng giúp bạn phân tích mối đe dọa và kiểm tra độ tin cậy.
                     </p>
                     
                     {/* Conversation Starters */}
-                    <div className="w-full max-w-2xl">
-                      <div className="flex items-center gap-2 mb-4">
-                        <Lightbulb className="w-5 h-5 text-yellow-500" />
-                        <span className="font-medium text-gray-900 dark:text-gray-100">
-                          Gợi ý câu hỏi:
+                    <div className="w-full max-w-xl">
+                      <div className="flex items-center gap-2 mb-3">
+                        <Lightbulb className="w-4 h-4 text-yellow-500" />
+                        <span className="font-medium text-gray-900 dark:text-gray-100 text-sm">
+                          Câu hỏi gợi ý:
                         </span>
                       </div>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        {conversationStarters.slice(0, 6).map((starter, index) => (
+                      <div className="grid grid-cols-1 gap-2">
+                        {conversationStarters.slice(0, 4).map((starter, index) => (
                           <motion.button
-                            key={index}
-                            whileHover={{ scale: 1.02 }}
-                            whileTap={{ scale: 0.98 }}
-                            className="p-3 text-left bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded-lg border border-blue-200 dark:border-blue-700 transition-colors"
+                            key={`starter-${index}`}
+                            whileHover={{ scale: 1.01 }}
+                            whileTap={{ scale: 0.99 }}
+                            className="p-2.5 text-left bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded-lg border border-blue-200 dark:border-blue-700 transition-colors"
                             onClick={() => sendMessage(starter)}
                           >
-                            <span className="text-sm text-blue-800 dark:text-blue-200">
+                            <span className="text-xs text-blue-800 dark:text-blue-200">
                               {starter}
                             </span>
                           </motion.button>
@@ -414,40 +412,40 @@ const ChatPage = () => {
                 )}
 
                 {/* Messages */}
-                <div className="space-y-4">
+                <div className="space-y-3">
                   <AnimatePresence>
                     {messages.map((message, index) => (
                       <motion.div
-                        key={index}
-                        initial={{ opacity: 0, y: 20 }}
+                        key={`message-${index}-${message.createdAt}`}
+                        initial={{ opacity: 0, y: 15 }}
                         animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -20 }}
-                        transition={{ duration: 0.3 }}
+                        exit={{ opacity: 0, y: -15 }}
+                        transition={{ duration: 0.2 }}
                         className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
                       >
-                        <div className={`flex items-start gap-3 max-w-[80%] ${
+                        <div className={`flex items-start gap-2 max-w-[85%] ${
                           message.role === 'user' ? 'flex-row-reverse' : 'flex-row'
                         }`}>
-                          <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                            message.role === 'user' 
-                              ? 'bg-blue-500' 
-                              : 'bg-purple-500'
+                          <div className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 ${
+                            message.role === 'user'
+                              ? 'bg-blue-500'
+                              : 'bg-gradient-to-r from-purple-500 to-blue-500'
                           }`}>
                             {message.role === 'user' ? (
-                              <User className="w-4 h-4 text-white" />
+                              <User className="w-3.5 h-3.5 text-white" />
                             ) : (
-                              <Bot className="w-4 h-4 text-white" />
+                              <Bot className="w-3.5 h-3.5 text-white" />
                             )}
                           </div>
-                          <div className={`rounded-lg p-4 ${
+                          <div className={`rounded-2xl px-3 py-2 ${
                             message.role === 'user'
-                              ? 'bg-blue-500 text-white'
-                              : 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100'
+                              ? 'bg-blue-500 text-white rounded-br-md'
+                              : 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-bl-md'
                           }`}>
-                            <p className="text-sm whitespace-pre-wrap">{message.content}</p>
-                            <p className={`text-xs mt-2 ${
-                              message.role === 'user' 
-                                ? 'text-blue-100' 
+                            <p className="text-sm whitespace-pre-wrap leading-relaxed">{message.content}</p>
+                            <p className={`text-xs mt-1.5 ${
+                              message.role === 'user'
+                                ? 'text-blue-100'
                                 : 'text-gray-500 dark:text-gray-400'
                             }`}>
                               {formatTime(message.createdAt)}
@@ -462,23 +460,23 @@ const ChatPage = () => {
               </CardContent>
 
               {/* Message Input */}
-              <div className="p-4 border-t border-gray-200 dark:border-gray-700 flex-shrink-0 bg-white dark:bg-gray-800">
+              <div className="p-3 border-t border-gray-200 dark:border-gray-700 flex-shrink-0 bg-white dark:bg-gray-800">
                 <form
                   onSubmit={(e) => {
                     e.preventDefault();
                     sendMessage();
                   }}
-                  className="flex gap-3 items-end"
+                  className="flex gap-2 items-end"
                 >
                   <div className="flex-1">
                     <ChatInput
                       ref={inputRef}
                       value={newMessage}
                       onChange={(e) => setNewMessage(e.target.value)}
-                      placeholder="Nhập câu hỏi về bảo mật..."
-                      className="w-full h-11"
+                      placeholder="Hỏi về bảo mật, phishing, malware..."
+                      className="w-full h-10 text-sm"
                       disabled={isSending}
-                      maxLength={1000}
+                      maxLength={500}
                       onKeyDown={(e) => {
                         if (e.key === 'Enter' && !e.shiftKey) {
                           e.preventDefault();
@@ -489,14 +487,14 @@ const ChatPage = () => {
                       spellCheck="false"
                     />
                     <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                      Chỉ hỏi về các vấn đề bảo mật để bảo vệ bản thân. Tối đa 1000 ký tự.
+                      💡 Hỏi về bảo mật, kiểm tra link, phân tích mối đe dọa
                     </p>
                   </div>
                   <Button
                     type="submit"
                     loading={isSending}
                     disabled={!newMessage.trim() || isSending}
-                    className="px-4 py-2 h-[44px] flex-shrink-0"
+                    className="px-3 py-2 h-[40px] flex-shrink-0 text-sm"
                   >
                     {!isSending && <Send className="w-4 h-4" />}
                   </Button>

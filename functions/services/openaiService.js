@@ -29,6 +29,10 @@ Chỉ trả lời các câu hỏi liên quan đến bảo mật mạng, an toàn
   }
 
   isConfigured() {
+    // Force fallback mode for Firebase free plan
+    if (process.env.FIREBASE_FREE_PLAN === 'true') {
+      return false;
+    }
     // Try to get API key from environment variables or Firebase config
     const apiKey = process.env.OPENAI_API_KEY ||
                    (typeof functions !== 'undefined' && functions.config().openai?.api_key);

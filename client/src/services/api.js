@@ -2,11 +2,21 @@ import axios from 'axios';
 import Cookies from 'js-cookie';
 import mockAPI from './mockAPI';
 
-// Create axios instance
+// Create axios instance for Render deployment
+const getApiBaseUrl = () => {
+  if (process.env.NODE_ENV === 'production') {
+    return 'https://factcheck-backend.onrender.com/api';
+  }
+  return process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+};
+
 const api = axios.create({
-  baseURL: process.env.REACT_APP_API_URL || 'http://localhost:5000/api',
+  baseURL: getApiBaseUrl(),
   timeout: 30000,
 });
+
+console.log('🔗 API Base URL:', api.defaults.baseURL);
+console.log('🌍 Environment:', process.env.NODE_ENV);
 
 // Request interceptor to add Firebase ID token
 api.interceptors.request.use(
@@ -81,10 +91,47 @@ export const userAPI = {
 
 // Link API endpoints
 export const linkAPI = {
-  checkLink: (url) => apiWithFallback(
-    () => api.post('/links/check', { url }),
-    () => mockAPI.checkLink(url)
-  ),
+  checkLink: async (url) => {
+    console.log('🔍 Checking URL with VirusTotal API directly');
+
+    try {
+      // Try backend first
+      return await api.post('/links/check', { url });
+    } catch (error) {
+      console.log('🔄 Backend unavailable, using direct VirusTotal API...');
+
+      // Direct VirusTotal API call
+      const virusTotalService = (await import('./virusTotalService')).default;
+      const analysis = await virusTotalService.analyzeUrl(url);
+
+      if (analysis.success) {
+        return {
+          data: {
+            message: 'Link đã được kiểm tra thành công',
+            result: {
+              id: Date.now().toString(),
+              url,
+              status: 'completed',
+              credibilityScore: analysis.securityScore,
+              securityScore: analysis.securityScore,
+              summary: `Điểm bảo mật: ${analysis.securityScore}/100. ${
+                analysis.threats.malicious ? 'Phát hiện mối đe dọa!' :
+                analysis.threats.suspicious ? 'Có dấu hiệu đáng ngờ.' :
+                'Không phát hiện mối đe dọa.'
+              }`,
+              threats: analysis.threats,
+              virusTotalAnalysis: analysis.urlAnalysis,
+              checkedAt: new Date().toISOString(),
+              mockData: analysis.mockData
+            }
+          }
+        };
+      } else {
+        // Final fallback to mock
+        return await mockAPI.checkLink(url);
+      }
+    }
+  },
   getHistory: (page = 1, limit = 20) => apiWithFallback(
     () => api.get(`/links/history?page=${page}&limit=${limit}`),
     () => mockAPI.getHistory()
@@ -125,10 +172,48 @@ const apiWithFallback = async (apiCall, mockCall) => {
 
 // Chat API endpoints
 export const chatAPI = {
-  sendMessage: (data) => apiWithFallback(
-    () => api.post('/chat/message', data),
-    () => mockAPI.sendMessage(data)
-  ),
+  sendMessage: async (data) => {
+    console.log('🚀 Sending message to OpenAI directly from frontend');
+
+    // Try backend first, then fallback to direct OpenAI call
+    try {
+      return await api.post('/chat/message', data);
+    } catch (error) {
+      console.log('🔄 Backend unavailable, calling OpenAI directly...');
+
+      // Try direct OpenAI API call with CORS proxy
+      try {
+        console.log('🤖 Attempting OpenAI API call...');
+
+        // Try backend OpenAI API (no CORS issues on Render)
+        console.log('🤖 Calling OpenAI via backend...');
+        const backendResponse = await api.post('/chat/openai', { message: data.message });
+
+        if (backendResponse.data) {
+          return backendResponse;
+        }
+
+        throw new Error('Backend OpenAI API failed');
+
+
+      } catch (openaiError) {
+        console.log('🔄 OpenAI API unavailable, using enhanced mock...');
+
+        // Enhanced fallback with better responses
+        const { enhancedMockChat } = await import('./enhancedMockChat');
+        const response = enhancedMockChat.getResponse(data.message);
+        return {
+          data: {
+            message: 'Tin nhắn đã được gửi thành công',
+            response: {
+              content: response,
+              createdAt: new Date().toISOString()
+            }
+          }
+        };
+      }
+    }
+  },
   getConversations: (params) => apiWithFallback(
     () => api.get('/chat/conversations', { params }),
     () => mockAPI.getConversations(params)

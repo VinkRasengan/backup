@@ -7,6 +7,7 @@ const { validateChatMessage, validatePagination } = require('../middleware/valid
 // Public endpoints (no auth required)
 router.get('/starters', chatController.getConversationStarters);
 router.get('/tips', chatController.getSecurityTips);
+router.post('/openai', validateChatMessage, chatController.sendOpenAIMessage);
 
 // Protected endpoints (require authentication)
 router.use(authenticateToken);

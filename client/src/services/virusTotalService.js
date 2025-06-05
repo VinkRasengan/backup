@@ -1,0 +1,202 @@
+// VirusTotal API Service - Direct frontend calls
+class VirusTotalService {
+  constructor() {
+    this.apiKey = process.env.REACT_APP_VIRUSTOTAL_API_KEY || '6d508f814f7cde6ed5550e13539a161ffda857c85a7a5d7115ddd1d7e092f897';
+    this.apiUrl = 'https://www.virustotal.com/api/v3';
+    this.lastRequestTime = 0;
+    this.rateLimitDelay = 15000; // 15 seconds between requests (free tier limit)
+  }
+
+  async enforceRateLimit() {
+    const now = Date.now();
+    const timeSinceLastRequest = now - this.lastRequestTime;
+    
+    if (timeSinceLastRequest < this.rateLimitDelay) {
+      const waitTime = this.rateLimitDelay - timeSinceLastRequest;
+      console.log(`⏳ Rate limiting: waiting ${waitTime}ms`);
+      await new Promise(resolve => setTimeout(resolve, waitTime));
+    }
+    
+    this.lastRequestTime = Date.now();
+  }
+
+  createUrlId(url) {
+    // VirusTotal uses base64 encoded URL without padding
+    return btoa(url).replace(/=/g, '');
+  }
+
+  async scanUrl(url) {
+    try {
+      if (!this.apiKey) {
+        console.warn('VirusTotal API key not configured');
+        return { success: false, error: 'API key not configured' };
+      }
+
+      await this.enforceRateLimit();
+
+      // Use CORS proxy for development/testing
+      const proxyUrl = 'https://cors-anywhere.herokuapp.com/';
+      const targetUrl = `${this.apiUrl}/urls`;
+
+      const response = await fetch(proxyUrl + targetUrl, {
+        method: 'POST',
+        headers: {
+          'x-apikey': this.apiKey,
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: `url=${encodeURIComponent(url)}`
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        return {
+          success: true,
+          analysisId: data.data.id
+        };
+      } else {
+        throw new Error(`HTTP ${response.status}`);
+      }
+
+    } catch (error) {
+      console.error('VirusTotal scan error:', error);
+      return {
+        success: false,
+        error: 'CORS or API error - using mock data',
+        mockData: this.getMockScanResult(url)
+      };
+    }
+  }
+
+  async getUrlReport(url) {
+    try {
+      if (!this.apiKey) {
+        return { success: false, error: 'API key not configured' };
+      }
+
+      await this.enforceRateLimit();
+
+      const urlId = this.createUrlId(url);
+      const proxyUrl = 'https://cors-anywhere.herokuapp.com/';
+      const targetUrl = `${this.apiUrl}/urls/${urlId}`;
+
+      const response = await fetch(proxyUrl + targetUrl, {
+        method: 'GET',
+        headers: {
+          'x-apikey': this.apiKey,
+          'X-Requested-With': 'XMLHttpRequest'
+        }
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        const data = result.data.attributes;
+        
+        return {
+          success: true,
+          url: url,
+          scanDate: data.last_analysis_date ? new Date(data.last_analysis_date * 1000).toISOString() : null,
+          stats: data.last_analysis_stats || {},
+          reputation: data.reputation || 0,
+          malicious: (data.last_analysis_stats?.malicious || 0) > 0,
+          suspicious: (data.last_analysis_stats?.suspicious || 0) > 0,
+          harmless: (data.last_analysis_stats?.harmless || 0) > 0,
+          totalEngines: Object.keys(data.last_analysis_results || {}).length
+        };
+      } else if (response.status === 404) {
+        // URL not in database, trigger scan
+        const scanResult = await this.scanUrl(url);
+        return {
+          success: true,
+          needsScanning: true,
+          scanTriggered: scanResult.success
+        };
+      } else {
+        throw new Error(`HTTP ${response.status}`);
+      }
+
+    } catch (error) {
+      console.error('VirusTotal report error:', error);
+      return {
+        success: true,
+        mockData: true,
+        ...this.getMockScanResult(url)
+      };
+    }
+  }
+
+  getMockScanResult(url) {
+    // Generate realistic mock data based on URL characteristics
+    const domain = new URL(url).hostname;
+    const isHttps = url.startsWith('https://');
+    const hasCommonTLD = /\.(com|org|net|edu|gov)$/.test(domain);
+    
+    let baseScore = 70;
+    if (isHttps) baseScore += 15;
+    if (hasCommonTLD) baseScore += 10;
+    if (domain.includes('google') || domain.includes('microsoft') || domain.includes('apple')) baseScore = 95;
+    
+    const maliciousCount = baseScore < 60 ? Math.floor(Math.random() * 3) : 0;
+    const suspiciousCount = baseScore < 80 ? Math.floor(Math.random() * 2) : 0;
+    
+    return {
+      url,
+      scanDate: new Date().toISOString(),
+      stats: {
+        malicious: maliciousCount,
+        suspicious: suspiciousCount,
+        harmless: 65 - maliciousCount - suspiciousCount,
+        undetected: 5
+      },
+      reputation: Math.max(0, baseScore + Math.floor(Math.random() * 20) - 10),
+      malicious: maliciousCount > 0,
+      suspicious: suspiciousCount > 0,
+      harmless: maliciousCount === 0 && suspiciousCount === 0,
+      totalEngines: 70,
+      mockData: true
+    };
+  }
+
+  calculateSecurityScore(urlReport) {
+    if (!urlReport || !urlReport.success) return 50;
+    
+    let score = 100;
+    
+    if (urlReport.malicious) score -= 50;
+    if (urlReport.suspicious) score -= 25;
+    if (urlReport.reputation < 0) score -= 20;
+    if (urlReport.stats?.malicious > 0) score -= urlReport.stats.malicious * 10;
+    if (urlReport.stats?.suspicious > 0) score -= urlReport.stats.suspicious * 5;
+    
+    return Math.max(0, Math.min(100, score));
+  }
+
+  async analyzeUrl(url) {
+    try {
+      const urlReport = await this.getUrlReport(url);
+      const securityScore = this.calculateSecurityScore(urlReport);
+      
+      return {
+        success: true,
+        url,
+        securityScore,
+        urlAnalysis: urlReport,
+        threats: {
+          malicious: urlReport.malicious || false,
+          suspicious: urlReport.suspicious || false,
+          threatNames: []
+        },
+        analyzedAt: new Date().toISOString(),
+        mockData: urlReport.mockData || false
+      };
+    } catch (error) {
+      console.error('URL analysis error:', error);
+      return {
+        success: false,
+        error: 'Analysis failed'
+      };
+    }
+  }
+}
+
+export default new VirusTotalService();

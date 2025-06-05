@@ -1,0 +1,37 @@
+{
+  "version": 2,
+  "name": "factcheck-app",
+  "builds": [
+    {
+      "src": "client/package.json",
+      "use": "@vercel/static-build",
+      "config": {
+        "distDir": "build"
+      }
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "/api/$1"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/client/$1"
+    }
+  ],
+  "functions": {
+    "api/openai.js": {
+      "maxDuration": 30
+    },
+    "api/virustotal.js": {
+      "maxDuration": 30
+    },
+    "api/chat.js": {
+      "maxDuration": 30
+    }
+  },
+  "env": {
+    "NODE_ENV": "production"
+  }
+}

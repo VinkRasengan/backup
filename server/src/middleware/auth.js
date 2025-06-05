@@ -1,16 +1,29 @@
-// Use production config based on environment
-const firebaseConfig = process.env.NODE_ENV === 'production'
-  ? require('../config/firebase-production')
-  : require('../config/firebase-emulator');
-
-const { auth, db, collections } = firebaseConfig;
+const { auth, db, collections } = require('../config/firebase');
 
 const authenticateToken = async (req, res, next) => {
   try {
     const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
+    const token = authHeader?.split(' ')[1]; // Bearer TOKEN
 
     if (!token) {
+      // In development mode, allow requests without token for testing
+      if (process.env.NODE_ENV === 'development') {
+        req.user = {
+          userId: 'dev-user-123',
+          email: 'dev@example.com',
+          emailVerified: true,
+          firstName: 'Dev',
+          lastName: 'User',
+          isVerified: true,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          stats: {
+            linksChecked: 0
+          }
+        };
+        return next();
+      }
+
       return res.status(401).json({
         error: 'Access token required',
         code: 'TOKEN_MISSING'
@@ -58,6 +71,25 @@ const authenticateToken = async (req, res, next) => {
     next();
   } catch (error) {
     console.error('Token verification error:', error);
+
+    // In development mode, fallback to mock user
+    if (process.env.NODE_ENV === 'development') {
+      req.user = {
+        userId: 'dev-user-123',
+        email: 'dev@example.com',
+        emailVerified: true,
+        firstName: 'Dev',
+        lastName: 'User',
+        isVerified: true,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        stats: {
+          linksChecked: 0
+        }
+      };
+      return next();
+    }
+
     return res.status(403).json({
       error: 'Invalid or expired token',
       code: 'TOKEN_INVALID'
@@ -68,7 +100,7 @@ const authenticateToken = async (req, res, next) => {
 const optionalAuth = async (req, res, next) => {
   try {
     const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1];
+    const token = authHeader?.split(' ')[1];
 
     if (!token) {
       req.user = null;
@@ -95,6 +127,7 @@ const optionalAuth = async (req, res, next) => {
 
     next();
   } catch (error) {
+    console.error('Optional auth error:', error);
     req.user = null;
     next();
   }

@@ -4,7 +4,7 @@ import { MessageCircle, X, Minimize2 } from 'lucide-react';
 import ChatMessage from './ChatMessage';
 import ChatInput from './ChatInput';
 import QuickReplies from './QuickReplies';
-import { chatbotService } from '../../services/chatbotService';
+import { chatAPI } from '../../services/api';
 
 const ChatBot = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -46,23 +46,39 @@ const ChatBot = () => {
     setMessages(prev => [...prev, userMessage]);
     setIsTyping(true);
 
-    try {
-      // Get bot response
-      const botResponse = await chatbotService.getResponse(text.trim());
-      
-      setTimeout(() => {
-        const botMessage = {
-          id: Date.now() + 1,
-          text: botResponse,
-          isBot: true,
-          timestamp: new Date()
-        };
-        
-        setMessages(prev => [...prev, botMessage]);
-        setIsTyping(false);
-      }, 1000 + Math.random() * 1000); // Random delay 1-2 seconds
+        try {
+      // Send message to API
+      console.log('📤 Sending to API:', text.trim());
+      const response = await chatAPI.sendMessage({
+        message: text.trim()
+      });
+
+      console.log('✅ API Response:', response.data);
+
+      const botMessage = {
+        id: Date.now() + 1,
+        text: response.data.response.content,
+        isBot: true,
+        timestamp: new Date()
+      };
+
+      setMessages(prev => [...prev, botMessage]);
+      setIsTyping(false);
     } catch (error) {
-      console.error('Error getting bot response:', error);
+      console.error('❌ API Error:', error);
+
+      // Fallback to enhanced mock response
+      const { enhancedMockChat } = await import('../../services/enhancedMockChat');
+      const fallbackResponse = enhancedMockChat.getResponse(text.trim());
+
+      const botMessage = {
+        id: Date.now() + 1,
+        text: fallbackResponse,
+        isBot: true,
+        timestamp: new Date()
+      };
+
+      setMessages(prev => [...prev, botMessage]);
       setIsTyping(false);
     }
   };

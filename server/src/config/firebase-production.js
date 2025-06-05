@@ -35,7 +35,11 @@ const collections = {
   VERIFICATION_TOKENS: 'verification_tokens',
   PASSWORD_RESET_TOKENS: 'password_reset_tokens',
   CONVERSATIONS: 'conversations',
-  CHAT_MESSAGES: 'chat_messages'
+  CHAT_MESSAGES: 'chat_messages',
+  VOTES: 'votes',
+  COMMENTS: 'comments',
+  REPORTS: 'reports',
+  ADMIN_NOTIFICATIONS: 'admin_notifications'
 };
 
 module.exports = {

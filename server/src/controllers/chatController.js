@@ -1,9 +1,4 @@
-// Use production config based on environment
-const firebaseConfig = process.env.NODE_ENV === 'production'
-  ? require('../config/firebase-production')
-  : require('../config/firebase-emulator');
-
-const { db, collections, admin } = firebaseConfig;
+const { db, collections, admin } = require('../config/firebase');
 const openaiService = require('../services/openaiService');
 
 class ChatController {
@@ -179,54 +174,40 @@ class ChatController {
       const userId = req.user.userId;
       const { page = 1, limit = 20 } = req.query;
 
-      const offset = (page - 1) * limit;
+      console.log('🔍 Getting conversations for user:', userId);
 
-      // Get conversations
-      let query = db.collection(collections.CONVERSATIONS)
+      // Get conversations with simpler query
+      const conversationsQuery = await db.collection(collections.CONVERSATIONS)
         .where('userId', '==', userId)
         .orderBy('updatedAt', 'desc')
-        .limit(parseInt(limit));
-
-      if (offset > 0) {
-        const previousQuery = await db.collection(collections.CONVERSATIONS)
-          .where('userId', '==', userId)
-          .orderBy('updatedAt', 'desc')
-          .limit(offset)
-          .get();
-
-        if (!previousQuery.empty) {
-          const lastDoc = previousQuery.docs[previousQuery.docs.length - 1];
-          query = query.startAfter(lastDoc);
-        }
-      }
-
-      const conversationsQuery = await query.get();
-
-      const conversations = conversationsQuery.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
-
-      // Get total count
-      const totalQuery = await db.collection(collections.CONVERSATIONS)
-        .where('userId', '==', userId)
+        .limit(parseInt(limit))
         .get();
 
-      const totalCount = totalQuery.size;
-      const totalPages = Math.ceil(totalCount / limit);
+      console.log('📊 Found conversations:', conversationsQuery.size);
+
+      const conversations = conversationsQuery.docs.map(doc => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          title: data.title,
+          updatedAt: data.updatedAt,
+          messageCount: data.messageCount || 0,
+          lastMessage: data.lastMessage
+        };
+      });
 
       res.json({
         conversations,
         pagination: {
           currentPage: parseInt(page),
-          totalPages,
-          totalCount,
-          hasNext: page < totalPages,
-          hasPrev: page > 1
+          totalCount: conversations.length,
+          hasNext: false,
+          hasPrev: false
         }
       });
 
     } catch (error) {
+      console.error('❌ Error getting conversations:', error);
       next(error);
     }
   }
@@ -296,9 +277,9 @@ class ChatController {
   async getSecurityTips(req, res, next) {
     try {
       const { category = 'general' } = req.query;
-      
+
       const response = await openaiService.getSecurityTips(category);
-      
+
       if (!response.success) {
         return res.status(500).json({
           error: response.error,
@@ -314,6 +295,112 @@ class ChatController {
     } catch (error) {
       next(error);
     }
+  }
+
+  // Send message to OpenAI directly (no auth required for frontend)
+  async sendOpenAIMessage(req, res, next) {
+    try {
+      const { message } = req.body;
+
+      // Validate message
+      const validation = openaiService.validateMessage(message);
+      if (!validation.valid) {
+        return res.status(400).json({
+          error: validation.error,
+          code: 'INVALID_MESSAGE'
+        });
+      }
+
+      // Send message to OpenAI without conversation history
+      const aiResponse = await openaiService.sendMessage(validation.message, []);
+
+      if (!aiResponse.success) {
+        // Fallback to mock response
+        const mockResponse = this.generateMockResponse(validation.message);
+
+        return res.json({
+          data: {
+            message: 'Phản hồi từ FactCheck AI (Offline Mode)',
+            response: {
+              content: mockResponse,
+              createdAt: new Date().toISOString(),
+              source: 'mock'
+            }
+          }
+        });
+      }
+
+      res.json({
+        data: {
+          message: 'Phản hồi từ FactCheck AI',
+          response: {
+            content: aiResponse.message,
+            createdAt: new Date().toISOString(),
+            source: 'openai'
+          }
+        }
+      });
+
+    } catch (error) {
+      // Fallback to mock response on error
+      const mockResponse = this.generateMockResponse(req.body.message || '');
+
+      res.json({
+        data: {
+          message: 'Phản hồi từ FactCheck AI (Offline Mode)',
+          response: {
+            content: mockResponse,
+            createdAt: new Date().toISOString(),
+            source: 'mock'
+          }
+        }
+      });
+    }
+  }
+
+  // Generate mock response for fallback
+  generateMockResponse(message) {
+    const lowerMessage = message.toLowerCase();
+
+    if (lowerMessage.includes('phishing') || lowerMessage.includes('lừa đảo')) {
+      return `🎣 **Nhận biết Email Phishing - FactCheck AI**
+
+**🚨 Dấu hiệu cảnh báo:**
+• **Địa chỉ gửi lạ**: vietcombank-security@gmail.com thay vì @vietcombank.com.vn
+• **Tạo áp lực**: "Tài khoản sẽ bị khóa trong 24h"
+• **Yêu cầu thông tin**: Ngân hàng KHÔNG BAO GIỜ hỏi mật khẩu qua email
+• **Link rút gọn**: bit.ly, tinyurl thay vì domain chính thức
+
+**✅ Cách phòng chống:**
+1. Luôn gõ trực tiếp website ngân hàng
+2. Kiểm tra URL có HTTPS và tên miền chính xác
+3. Gọi hotline ngân hàng để xác minh`;
+    }
+
+    if (lowerMessage.includes('mật khẩu') || lowerMessage.includes('password')) {
+      return `🔐 **Tạo Mật khẩu Siêu Mạnh - FactCheck AI**
+
+**📏 Quy tắc vàng:**
+• **Độ dài**: Tối thiểu 12 ký tự (khuyến nghị 16+)
+• **Đa dạng**: Chữ HOA, thường, số, ký tự đặc biệt
+• **Tránh**: Tên, ngày sinh, "123456", "password"
+• **Unique**: Mỗi tài khoản 1 mật khẩu riêng
+
+**🛡️ Bảo mật nâng cao:**
+• **2FA**: Google Authenticator, SMS
+• **Password Manager**: Bitwarden (miễn phí), 1Password`;
+    }
+
+    return `🛡️ **Chào bạn! Tôi là FactCheck AI**
+
+Tôi là chuyên gia bảo mật AI hàng đầu Việt Nam, sẵn sàng giúp bạn về:
+
+🔒 **Bảo mật mạng** & An toàn thông tin
+🎣 **Phishing** & Lừa đảo trực tuyến
+🦠 **Malware** & Virus
+🌐 **Kiểm tra URL** & Website
+
+Bạn có câu hỏi gì về bảo mật không?`;
   }
 }
 

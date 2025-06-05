@@ -91,6 +91,61 @@ const schemas = {
     conversationId: Joi.string().optional().allow('').messages({
       'string.base': 'ID cuộc trò chuyện không hợp lệ'
     })
+  }),
+
+  submitVote: Joi.object({
+    voteType: Joi.string().valid('trusted', 'suspicious', 'untrusted').required().messages({
+      'any.only': 'Vote type must be: trusted, suspicious, or untrusted',
+      'any.required': 'Vote type is required'
+    })
+  }),
+
+  addComment: Joi.object({
+    content: Joi.string().trim().min(1).max(1000).required().messages({
+      'string.empty': 'Comment content is required',
+      'string.min': 'Comment is too short',
+      'string.max': 'Comment must be less than 1000 characters',
+      'any.required': 'Comment content is required'
+    })
+  }),
+
+  updateComment: Joi.object({
+    content: Joi.string().trim().min(1).max(1000).required().messages({
+      'string.empty': 'Comment content is required',
+      'string.min': 'Comment is too short',
+      'string.max': 'Comment must be less than 1000 characters',
+      'any.required': 'Comment content is required'
+    })
+  }),
+
+  submitReport: Joi.object({
+    category: Joi.string().valid('fake_news', 'scam', 'malicious_content', 'spam', 'other').required().messages({
+      'any.only': 'Invalid report category',
+      'any.required': 'Report category is required'
+    }),
+    description: Joi.string().trim().min(1).max(500).required().messages({
+      'string.empty': 'Report description is required',
+      'string.min': 'Description is too short',
+      'string.max': 'Description must be less than 500 characters',
+      'any.required': 'Report description is required'
+    })
+  }),
+
+  updateReportStatus: Joi.object({
+    status: Joi.string().valid('pending', 'reviewed', 'resolved', 'dismissed').required().messages({
+      'any.only': 'Invalid status',
+      'any.required': 'Status is required'
+    }),
+    adminNotes: Joi.string().max(1000).optional().messages({
+      'string.max': 'Admin notes must be less than 1000 characters'
+    })
+  }),
+
+  updateUserRole: Joi.object({
+    role: Joi.string().valid('user', 'admin').required().messages({
+      'any.only': 'Role must be: user or admin',
+      'any.required': 'Role is required'
+    })
   })
 };
 

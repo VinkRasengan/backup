@@ -1,3 +1,4 @@
+import enhancedMockChat from './enhancedMockChat';
 // Chatbot service để xử lý logic trả lời
 class ChatbotService {
   constructor() {
@@ -88,13 +89,9 @@ class ChatbotService {
 
   // Xử lý và trả về phản hồi
   async getResponse(message) {
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 500));
-    
-    const intent = this.analyzeIntent(message);
-    const responses = this.responses[intent] || this.responses.default;
-    
-    return this.getRandomResponse(responses);
+    // Always use enhanced mock responses for now (since we can't use OpenAI on free plan)
+    // This provides better security-focused responses than basic chatbot
+    return enhancedMockChat.getResponse(message);
   }
 }
 
