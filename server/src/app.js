@@ -91,21 +91,39 @@ try {
   if (authRoutes) app.use('/api/auth', authRoutes);
   if (userRoutes) app.use('/api/users', authenticateToken, userRoutes);
   if (linkRoutes) app.use('/api/links', authenticateToken, linkRoutes);
-
-  // Chat routes (essential for frontend)
-  app.use('/api/chat', require('./routes/chat'));
-
-  // Community features routes (optional)
-  try {
-    app.use('/api/votes', authenticateToken, require('./routes/votes'));
-    app.use('/api/comments', authenticateToken, require('./routes/comments'));
-    app.use('/api/reports', authenticateToken, require('./routes/reports'));
-    app.use('/api/admin', authenticateToken, require('./routes/admin'));
-  } catch (error) {
-    console.warn('⚠️ Community routes not loaded:', error.message);
-  }
 } catch (error) {
-  console.error('❌ Error loading routes:', error.message);
+  console.error('❌ Error loading main routes:', error.message);
+}
+
+// Chat routes (essential for frontend) - Load separately with detailed error handling
+try {
+  console.log('🔄 Loading chat routes...');
+  const chatRoutes = require('./routes/chat');
+  app.use('/api/chat', chatRoutes);
+  console.log('✅ Chat routes loaded successfully');
+} catch (error) {
+  console.error('❌ CRITICAL: Chat routes failed to load:', error);
+  console.error('Stack trace:', error.stack);
+
+  // Fallback chat routes
+  app.use('/api/chat', (req, res) => {
+    res.status(503).json({
+      error: 'Chat service temporarily unavailable',
+      message: 'Chat routes failed to load on server startup',
+      timestamp: new Date().toISOString()
+    });
+  });
+}
+
+// Community features routes (optional)
+try {
+  app.use('/api/votes', authenticateToken, require('./routes/votes'));
+  app.use('/api/comments', authenticateToken, require('./routes/comments'));
+  app.use('/api/reports', authenticateToken, require('./routes/reports'));
+  app.use('/api/admin', authenticateToken, require('./routes/admin'));
+  console.log('✅ Community routes loaded');
+} catch (error) {
+  console.warn('⚠️ Community routes not loaded:', error.message);
 }
 
 // 404 handler
