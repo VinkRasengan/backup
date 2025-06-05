@@ -87,14 +87,14 @@ const ChatBot = () => {
   // Calculate chat window classes
   const getChatWindowClasses = () => {
     if (isMinimized) {
-      return 'bottom-4 right-4 sm:bottom-6 sm:right-6 w-20 h-16 cursor-pointer';
+      return 'bottom-2 right-4 sm:bottom-4 sm:right-6 w-24 h-20 cursor-pointer';
     }
 
     const hasQuickReplies = showQuickReplies && messages.length === 1;
     // Tăng kích thước để hiển thị đầy đủ tất cả components
-    const height = hasQuickReplies ? 'h-[min(650px,calc(100vh-2rem))]' : 'h-[min(520px,calc(100vh-2rem))]';
+    const height = hasQuickReplies ? 'h-[min(800px,calc(100vh-0.5rem))]' : 'h-[min(600px,calc(100vh-1rem))]';
 
-    return `bottom-4 right-4 w-96 max-w-[calc(100vw-2rem)] ${height} sm:w-96 sm:bottom-6 sm:right-6`;
+    return `bottom-0 right-4 w-96 max-w-[calc(100vw-2rem)] ${height} sm:w-96 sm:bottom-1 sm:right-6 max-h-[calc(100vh-1rem)]`;
   };
 
   return (
@@ -109,7 +109,7 @@ const ChatBot = () => {
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.9 }}
             onClick={toggleChat}
-            className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-50 w-14 h-14 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center group"
+            className="fixed bottom-2 right-4 sm:bottom-4 sm:right-6 z-50 w-14 h-14 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center group"
           >
             <MessageCircle size={24} className="group-hover:scale-110 transition-transform" />
             
@@ -130,19 +130,22 @@ const ChatBot = () => {
         {isOpen && (
           <motion.div
             initial={{ opacity: 0, scale: 0.8, y: 20 }}
-            animate={{ 
-              opacity: 1, 
-              scale: isMinimized ? 0.3 : 1, 
-              y: isMinimized ? 100 : 0,
-              x: isMinimized ? 100 : 0
+            animate={{
+              opacity: 1,
+              scale: 1,
+              y: 0,
+              x: 0
             }}
             exit={{ opacity: 0, scale: 0.8, y: 20 }}
             transition={{ duration: 0.3, ease: 'easeOut' }}
             className={`fixed z-50 bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 overflow-hidden ${getChatWindowClasses()}`}
             onClick={isMinimized ? maximizeChat : undefined}
+            style={{ cursor: isMinimized ? 'pointer' : 'default' }}
           >
-            {/* Header */}
-            <div className="bg-gradient-to-r from-blue-500 to-purple-600 text-white p-4 flex items-center justify-between">
+            {/* Header - luôn hiển thị */}
+            <div className={`bg-gradient-to-r from-blue-500 to-purple-600 text-white flex items-center justify-between flex-shrink-0 ${
+              isMinimized ? 'p-3 rounded-2xl h-full' : 'p-3 rounded-t-2xl'
+            }`}>
               <div className="flex items-center gap-3">
                 <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
                   <MessageCircle size={16} />
@@ -156,8 +159,11 @@ const ChatBot = () => {
                     </div>
                   </div>
                 )}
+                {isMinimized && (
+                  <div className="text-xs font-medium">Chat</div>
+                )}
               </div>
-              
+
               {!isMinimized && (
                 <div className="flex items-center gap-2">
                   <button
@@ -176,10 +182,18 @@ const ChatBot = () => {
               )}
             </div>
 
+            {/* Content - chỉ hiển thị khi không minimize */}
             {!isMinimized && (
-              <div className="flex flex-col h-full overflow-hidden">
-                {/* Messages */}
-                <div className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-transparent min-h-0">
+              <div className="flex flex-col h-full relative">
+                {/* Messages - sử dụng absolute positioning để đảm bảo không bị che */}
+                <div
+                  className="absolute top-0 left-0 right-0 overflow-y-auto p-4 space-y-4 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-transparent"
+                  style={{
+                    bottom: showQuickReplies && messages.length === 1
+                      ? '280px' // Tăng thêm không gian cho quick replies + input + margin
+                      : '160px'  // Tăng không gian cho input + margin
+                  }}
+                >
                   {messages.map((message) => (
                     <ChatMessage key={message.id} message={message} />
                   ))}
@@ -214,16 +228,17 @@ const ChatBot = () => {
                   <div ref={messagesEndRef} />
                 </div>
 
-                {/* Quick Replies */}
-                {showQuickReplies && messages.length === 1 && (
-                  <div className="flex-shrink-0">
+                {/* Bottom Section - Absolute positioned với margin bottom */}
+                <div className="absolute left-0 right-0 bg-white dark:bg-gray-800 rounded-b-2xl shadow-lg" style={{ bottom: '40px' }}>
+                  {/* Quick Replies - ngay trên input */}
+                  {showQuickReplies && messages.length === 1 && (
                     <QuickReplies onQuickReply={handleQuickReply} disabled={isTyping} />
-                  </div>
-                )}
+                  )}
 
-                {/* Input */}
-                <div className="border-t border-gray-200 dark:border-gray-700 p-3 flex-shrink-0 bg-white dark:bg-gray-800">
-                  <ChatInput onSendMessage={handleSendMessage} disabled={isTyping} />
+                  {/* Input - với margin bottom */}
+                  <div className="border-t border-gray-200 dark:border-gray-700 p-4 bg-white dark:bg-gray-800 rounded-b-2xl">
+                    <ChatInput onSendMessage={handleSendMessage} disabled={isTyping} />
+                  </div>
                 </div>
               </div>
             )}
