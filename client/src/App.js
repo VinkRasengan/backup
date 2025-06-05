@@ -25,6 +25,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import EmailVerifiedRoute from './components/EmailVerifiedRoute';
 import LoadingSpinner from './components/LoadingSpinner';
 import ChatBot from './components/ChatBot/ChatBot';
+import RedditLayout from './components/RedditLayout';
 
 function App() {
   const { user, loading } = useAuth();
@@ -36,8 +37,7 @@ function App() {
   return (
     <ThemeProvider>
       <div className="App min-h-screen bg-white dark:bg-gray-900 transition-colors">
-        <ModernNavigation />
-        <main>
+        <RedditLayout>
           <Routes>
             {/* Public routes */}
             <Route
@@ -133,10 +133,10 @@ function App() {
           {/* Catch all route */}
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>
-      </main>
 
-      {/* ChatBot - hiển thị trên tất cả các trang */}
-      <ChatBot />
+        {/* ChatBot - hiển thị trên tất cả các trang */}
+        <ChatBot />
+        </RedditLayout>
       </div>
     </ThemeProvider>
   );

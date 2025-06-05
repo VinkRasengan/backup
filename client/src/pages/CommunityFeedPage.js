@@ -90,78 +90,95 @@ const CommunityFeedPage = () => {
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className={`${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} 
-        border rounded-lg p-6 mb-4 hover:shadow-lg transition-all duration-200`}
+      className={`${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}
+        border rounded-lg mb-2 hover:shadow-md transition-all duration-200 overflow-hidden`}
     >
-      {/* Article Header */}
-      <div className="flex items-start justify-between mb-4">
-        <div className="flex-1">
-          <h3 className={`text-lg font-semibold mb-2 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-            {article.title || 'Untitled Article'}
-          </h3>
-          <div className="flex items-center space-x-4 text-sm text-gray-500 mb-3">
-            <span>Đăng bởi {article.author?.firstName} {article.author?.lastName}</span>
-            <span>•</span>
-            <span>{new Date(article.createdAt).toLocaleDateString('vi-VN')}</span>
-            <span>•</span>
-            <div className="flex items-center space-x-1">
-              <Eye size={14} />
-              <span>{article.viewCount || 0} lượt xem</span>
+      <div className="flex">
+        {/* Vote Section - Left Side */}
+        <div className="flex flex-col items-center p-4 bg-gray-50 dark:bg-gray-700/50 min-w-[80px]">
+          <VoteComponent linkId={article.id} />
+        </div>
+
+        {/* Content Section - Right Side */}
+        <div className="flex-1 p-4">
+          {/* Article Header */}
+          <div className="flex items-start justify-between mb-3">
+            <div className="flex-1">
+              {/* Meta Info */}
+              <div className="flex items-center space-x-2 text-xs text-gray-500 dark:text-gray-400 mb-2">
+                <span className="font-medium">r/factcheck</span>
+                <span>•</span>
+                <span>Đăng bởi u/{article.author?.firstName}{article.author?.lastName}</span>
+                <span>•</span>
+                <span>{new Date(article.createdAt).toLocaleDateString('vi-VN')}</span>
+                {article.credibilityScore && (
+                  <>
+                    <span>•</span>
+                    <div className={`px-2 py-0.5 rounded-full text-xs font-medium ${getCredibilityColor(article.credibilityScore)}`}>
+                      {getCredibilityLabel(article.credibilityScore)}
+                    </div>
+                  </>
+                )}
+              </div>
+
+              {/* Title */}
+              <h3 className={`text-lg font-medium mb-2 hover:text-blue-600 cursor-pointer ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                {article.title || 'Untitled Article'}
+              </h3>
+
+              {/* Description */}
+              {article.description && (
+                <p className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'} mb-3 line-clamp-3`}>
+                  {article.description}
+                </p>
+              )}
+
+              {/* URL Preview */}
+              <div className="flex items-center space-x-2 mb-3 p-2 bg-gray-50 dark:bg-gray-700 rounded border-l-4 border-blue-500">
+                <ExternalLink size={14} className="text-blue-500 flex-shrink-0" />
+                <a
+                  href={article.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-500 hover:text-blue-600 text-sm truncate"
+                >
+                  {article.url}
+                </a>
+              </div>
             </div>
           </div>
-          
-          {/* URL */}
-          <div className="flex items-center space-x-2 mb-3">
-            <ExternalLink size={16} className="text-blue-500" />
-            <a 
-              href={article.url} 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="text-blue-500 hover:text-blue-600 truncate max-w-md"
+
+          {/* Action Bar */}
+          <div className="flex items-center space-x-4 text-sm">
+            <button
+              onClick={() => toggleComments(article.id)}
+              className={`flex items-center space-x-1 px-3 py-1.5 rounded-full transition-colors
+                ${isDarkMode ? 'hover:bg-gray-700 text-gray-400' : 'hover:bg-gray-100 text-gray-600'}`}
             >
-              {article.url}
-            </a>
+              <MessageCircle size={16} />
+              <span>{article.commentCount || 0} bình luận</span>
+            </button>
+
+            <button
+              className={`flex items-center space-x-1 px-3 py-1.5 rounded-full transition-colors
+                ${isDarkMode ? 'hover:bg-gray-700 text-gray-400' : 'hover:bg-gray-100 text-gray-600'}`}
+            >
+              <span>Chia sẻ</span>
+            </button>
+
+            <button
+              onClick={() => setShowReportModal(article.id)}
+              className={`flex items-center space-x-1 px-3 py-1.5 rounded-full transition-colors text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20`}
+            >
+              <AlertTriangle size={16} />
+              <span>Báo cáo</span>
+            </button>
+
+            <div className="flex items-center space-x-1 text-gray-400">
+              <Eye size={14} />
+              <span>{article.viewCount || 0}</span>
+            </div>
           </div>
-
-          {/* Description */}
-          {article.description && (
-            <p className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'} mb-3`}>
-              {article.description}
-            </p>
-          )}
-        </div>
-
-        {/* Credibility Score */}
-        {article.credibilityScore && (
-          <div className={`px-3 py-1 rounded-full text-sm font-medium ${getCredibilityColor(article.credibilityScore)}`}>
-            {article.credibilityScore}% - {getCredibilityLabel(article.credibilityScore)}
-          </div>
-        )}
-      </div>
-
-      {/* Voting and Actions */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-4">
-          <VoteComponent linkId={article.id} />
-          
-          <button
-            onClick={() => toggleComments(article.id)}
-            className={`flex items-center space-x-1 px-3 py-1 rounded-md transition-colors
-              ${isDarkMode ? 'hover:bg-gray-700 text-gray-300' : 'hover:bg-gray-100 text-gray-600'}`}
-          >
-            <MessageCircle size={16} />
-            <span>{article.commentCount || 0}</span>
-          </button>
-        </div>
-
-        <div className="flex items-center space-x-2">
-          <button
-            onClick={() => setShowReportModal(article.id)}
-            className={`flex items-center space-x-1 px-3 py-1 rounded-md transition-colors text-red-500 hover:bg-red-50`}
-          >
-            <AlertTriangle size={16} />
-            <span>Báo cáo</span>
-          </button>
         </div>
       </div>
 
@@ -182,76 +199,65 @@ const CommunityFeedPage = () => {
   );
 
   return (
-    <div className={`min-h-screen ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
-      <div className="max-w-4xl mx-auto px-4 py-8">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className={`text-3xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-              Cộng đồng kiểm tin
-            </h1>
-            <p className={`text-lg ${isDarkMode ? 'text-gray-300' : 'text-gray-600'} mt-2`}>
-              Cùng nhau xác minh và đánh giá độ tin cậy của thông tin
-            </p>
+    <div className="p-6">
+      <div className="max-w-4xl mx-auto">
+        {/* Community Header */}
+        <div className="mb-6">
+          <div className="flex items-center space-x-4 mb-4">
+            <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
+              <Users className="w-6 h-6 text-white" />
+            </div>
+            <div>
+              <h1 className={`text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                r/factcheck
+              </h1>
+              <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                Cộng đồng kiểm tra và xác minh thông tin
+              </p>
+            </div>
           </div>
-          
-          <button
-            onClick={() => window.location.href = '/submit'}
-            className="flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
-          >
-            <Plus size={20} />
-            <span>Thêm bài viết</span>
-          </button>
+
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-6 text-sm">
+              <div className={`${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                <span className="font-semibold">1.2k</span> thành viên
+              </div>
+              <div className={`${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                <span className="font-semibold">234</span> đang online
+              </div>
+            </div>
+
+            <button
+              onClick={() => window.location.href = '/submit'}
+              className="flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-full transition-colors text-sm font-medium"
+            >
+              <Plus size={16} />
+              <span>Tạo bài viết</span>
+            </button>
+          </div>
         </div>
 
-        {/* Filters and Search */}
-        <div className="flex flex-col md:flex-row gap-4 mb-6">
-          {/* Search */}
-          <div className="flex-1 relative">
-            <Search size={20} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Tìm kiếm bài viết..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className={`w-full pl-10 pr-4 py-2 rounded-lg border ${
-                isDarkMode 
-                  ? 'bg-gray-800 border-gray-700 text-white placeholder-gray-400' 
-                  : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
-              } focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
-            />
-          </div>
-
-          {/* Sort */}
-          <select
-            value={sortBy}
-            onChange={(e) => setSortBy(e.target.value)}
-            className={`px-4 py-2 rounded-lg border ${
-              isDarkMode 
-                ? 'bg-gray-800 border-gray-700 text-white' 
-                : 'bg-white border-gray-300 text-gray-900'
-            } focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
-          >
-            <option value="trending">🔥 Thịnh hành</option>
-            <option value="newest">🕒 Mới nhất</option>
-            <option value="most_voted">👍 Nhiều vote nhất</option>
-          </select>
-
-          {/* Filter */}
-          <select
-            value={filterBy}
-            onChange={(e) => setFilterBy(e.target.value)}
-            className={`px-4 py-2 rounded-lg border ${
-              isDarkMode 
-                ? 'bg-gray-800 border-gray-700 text-white' 
-                : 'bg-white border-gray-300 text-gray-900'
-            } focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
-          >
-            <option value="all">Tất cả</option>
-            <option value="safe">✅ Đáng tin cậy</option>
-            <option value="suspicious">⚠️ Nghi ngờ</option>
-            <option value="unsafe">❌ Không đáng tin</option>
-          </select>
+        {/* Filter Tabs */}
+        <div className="flex items-center space-x-1 mb-6 border-b border-gray-200 dark:border-gray-700">
+          {[
+            { value: 'all', label: 'Tất cả', icon: '📋' },
+            { value: 'safe', label: 'Đáng tin cậy', icon: '✅' },
+            { value: 'suspicious', label: 'Nghi ngờ', icon: '⚠️' },
+            { value: 'unsafe', label: 'Không đáng tin', icon: '❌' }
+          ].map((filter) => (
+            <button
+              key={filter.value}
+              onClick={() => setFilterBy(filter.value)}
+              className={`flex items-center space-x-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+                filterBy === filter.value
+                  ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+                  : 'border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+              }`}
+            >
+              <span>{filter.icon}</span>
+              <span>{filter.label}</span>
+            </button>
+          ))}
         </div>
 
         {/* Articles Feed */}
