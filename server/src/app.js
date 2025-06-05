@@ -96,6 +96,16 @@ try {
   console.error('❌ Error loading main routes:', error.message);
 }
 
+// Simple test chat route first
+app.get('/api/chat/test', (req, res) => {
+  res.json({
+    status: 'OK',
+    message: 'Simple chat test route working!',
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV
+  });
+});
+
 // Chat routes (essential for frontend) - Load separately with detailed error handling
 try {
   console.log('🔄 Loading chat routes...');
@@ -111,7 +121,8 @@ try {
     res.status(503).json({
       error: 'Chat service temporarily unavailable',
       message: 'Chat routes failed to load on server startup',
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
+      errorDetails: error.message
     });
   });
 }
