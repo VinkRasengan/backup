@@ -1,0 +1,7 @@
+# Render Redirects for FactCheck App
+
+# API calls redirect to backend
+/api/* https://factcheck-backend.onrender.com/api/* 200
+
+# SPA fallback - all other routes serve index.html
+/* /index.html 200
