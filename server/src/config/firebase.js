@@ -59,7 +59,9 @@ const collections = {
   VOTES: 'votes',
   COMMENTS: 'comments',
   REPORTS: 'reports',
-  ADMIN_NOTIFICATIONS: 'admin_notifications'
+  ADMIN_NOTIFICATIONS: 'admin_notifications',
+  CONVERSATIONS: 'conversations',
+  CHAT_MESSAGES: 'chat_messages'
 };
 
 module.exports = {
