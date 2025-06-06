@@ -104,8 +104,10 @@ app.get('/health', (req, res) => {
     timestamp: new Date().toISOString(),
     environment: process.env.NODE_ENV,
     service: 'FactCheck Backend API',
-    version: '1.0.1',
-    deployment: 'render-force-deploy'
+    version: '2.0.0',
+    deployment: 'render-community-features-v2',
+    features: ['Community Posts', 'NewsAPI Integration', 'Voting System', 'Enhanced Navigation'],
+    lastUpdate: '2025-06-06T14:45:00Z'
   });
 });
 
@@ -266,11 +268,13 @@ try {
   console.warn('⚠️ Community features routes not loaded:', error.message);
 }
 
-// 404 handler
+// 404 handler - Updated for Render deployment
 app.use('*', (req, res) => {
-  res.status(404).json({ 
+  res.status(404).json({
     error: 'Route not found',
-    path: req.originalUrl 
+    path: req.originalUrl,
+    timestamp: new Date().toISOString(),
+    deployment: 'render-community-features-v2'
   });
 });
 
