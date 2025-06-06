@@ -1,0 +1,26 @@
+FORCE DEPLOYMENT TRIGGER - 2025-06-06 14:45:00
+
+This file is created to trigger Render auto-deployment.
+
+Current Status:
+- ✅ Community Posts System implemented
+- ✅ NewsAPI integration ready
+- ✅ Voting system (safe/unsafe/suspicious)
+- ✅ Enhanced navigation and UX
+- ✅ PostgreSQL database support
+- ✅ All local testing passed
+
+Expected Features After Deployment:
+1. Community Posts API: /api/community/posts
+2. Community Stats API: /api/community/stats
+3. Health Check: /health (should show version 2.0.0)
+4. Frontend with community features
+5. Voting system working
+
+If this deployment fails, check:
+1. Render dashboard for build logs
+2. Environment variables configuration
+3. Auto-deploy settings
+4. GitHub webhook connection
+
+Deployment ID: render-community-v2-20250606-1445
