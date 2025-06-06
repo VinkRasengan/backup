@@ -1,0 +1,13 @@
+{
+  "lastDeploy": "2025-06-06T14:35:19.344Z",
+  "deployTrigger": "force-deploy-script",
+  "features": [
+    "Community Posts System",
+    "NewsAPI Integration",
+    "Voting System (Safe/Unsafe/Suspicious)",
+    "Enhanced Navigation",
+    "PostgreSQL Database",
+    "OpenAI Chat Integration"
+  ],
+  "version": "2.0.0"
+}
