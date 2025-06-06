@@ -308,6 +308,478 @@ Render cung cấp hosting miễn phí cho cả frontend và backend với Postgr
 Render sẽ tự động deploy khi có commit mới lên branch `main`. Để disable auto-deploy:
 - Vào Service Settings → Build & Deploy → Auto-Deploy: Off
 
+## 🖥️ Self-Hosting trên PC/Server
+
+Để tự host hoàn toàn trên máy tính cá nhân hoặc server riêng.
+
+### 📋 Yêu cầu hệ thống
+
+- **OS**: Windows 10/11, macOS, hoặc Linux
+- **Node.js**: 18+ và npm 9+
+- **PostgreSQL**: 13+ (hoặc sử dụng in-memory storage)
+- **RAM**: Tối thiểu 4GB (khuyến nghị 8GB+)
+- **Storage**: Tối thiểu 2GB free space
+- **Network**: Port 3000, 5000 available
+
+### 🔧 Cài đặt PostgreSQL (Optional)
+
+#### Windows:
+```bash
+# Download và cài đặt từ https://www.postgresql.org/download/windows/
+# Hoặc sử dụng Chocolatey
+choco install postgresql
+
+# Tạo database
+createdb factcheck_db
+```
+
+#### macOS:
+```bash
+# Sử dụng Homebrew
+brew install postgresql
+brew services start postgresql
+
+# Tạo database
+createdb factcheck_db
+```
+
+#### Linux (Ubuntu/Debian):
+```bash
+sudo apt update
+sudo apt install postgresql postgresql-contrib
+
+# Start service
+sudo systemctl start postgresql
+sudo systemctl enable postgresql
+
+# Tạo database
+sudo -u postgres createdb factcheck_db
+```
+
+### 🚀 Setup Production trên PC
+
+#### 1. Clone và cài đặt:
+
+```bash
+git clone https://github.com/VinkRasengan/backup.git
+cd backup
+
+# Install dependencies
+cd client && npm install
+cd ../server && npm install
+```
+
+#### 2. Cấu hình Production Environment:
+
+Tạo file `server/.env.production`:
+
+```env
+# Server Configuration
+NODE_ENV=production
+PORT=5000
+
+# Database (PostgreSQL)
+DATABASE_URL=postgresql://username:password@localhost:5432/factcheck_db
+
+# OpenAI Configuration
+OPENAI_API_KEY=sk-proj-your-openai-api-key
+OPENAI_MODEL=gpt-3.5-turbo
+OPENAI_MAX_TOKENS=500
+OPENAI_TEMPERATURE=0.7
+
+# VirusTotal API
+VIRUSTOTAL_API_KEY=your-virustotal-api-key
+
+# Security
+JWT_SECRET=your-super-secure-production-jwt-secret-change-this
+JWT_EXPIRE=7d
+
+# CORS
+FRONTEND_URL=http://localhost:3000
+# Hoặc domain của bạn: https://yourdomain.com
+
+# Email Configuration (Optional)
+EMAIL_HOST=smtp.gmail.com
+EMAIL_PORT=587
+EMAIL_USER=your-email@gmail.com
+EMAIL_PASS=your-app-password
+```
+
+#### 3. Build Frontend:
+
+```bash
+cd client
+
+# Tạo production build
+npm run build
+
+# Serve static files (option 1: serve package)
+npm install -g serve
+serve -s build -l 3000
+
+# Hoặc (option 2: copy to server)
+cp -r build/* ../server/public/
+```
+
+#### 4. Setup Database Schema:
+
+```sql
+-- Connect to PostgreSQL và tạo tables
+CREATE TABLE users (
+  id SERIAL PRIMARY KEY,
+  uid VARCHAR(255) UNIQUE NOT NULL,
+  email VARCHAR(255) UNIQUE NOT NULL,
+  first_name VARCHAR(100),
+  last_name VARCHAR(100),
+  email_verified BOOLEAN DEFAULT FALSE,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE conversations (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id VARCHAR(255) NOT NULL,
+  title VARCHAR(255) NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE chat_messages (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  conversation_id UUID REFERENCES conversations(id) ON DELETE CASCADE,
+  user_id VARCHAR(255) NOT NULL,
+  role VARCHAR(20) NOT NULL CHECK (role IN ('user', 'assistant')),
+  content TEXT NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE links (
+  id SERIAL PRIMARY KEY,
+  user_id VARCHAR(255),
+  url TEXT NOT NULL,
+  domain VARCHAR(255),
+  security_score INTEGER,
+  status VARCHAR(50),
+  analysis JSONB,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Indexes for performance
+CREATE INDEX idx_conversations_user_id ON conversations(user_id);
+CREATE INDEX idx_chat_messages_conversation_id ON chat_messages(conversation_id);
+CREATE INDEX idx_links_user_id ON links(user_id);
+```
+
+#### 5. Start Production Server:
+
+```bash
+cd server
+
+# Start với production config
+NODE_ENV=production npm start
+
+# Hoặc sử dụng PM2 (recommended)
+npm install -g pm2
+pm2 start src/app.js --name "factcheck-api" --env production
+pm2 startup
+pm2 save
+```
+
+### 🌐 Cấu hình Domain (Optional)
+
+#### Sử dụng Nginx làm reverse proxy:
+
+```nginx
+# /etc/nginx/sites-available/factcheck
+server {
+    listen 80;
+    server_name yourdomain.com www.yourdomain.com;
+
+    # Frontend
+    location / {
+        root /path/to/backup/client/build;
+        try_files $uri $uri/ /index.html;
+    }
+
+    # API
+    location /api {
+        proxy_pass http://localhost:5000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_cache_bypass $http_upgrade;
+    }
+}
+```
+
+#### Enable site:
+```bash
+sudo ln -s /etc/nginx/sites-available/factcheck /etc/nginx/sites-enabled/
+sudo nginx -t
+sudo systemctl reload nginx
+```
+
+### 🔒 SSL Certificate (HTTPS)
+
+```bash
+# Sử dụng Certbot cho Let's Encrypt
+sudo apt install certbot python3-certbot-nginx
+sudo certbot --nginx -d yourdomain.com -d www.yourdomain.com
+```
+
+### 📊 Monitoring & Maintenance
+
+#### System Monitoring với PM2:
+
+```bash
+# Xem status các process
+pm2 status
+
+# Xem logs
+pm2 logs factcheck-api
+
+# Restart service
+pm2 restart factcheck-api
+
+# Monitor real-time
+pm2 monit
+```
+
+#### Database Backup:
+
+```bash
+# Backup PostgreSQL
+pg_dump factcheck_db > backup_$(date +%Y%m%d_%H%M%S).sql
+
+# Restore từ backup
+psql factcheck_db < backup_20241206_120000.sql
+
+# Automated backup script
+#!/bin/bash
+# save as backup.sh
+BACKUP_DIR="/home/user/backups"
+DATE=$(date +%Y%m%d_%H%M%S)
+pg_dump factcheck_db > $BACKUP_DIR/factcheck_backup_$DATE.sql
+find $BACKUP_DIR -name "factcheck_backup_*.sql" -mtime +7 -delete
+```
+
+#### Log Rotation:
+
+```bash
+# Cấu hình logrotate
+sudo nano /etc/logrotate.d/factcheck
+
+# Nội dung file:
+/home/user/.pm2/logs/*.log {
+    daily
+    missingok
+    rotate 7
+    compress
+    notifempty
+    create 0644 user user
+    postrotate
+        pm2 reloadLogs
+    endscript
+}
+```
+
+### 🔧 Performance Optimization
+
+#### 1. Database Optimization:
+
+```sql
+-- Analyze và optimize tables
+ANALYZE;
+VACUUM ANALYZE;
+
+-- Monitor slow queries
+SELECT query, mean_time, calls
+FROM pg_stat_statements
+ORDER BY mean_time DESC
+LIMIT 10;
+```
+
+#### 2. Node.js Optimization:
+
+```bash
+# Increase memory limit
+node --max-old-space-size=4096 src/app.js
+
+# Enable cluster mode với PM2
+pm2 start src/app.js -i max --name "factcheck-api"
+```
+
+#### 3. Nginx Caching:
+
+```nginx
+# Thêm vào nginx config
+location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg)$ {
+    expires 1y;
+    add_header Cache-Control "public, immutable";
+}
+
+location /api {
+    # API caching cho static responses
+    proxy_cache_valid 200 5m;
+    proxy_cache_key $request_uri;
+}
+```
+
+### 🚨 Security Hardening
+
+#### 1. Firewall Setup:
+
+```bash
+# Ubuntu/Debian
+sudo ufw enable
+sudo ufw allow 22    # SSH
+sudo ufw allow 80    # HTTP
+sudo ufw allow 443   # HTTPS
+sudo ufw deny 5000   # Block direct API access
+```
+
+#### 2. Environment Security:
+
+```bash
+# Set proper file permissions
+chmod 600 server/.env.production
+chown user:user server/.env.production
+
+# Hide sensitive files
+echo "*.env*" >> .gitignore
+echo "backup_*.sql" >> .gitignore
+```
+
+#### 3. Regular Updates:
+
+```bash
+# Update system packages
+sudo apt update && sudo apt upgrade
+
+# Update Node.js dependencies
+cd server && npm audit fix
+cd client && npm audit fix
+
+# Update PM2
+npm update -g pm2
+```
+
+### 📱 Mobile Access
+
+Để truy cập từ mobile devices trong cùng network:
+
+```bash
+# Tìm IP address của PC
+ip addr show  # Linux
+ipconfig      # Windows
+
+# Update CORS trong server/.env.production
+FRONTEND_URL=http://192.168.1.100:3000,http://localhost:3000
+
+# Access từ mobile
+# http://192.168.1.100:3000
+```
+
+### 🔄 Auto-Start on Boot
+
+#### Windows (Task Scheduler):
+1. Mở Task Scheduler
+2. Create Basic Task → "FactCheck Startup"
+3. Trigger: "When computer starts"
+4. Action: Start program → `node.exe`
+5. Arguments: `C:\path\to\backup\server\src\app.js`
+
+#### Linux (systemd):
+
+```bash
+# Tạo service file
+sudo nano /etc/systemd/system/factcheck.service
+
+# Nội dung:
+[Unit]
+Description=FactCheck API Server
+After=network.target
+
+[Service]
+Type=simple
+User=user
+WorkingDirectory=/home/user/backup/server
+Environment=NODE_ENV=production
+ExecStart=/usr/bin/node src/app.js
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
+
+# Enable service
+sudo systemctl enable factcheck
+sudo systemctl start factcheck
+```
+
+## 📊 So sánh các Options Deployment
+
+| Feature | Localhost | Self-Hosting | Render |
+|---------|-----------|--------------|--------|
+| **Cost** | Free | Server cost | Free tier |
+| **Setup Complexity** | Easy | Medium | Easy |
+| **Performance** | Good | Excellent | Good |
+| **Scalability** | Limited | High | Medium |
+| **Maintenance** | None | High | None |
+| **Custom Domain** | No | Yes | Yes |
+| **SSL Certificate** | No | Manual | Auto |
+| **Database** | In-memory | PostgreSQL | PostgreSQL |
+| **Uptime** | PC dependent | 24/7 | 99.9% |
+| **Backup** | Manual | Manual | Auto |
+
+### 🎯 Khuyến nghị sử dụng:
+
+#### 🏠 **Localhost** - Phù hợp cho:
+- Development và testing
+- Demo nhanh
+- Học tập và thử nghiệm
+- Không cần truy cập từ xa
+
+#### 🖥️ **Self-Hosting** - Phù hợp cho:
+- Kiểm soát hoàn toàn hệ thống
+- Performance cao
+- Custom requirements
+- Enterprise deployment
+- Có kinh nghiệm system admin
+
+#### ☁️ **Render** - Phù hợp cho:
+- Production deployment nhanh
+- Không muốn quản lý server
+- Startup và small business
+- Auto-scaling needs
+- Beginners
+
+### 🔄 Migration giữa các options:
+
+```bash
+# Từ Localhost → Self-Hosting
+1. Export database (nếu có)
+2. Copy source code lên server
+3. Setup production environment
+4. Import database
+
+# Từ Self-Hosting → Render
+1. Push code lên GitHub
+2. Export PostgreSQL database
+3. Create Render services
+4. Import database to Render PostgreSQL
+
+# Từ Render → Self-Hosting
+1. Clone repository
+2. Export database từ Render
+3. Setup local server
+4. Import database
+```
+
 ## ⚙️ Cấu hình chi tiết
 
 ### 🔥 Firebase Setup
