@@ -172,16 +172,22 @@ const apiWithFallback = async (apiCall, mockCall) => {
 
 // Chat API endpoints - Simplified to use backend only
 export const chatAPI = {
-  // Send message to authenticated chat (requires login)
+  // Send message to authenticated chat (requires login) - Uses OpenAI API
   sendMessage: async (data) => {
     console.log('🚀 Sending authenticated message to backend');
     return await api.post('/chat/message', data);
   },
 
-  // Send message to public OpenAI endpoint (no auth required)
+  // Send message to AI chat endpoint (uses OpenAI API when available)
   sendOpenAIMessage: async (data) => {
     console.log('🤖 Sending public message to OpenAI via backend');
     return await api.post('/chat/openai', { message: data.message });
+  },
+
+  // Send message to widget chat (automatic responses only)
+  sendWidgetMessage: async (data) => {
+    console.log('🤖 Sending message to widget chat');
+    return await api.post('/chat/widget', { message: data.message });
   },
 
   // Conversation management (requires auth)

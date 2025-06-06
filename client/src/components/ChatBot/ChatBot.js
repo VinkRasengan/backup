@@ -47,13 +47,13 @@ const ChatBot = () => {
     setIsTyping(true);
 
         try {
-      // Send message to public OpenAI endpoint (no auth required)
-      console.log('📤 Sending to public OpenAI API:', text.trim());
-      const response = await chatAPI.sendOpenAIMessage({
+      // Send message to widget endpoint (automatic responses)
+      console.log('📤 Sending to widget chat:', text.trim());
+      const response = await chatAPI.sendWidgetMessage({
         message: text.trim()
       });
 
-      console.log('✅ API Response:', response.data);
+      console.log('✅ Widget Response:', response.data);
 
       const botMessage = {
         id: Date.now() + 1,

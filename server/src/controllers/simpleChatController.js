@@ -96,6 +96,8 @@ class SimpleChatController {
         } else {
           console.warn('OpenAI service failed:', response.error);
         }
+      } else {
+        console.log('🔄 OpenAI service not available, using mock response');
       }
 
       // Fallback to mock response

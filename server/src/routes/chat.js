@@ -37,112 +37,113 @@ try {
 
     // Fallback controller (no dependencies)
     chatController = {
-    getConversationStarters: (req, res) => {
-      res.json({
-        starters: [
-          "Làm thế nào để nhận biết email lừa đảo?",
-          "Cách tạo mật khẩu mạnh và an toàn?",
-          "Cách bảo vệ thông tin cá nhân trên mạng?"
-        ]
-      });
-    },
-    getSecurityTips: (req, res) => {
-      res.json({
-        category: req.query.category || 'general',
-        tips: 'Luôn cập nhật phần mềm và sử dụng mật khẩu mạnh.'
-      });
-    },
-    sendOpenAIMessage: async (req, res) => {
-      try {
-        const { message } = req.body;
+      getConversationStarters: (req, res) => {
+        res.json({
+          starters: [
+            "Làm thế nào để nhận biết email lừa đảo?",
+            "Cách tạo mật khẩu mạnh và an toàn?",
+            "Cách bảo vệ thông tin cá nhân trên mạng?"
+          ]
+        });
+      },
+      getSecurityTips: (req, res) => {
+        res.json({
+          category: req.query.category || 'general',
+          tips: 'Luôn cập nhật phần mềm và sử dụng mật khẩu mạnh.'
+        });
+      },
+      sendOpenAIMessage: async (req, res) => {
+        try {
+          const { message } = req.body;
 
-        if (!message) {
-          return res.status(400).json({ error: 'Message is required' });
-        }
+          if (!message) {
+            return res.status(400).json({ error: 'Message is required' });
+          }
 
-        // Try OpenAI service directly if available
-        if (openaiService && openaiService.isConfigured()) {
-          const response = await openaiService.sendMessage(message, []);
+          // Try OpenAI service directly if available
+          if (openaiService && openaiService.isConfigured()) {
+            const response = await openaiService.sendMessage(message, []);
 
-          if (response.success) {
-            // Increment user chat stats if user is authenticated
-            if (req.user && req.user.userId) {
-              try {
-                const firebaseBackendController = require('../controllers/firebaseBackendController');
-                await firebaseBackendController.incrementUserStats(req.user.userId, 'chatMessages');
-              } catch (statsError) {
-                console.warn('⚠️ Failed to increment chat stats:', statsError.message);
-              }
-            }
-
-            return res.json({
-              data: {
-                message: 'Phản hồi từ FactCheck AI',
-                response: {
-                  content: response.message,
-                  createdAt: new Date().toISOString(),
-                  source: 'openai'
+            if (response.success) {
+              // Increment user chat stats if user is authenticated
+              if (req.user && req.user.userId) {
+                try {
+                  const firebaseBackendController = require('../controllers/firebaseBackendController');
+                  await firebaseBackendController.incrementUserStats(req.user.userId, 'chatMessages');
+                } catch (statsError) {
+                  console.warn('⚠️ Failed to increment chat stats:', statsError.message);
                 }
               }
-            });
-          }
-        }
 
-        // Fallback response
-        res.json({
-          data: {
-            message: 'Phản hồi từ FactCheck AI (Fallback Mode)',
-            response: {
-              content: 'Xin chào! Tôi là FactCheck AI. Hiện tại hệ thống đang trong chế độ fallback. Vui lòng thử lại sau.',
-              createdAt: new Date().toISOString(),
-              source: 'fallback'
+              return res.json({
+                data: {
+                  message: 'Phản hồi từ FactCheck AI',
+                  response: {
+                    content: response.message,
+                    createdAt: new Date().toISOString(),
+                    source: 'openai'
+                  }
+                }
+              });
             }
+          }
+
+          // Fallback response
+          res.json({
+            data: {
+              message: 'Phản hồi từ FactCheck AI (Fallback Mode)',
+              response: {
+                content: 'Xin chào! Tôi là FactCheck AI. Hiện tại hệ thống đang trong chế độ fallback. Vui lòng thử lại sau.',
+                createdAt: new Date().toISOString(),
+                source: 'fallback'
+              }
+            }
+          });
+        } catch (error) {
+          console.error('OpenAI fallback error:', error);
+          res.json({
+            data: {
+              message: 'Phản hồi từ FactCheck AI (Error Mode)',
+              response: {
+                content: 'Xin lỗi, có lỗi xảy ra. Vui lòng thử lại sau.',
+                createdAt: new Date().toISOString(),
+                source: 'error'
+              }
+            }
+          });
+        }
+      },
+      sendMessage: (req, res) => {
+        res.status(503).json({
+          error: 'Chat service temporarily unavailable',
+          code: 'SERVICE_UNAVAILABLE'
+        });
+      },
+      getConversations: (req, res) => {
+        res.json({
+          conversations: [],
+          pagination: {
+            currentPage: 1,
+            totalCount: 0,
+            hasNext: false,
+            hasPrev: false
           }
         });
-      } catch (error) {
-        console.error('OpenAI fallback error:', error);
-        res.json({
-          data: {
-            message: 'Phản hồi từ FactCheck AI (Error Mode)',
-            response: {
-              content: 'Xin lỗi, có lỗi xảy ra. Vui lòng thử lại sau.',
-              createdAt: new Date().toISOString(),
-              source: 'error'
-            }
-          }
+      },
+      getConversation: (req, res) => {
+        res.status(404).json({
+          error: 'Conversation not found',
+          code: 'CONVERSATION_NOT_FOUND'
+        });
+      },
+      deleteConversation: (req, res) => {
+        res.status(404).json({
+          error: 'Conversation not found',
+          code: 'CONVERSATION_NOT_FOUND'
         });
       }
-    },
-    sendMessage: (req, res) => {
-      res.status(503).json({
-        error: 'Chat service temporarily unavailable',
-        code: 'SERVICE_UNAVAILABLE'
-      });
-    },
-    getConversations: (req, res) => {
-      res.json({
-        conversations: [],
-        pagination: {
-          currentPage: 1,
-          totalCount: 0,
-          hasNext: false,
-          hasPrev: false
-        }
-      });
-    },
-    getConversation: (req, res) => {
-      res.status(404).json({
-        error: 'Conversation not found',
-        code: 'CONVERSATION_NOT_FOUND'
-      });
-    },
-    deleteConversation: (req, res) => {
-      res.status(404).json({
-        error: 'Conversation not found',
-        code: 'CONVERSATION_NOT_FOUND'
-      });
-    }
-  };
+    };
+  }
 }
 
 // Import middleware with fallbacks
@@ -175,24 +176,96 @@ try {
   validatePagination = (req, res, next) => next();
 }
 
+// Generate automatic responses for chat widget
+function generateWidgetResponse(message) {
+  const lowerMessage = message.toLowerCase();
+
+  // Greetings
+  if (lowerMessage.includes('xin chào') || lowerMessage.includes('hello') || lowerMessage.includes('hi')) {
+    return 'Xin chào! Tôi là FactCheck Assistant. Tôi có thể giúp bạn về các vấn đề bảo mật và kiểm tra thông tin. Bạn cần hỗ trợ gì?';
+  }
+
+  // Email phishing
+  if (lowerMessage.includes('email') || lowerMessage.includes('phishing') || lowerMessage.includes('lừa đảo')) {
+    return 'Để nhận biết email lừa đảo:\n• Kiểm tra địa chỉ email người gửi\n• Chú ý lỗi chính tả và ngữ pháp\n• Không click vào link đáng ngờ\n• Xác minh thông tin qua kênh chính thức';
+  }
+
+  // Website security
+  if (lowerMessage.includes('website') || lowerMessage.includes('link') || lowerMessage.includes('trang web')) {
+    return 'Để kiểm tra tính an toàn của website:\n• Kiểm tra URL có chính xác không\n• Tìm chứng chỉ SSL (https://)\n• Sử dụng công cụ kiểm tra như VirusTotal\n• Đọc đánh giá từ người dùng khác';
+  }
+
+  // Password security
+  if (lowerMessage.includes('mật khẩu') || lowerMessage.includes('password')) {
+    return 'Lời khuyên về mật khẩu an toàn:\n• Sử dụng ít nhất 12 ký tự\n• Kết hợp chữ hoa, chữ thường, số và ký tự đặc biệt\n• Không sử dụng thông tin cá nhân\n• Mỗi tài khoản một mật khẩu riêng\n• Kích hoạt xác thực 2 yếu tố';
+  }
+
+  // Fake news
+  if (lowerMessage.includes('tin giả') || lowerMessage.includes('fake news') || lowerMessage.includes('tin tức')) {
+    return 'Cách nhận biết tin giả:\n• Kiểm tra nguồn tin có uy tín không\n• So sánh với nhiều nguồn khác\n• Chú ý tiêu đề quá giật gân\n• Kiểm tra ngày tháng đăng tin\n• Tìm hiểu về tác giả';
+  }
+
+  // General security
+  if (lowerMessage.includes('bảo mật') || lowerMessage.includes('an toàn') || lowerMessage.includes('security')) {
+    return 'Lời khuyên bảo mật cơ bản:\n• Cập nhật phần mềm thường xuyên\n• Sử dụng phần mềm diệt virus\n• Cẩn thận khi tải file từ internet\n• Sao lưu dữ liệu quan trọng\n• Không chia sẻ thông tin cá nhân';
+  }
+
+  // Help or support
+  if (lowerMessage.includes('giúp') || lowerMessage.includes('help') || lowerMessage.includes('hỗ trợ')) {
+    return 'Tôi có thể giúp bạn về:\n• Nhận biết email lừa đảo\n• Kiểm tra tính an toàn của website\n• Tạo mật khẩu mạnh\n• Phân biệt tin thật/tin giả\n• Các vấn đề bảo mật khác\n\nHãy hỏi tôi một câu hỏi cụ thể!';
+  }
+
+  // Default response
+  return 'Cảm ơn bạn đã liên hệ! Tôi là FactCheck Assistant, chuyên hỗ trợ về bảo mật và kiểm tra thông tin. Để được hỗ trợ tốt hơn, bạn có thể hỏi về: email lừa đảo, kiểm tra website, mật khẩu an toàn, hoặc phân biệt tin giả.';
+}
+
 // Public endpoints (no auth required)
-router.get('/starters', chatController.getConversationStarters);
-router.get('/tips', chatController.getSecurityTips);
-router.post('/openai', validateChatMessage, chatController.sendOpenAIMessage);
+router.get('/starters', (req, res) => chatController.getConversationStarters(req, res));
+router.get('/tips', (req, res) => chatController.getSecurityTips(req, res));
+
+// Chat widget endpoint - Always uses mock responses (no OpenAI API)
+router.post('/widget', validateChatMessage, (req, res) => {
+  try {
+    const { message } = req.body;
+
+    // Generate mock response based on message content
+    const mockResponse = generateWidgetResponse(message);
+
+    res.json({
+      data: {
+        message: 'Phản hồi từ FactCheck Assistant',
+        response: {
+          content: mockResponse,
+          createdAt: new Date().toISOString(),
+          source: 'widget'
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Widget chat error:', error);
+    res.status(500).json({
+      error: 'Có lỗi xảy ra khi xử lý tin nhắn',
+      code: 'INTERNAL_ERROR'
+    });
+  }
+});
+
+// AI Chat endpoint - Uses OpenAI API when available
+router.post('/openai', validateChatMessage, (req, res) => chatController.sendOpenAIMessage(req, res));
 
 // Protected endpoints (require authentication)
 router.use(authenticateToken);
 
 // Send message to security chatbot
-router.post('/message', validateChatMessage, chatController.sendMessage);
+router.post('/message', validateChatMessage, (req, res) => chatController.sendMessage(req, res));
 
 // Get conversation history
-router.get('/conversations/:conversationId', chatController.getConversation);
+router.get('/conversations/:conversationId', (req, res) => chatController.getConversation(req, res));
 
 // Get user's conversations list
-router.get('/conversations', validatePagination, chatController.getConversations);
+router.get('/conversations', validatePagination, (req, res) => chatController.getConversations(req, res));
 
 // Delete conversation
-router.delete('/conversations/:conversationId', chatController.deleteConversation);
+router.delete('/conversations/:conversationId', (req, res) => chatController.deleteConversation(req, res));
 
 module.exports = router;
