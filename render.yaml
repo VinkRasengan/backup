@@ -35,6 +35,14 @@ services:
           property: connectionString
       - key: OPENAI_API_KEY
         sync: false
+      - key: OPENAI_API_URL
+        value: https://api.openai.com/v1
+      - key: OPENAI_MODEL
+        value: gpt-3.5-turbo
+      - key: OPENAI_MAX_TOKENS
+        value: 500
+      - key: OPENAI_TEMPERATURE
+        value: 0.7
       - key: VIRUSTOTAL_API_KEY
         sync: false
       - key: FIREBASE_PROJECT_ID

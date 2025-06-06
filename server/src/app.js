@@ -8,6 +8,10 @@ require('dotenv').config();
 // Import path for static files
 const path = require('path');
 
+// Database and Models
+const database = require('./config/database');
+const { syncDatabase } = require('./models');
+
 // Import middleware (with error handling)
 let errorHandler, authenticateToken, authRoutes, userRoutes, linkRoutes;
 
@@ -53,7 +57,10 @@ try {
 }
 
 const app = express();
-const PORT = process.env.PORT || 5001; // Changed from 5000 to avoid Firebase hosting conflict
+const PORT = process.env.PORT || 5001;
+
+// Production environment check
+const isProduction = process.env.NODE_ENV === 'production'; // Changed from 5000 to avoid Firebase hosting conflict
 
 // Security middleware
 app.use(helmet());
@@ -251,13 +258,29 @@ app.use('*', (req, res) => {
 // Error handling middleware
 app.use(errorHandler);
 
-// Start server
-app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
-  console.log(`📊 Environment: ${process.env.NODE_ENV}`);
-  console.log(`🔗 Health check: http://localhost:${PORT}/health`);
-  console.log(`🔧 Debug: Chat routes loaded: ${!!app._router}`);
-  console.log(`🔧 Debug: Available routes:`, app._router?.stack?.map(r => r.route?.path || r.regexp).filter(Boolean));
+// Initialize database and start server
+async function startServer() {
+  try {
+    // Initialize database models
+    await syncDatabase();
+    console.log('✅ Database models synchronized');
+  } catch (error) {
+    console.warn('⚠️ Database sync failed, continuing with in-memory storage:', error.message);
+  }
+
+  // Start server
+  app.listen(PORT, () => {
+    console.log(`🚀 Server running on port ${PORT}`);
+    console.log(`📊 Environment: ${process.env.NODE_ENV}`);
+    console.log(`🔗 Health check: http://localhost:${PORT}/health`);
+    console.log(`🔧 Debug: Chat routes loaded: ${!!app._router}`);
+    console.log(`🔧 Debug: Available routes:`, app._router?.stack?.map(r => r.route?.path || r.regexp).filter(Boolean));
+  });
+}
+
+startServer().catch(error => {
+  console.error('❌ Failed to start server:', error);
+  process.exit(1);
 });
 
 module.exports = app;

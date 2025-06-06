@@ -1,11 +1,14 @@
-// PostgreSQL Database Configuration
+// PostgreSQL Database Configuration with Sequelize
+const { Sequelize } = require('sequelize');
 const { Pool } = require('pg');
 
 class Database {
   constructor() {
     this.pool = null;
+    this.sequelize = null;
     this.isConnected = false;
     this.initializePool();
+    this.initializeSequelize();
   }
 
   initializePool() {
@@ -57,11 +60,48 @@ class Database {
     return `postgresql://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_NAME}`;
   }
 
+  initializeSequelize() {
+    try {
+      const connectionString = process.env.DATABASE_URL || this.constructConnectionString();
+
+      if (!connectionString) {
+        console.warn('⚠️ No database configuration for Sequelize');
+        return;
+      }
+
+      this.sequelize = new Sequelize(connectionString, {
+        dialect: 'postgres',
+        logging: process.env.NODE_ENV === 'development' ? console.log : false,
+        pool: {
+          max: 5,
+          min: 0,
+          acquire: 30000,
+          idle: 10000
+        },
+        dialectOptions: {
+          ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
+        }
+      });
+
+      console.log('✅ Sequelize initialized');
+    } catch (error) {
+      console.error('❌ Failed to initialize Sequelize:', error.message);
+    }
+  }
+
   async testConnection() {
     try {
+      // Test raw pool connection
       const client = await this.pool.connect();
       await client.query('SELECT NOW()');
       client.release();
+
+      // Test Sequelize connection
+      if (this.sequelize) {
+        await this.sequelize.authenticate();
+        console.log('✅ Sequelize connection successful');
+      }
+
       this.isConnected = true;
       console.log('✅ PostgreSQL connection successful');
       await this.createTables();
@@ -231,10 +271,18 @@ class Database {
   }
 
   async close() {
+    if (this.sequelize) {
+      await this.sequelize.close();
+      console.log('✅ Sequelize connection closed');
+    }
     if (this.pool) {
       await this.pool.end();
-      console.log('✅ Database connection closed');
+      console.log('✅ Database pool closed');
     }
+  }
+
+  getSequelize() {
+    return this.sequelize;
   }
 
   // Health check
