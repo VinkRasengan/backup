@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { 
-  TrendingUp, 
-  MessageCircle, 
-  ThumbsUp, 
-  Eye, 
+import {
+  TrendingUp,
+  MessageCircle,
+  ThumbsUp,
+  Eye,
   ExternalLink,
   Clock,
-  Fire
+  Flame
 } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { Card, CardHeader, CardTitle, CardContent } from './ui/Card';
@@ -102,7 +102,7 @@ const TrendingArticles = () => {
       <Card className={`${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
         <CardHeader>
           <CardTitle className={`flex items-center ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-            <Fire className="w-5 h-5 mr-2 text-orange-500" />
+            <Flame className="w-5 h-5 mr-2 text-orange-500" />
             Bài viết thịnh hành
           </CardTitle>
         </CardHeader>
@@ -129,7 +129,7 @@ const TrendingArticles = () => {
     <Card className={`${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
       <CardHeader>
         <CardTitle className={`flex items-center ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-          <Fire className="w-5 h-5 mr-2 text-orange-500" />
+          <Flame className="w-5 h-5 mr-2 text-orange-500" />
           Bài viết thịnh hành
         </CardTitle>
       </CardHeader>

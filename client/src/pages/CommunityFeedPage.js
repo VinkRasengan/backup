@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
-import { 
-  TrendingUp, 
-  Clock, 
-  Filter, 
+import {
+  TrendingUp,
+  Clock,
+  Filter,
   Plus,
   Search,
   Eye,
@@ -12,7 +12,8 @@ import {
   ThumbsUp,
   ThumbsDown,
   AlertTriangle,
-  ExternalLink
+  ExternalLink,
+  Users
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';

@@ -6,7 +6,7 @@ import {
   UserCircleIcon
 } from '@heroicons/react/24/outline';
 import communityAPI from '../../services/communityAPI';
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuth } from '../../context/AuthContext';
 
 const CommentsSection = ({ linkId, className = '' }) => {
   const { user } = useAuth();

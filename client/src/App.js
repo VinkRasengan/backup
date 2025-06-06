@@ -13,6 +13,7 @@ import DashboardPage from './pages/DashboardPage';
 import ProfilePage from './pages/ProfilePage';
 import CheckLinkPage from './pages/CheckLinkPage';
 import ChatPage from './pages/ChatPage';
+import ChatTest from './pages/ChatTest';
 import AdminDashboard from './pages/AdminDashboard';
 import CommunityFeedPage from './pages/CommunityFeedPage';
 import SubmitArticlePage from './pages/SubmitArticlePage';
@@ -128,6 +129,10 @@ function App() {
           <Route
             path="/knowledge"
             element={<KnowledgeBasePage />}
+          />
+          <Route
+            path="/chat-test"
+            element={<ChatTest />}
           />
 
           {/* Catch all route */}

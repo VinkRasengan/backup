@@ -4,9 +4,9 @@ import { MessageCircle, X, Minimize2 } from 'lucide-react';
 import ChatMessage from './ChatMessage';
 import ChatInput from './ChatInput';
 import QuickReplies from './QuickReplies';
-import { chatAPI } from '../../services/api';
 
 const ChatBot = () => {
+  console.log('🔄 [INIT] ChatBot component initialized - NEW VERSION');
   const [isOpen, setIsOpen] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
   const [showQuickReplies, setShowQuickReplies] = useState(true);
@@ -21,6 +21,11 @@ const ChatBot = () => {
   const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef(null);
 
+  // Debug: Log messages state changes
+  React.useEffect(() => {
+    console.log('🔄 Messages state updated:', messages);
+  }, [messages]);
+
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
@@ -30,6 +35,7 @@ const ChatBot = () => {
   }, [messages]);
 
   const handleSendMessage = async (text) => {
+    console.log('🚀 [HANDLER] handleSendMessage called with:', text);
     if (!text.trim()) return;
 
     // Hide quick replies after first user message
@@ -46,14 +52,22 @@ const ChatBot = () => {
     setMessages(prev => [...prev, userMessage]);
     setIsTyping(true);
 
-        try {
-      // Send message to widget endpoint (automatic responses)
-      console.log('📤 Sending to widget chat:', text.trim());
-      const response = await chatAPI.sendWidgetMessage({
-        message: text.trim()
-      });
+    // Simulate typing delay
+    await new Promise(resolve => setTimeout(resolve, 1000));
 
-      console.log('✅ Widget Response:', response.data);
+    try {
+      // Send message to widget endpoint using direct fetch (bypass axios interceptors)
+      console.log('📤 [NEW CODE] Sending to widget chat:', text.trim());
+      const response = await sendWidgetMessageDirect(text.trim());
+
+      console.log('✅ Widget Response:', response);
+      console.log('✅ Response data:', response.data);
+      console.log('✅ Response content:', response.data?.response?.content);
+
+      // Validate response structure
+      if (!response.data?.response?.content) {
+        throw new Error('Invalid response structure from server');
+      }
 
       const botMessage = {
         id: Date.now() + 1,
@@ -62,10 +76,21 @@ const ChatBot = () => {
         timestamp: new Date()
       };
 
-      setMessages(prev => [...prev, botMessage]);
+      console.log('✅ Bot message created:', botMessage);
+      setMessages(prev => {
+        const newMessages = [...prev, botMessage];
+        console.log('✅ Messages updated:', newMessages);
+        return newMessages;
+      });
       setIsTyping(false);
     } catch (error) {
       console.error('❌ API Error:', error);
+      console.error('❌ Error details:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status,
+        statusText: error.response?.statusText
+      });
 
       // Show error message to user
       const errorMessage = {
@@ -96,6 +121,36 @@ const ChatBot = () => {
   const handleQuickReply = (text) => {
     setShowQuickReplies(false); // Ẩn quick replies sau khi click
     handleSendMessage(text);
+  };
+
+
+
+  // Alternative widget message function using fetch instead of axios
+  const sendWidgetMessageDirect = async (message) => {
+    console.log('🔄 [NEW CODE] Using direct fetch for widget message:', message);
+    try {
+      const response = await fetch('http://localhost:5000/api/chat/widget', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          message: message
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      console.log('✅ [NEW CODE] Direct fetch response:', data);
+      // Return the data directly, not wrapped in another data object
+      return data;
+    } catch (error) {
+      console.error('❌ [NEW CODE] Direct fetch error:', error);
+      throw error;
+    }
   };
 
   // Calculate chat window classes
@@ -180,6 +235,7 @@ const ChatBot = () => {
 
               {!isMinimized && (
                 <div className="flex items-center gap-2">
+
                   <button
                     onClick={minimizeChat}
                     className="p-1 hover:bg-white/20 rounded-full transition-colors"

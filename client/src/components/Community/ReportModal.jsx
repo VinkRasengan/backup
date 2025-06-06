@@ -5,7 +5,7 @@ import {
   FlagIcon
 } from '@heroicons/react/24/outline';
 import communityAPI from '../../services/communityAPI';
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuth } from '../../context/AuthContext';
 
 const ReportModal = ({ isOpen, onClose, linkId, linkUrl }) => {
   const { user } = useAuth();
