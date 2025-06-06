@@ -45,6 +45,10 @@ services:
         value: 0.7
       - key: VIRUSTOTAL_API_KEY
         sync: false
+      - key: NEWSAPI_KEY
+        sync: false
+      - key: NEWSDATA_API_KEY
+        sync: false
       - key: FIREBASE_PROJECT_ID
         value: factcheck-1d6e8
       - key: FIREBASE_CLIENT_EMAIL
