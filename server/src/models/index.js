@@ -1,5 +1,18 @@
 const { Sequelize, DataTypes } = require('sequelize');
-const { sequelize } = require('../config/database');
+const sequelize = require('../config/sequelize');
+
+// Check if Sequelize is available
+if (!sequelize) {
+  console.warn('⚠️ Sequelize not available, models will be disabled');
+  module.exports = {
+    sequelize: null,
+    models: {},
+    syncDatabase: async () => {
+      console.warn('⚠️ Database sync skipped - Sequelize not available');
+    }
+  };
+  return;
+}
 
 // Import all models
 const User = require('./User')(sequelize, DataTypes);

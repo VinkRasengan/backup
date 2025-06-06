@@ -10,7 +10,17 @@ const path = require('path');
 
 // Database and Models
 const database = require('./config/database');
-const { syncDatabase } = require('./models');
+let syncDatabase;
+
+try {
+  const modelsModule = require('./models');
+  syncDatabase = modelsModule.syncDatabase;
+} catch (error) {
+  console.warn('⚠️ Models not available:', error.message);
+  syncDatabase = async () => {
+    console.warn('⚠️ Database sync skipped - Models not available');
+  };
+}
 
 // Import middleware (with error handling)
 let errorHandler, authenticateToken, authRoutes, userRoutes, linkRoutes;

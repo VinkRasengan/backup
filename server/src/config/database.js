@@ -66,6 +66,7 @@ class Database {
 
       if (!connectionString) {
         console.warn('⚠️ No database configuration for Sequelize');
+        this.sequelize = null;
         return;
       }
 
@@ -86,6 +87,7 @@ class Database {
       console.log('✅ Sequelize initialized');
     } catch (error) {
       console.error('❌ Failed to initialize Sequelize:', error.message);
+      this.sequelize = null;
     }
   }
 
