@@ -27,7 +27,9 @@ class Database {
         ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
         max: 20,
         idleTimeoutMillis: 30000,
-        connectionTimeoutMillis: 2000,
+        connectionTimeoutMillis: 20000, // Increased to 20 seconds for Render
+        acquireTimeoutMillis: 60000,    // 60 seconds to acquire connection
+        createTimeoutMillis: 30000,     // 30 seconds to create connection
       });
 
       this.pool.on('error', (err) => {
@@ -76,11 +78,22 @@ class Database {
         pool: {
           max: 5,
           min: 0,
-          acquire: 30000,
+          acquire: 60000,  // Increased to 60 seconds
           idle: 10000
         },
         dialectOptions: {
-          ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
+          ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+          connectTimeout: 60000  // 60 seconds connection timeout
+        },
+        retry: {
+          match: [
+            /ConnectionError/,
+            /ConnectionRefusedError/,
+            /ConnectionTimedOutError/,
+            /TimeoutError/,
+            /SequelizeConnectionError/
+          ],
+          max: 3
         }
       });
 
