@@ -54,9 +54,12 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: true
     },
     authProvider: {
-      type: DataTypes.ENUM('firebase', 'backend'),
+      type: DataTypes.STRING(20),
       defaultValue: 'backend',
-      field: 'auth_provider'
+      field: 'auth_provider',
+      validate: {
+        isIn: [['firebase', 'backend']]
+      }
     },
     lastLoginAt: {
       type: DataTypes.DATE,

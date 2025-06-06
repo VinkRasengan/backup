@@ -24,8 +24,11 @@ module.exports = (sequelize, DataTypes) => {
       field: 'user_id'
     },
     role: {
-      type: DataTypes.ENUM('user', 'assistant'),
-      allowNull: false
+      type: DataTypes.STRING(20),
+      allowNull: false,
+      validate: {
+        isIn: [['user', 'assistant']]
+      }
     },
     content: {
       type: DataTypes.TEXT,

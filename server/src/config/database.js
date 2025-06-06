@@ -6,9 +6,17 @@ class Database {
   constructor() {
     this.pool = null;
     this.sequelize = null;
+    this.firestoreDb = null;
     this.isConnected = false;
-    this.initializePool();
-    this.initializeSequelize();
+    this.dbType = 'none'; // 'postgresql', 'firestore', 'memory'
+
+    // Check if Firestore should be primary
+    if (process.env.USE_FIRESTORE === 'true') {
+      this.initializeFirestore();
+    } else {
+      this.initializePool();
+      this.initializeSequelize();
+    }
   }
 
   initializePool() {
@@ -118,11 +126,17 @@ class Database {
       }
 
       this.isConnected = true;
+      this.dbType = 'postgresql';
       console.log('✅ PostgreSQL connection successful');
       await this.createTables();
     } catch (error) {
       console.error('❌ PostgreSQL connection failed:', error.message);
-      this.useInMemoryStorage();
+
+      // Try Firestore fallback
+      const firestoreSuccess = await this.useFirestoreFallback();
+      if (!firestoreSuccess) {
+        this.useInMemoryStorage();
+      }
     }
   }
 
@@ -130,7 +144,7 @@ class Database {
     console.log('🔄 Falling back to in-memory storage');
     this.isConnected = false;
     this.pool = null;
-    
+
     // Initialize in-memory storage
     global.inMemoryDB = global.inMemoryDB || {
       users: new Map(),
@@ -141,6 +155,50 @@ class Database {
       comments: new Map(),
       reports: new Map()
     };
+  }
+
+  async initializeFirestore() {
+    try {
+      console.log('🔥 Initializing Firestore as primary database...');
+      const firestore = require('./firestore');
+      const health = await firestore.healthCheck();
+
+      if (health.status === 'connected') {
+        console.log('✅ Firestore primary database connected');
+        this.firestoreDb = firestore;
+        this.isConnected = true;
+        this.dbType = 'firestore';
+        await this.initializeFirestoreCollections();
+        return true;
+      }
+    } catch (error) {
+      console.error('❌ Firestore initialization failed:', error.message);
+      console.log('🔄 Falling back to in-memory storage');
+      this.useInMemoryStorage();
+    }
+    return false;
+  }
+
+  async useFirestoreFallback() {
+    try {
+      console.log('🔄 Trying Firestore fallback...');
+      const firestore = require('./firestore');
+      const health = await firestore.healthCheck();
+
+      if (health.status === 'connected') {
+        console.log('✅ Firestore fallback successful');
+        this.firestoreDb = firestore;
+        this.isConnected = true;
+        this.dbType = 'firestore';
+        return true;
+      }
+    } catch (error) {
+      console.error('❌ Firestore fallback failed:', error.message);
+    }
+
+    console.log('🔄 Using in-memory storage as final fallback');
+    this.useInMemoryStorage();
+    return false;
   }
 
   async createTables() {
@@ -310,20 +368,87 @@ class Database {
       };
     }
 
+    // PostgreSQL health check
+    if (this.dbType === 'postgresql') {
+      try {
+        const result = await this.query('SELECT NOW() as current_time');
+        return {
+          status: 'connected',
+          type: 'postgresql',
+          currentTime: result.rows[0].current_time,
+          message: 'PostgreSQL connection healthy'
+        };
+      } catch (error) {
+        return {
+          status: 'error',
+          type: 'postgresql',
+          error: error.message
+        };
+      }
+    }
+
+    // Firestore health check
+    if (this.dbType === 'firestore' && this.firestoreDb) {
+      return await this.firestoreDb.healthCheck();
+    }
+
+    return {
+      status: 'unknown',
+      type: this.dbType,
+      message: 'Unknown database type'
+    };
+  }
+
+  async initializeFirestoreCollections() {
+    if (!this.firestoreDb) return;
+
     try {
-      const result = await this.query('SELECT NOW() as current_time');
-      return {
-        status: 'connected',
-        type: 'postgresql',
-        currentTime: result.rows[0].current_time,
-        message: 'PostgreSQL connection healthy'
+      console.log('🔥 Initializing Firestore collections...');
+
+      // Create sample data for testing
+      const sampleUser = {
+        email: 'demo@example.com',
+        displayName: 'Demo User',
+        authProvider: 'backend',
+        isVerified: true,
+        stats: { linksChecked: 0, chatMessages: 0 }
       };
+
+      const sampleLinks = [
+        {
+          url: 'https://google.com',
+          title: 'Google Search',
+          description: 'The world\'s most popular search engine',
+          securityScore: 95,
+          isSafe: true
+        },
+        {
+          url: 'https://github.com',
+          title: 'GitHub',
+          description: 'Code hosting platform for developers',
+          securityScore: 92,
+          isSafe: true
+        }
+      ];
+
+      // Check if collections exist, if not create sample data
+      const usersSnapshot = await this.firestoreDb.getDb().collection('users').limit(1).get();
+      if (usersSnapshot.empty) {
+        await this.firestoreDb.create('users', sampleUser);
+        console.log('✅ Sample user created');
+      }
+
+      const linksSnapshot = await this.firestoreDb.getDb().collection('links').limit(1).get();
+      if (linksSnapshot.empty) {
+        for (const link of sampleLinks) {
+          await this.firestoreDb.create('links', link);
+        }
+        console.log('✅ Sample links created');
+      }
+
+      console.log('✅ Firestore collections initialized');
     } catch (error) {
-      return {
-        status: 'error',
-        type: 'postgresql',
-        error: error.message
-      };
+      console.error('❌ Failed to initialize Firestore collections:', error.message);
     }
   }
 }

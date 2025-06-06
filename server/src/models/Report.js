@@ -24,8 +24,11 @@ module.exports = (sequelize, DataTypes) => {
       field: 'link_id'
     },
     type: {
-      type: DataTypes.ENUM('spam', 'misinformation', 'inappropriate', 'fake', 'other'),
-      allowNull: false
+      type: DataTypes.STRING(50),
+      allowNull: false,
+      validate: {
+        isIn: [['spam', 'misinformation', 'inappropriate', 'fake', 'other']]
+      }
     },
     reason: {
       type: DataTypes.STRING(200),
@@ -36,8 +39,11 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: true
     },
     status: {
-      type: DataTypes.ENUM('pending', 'reviewed', 'resolved', 'dismissed'),
-      defaultValue: 'pending'
+      type: DataTypes.STRING(20),
+      defaultValue: 'pending',
+      validate: {
+        isIn: [['pending', 'reviewed', 'resolved', 'dismissed']]
+      }
     },
     adminNotes: {
       type: DataTypes.TEXT,

@@ -24,9 +24,12 @@ module.exports = (sequelize, DataTypes) => {
       field: 'link_id'
     },
     voteType: {
-      type: DataTypes.ENUM('safe', 'unsafe', 'suspicious'),
+      type: DataTypes.STRING(20),
       allowNull: false,
-      field: 'vote_type'
+      field: 'vote_type',
+      validate: {
+        isIn: [['safe', 'unsafe', 'suspicious']]
+      }
     }
   }, {
     tableName: 'votes',
