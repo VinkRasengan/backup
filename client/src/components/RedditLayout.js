@@ -10,7 +10,7 @@ const RedditLayout = ({ children }) => {
   const location = useLocation();
 
   // Pages that should use the Reddit layout
-  const redditPages = ['/community', '/submit', '/knowledge', '/dashboard', '/admin', '/chat', '/profile'];
+  const redditPages = ['/community', '/submit', '/knowledge', '/dashboard', '/admin', '/chat', '/profile', '/check'];
   const shouldUseRedditLayout = redditPages.some(page => location.pathname.startsWith(page));
 
   if (!shouldUseRedditLayout) {

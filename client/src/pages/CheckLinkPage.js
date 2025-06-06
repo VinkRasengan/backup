@@ -210,24 +210,28 @@ const CheckLinkPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
-      <div className="max-w-4xl mx-auto p-4 md:p-8">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      <div className="max-w-6xl mx-auto p-6">
         {/* Page Header */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className="text-center mb-8"
+          className="mb-8"
         >
-          <div className="mx-auto w-16 h-16 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center mb-4">
-            <Shield className="w-8 h-8 text-white" />
+          <div className="flex items-center gap-4 mb-6">
+            <div className="w-12 h-12 bg-blue-600 rounded-lg flex items-center justify-center">
+              <Shield className="w-6 h-6 text-white" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+                Kiểm Tra Link
+              </h1>
+              <p className="text-gray-600 dark:text-gray-400">
+                Xác minh độ tin cậy của bài viết và nguồn thông tin
+              </p>
+            </div>
           </div>
-          <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-2">
-            Kiểm Tra Độ Tin Cậy Link
-          </h1>
-          <p className="text-gray-600 dark:text-gray-300 text-lg">
-            Nhập URL để xác minh độ tin cậy của bài viết tin tức và nguồn thông tin
-          </p>
         </motion.div>
 
         {/* Check Form */}
@@ -236,7 +240,7 @@ const CheckLinkPage = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.1 }}
         >
-          <Card className="shadow-xl border-0 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm mb-8">
+          <Card className="shadow-sm border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 mb-8">
             <CardHeader className="text-center pb-4">
               <CardTitle className="text-xl text-gray-900 dark:text-gray-100">
                 Nhập Link Cần Kiểm Tra
@@ -273,7 +277,7 @@ const CheckLinkPage = () => {
                 <Button
                   type="submit"
                   loading={isLoading}
-                  className="w-full h-12 text-base font-semibold bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+                  className="w-full h-12 text-base font-semibold bg-blue-600 hover:bg-blue-700"
                   size="lg"
                 >
                   {!isLoading && <Search className="w-5 h-5 mr-2" />}
@@ -295,7 +299,7 @@ const CheckLinkPage = () => {
             {/* Main Result Cards */}
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
               {/* Overall Result */}
-              <Card className="shadow-xl border-0 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm">
+              <Card className="shadow-sm border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
                 <CardHeader className="text-center pb-4">
                   <CardTitle className="text-lg">Kết quả tổng quan</CardTitle>
                 </CardHeader>

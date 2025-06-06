@@ -49,7 +49,12 @@ const RedditNavigation = () => {
     if (path === '/community?sort=trending') {
       return location.pathname === '/community' && location.search.includes('sort=trending');
     }
-    return location.pathname === path;
+    // Handle exact path matching
+    if (path === '/') {
+      return location.pathname === '/';
+    }
+    // Handle sub-paths (e.g., /check, /chat, etc.)
+    return location.pathname.startsWith(path);
   };
 
   const handleLogout = async () => {

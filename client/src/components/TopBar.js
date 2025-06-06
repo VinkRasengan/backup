@@ -12,10 +12,11 @@ import {
   MessageCircle,
   BarChart3,
   Shield,
-  Filter,
   TrendingUp,
   Clock,
-  ThumbsUp
+  ThumbsUp,
+  ChevronRight,
+  Home
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
@@ -105,13 +106,47 @@ const TopBar = () => {
     navigate(`${currentPath}?${urlParams.toString()}`);
   };
 
+  // Get page title and breadcrumb
+  const getPageInfo = () => {
+    const path = location.pathname;
+    const pageMap = {
+      '/': { title: 'Trang chủ', breadcrumb: ['Trang chủ'] },
+      '/community': { title: 'Cộng đồng', breadcrumb: ['Trang chủ', 'Cộng đồng'] },
+      '/check': { title: 'Kiểm tra Link', breadcrumb: ['Trang chủ', 'Kiểm tra'] },
+      '/submit': { title: 'Gửi bài viết', breadcrumb: ['Trang chủ', 'Gửi bài viết'] },
+      '/chat': { title: 'Trợ lý AI', breadcrumb: ['Trang chủ', 'Trợ lý AI'] },
+      '/dashboard': { title: 'Dashboard', breadcrumb: ['Trang chủ', 'Dashboard'] },
+      '/profile': { title: 'Hồ sơ', breadcrumb: ['Trang chủ', 'Hồ sơ'] },
+      '/admin': { title: 'Quản trị', breadcrumb: ['Trang chủ', 'Quản trị'] },
+      '/knowledge': { title: 'Kiến thức', breadcrumb: ['Trang chủ', 'Kiến thức'] }
+    };
+    return pageMap[path] || { title: 'FactCheck', breadcrumb: ['Trang chủ'] };
+  };
+
+  const pageInfo = getPageInfo();
+
   return (
     <div className={`fixed top-0 right-0 left-64 h-16 z-30 ${
       isDarkMode ? 'bg-gray-900 border-gray-700' : 'bg-white border-gray-200'
     } border-b backdrop-blur-sm bg-opacity-95`}>
       <div className="flex items-center justify-between h-full px-6">
-        {/* Search Section */}
+        {/* Search Section with Breadcrumb */}
         <div className="flex-1 max-w-2xl" ref={searchRef}>
+          {/* Breadcrumb */}
+          <div className="flex items-center space-x-2 mb-2">
+            {pageInfo.breadcrumb.map((crumb, index) => (
+              <div key={crumb} className="flex items-center space-x-2">
+                {index > 0 && <ChevronRight className="w-3 h-3 text-gray-400" />}
+                <span className={`text-sm ${
+                  index === pageInfo.breadcrumb.length - 1
+                    ? 'text-blue-600 dark:text-blue-400 font-medium'
+                    : 'text-gray-500 dark:text-gray-400'
+                }`}>
+                  {crumb}
+                </span>
+              </div>
+            ))}
+          </div>
           <form onSubmit={handleSearch} className="relative">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
