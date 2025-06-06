@@ -246,15 +246,24 @@ try {
   console.warn('⚠️ News API routes not loaded:', error.message);
 }
 
+// Community routes
+try {
+  const communityRoutes = require('./routes/community');
+  app.use('/api/community', communityRoutes);
+  console.log('✅ Community routes loaded successfully');
+} catch (error) {
+  console.warn('⚠️ Community routes not loaded:', error.message);
+}
+
 // Community features routes (optional)
 try {
   app.use('/api/votes', authenticateToken, require('./routes/votes'));
   app.use('/api/comments', authenticateToken, require('./routes/comments'));
   app.use('/api/reports', authenticateToken, require('./routes/reports'));
   app.use('/api/admin', authenticateToken, require('./routes/admin'));
-  console.log('✅ Community routes loaded');
+  console.log('✅ Community features routes loaded');
 } catch (error) {
-  console.warn('⚠️ Community routes not loaded:', error.message);
+  console.warn('⚠️ Community features routes not loaded:', error.message);
 }
 
 // 404 handler

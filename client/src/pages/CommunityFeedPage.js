@@ -42,21 +42,38 @@ const CommunityFeedPage = () => {
   const loadArticles = async (pageNum = 1) => {
     try {
       setLoading(true);
-      const response = await fetch(`/api/links/community-feed?page=${pageNum}&sort=${sortBy}&filter=${filterBy}&search=${searchQuery}`, {
+      const params = new URLSearchParams({
+        page: pageNum,
+        sort: sortBy,
+        limit: 10,
+        includeNews: 'true'
+      });
+
+      if (filterBy !== 'all') {
+        params.append('category', filterBy);
+      }
+
+      if (searchQuery) {
+        params.append('search', searchQuery);
+      }
+
+      const response = await fetch(`/api/community/posts?${params}`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
       });
-      
+
       if (response.ok) {
         const data = await response.json();
         if (pageNum === 1) {
-          setArticles(data.articles);
+          setArticles(data.data.posts);
         } else {
-          setArticles(prev => [...prev, ...data.articles]);
+          setArticles(prev => [...prev, ...data.data.posts]);
         }
-        setHasMore(data.hasMore);
+        setHasMore(data.data.pagination.hasNext);
         setPage(pageNum);
+      } else {
+        throw new Error('Failed to fetch posts');
       }
     } catch (error) {
       console.error('Error loading articles:', error);
@@ -73,18 +90,26 @@ const CommunityFeedPage = () => {
     }));
   };
 
-  const getCredibilityColor = (score) => {
-    if (score >= 80) return 'text-green-600 bg-green-100';
-    if (score >= 60) return 'text-yellow-600 bg-yellow-100';
-    if (score >= 40) return 'text-orange-600 bg-orange-100';
-    return 'text-red-600 bg-red-100';
+  const getTrustScoreColor = (score) => {
+    if (score >= 80) return 'text-green-600 bg-green-100 dark:bg-green-900/30 dark:text-green-400';
+    if (score >= 60) return 'text-yellow-600 bg-yellow-100 dark:bg-yellow-900/30 dark:text-yellow-400';
+    if (score >= 40) return 'text-orange-600 bg-orange-100 dark:bg-orange-900/30 dark:text-orange-400';
+    return 'text-red-600 bg-red-100 dark:bg-red-900/30 dark:text-red-400';
   };
 
-  const getCredibilityLabel = (score) => {
+  const getTrustScoreLabel = (score) => {
     if (score >= 80) return 'Đáng tin cậy';
     if (score >= 60) return 'Cần thận trọng';
     if (score >= 40) return 'Nghi ngờ';
     return 'Không đáng tin';
+  };
+
+  const getPostTypeIcon = (type) => {
+    switch (type) {
+      case 'news': return '📰';
+      case 'user_post': return '👤';
+      default: return '📝';
+    }
   };
 
   const ArticleCard = ({ article }) => (
@@ -97,7 +122,7 @@ const CommunityFeedPage = () => {
       <div className="flex">
         {/* Vote Section - Left Side */}
         <div className="flex flex-col items-center p-4 bg-gray-50 dark:bg-gray-700/50 min-w-[80px]">
-          <VoteComponent linkId={article.id} />
+          <VoteComponent linkId={article.id} postData={article} />
         </div>
 
         {/* Content Section - Right Side */}
@@ -107,16 +132,22 @@ const CommunityFeedPage = () => {
             <div className="flex-1">
               {/* Meta Info */}
               <div className="flex items-center space-x-2 text-xs text-gray-500 dark:text-gray-400 mb-2">
-                <span className="font-medium">r/factcheck</span>
+                <span className="font-medium">{getPostTypeIcon(article.type)} {article.source}</span>
                 <span>•</span>
-                <span>Đăng bởi u/{article.author?.firstName}{article.author?.lastName}</span>
+                <span>Đăng bởi {article.author?.name}</span>
                 <span>•</span>
                 <span>{new Date(article.createdAt).toLocaleDateString('vi-VN')}</span>
-                {article.credibilityScore && (
+                {article.isVerified && (
                   <>
                     <span>•</span>
-                    <div className={`px-2 py-0.5 rounded-full text-xs font-medium ${getCredibilityColor(article.credibilityScore)}`}>
-                      {getCredibilityLabel(article.credibilityScore)}
+                    <span className="text-blue-500 font-medium">✓ Đã xác minh</span>
+                  </>
+                )}
+                {article.trustScore && (
+                  <>
+                    <span>•</span>
+                    <div className={`px-2 py-0.5 rounded-full text-xs font-medium ${getTrustScoreColor(article.trustScore)}`}>
+                      {getTrustScoreLabel(article.trustScore)} ({article.trustScore}%)
                     </div>
                   </>
                 )}
@@ -127,25 +158,41 @@ const CommunityFeedPage = () => {
                 {article.title || 'Untitled Article'}
               </h3>
 
-              {/* Description */}
-              {article.description && (
+              {/* Content */}
+              {article.content && (
                 <p className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'} mb-3 line-clamp-3`}>
-                  {article.description}
+                  {article.content}
                 </p>
               )}
 
               {/* URL Preview */}
-              <div className="flex items-center space-x-2 mb-3 p-2 bg-gray-50 dark:bg-gray-700 rounded border-l-4 border-blue-500">
-                <ExternalLink size={14} className="text-blue-500 flex-shrink-0" />
-                <a
-                  href={article.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-blue-500 hover:text-blue-600 text-sm truncate"
-                >
-                  {article.url}
-                </a>
-              </div>
+              {article.url && (
+                <div className="flex items-center space-x-2 mb-3 p-2 bg-gray-50 dark:bg-gray-700 rounded border-l-4 border-blue-500">
+                  <ExternalLink size={14} className="text-blue-500 flex-shrink-0" />
+                  <a
+                    href={article.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-500 hover:text-blue-600 text-sm truncate"
+                  >
+                    {article.url}
+                  </a>
+                </div>
+              )}
+
+              {/* Tags */}
+              {article.tags && article.tags.length > 0 && (
+                <div className="flex flex-wrap gap-1 mb-3">
+                  {article.tags.slice(0, 5).map((tag, index) => (
+                    <span
+                      key={index}
+                      className="px-2 py-1 text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full"
+                    >
+                      #{tag}
+                    </span>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 
@@ -157,7 +204,7 @@ const CommunityFeedPage = () => {
                 ${isDarkMode ? 'hover:bg-gray-700 text-gray-400' : 'hover:bg-gray-100 text-gray-600'}`}
             >
               <MessageCircle size={16} />
-              <span>{article.commentCount || 0} bình luận</span>
+              <span>{article.commentsCount || 0} bình luận</span>
             </button>
 
             <button
@@ -242,9 +289,10 @@ const CommunityFeedPage = () => {
         <div className="flex items-center space-x-1 mb-6 border-b border-gray-200 dark:border-gray-700">
           {[
             { value: 'all', label: 'Tất cả', icon: '📋' },
-            { value: 'safe', label: 'Đáng tin cậy', icon: '✅' },
-            { value: 'suspicious', label: 'Nghi ngờ', icon: '⚠️' },
-            { value: 'unsafe', label: 'Không đáng tin', icon: '❌' }
+            { value: 'health', label: 'Sức khỏe', icon: '🏥' },
+            { value: 'security', label: 'Bảo mật', icon: '🔒' },
+            { value: 'technology', label: 'Công nghệ', icon: '💻' },
+            { value: 'news', label: 'Tin tức', icon: '📰' }
           ].map((filter) => (
             <button
               key={filter.value}
