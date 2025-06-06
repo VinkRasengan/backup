@@ -268,18 +268,7 @@ try {
   console.warn('⚠️ Community features routes not loaded:', error.message);
 }
 
-// 404 handler - Updated for Render deployment
-app.use('*', (req, res) => {
-  res.status(404).json({
-    error: 'Route not found',
-    path: req.originalUrl,
-    timestamp: new Date().toISOString(),
-    deployment: 'render-community-features-v2'
-  });
-});
-
-// Error handling middleware
-app.use(errorHandler);
+// Error handling middleware will be added after routes in startServer()
 
 // Initialize database and start server
 async function startServer() {
@@ -290,6 +279,20 @@ async function startServer() {
   } catch (error) {
     console.warn('⚠️ Database sync failed, continuing with in-memory storage:', error.message);
   }
+
+  // 404 handler - MUST be after all routes
+  app.use('*', (req, res) => {
+    res.status(404).json({
+      code: 404,
+      message: 'You have journeyed into the unknown. Where routes do not exist.',
+      path: req.originalUrl,
+      timestamp: new Date().toISOString(),
+      deployment: 'render-community-features-v2'
+    });
+  });
+
+  // Error handling middleware
+  app.use(errorHandler);
 
   // Start server
   app.listen(PORT, () => {
