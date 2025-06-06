@@ -1,4 +1,9 @@
-const { auth, db, collections } = require('../config/firebase-emulator');
+// Use production config based on environment
+const firebaseConfig = process.env.NODE_ENV === 'production'
+  ? require('../config/firebase-production')
+  : require('../config/firebase-emulator');
+
+const { auth, db, collections } = firebaseConfig;
 
 class AuthController {
   // Sync user data to Firestore after Firebase Auth registration

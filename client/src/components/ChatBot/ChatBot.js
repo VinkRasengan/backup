@@ -156,14 +156,17 @@ const ChatBot = () => {
   // Calculate chat window classes
   const getChatWindowClasses = () => {
     if (isMinimized) {
-      return 'bottom-2 right-4 sm:bottom-4 sm:right-6 w-24 h-20 cursor-pointer';
+      return 'bottom-4 right-4 sm:bottom-6 sm:right-6 w-64 h-14 cursor-pointer';
     }
 
-    // Kích thước cố định để tránh layout shift
-    const height = 'h-[500px]';
-    const maxHeight = 'max-h-[calc(100vh-2rem)]';
-
-    return `bottom-2 right-4 w-96 max-w-[calc(100vw-2rem)] ${height} ${maxHeight} sm:w-96 sm:bottom-4 sm:right-6`;
+    // Responsive sizing with better proportions
+    if (window.innerWidth < 640) { // Mobile
+      return 'bottom-4 right-4 left-4 h-[450px] max-h-[75vh]';
+    } else if (window.innerWidth < 1024) { // Tablet
+      return 'bottom-4 right-4 w-80 h-[480px] max-h-[80vh] sm:bottom-6 sm:right-6';
+    } else { // Desktop
+      return 'bottom-4 right-4 w-96 h-[520px] max-h-[85vh] sm:bottom-6 sm:right-6';
+    }
   };
 
   return (
@@ -255,11 +258,11 @@ const ChatBot = () => {
             {/* Content - chỉ hiển thị khi không minimize */}
             {!isMinimized && (
               <div className="flex flex-col flex-1 min-h-0">
-                {/* Messages Area - Flexible height */}
+                {/* Messages Area - Optimized height */}
                 <div
-                  className="flex-1 overflow-y-auto p-3 space-y-3 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-transparent min-h-0"
+                  className="flex-1 overflow-y-auto p-4 space-y-3 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-transparent min-h-0"
                   style={{
-                    maxHeight: showQuickReplies ? '240px' : '360px'
+                    maxHeight: showQuickReplies ? '280px' : '380px'
                   }}
                 >
                   {messages.map((message) => (
@@ -296,15 +299,15 @@ const ChatBot = () => {
                   <div ref={messagesEndRef} />
                 </div>
 
-                {/* Quick Replies - Compact design */}
+                {/* Quick Replies - Better positioning */}
                 {showQuickReplies && (
-                  <div className="flex-shrink-0 px-3 py-2">
+                  <div className="flex-shrink-0 px-4 py-3 border-t border-gray-200 dark:border-gray-700">
                     <QuickReplies onQuickReply={handleQuickReply} disabled={isTyping} />
                   </div>
                 )}
 
-                {/* Input Area - Compact design */}
-                <div className="flex-shrink-0 border-t border-gray-200 dark:border-gray-700 p-3 bg-white dark:bg-gray-800 rounded-b-2xl">
+                {/* Input Area - Enhanced design */}
+                <div className="flex-shrink-0 border-t border-gray-200 dark:border-gray-700 p-4 bg-gray-50/50 dark:bg-gray-800/50 rounded-b-2xl">
                   <ChatInput onSendMessage={handleSendMessage} disabled={isTyping} />
                 </div>
               </div>

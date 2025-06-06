@@ -7,7 +7,7 @@ const getApiBaseUrl = () => {
   if (process.env.NODE_ENV === 'production') {
     return 'https://factcheck-backend.onrender.com/api';
   }
-  return process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+  return process.env.REACT_APP_API_URL || 'http://localhost:5001/api';
 };
 
 const api = axios.create({

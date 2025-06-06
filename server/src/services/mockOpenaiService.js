@@ -32,41 +32,77 @@ class MockOpenAIService {
     const lowerMessage = message.toLowerCase();
 
     if (lowerMessage.includes('phishing') || lowerMessage.includes('lừa đảo')) {
-      return `🎣 **Cách nhận biết email phishing:**
+      const phishingResponses = [
+        `🎣 **Cách nhận biết email phishing:**
 
 1. **Kiểm tra địa chỉ gửi**: Email phishing thường sử dụng địa chỉ giả mạo hoặc tên miền tương tự các tổ chức uy tín.
-
 2. **Nội dung khẩn cấp**: Thường tạo cảm giác cấp bách như "tài khoản sẽ bị khóa", "cần xác minh ngay".
-
 3. **Liên kết đáng ngờ**: Hover chuột lên link để xem URL thực. Phishing thường dùng URL rút gọn hoặc tên miền giả.
-
 4. **Yêu cầu thông tin cá nhân**: Ngân hàng, tổ chức uy tín không bao giờ yêu cầu mật khẩu qua email.
-
 5. **Lỗi chính tả**: Email phishing thường có nhiều lỗi ngữ pháp, chính tả.
 
-**Lời khuyên**: Luôn truy cập trực tiếp website chính thức thay vì click link trong email đáng ngờ.`;
+**Lời khuyên**: Luôn truy cập trực tiếp website chính thức thay vì click link trong email đáng ngờ.`,
+
+        `🚨 **Dấu hiệu email lừa đảo phổ biến:**
+
+• **Lỗi chính tả**: Nhiều lỗi ngữ pháp, chính tả trong nội dung
+• **Địa chỉ giả mạo**: vd: "arnazon.com" thay vì "amazon.com"
+• **Áp lực thời gian**: "Chỉ còn 2 giờ để xác nhận"
+• **Quà tặng bất ngờ**: "Bạn đã trúng 1 tỷ đồng"
+• **Yêu cầu cập nhật**: "Cập nhật thông tin tài khoản ngay"
+
+**Cách xử lý**: Không click link, liên hệ trực tiếp với tổ chức qua kênh chính thức.`,
+
+        `🔍 **Phân tích email phishing chi tiết:**
+
+**Các thủ đoạn thường gặp:**
+- Giả mạo logo, giao diện của ngân hàng/công ty uy tín
+- Sử dụng tên miền tương tự: "vietcombank.com.vn" thay vì "vietcombank.com.vn"
+- Tạo cảm giác khẩn cấp để người dùng không suy nghĩ kỹ
+- Đính kèm file độc hại hoặc link dẫn đến trang web giả mạo
+
+**Cách bảo vệ**: Luôn kiểm tra kỹ trước khi hành động, liên hệ trực tiếp qua hotline chính thức.`
+      ];
+      return phishingResponses[Math.floor(Math.random() * phishingResponses.length)];
     }
 
     if (lowerMessage.includes('mật khẩu') || lowerMessage.includes('password')) {
-      return `🔐 **Cách tạo mật khẩu mạnh:**
+      const passwordResponses = [
+        `🔐 **Cách tạo mật khẩu mạnh:**
 
 1. **Độ dài**: Tối thiểu 12 ký tự, càng dài càng tốt.
+2. **Kết hợp đa dạng**: Chữ hoa, chữ thường, số, ký tự đặc biệt
+3. **Tránh thông tin cá nhân**: Không dùng tên, ngày sinh, số điện thoại
+4. **Unique cho mỗi tài khoản**: Mỗi website/app một mật khẩu riêng
+5. **Sử dụng Password Manager**: LastPass, 1Password, Bitwarden để quản lý
 
-2. **Kết hợp đa dạng**: 
-   - Chữ hoa (A-Z)
-   - Chữ thường (a-z) 
-   - Số (0-9)
-   - Ký tự đặc biệt (!@#$%^&*)
+**Ví dụ**: MyC@t15Fluffy&Cute2024!
+**Lời khuyên**: Bật 2FA cho tất cả tài khoản quan trọng.`,
 
-3. **Tránh thông tin cá nhân**: Không dùng tên, ngày sinh, số điện thoại.
+        `🛡️ **Bí quyết mật khẩu an toàn:**
 
-4. **Unique cho mỗi tài khoản**: Mỗi website/app một mật khẩu riêng.
+**Phương pháp Passphrase**: Kết hợp 4-5 từ ngẫu nhiên
+- Ví dụ: "Coffee#Mountain$Blue!2024"
+- Dễ nhớ nhưng khó đoán
 
-5. **Sử dụng Password Manager**: LastPass, 1Password, Bitwarden để quản lý.
+**Quy tắc 3-2-1**:
+- 3 loại ký tự khác nhau (chữ, số, ký hiệu)
+- 2 chữ hoa ít nhất
+- 1 ký tự đặc biệt
 
-**Ví dụ mật khẩu mạnh**: MyC@t15Fluffy&Cute2024!
+**Tránh**: Mật khẩu phổ biến như "123456", "password", "qwerty"`,
 
-**Lời khuyên**: Bật 2FA (xác thực 2 bước) cho tất cả tài khoản quan trọng.`;
+        `🔑 **Quản lý mật khẩu hiệu quả:**
+
+**Password Manager tốt nhất 2024:**
+• **Bitwarden**: Miễn phí, open-source
+• **1Password**: Giao diện đẹp, tính năng gia đình
+• **LastPass**: Phổ biến, đồng bộ đa thiết bị
+• **Dashlane**: VPN tích hợp, dark web monitoring
+
+**Lợi ích**: Tự động tạo mật khẩu mạnh, tự động điền, cảnh báo rò rỉ dữ liệu.`
+      ];
+      return passwordResponses[Math.floor(Math.random() * passwordResponses.length)];
     }
 
     if (lowerMessage.includes('malware') || lowerMessage.includes('virus')) {
@@ -131,21 +167,46 @@ class MockOpenAIService {
 **Lời khuyên**: Thường xuyên review và xóa bài đăng cũ có thông tin nhạy cảm.`;
     }
 
-    // Default response
-    return `🛡️ **Chào bạn!** 
+    // Default responses với tính năng đa dạng
+    const defaultResponses = [
+      `🛡️ **Chào bạn!**
 
 Tôi là trợ lý AI chuyên về bảo mật mạng. Tôi có thể giúp bạn về:
 
 • **Phishing & Lừa đảo**: Cách nhận biết và phòng tránh
-• **Mật khẩu**: Tạo và quản lý mật khẩu an toàn  
+• **Mật khẩu**: Tạo và quản lý mật khẩu an toàn
 • **Malware**: Bảo vệ khỏi virus và phần mềm độc hại
 • **Bảo mật WiFi**: Thiết lập mạng an toàn
 • **Mạng xã hội**: Bảo vệ thông tin cá nhân
 • **Phân tích URL**: Đánh giá tính an toàn của website
 
-Bạn có câu hỏi cụ thể nào về bảo mật không? Tôi sẽ cung cấp lời khuyên chi tiết và thực tế.
+Bạn có câu hỏi cụ thể nào về bảo mật không? Tôi sẽ cung cấp lời khuyên chi tiết và thực tế.`,
 
-*Lưu ý: Đây là phiên bản demo. Để sử dụng đầy đủ tính năng AI, vui lòng cấu hình OpenAI API key.*`;
+      `🔐 **Xin chào! Tôi là chuyên gia bảo mật của bạn.**
+
+Hôm nay bạn muốn tìm hiểu về vấn đề bảo mật nào?
+
+🎯 **Chủ đề hot nhất:**
+• Cách nhận biết tin nhắn lừa đảo qua Zalo/Telegram
+• Bảo vệ tài khoản ngân hàng online
+• Kiểm tra website có an toàn không
+• Tạo mật khẩu không thể hack được
+
+Hãy chia sẻ thắc mắc của bạn, tôi sẽ đưa ra lời khuyên cụ thể!`,
+
+      `⚡ **FactCheck Security Assistant sẵn sàng hỗ trợ!**
+
+Trong thời đại số, bảo mật là ưu tiên hàng đầu. Tôi có thể giúp bạn:
+
+🔍 **Phân tích & Đánh giá**: URL, email, file đáng ngờ
+🛡️ **Bảo vệ**: Tài khoản, thiết bị, dữ liệu cá nhân
+📚 **Hướng dẫn**: Từ cơ bản đến nâng cao
+🚨 **Cảnh báo**: Các mối đe dọa mới nhất
+
+Bạn đang gặp vấn đề bảo mật nào cần giải quyết?`
+    ];
+
+    return defaultResponses[Math.floor(Math.random() * defaultResponses.length)];
   }
 
   async analyzeUrlSecurity(url, virusTotalData = null) {
