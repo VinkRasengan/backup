@@ -104,7 +104,9 @@ app.get('/api/health', async (req, res) => {
       database: dbHealth,
       apis: {
         openai: !!process.env.OPENAI_API_KEY,
-        virustotal: !!process.env.VIRUSTOTAL_API_KEY
+        virustotal: !!process.env.VIRUSTOTAL_API_KEY,
+        newsapi: !!process.env.NEWSAPI_API_KEY,
+        newsdata: !!process.env.NEWSDATA_API_KEY
       },
       authentication: {
         type: 'firebase-backend-bridge',
@@ -216,6 +218,15 @@ try {
       errorDetails: error.message
     });
   });
+}
+
+// News API routes
+try {
+  const newsRoutes = require('./routes/news');
+  app.use('/api/news', newsRoutes);
+  console.log('✅ News API routes loaded successfully');
+} catch (error) {
+  console.warn('⚠️ News API routes not loaded:', error.message);
 }
 
 // Community features routes (optional)

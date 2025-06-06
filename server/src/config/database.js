@@ -100,6 +100,7 @@ class Database {
         firebase_uid VARCHAR(255) UNIQUE, -- Firebase UID for Firebase users
         first_name VARCHAR(100),
         last_name VARCHAR(100),
+        display_name VARCHAR(200),
         is_verified BOOLEAN DEFAULT FALSE,
         avatar_url TEXT,
         bio TEXT,
@@ -170,11 +171,13 @@ class Database {
       -- Reports table
       CREATE TABLE IF NOT EXISTS reports (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-        reporter_id UUID REFERENCES users(id) ON DELETE CASCADE,
+        user_id UUID REFERENCES users(id) ON DELETE CASCADE,
         link_id UUID REFERENCES links(id) ON DELETE CASCADE,
-        reason VARCHAR(100) NOT NULL,
+        type VARCHAR(50) NOT NULL CHECK (type IN ('spam', 'misinformation', 'inappropriate', 'fake', 'other')),
+        reason VARCHAR(200) NOT NULL,
         description TEXT,
-        status VARCHAR(20) DEFAULT 'pending' CHECK (status IN ('pending', 'reviewed', 'resolved')),
+        status VARCHAR(20) DEFAULT 'pending' CHECK (status IN ('pending', 'reviewed', 'resolved', 'dismissed')),
+        admin_notes TEXT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
