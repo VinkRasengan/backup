@@ -28,23 +28,16 @@ let errorHandler, authenticateToken, authRoutes, userRoutes, linkRoutes;
 try {
   errorHandler = require('./middleware/errorHandler');
 
-  // Try pure auth first (no Firebase), then hybrid, then regular
+  // Use pure backend authentication (JWT only)
   try {
     const pureAuth = require('./middleware/pureAuth');
     authenticateToken = pureAuth.authenticateToken;
-    console.log('✅ Using pure backend authentication (No Firebase)');
+    console.log('✅ Using pure backend authentication (JWT only)');
   } catch (pureError) {
-    console.warn('⚠️ Pure auth not available, trying hybrid auth...');
-    try {
-      const hybridAuth = require('./middleware/hybridAuth');
-      authenticateToken = hybridAuth.authenticateToken;
-      console.log('✅ Using hybrid authentication (Firebase + JWT)');
-    } catch (hybridError) {
-      console.warn('⚠️ Hybrid auth not available, trying regular auth...');
-      const authMiddleware = require('./middleware/auth');
-      authenticateToken = authMiddleware.authenticateToken;
-      console.log('✅ Using regular authentication');
-    }
+    console.warn('⚠️ Pure auth not available, using fallback auth...');
+    const authMiddleware = require('./middleware/auth');
+    authenticateToken = authMiddleware.authenticateToken;
+    console.log('✅ Using fallback authentication');
   }
 
   authRoutes = require('./routes/auth');
@@ -146,28 +139,14 @@ app.get('/api/health', async (req, res) => {
 
 // API routes (with error handling)
 try {
-  // Try Firebase-Backend bridge first, then pure auth, then fallbacks
+  // Use pure backend auth routes (JWT only)
   try {
-    const firebaseBackendRoutes = require('./routes/firebaseBackend');
-    app.use('/api/auth', firebaseBackendRoutes);
-    console.log('✅ Using Firebase-Backend bridge routes (Firebase Auth + Backend Features)');
-  } catch (firebaseBackendError) {
-    console.warn('⚠️ Firebase-Backend bridge not available, trying pure auth...');
-    try {
-      const pureAuthRoutes = require('./routes/pureAuth');
-      app.use('/api/auth', pureAuthRoutes);
-      console.log('✅ Using pure backend auth routes (No Firebase)');
-    } catch (pureError) {
-      console.warn('⚠️ Pure auth not available, trying hybrid auth routes...');
-      try {
-        const hybridAuthRoutes = require('./routes/hybridAuth');
-        app.use('/api/auth', hybridAuthRoutes);
-        console.log('✅ Using hybrid auth routes');
-      } catch (hybridError) {
-        console.warn('⚠️ Hybrid auth routes not available, using regular auth routes');
-        if (authRoutes) app.use('/api/auth', authRoutes);
-      }
-    }
+    const pureAuthRoutes = require('./routes/pureAuth');
+    app.use('/api/auth', pureAuthRoutes);
+    console.log('✅ Using pure backend auth routes (JWT only)');
+  } catch (pureError) {
+    console.warn('⚠️ Pure auth routes not available, using fallback auth routes');
+    if (authRoutes) app.use('/api/auth', authRoutes);
   }
 
   if (userRoutes) app.use('/api/users', authenticateToken, userRoutes);
