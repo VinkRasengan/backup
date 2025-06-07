@@ -127,15 +127,27 @@ const VoteComponent = ({ linkId, postData, className = '' }) => {
         });
       }
 
-      // TODO: Send to API
-      // await fetch(`/api/votes/${linkId}`, {
-      //   method: 'POST',
-      //   headers: {
-      //     'Content-Type': 'application/json',
-      //     'Authorization': `Bearer ${localStorage.getItem('token')}`
-      //   },
-      //   body: JSON.stringify({ voteType: userVote === voteType ? null : voteType })
-      // });
+      // Send to API
+      if (userVote === voteType) {
+        // Delete vote
+        await fetch(`/api/votes/${linkId}`, {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('authToken') || localStorage.getItem('backendToken')}`
+          }
+        });
+      } else {
+        // Submit new vote
+        await fetch(`/api/votes/${linkId}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('authToken') || localStorage.getItem('backendToken')}`
+          },
+          body: JSON.stringify({ voteType })
+        });
+      }
 
     } catch (error) {
       console.error('Vote error:', error);

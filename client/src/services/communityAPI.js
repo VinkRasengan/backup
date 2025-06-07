@@ -1,5 +1,17 @@
 // Community API Service - Voting, Comments, Reports
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://factcheck-backend.onrender.com';
+const getApiBaseUrl = () => {
+  if (process.env.REACT_APP_API_URL) {
+    return process.env.REACT_APP_API_URL.replace('/api', ''); // Remove /api suffix if present
+  }
+
+  if (process.env.NODE_ENV === 'production') {
+    return ''; // Use relative URL for production
+  }
+
+  return 'http://localhost:5002'; // Development fallback
+};
+
+const API_BASE_URL = getApiBaseUrl();
 
 class CommunityAPI {
   constructor() {

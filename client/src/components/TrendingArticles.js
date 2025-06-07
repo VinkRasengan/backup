@@ -24,10 +24,10 @@ const TrendingArticles = () => {
   const loadTrendingArticles = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/links/trending?limit=5');
+      const response = await fetch('/api/community/posts?sort=trending&limit=5');
       if (response.ok) {
         const data = await response.json();
-        setTrendingArticles(data.articles);
+        setTrendingArticles(data.data.posts);
       }
     } catch (error) {
       console.error('Error loading trending articles:', error);

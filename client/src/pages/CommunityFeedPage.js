@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
+import { useCommunityData } from '../hooks/useCommunityData';
 import {
   TrendingUp,
   Clock,
@@ -24,64 +25,71 @@ import ReportModal from '../components/Community/ReportModal';
 const CommunityFeedPage = () => {
   const { user } = useAuth();
   const { isDarkMode } = useTheme();
-  const [articles, setArticles] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [sortBy, setSortBy] = useState('trending'); // trending, newest, most_voted
-  const [filterBy, setFilterBy] = useState('all'); // all, safe, unsafe, suspicious
+  const { data: communityData, loading, error, fetchData, getCacheStats } = useCommunityData();
+
+  const [sortBy, setSortBy] = useState('trending');
+  const [filterBy, setFilterBy] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedArticle, setSelectedArticle] = useState(null);
   const [showComments, setShowComments] = useState({});
   const [showReportModal, setShowReportModal] = useState(null);
   const [page, setPage] = useState(1);
-  const [hasMore, setHasMore] = useState(true);
+  const [isSearching, setIsSearching] = useState(false);
 
-  useEffect(() => {
-    loadArticles();
-  }, [sortBy, filterBy, searchQuery]);
+  // Refs for debouncing
+  const searchTimeoutRef = useRef(null);
 
-  const loadArticles = async (pageNum = 1) => {
-    try {
-      setLoading(true);
-      const params = new URLSearchParams({
-        page: pageNum,
-        sort: sortBy,
-        limit: 10,
-        includeNews: 'true'
-      });
+  // Extract data from hook
+  const articles = communityData.posts || [];
+  const hasMore = communityData.pagination?.hasNext || false;
 
-      if (filterBy !== 'all') {
-        params.append('category', filterBy);
-      }
+  // Smart data fetching with caching
+  const loadData = useCallback((params) => {
+    const finalParams = {
+      sort: params.sort || sortBy,
+      filter: params.filter || filterBy,
+      search: params.search || searchQuery,
+      page: params.page || 1
+    };
 
-      if (searchQuery) {
-        params.append('search', searchQuery);
-      }
+    fetchData(finalParams);
+    setPage(finalParams.page);
+  }, [fetchData, sortBy, filterBy, searchQuery]);
 
-      const response = await fetch(`/api/community/posts?${params}`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        if (pageNum === 1) {
-          setArticles(data.data.posts);
-        } else {
-          setArticles(prev => [...prev, ...data.data.posts]);
-        }
-        setHasMore(data.data.pagination.hasNext);
-        setPage(pageNum);
-      } else {
-        throw new Error('Failed to fetch posts');
-      }
-    } catch (error) {
-      console.error('Error loading articles:', error);
-      toast.error('Không thể tải danh sách bài viết');
-    } finally {
-      setLoading(false);
+  // Debounced search function
+  const debouncedSearch = useCallback((query) => {
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
     }
-  };
+
+    setIsSearching(true);
+    searchTimeoutRef.current = setTimeout(() => {
+      loadData({ search: query, page: 1 });
+      setIsSearching(false);
+    }, 300);
+  }, [loadData]);
+
+  // Effect for immediate filter/sort changes (no debounce)
+  useEffect(() => {
+    console.log('🔄 Filter/Sort changed:', { sortBy, filterBy });
+    loadData({ page: 1 });
+  }, [sortBy, filterBy, loadData]);
+
+  // Effect for search query changes (with debounce)
+  useEffect(() => {
+    if (searchQuery.trim()) {
+      debouncedSearch(searchQuery);
+    } else if (searchQuery === '') {
+      loadData({ search: '', page: 1 });
+    }
+  }, [searchQuery, debouncedSearch, loadData]);
+
+  // Load more articles (pagination)
+  const loadMore = useCallback(() => {
+    if (!loading && hasMore) {
+      loadData({ page: page + 1 });
+    }
+  }, [loading, hasMore, page, loadData]);
 
   const toggleComments = (articleId) => {
     setShowComments(prev => ({
@@ -335,7 +343,7 @@ const CommunityFeedPage = () => {
         {hasMore && articles.length > 0 && (
           <div className="text-center mt-8">
             <button
-              onClick={() => loadArticles(page + 1)}
+              onClick={loadMore}
               disabled={loading}
               className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white px-6 py-2 rounded-lg transition-colors"
             >

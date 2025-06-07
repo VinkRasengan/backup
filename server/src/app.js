@@ -60,7 +60,7 @@ try {
 }
 
 const app = express();
-const PORT = process.env.PORT || 5001;
+const PORT = process.env.PORT || 3000;
 
 // Production environment check
 const isProduction = process.env.NODE_ENV === 'production'; // Changed from 5000 to avoid Firebase hosting conflict
@@ -89,6 +89,9 @@ app.use(morgan('combined'));
 // Body parsing middleware
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
+
+// Serve static files from React build
+app.use(express.static(path.join(__dirname, '../../client/build')));
 
 // Health check endpoint for Render
 app.get('/health', (req, res) => {
@@ -249,13 +252,30 @@ try {
   console.warn('⚠️ Community routes not loaded:', error.message);
 }
 
+// Knowledge base routes
+try {
+  const knowledgeRoutes = require('./routes/knowledge');
+  app.use('/api/knowledge', knowledgeRoutes);
+  console.log('✅ Knowledge base routes loaded successfully');
+} catch (error) {
+  console.warn('⚠️ Knowledge base routes not loaded:', error.message);
+}
+
 // Community features routes (optional)
 try {
-  app.use('/api/votes', authenticateToken, require('./routes/votes'));
-  app.use('/api/comments', authenticateToken, require('./routes/comments'));
-  app.use('/api/reports', authenticateToken, require('./routes/reports'));
-  app.use('/api/admin', authenticateToken, require('./routes/admin'));
-  console.log('✅ Community features routes loaded');
+  // Vote routes without auth requirement (allow anonymous voting)
+  app.use('/api/votes', require('./routes/votes'));
+  console.log('✅ Vote routes loaded (public access)');
+
+  // Other community routes with auth
+  try {
+    app.use('/api/comments', authenticateToken, require('./routes/comments'));
+    app.use('/api/reports', authenticateToken, require('./routes/reports'));
+    app.use('/api/admin', authenticateToken, require('./routes/admin'));
+    console.log('✅ Community features routes loaded');
+  } catch (authError) {
+    console.warn('⚠️ Authenticated community routes not loaded:', authError.message);
+  }
 } catch (error) {
   console.warn('⚠️ Community features routes not loaded:', error.message);
 }
@@ -272,15 +292,20 @@ async function startServer() {
     console.warn('⚠️ Database sync failed, continuing with in-memory storage:', error.message);
   }
 
-  // 404 handler - MUST be after all routes
-  app.use('*', (req, res) => {
-    res.status(404).json({
-      code: 404,
-      message: 'You have journeyed into the unknown. Where routes do not exist.',
-      path: req.originalUrl,
-      timestamp: new Date().toISOString(),
-      deployment: 'render-community-features-v2'
-    });
+  // Serve React app for all non-API routes
+  app.get('*', (req, res) => {
+    // If it's an API route that doesn't exist, return 404 JSON
+    if (req.path.startsWith('/api/')) {
+      return res.status(404).json({
+        code: 404,
+        message: 'API endpoint not found',
+        path: req.originalUrl,
+        timestamp: new Date().toISOString()
+      });
+    }
+
+    // Otherwise serve React app
+    res.sendFile(path.join(__dirname, '../../client/build/index.html'));
   });
 
   // Error handling middleware

@@ -1,15 +1,30 @@
 const express = require('express');
 const router = express.Router();
-const voteController = require('../controllers/voteController');
-const { validateRequest, schemas } = require('../middleware/validation');
+
+// Try Firestore controller first, fallback to regular controller
+let voteController;
+try {
+  voteController = require('../controllers/firestoreVoteController');
+  console.log('✅ Using Firestore Vote Controller');
+} catch (error) {
+  console.warn('⚠️ Firestore Vote Controller not available, using fallback');
+  try {
+    voteController = require('../controllers/voteController');
+  } catch (fallbackError) {
+    console.error('❌ No vote controller available');
+    voteController = {
+      submitVote: (req, res) => res.status(503).json({ error: 'Vote service unavailable' }),
+      getVoteStats: (req, res) => res.status(503).json({ error: 'Vote service unavailable' }),
+      getUserVote: (req, res) => res.status(503).json({ error: 'Vote service unavailable' }),
+      deleteVote: (req, res) => res.status(503).json({ error: 'Vote service unavailable' })
+    };
+  }
+}
 
 // @route   POST /api/votes/:linkId
 // @desc    Submit or update a vote for a link
 // @access  Private
-router.post('/:linkId', 
-  validateRequest(schemas.submitVote),
-  voteController.submitVote
-);
+router.post('/:linkId', voteController.submitVote);
 
 // @route   GET /api/votes/:linkId/stats
 // @desc    Get vote statistics for a link

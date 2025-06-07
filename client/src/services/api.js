@@ -4,10 +4,17 @@ import mockAPI from './mockAPI';
 
 // Create axios instance for Render deployment
 const getApiBaseUrl = () => {
-  if (process.env.NODE_ENV === 'production') {
-    return 'https://factcheck-backend.onrender.com/api';
+  // Use environment variable if set, otherwise use production URL
+  if (process.env.REACT_APP_API_URL) {
+    return process.env.REACT_APP_API_URL;
   }
-  return process.env.REACT_APP_API_URL || 'http://localhost:5001/api';
+
+  // Fallback based on environment
+  if (process.env.NODE_ENV === 'production') {
+    return '/api'; // Use relative URL for production (handled by _redirects)
+  }
+
+  return 'http://localhost:5002/api'; // Development fallback
 };
 
 const api = axios.create({

@@ -129,7 +129,8 @@ const ChatBot = () => {
   const sendWidgetMessageDirect = async (message) => {
     console.log('🔄 [NEW CODE] Using direct fetch for widget message:', message);
     try {
-      const response = await fetch('http://localhost:5000/api/chat/widget', {
+      // Use relative URL to work with both localhost and production
+      const response = await fetch('/api/chat/widget', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

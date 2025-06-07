@@ -94,16 +94,28 @@ class FirebaseConfig {
     async testConnection() {
         try {
             console.log('🧪 Testing Firestore connection...');
-            
-            // Try to read from a collection
+
+            // Try to read from a collection with timeout
             const testRef = this.db.collection('_test');
-            await testRef.limit(1).get();
-            
+            const timeoutPromise = new Promise((_, reject) =>
+                setTimeout(() => reject(new Error('Connection timeout')), 10000)
+            );
+
+            await Promise.race([
+                testRef.limit(1).get(),
+                timeoutPromise
+            ]);
+
             console.log('✅ Firestore connection test successful');
             return true;
-            
+
         } catch (error) {
             console.error('❌ Firestore connection test failed:', error.message);
+            // Don't throw error in production - allow app to continue with fallbacks
+            if (process.env.NODE_ENV === 'production') {
+                console.log('⚠️ Production mode: Continuing with connection issues...');
+                return false;
+            }
             throw new Error(`Firestore connection failed: ${error.message}`);
         }
     }
