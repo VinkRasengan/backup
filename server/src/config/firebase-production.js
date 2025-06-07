@@ -1,8 +1,8 @@
 const admin = require('firebase-admin');
 
-// Initialize Firebase Admin SDK
+// Initialize Firebase Admin SDK for production
 if (!admin.apps.length) {
-  if (process.env.NODE_ENV === 'production' && process.env.FIREBASE_PRIVATE_KEY) {
+  if (process.env.NODE_ENV === 'production') {
     // Production: Use service account from environment variables
     const serviceAccount = {
       projectId: process.env.FIREBASE_PROJECT_ID,
@@ -14,28 +14,21 @@ if (!admin.apps.length) {
       credential: admin.credential.cert(serviceAccount),
       projectId: process.env.FIREBASE_PROJECT_ID
     });
-    
-    console.log('🔥 Firebase Admin initialized for production');
   } else {
-    // Development: Use emulator or default credentials
+    // Development: Use emulator
     admin.initializeApp({
-      projectId: process.env.FIREBASE_PROJECT_ID || 'factcheck-1d6e8'
+      projectId: 'factcheck-1d6e8'
     });
     
-    // Configure for emulator in development
-    if (process.env.NODE_ENV === 'development') {
-      process.env.FIRESTORE_EMULATOR_HOST = '127.0.0.1:8084';
-      console.log('🔥 Firebase Admin initialized for development/emulator');
-    } else {
-      console.log('🔥 Firebase Admin initialized with default credentials');
-    }
+    // Configure for emulator
+    process.env.FIRESTORE_EMULATOR_HOST = '127.0.0.1:8084';
   }
 }
 
 const db = admin.firestore();
 const auth = admin.auth();
 
-// Firestore collections - single source of truth
+// Firestore collections
 const collections = {
   USERS: 'users',
   LINKS: 'links',

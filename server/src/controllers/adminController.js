@@ -1,5 +1,9 @@
-// Use consolidated Firebase config
-const { db, collections, admin } = require('../config/firebase');
+// Use production config based on environment
+const firebaseConfig = process.env.NODE_ENV === 'production'
+  ? require('../config/firebase-production')
+  : require('../config/firebase-emulator');
+
+const { db, collections, admin } = firebaseConfig;
 
 class AdminController {
   // Middleware to check admin access
