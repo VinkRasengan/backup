@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const communityController = require('../controllers/communityController');
+const { selectCommunityController, injectCommunityController } = require('../middleware/databaseSelector');
 
 // Try to load auth middleware, fallback if not available
 let authenticateToken;
@@ -33,7 +33,9 @@ try {
  * @param {number} [limit] - Posts per page (default: 10)
  * @param {string} [includeNews] - Include real news articles (default: 'true')
  */
-router.get('/posts', communityController.getCommunityPosts.bind(communityController));
+router.get('/posts', injectCommunityController, (req, res) => {
+    req.communityController.getCommunityPosts(req, res);
+});
 
 /**
  * @route GET /api/community/posts/:id
@@ -41,14 +43,18 @@ router.get('/posts', communityController.getCommunityPosts.bind(communityControl
  * @access Public
  * @param {string} id - Post ID
  */
-router.get('/posts/:id', communityController.getPostById.bind(communityController));
+router.get('/posts/:id', injectCommunityController, (req, res) => {
+    req.communityController.getPostById(req, res);
+});
 
 /**
  * @route GET /api/community/stats
  * @desc Get community statistics
  * @access Public
  */
-router.get('/stats', communityController.getCommunityStats.bind(communityController));
+router.get('/stats', injectCommunityController, (req, res) => {
+    req.communityController.getCommunityStats(req, res);
+});
 
 // Protected routes (authentication required)
 
