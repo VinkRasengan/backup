@@ -32,13 +32,19 @@ const schema = yup.object({
   url: yup
     .string()
     .required('URL là bắt buộc')
-    .transform((value) => normalizeUrl(value))
     .test('is-valid-url', 'Vui lòng nhập URL hợp lệ', (value) => {
       if (!value) return false;
+
+      // Normalize URL first
+      const normalizedUrl = normalizeUrl(value);
+      console.log('Validating URL:', value, '-> normalized:', normalizedUrl);
+
       try {
-        new URL(value);
+        new URL(normalizedUrl);
+        console.log('URL validation passed for:', normalizedUrl);
         return true;
-      } catch {
+      } catch (error) {
+        console.log('URL validation failed for:', normalizedUrl, error.message);
         return false;
       }
     })
@@ -63,8 +69,19 @@ const CheckLinkPage = () => {
   const onSubmit = async (data) => {
     setIsLoading(true);
     try {
-      // Show normalized URL to user
+      // Normalize and validate URL manually
       const normalizedUrl = normalizeUrl(data.url);
+
+      // Validate normalized URL
+      try {
+        new URL(normalizedUrl);
+      } catch (error) {
+        toast.error('URL không hợp lệ. Vui lòng kiểm tra lại.');
+        setIsLoading(false);
+        return;
+      }
+
+      // Show normalized URL to user
       if (normalizedUrl !== data.url) {
         toast.success(`URL đã được chuẩn hóa: ${normalizedUrl}`);
       }
@@ -286,8 +303,8 @@ const CheckLinkPage = () => {
                   <div className="flex-1">
                     <Input
                       label="URL"
-                      placeholder="https://example.com/article"
-                      type="url"
+                      placeholder="fb.com, google.com, https://example.com"
+                      type="text"
                       icon={Globe}
                       error={errors.url?.message}
                       {...register('url')}
