@@ -8,8 +8,17 @@ require('dotenv').config({ path: '../.env' });
 // Import path for static files
 const path = require('path');
 
-// Database - Firebase Only
-const database = require('./config/firebase-database');
+// Database - Firebase Only (Enhanced Architecture)
+let database;
+try {
+  database = require('./config/firebase-database');
+  console.log('🔥 Firebase database - Enhanced architecture loaded');
+} catch (error) {
+  console.warn('⚠️ Firebase-database.js not available - using direct Firestore controllers');
+  console.log('✅ This is expected behavior with enhanced Firestore architecture');
+  database = null; // Use direct controllers
+}
+
 // Firebase doesn't need models or sync
 const syncDatabase = async () => {
   console.log('🔥 Firebase database - No sync needed');

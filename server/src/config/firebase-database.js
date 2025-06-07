@@ -15,8 +15,13 @@ class FirebaseDatabase {
       console.log('🔥 Initializing Firebase-only database...');
       const firestore = require('./firestore');
 
-      // Wait for firestore to initialize
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Wait for firestore to initialize properly
+      await new Promise(resolve => setTimeout(resolve, 2000));
+
+      // Check if firestore is connected
+      if (!firestore.isConnected) {
+        throw new Error('Firestore not connected after initialization');
+      }
 
       const health = await firestore.healthCheck();
 

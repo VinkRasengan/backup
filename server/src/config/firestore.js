@@ -1,5 +1,6 @@
 // Enhanced Firestore Database Configuration
 const firebaseConfig = require('./firebase-config');
+const admin = require('firebase-admin');
 
 class FirestoreDatabase {
   constructor() {
