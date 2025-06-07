@@ -19,7 +19,6 @@ const DashboardPage = () => {
   const [dashboardData, setDashboardData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-
   // Fetch real dashboard data
   const fetchDashboardData = useCallback(async (isRefresh = false) => {
     try {
@@ -29,10 +28,15 @@ const DashboardPage = () => {
         setLoading(true);
       }
 
-      const token = localStorage.getItem('token');
-      if (!token) {
-        throw new Error('No authentication token found');
+      // Get Firebase ID token instead of localStorage token
+      const { auth } = await import('../config/firebase');
+      const user = auth.currentUser;
+      
+      if (!user) {
+        throw new Error('User not authenticated');
       }
+
+      const token = await user.getIdToken(true);
 
       // Add cache-busting parameter to ensure fresh data
       const timestamp = new Date().getTime();
@@ -57,14 +61,12 @@ const DashboardPage = () => {
         console.log('✅ Dashboard data refreshed successfully');
       }
     } catch (error) {
-      console.error('Dashboard fetch error:', error);
-
-      // Fallback to basic user data if API fails
+      console.error('Dashboard fetch error:', error);      // Fallback to basic user data if API fails
       setDashboardData({
         data: {
           user: {
-            firstName: authUser?.firstName || 'User',
-            lastName: authUser?.lastName || '',
+            firstName: authUser?.firstName || authUser?.displayName?.split(' ')[0] || 'User',
+            lastName: authUser?.lastName || authUser?.displayName?.split(' ').slice(1).join(' ') || '',
             email: authUser?.email || ''
           },
           stats: {

@@ -3,7 +3,7 @@ import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
 import { motion } from 'framer-motion';
-import { Search, CheckCircle, AlertTriangle, XCircle, Clipboard, Shield, Globe, Lock, AlertOctagon, Flag } from 'lucide-react';
+import { Search, CheckCircle, AlertTriangle, XCircle, Clipboard, Shield, Globe, Flag } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../components/ui/Card';
@@ -84,13 +84,14 @@ const CheckLinkPage = () => {
       // Show normalized URL to user
       if (normalizedUrl !== data.url) {
         toast.success(`URL đã được chuẩn hóa: ${normalizedUrl}`);
-      }
-
-      // Try real API first, fallback to mock if not available
+      }      // Try real API first, fallback to mock if not available
       let response;
+      let resultData;
+      
       try {
         response = await linkAPI.checkLink(normalizedUrl);
-        setResult(response.data.result);
+        resultData = response.data.result;
+        setResult(resultData);
       } catch (apiError) {
         console.log('API not available, using mock data:', apiError.message);
         // Mock response for demo
@@ -106,7 +107,7 @@ const CheckLinkPage = () => {
         else if (finalScore >= 40) status = 'warning';
         else status = 'dangerous';
 
-        const mockResult = {
+        resultData = {
           url: normalizedUrl,
           status: status,
           credibilityScore: credibilityScore,
@@ -167,7 +168,7 @@ const CheckLinkPage = () => {
           ],
           summary: `Kết quả phân tích cho ${domain}. Điểm tin cậy: ${credibilityScore}/100, Điểm bảo mật: ${securityScore}/100. ${status === 'safe' ? 'Trang web này được đánh giá là an toàn.' : status === 'warning' ? 'Trang web này có một số dấu hiệu đáng ngờ.' : 'Trang web này có thể không an toàn.'} ${securityScore < 30 ? '⚠️ CẢNH BÁO BẢO MẬT: Phát hiện mối đe dọa bảo mật!' : securityScore < 60 ? '⚠️ Có dấu hiệu đáng ngờ về bảo mật.' : '✅ Không phát hiện mối đe dọa bảo mật.'}`
         };
-        setResult(mockResult);
+        setResult(resultData);
       }
 
       toast.success('Kiểm tra link thành công!');
@@ -176,7 +177,7 @@ const CheckLinkPage = () => {
       window.dispatchEvent(new CustomEvent('linkChecked', {
         detail: {
           url: normalizedUrl,
-          result: response?.data?.result || mockResult
+          result: resultData
         }
       }));
 
