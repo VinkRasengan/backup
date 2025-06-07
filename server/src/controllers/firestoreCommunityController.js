@@ -1,4 +1,5 @@
 const admin = require('firebase-admin');
+const logger = require('../utils/logger');
 
 class FirestoreCommunityController {
     constructor() {
@@ -8,6 +9,8 @@ class FirestoreCommunityController {
 
     initializeFirestore() {
         try {
+            logger.info('🔥 Initializing Firestore Community Controller...');
+
             // Initialize Firebase Admin if not already done
             if (!admin.apps.length) {
                 const serviceAccount = {
@@ -16,16 +19,24 @@ class FirestoreCommunityController {
                     privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n')
                 };
 
+                logger.debug('Firebase service account config', {
+                    projectId: serviceAccount.projectId,
+                    clientEmail: serviceAccount.clientEmail,
+                    hasPrivateKey: !!serviceAccount.privateKey
+                });
+
                 admin.initializeApp({
                     credential: admin.credential.cert(serviceAccount),
                     projectId: process.env.FIREBASE_PROJECT_ID
                 });
+
+                logger.success('Firebase Admin SDK initialized');
             }
 
             this.db = admin.firestore();
-            console.log('✅ Firestore Community Controller initialized');
+            logger.success('Firestore Community Controller initialized successfully');
         } catch (error) {
-            console.error('❌ Firestore Community Controller initialization failed:', error);
+            logger.error('Firestore Community Controller initialization failed', error);
         }
     }
 

@@ -3,24 +3,17 @@ const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
 const rateLimit = require('express-rate-limit');
-require('dotenv').config();
+require('dotenv').config({ path: '../.env' });
 
 // Import path for static files
 const path = require('path');
 
-// Database and Models
-const database = require('./config/database');
-let syncDatabase;
-
-try {
-  const modelsModule = require('./models');
-  syncDatabase = modelsModule.syncDatabase;
-} catch (error) {
-  console.warn('⚠️ Models not available:', error.message);
-  syncDatabase = async () => {
-    console.warn('⚠️ Database sync skipped - Models not available');
-  };
-}
+// Database - Firebase Only
+const database = require('./config/firebase-database');
+// Firebase doesn't need models or sync
+const syncDatabase = async () => {
+  console.log('🔥 Firebase database - No sync needed');
+};
 
 // Import middleware (with error handling)
 let errorHandler, authenticateToken, authRoutes, userRoutes, linkRoutes;
@@ -114,7 +107,6 @@ app.get('/health', (req, res) => {
 // API health check
 app.get('/api/health', async (req, res) => {
   try {
-    const database = require('./config/database');
     const dbHealth = await database.healthCheck();
 
     res.status(200).json({

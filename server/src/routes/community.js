@@ -68,19 +68,21 @@ router.get('/stats', injectCommunityController, (req, res) => {
  * @body {string} [category] - Post category
  * @body {string[]} [tags] - Post tags
  */
-router.post('/posts', authenticateToken, communityController.createPost.bind(communityController));
+router.post('/posts', authenticateToken, injectCommunityController, (req, res) => {
+    req.communityController.createPost(req, res);
+});
 
 /**
  * @route GET /api/community/trending
  * @desc Get trending posts (enhanced for authenticated users)
  * @access Private
  */
-router.get('/trending', authenticateToken, async (req, res) => {
+router.get('/trending', authenticateToken, injectCommunityController, async (req, res) => {
     try {
         // Enhanced trending algorithm for authenticated users
         req.query.sort = 'trending';
         req.query.limit = req.query.limit || 20; // More results for authenticated users
-        await communityController.getCommunityPosts(req, res);
+        await req.communityController.getCommunityPosts(req, res);
     } catch (error) {
         res.status(500).json({
             success: false,
@@ -100,10 +102,8 @@ router.get('/my-posts', authenticateToken, async (req, res) => {
         const userId = req.user.userId;
         
         // This would normally query the database for user's posts
-        // For now, we'll filter the mock posts
-        const userPosts = (communityController.posts || []).filter(post =>
-            post.author.id === userId
-        );
+        // For now, return empty array as this needs proper implementation
+        const userPosts = [];
 
         res.json({
             success: true,
@@ -143,7 +143,7 @@ router.get('/categories', (req, res) => {
         ];
 
         // Count posts in each category
-        const posts = (communityController.posts || []);
+        const posts = [];
         const categoryCounts = posts.reduce((counts, post) => {
             counts[post.category] = (counts[post.category] || 0) + 1;
             counts.all = (counts.all || 0) + 1;
@@ -176,7 +176,7 @@ router.get('/categories', (req, res) => {
  */
 router.get('/tags', (req, res) => {
     try {
-        const posts = (communityController.posts || []);
+        const posts = [];
         const tagCounts = {};
 
         // Count tag occurrences
@@ -219,7 +219,10 @@ router.get('/feed', authenticateToken, async (req, res) => {
         req.query.limit = req.query.limit || 15;
         req.query.includeNews = 'true';
         
-        await communityController.getCommunityPosts(req, res);
+        // Need to inject controller for this route too
+        const { selectCommunityController } = require('../middleware/databaseSelector');
+        const controller = selectCommunityController();
+        await controller.getCommunityPosts(req, res);
     } catch (error) {
         res.status(500).json({
             success: false,

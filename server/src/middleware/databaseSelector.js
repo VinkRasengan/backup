@@ -6,17 +6,10 @@
 const communityController = require('../controllers/communityController');
 const firestoreCommunityController = require('../controllers/firestoreCommunityController');
 
-// Select the appropriate controller based on environment
+// Always use Firestore controller (Firebase-only mode)
 function selectCommunityController() {
-    const useFirestore = process.env.USE_FIRESTORE === 'true';
-    
-    if (useFirestore) {
-        console.log('🔥 Using Firestore Community Controller');
-        return firestoreCommunityController;
-    } else {
-        console.log('💾 Using In-Memory Community Controller');
-        return communityController;
-    }
+    console.log('🔥 Using Firestore Community Controller (Firebase-only mode)');
+    return firestoreCommunityController;
 }
 
 // Middleware to inject the correct controller
