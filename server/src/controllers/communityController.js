@@ -2,11 +2,12 @@ const newsController = require('./newsController');
 
 class CommunityController {
     constructor() {
-        this.posts = []; // In-memory storage for demo
-        this.initializeMockPosts();
+        console.log('⚠️ CommunityController: This is a legacy fallback controller.');
+        console.log('🔥 Use FirestoreCommunityController for production.');
+        this.posts = []; // Legacy fallback - use Firestore instead
     }
 
-    // Initialize with some mock posts
+    // Legacy method - replaced by Firestore
     initializeMockPosts() {
         this.posts = [
             {

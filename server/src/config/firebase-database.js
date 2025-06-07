@@ -14,6 +14,10 @@ class FirebaseDatabase {
     try {
       console.log('🔥 Initializing Firebase-only database...');
       const firestore = require('./firestore');
+
+      // Wait for firestore to initialize
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
       const health = await firestore.healthCheck();
 
       if (health.status === 'connected') {
@@ -27,26 +31,22 @@ class FirebaseDatabase {
       }
     } catch (error) {
       console.error('❌ Firebase database initialization failed:', error.message);
-      this.useInMemoryFallback();
+      console.log('⚠️ Continuing without firebase-database.js - using direct Firestore controllers');
+      this.isConnected = false;
+      this.dbType = 'error';
+      // Don't throw error - let app continue with direct Firestore controllers
     }
     return false;
   }
 
   useInMemoryFallback() {
-    console.log('🔄 Using in-memory storage as fallback');
+    console.log('⚠️ Firebase-database.js connection failed - App will use direct Firestore controllers');
+    console.log('🔥 This is expected behavior - enhanced config handles Firebase connection');
     this.isConnected = false;
-    this.dbType = 'memory';
-    
-    // Initialize in-memory storage
-    global.inMemoryDB = global.inMemoryDB || {
-      users: new Map(),
-      conversations: new Map(),
-      messages: new Map(),
-      links: new Map(),
-      votes: new Map(),
-      comments: new Map(),
-      reports: new Map()
-    };
+    this.dbType = 'direct_firestore';
+
+    // Don't throw error - let app continue with direct Firestore controllers
+    console.log('✅ Continuing with direct Firestore controller architecture');
   }
 
   // Health check

@@ -10,7 +10,7 @@
     "build": "echo 'No build step required'",
     "vercel-build": "echo 'No build step required'",
 
-    "db:seed": "node ../scripts/seed-firestore-data.js",
+    "db:migrate": "node migrate-data.js",
     "db:verify": "node ../scripts/verify-firestore-data.js",
     "db:clear": "node ../scripts/verify-firestore-data.js clear",
     "test:local": "node ../scripts/test-local-deployment.js",

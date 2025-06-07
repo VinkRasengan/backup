@@ -1,42 +1,27 @@
-const admin = require('firebase-admin');
+const firebaseConfig = require('../config/firebase-config');
 const logger = require('../utils/logger');
 
 class FirestoreCommunityController {
     constructor() {
         this.db = null;
+        this.isInitialized = false;
         this.initializeFirestore();
     }
 
-    initializeFirestore() {
+    async initializeFirestore() {
         try {
-            logger.info('🔥 Initializing Firestore Community Controller...');
+            logger.info('🔥 Initializing Firestore Community Controller via enhanced config...');
 
-            // Initialize Firebase Admin if not already done
-            if (!admin.apps.length) {
-                const serviceAccount = {
-                    projectId: process.env.FIREBASE_PROJECT_ID,
-                    clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-                    privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n')
-                };
+            // Use enhanced Firebase config
+            this.db = await firebaseConfig.initialize();
 
-                logger.debug('Firebase service account config', {
-                    projectId: serviceAccount.projectId,
-                    clientEmail: serviceAccount.clientEmail,
-                    hasPrivateKey: !!serviceAccount.privateKey
-                });
+            this.isInitialized = true;
+            logger.success('Firestore Community Controller initialized successfully via enhanced config');
 
-                admin.initializeApp({
-                    credential: admin.credential.cert(serviceAccount),
-                    projectId: process.env.FIREBASE_PROJECT_ID
-                });
-
-                logger.success('Firebase Admin SDK initialized');
-            }
-
-            this.db = admin.firestore();
-            logger.success('Firestore Community Controller initialized successfully');
         } catch (error) {
             logger.error('Firestore Community Controller initialization failed', error);
+            this.isInitialized = false;
+            throw error; // Re-throw to prevent silent failures
         }
     }
 

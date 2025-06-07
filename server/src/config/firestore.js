@@ -1,5 +1,5 @@
-// Firestore Database Configuration (Fallback)
-const admin = require('firebase-admin');
+// Enhanced Firestore Database Configuration
+const firebaseConfig = require('./firebase-config');
 
 class FirestoreDatabase {
   constructor() {
@@ -8,28 +8,20 @@ class FirestoreDatabase {
     this.initialize();
   }
 
-  initialize() {
+  async initialize() {
     try {
-      // Initialize Firebase Admin if not already done
-      if (!admin.apps.length) {
-        const serviceAccount = {
-          projectId: process.env.FIREBASE_PROJECT_ID,
-          clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-          privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n')
-        };
+      console.log('🔥 Initializing Firestore via enhanced config...');
 
-        admin.initializeApp({
-          credential: admin.credential.cert(serviceAccount),
-          projectId: process.env.FIREBASE_PROJECT_ID
-        });
-      }
+      // Use enhanced Firebase config
+      this.db = await firebaseConfig.initialize();
 
-      this.db = admin.firestore();
       this.isConnected = true;
-      console.log('✅ Firestore initialized successfully');
+      console.log('✅ Firestore initialized successfully via enhanced config');
+
     } catch (error) {
       console.error('❌ Firestore initialization failed:', error.message);
       this.isConnected = false;
+      throw error; // Re-throw to prevent silent failures
     }
   }
 
