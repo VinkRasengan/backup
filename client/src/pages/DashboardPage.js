@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Search, BarChart3, Clock, TrendingUp } from 'lucide-react';
 import EmailVerificationBanner from '../components/EmailVerificationBanner';
+import { useAuth } from '../context/AuthContext';
 
 // Helper function to get credibility score styling
 const getCredibilityScoreClasses = (score) => {
@@ -12,45 +13,84 @@ const getCredibilityScoreClasses = (score) => {
 };
 
 const DashboardPage = () => {
+  const { user: authUser } = useAuth();
   const [showVerificationBanner, setShowVerificationBanner] = useState(true);
+  const [dashboardData, setDashboardData] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  // Mock data for demo purposes
-  const dashboardData = {
-    data: {
-      user: {
-        firstName: 'Demo User'
-      },
-      stats: {
-        totalLinksChecked: 15,
-        linksThisWeek: 3,
-        averageCredibilityScore: 78
-      },
-      recentLinks: [
-        {
-          id: '1',
-          url: 'https://example.com/news1',
-          metadata: {
-            title: 'Sample News Article 1',
-            domain: 'example.com'
-          },
-          credibilityScore: 85,
-          checkedAt: new Date().toISOString()
-        },
-        {
-          id: '2',
-          url: 'https://example.com/news2',
-          metadata: {
-            title: 'Sample News Article 2',
-            domain: 'example.com'
-          },
-          credibilityScore: 72,
-          checkedAt: new Date(Date.now() - 86400000).toISOString()
+  // Fetch real dashboard data
+  useEffect(() => {
+    fetchDashboardData();
+  }, []);
+
+  const fetchDashboardData = async () => {
+    try {
+      setLoading(true);
+
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('No authentication token found');
+      }
+
+      const response = await fetch('/api/user/dashboard', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
         }
-      ]
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      setDashboardData(data);
+    } catch (error) {
+      console.error('Dashboard fetch error:', error);
+
+      // Fallback to basic user data if API fails
+      setDashboardData({
+        data: {
+          user: {
+            firstName: authUser?.firstName || 'User',
+            lastName: authUser?.lastName || '',
+            email: authUser?.email || ''
+          },
+          stats: {
+            totalLinksChecked: 0,
+            linksThisWeek: 0,
+            averageCredibilityScore: 0
+          },
+          recentLinks: []
+        }
+      });
+
+      console.warn('Dashboard API failed, using fallback data:', error.message);
+    } finally {
+      setLoading(false);
     }
   };
 
   const { user, stats, recentLinks } = dashboardData?.data || {};
+
+  if (loading) {
+    return (
+      <div className="max-w-6xl mx-auto p-4 md:p-8">
+        <div className="animate-pulse">
+          <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-1/3 mb-4"></div>
+          <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/2 mb-8"></div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            {[1, 2, 3].map(i => (
+              <div key={i} className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm">
+                <div className="h-12 bg-gray-200 dark:bg-gray-700 rounded mb-4"></div>
+                <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-1/2"></div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-6xl mx-auto p-4 md:p-8">

@@ -22,11 +22,35 @@ import { linkAPI } from '../services/api';
 import { useTheme } from '../context/ThemeContext';
 import toast from 'react-hot-toast';
 
+// Custom URL validation that auto-adds protocol
+const normalizeUrl = (url) => {
+  if (!url) return url;
+
+  // Remove whitespace
+  url = url.trim();
+
+  // If no protocol, add https://
+  if (!/^https?:\/\//i.test(url)) {
+    url = 'https://' + url;
+  }
+
+  return url;
+};
+
 const schema = yup.object({
   url: yup
     .string()
-    .url('Vui lòng nhập URL hợp lệ')
-    .required('URL là bắt buộc'),
+    .required('URL là bắt buộc')
+    .transform((value) => normalizeUrl(value))
+    .test('is-valid-url', 'Vui lòng nhập URL hợp lệ', (value) => {
+      if (!value) return false;
+      try {
+        new URL(value);
+        return true;
+      } catch {
+        return false;
+      }
+    }),
   title: yup
     .string()
     .min(10, 'Tiêu đề phải có ít nhất 10 ký tự')

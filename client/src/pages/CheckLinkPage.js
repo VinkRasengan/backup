@@ -13,11 +13,35 @@ import CommentsSection from '../components/Community/CommentsSection';
 import ReportModal from '../components/Community/ReportModal';
 import toast from 'react-hot-toast';
 
+// Custom URL validation that auto-adds protocol
+const normalizeUrl = (url) => {
+  if (!url) return url;
+
+  // Remove whitespace
+  url = url.trim();
+
+  // If no protocol, add https://
+  if (!/^https?:\/\//i.test(url)) {
+    url = 'https://' + url;
+  }
+
+  return url;
+};
+
 const schema = yup.object({
   url: yup
     .string()
-    .url('Vui lòng nhập URL hợp lệ')
     .required('URL là bắt buộc')
+    .transform((value) => normalizeUrl(value))
+    .test('is-valid-url', 'Vui lòng nhập URL hợp lệ', (value) => {
+      if (!value) return false;
+      try {
+        new URL(value);
+        return true;
+      } catch {
+        return false;
+      }
+    })
 });
 
 
@@ -39,17 +63,23 @@ const CheckLinkPage = () => {
   const onSubmit = async (data) => {
     setIsLoading(true);
     try {
+      // Show normalized URL to user
+      const normalizedUrl = normalizeUrl(data.url);
+      if (normalizedUrl !== data.url) {
+        toast.success(`URL đã được chuẩn hóa: ${normalizedUrl}`);
+      }
+
       // Try real API first, fallback to mock if not available
       let response;
       try {
-        response = await linkAPI.checkLink(data.url);
+        response = await linkAPI.checkLink(normalizedUrl);
         setResult(response.data.result);
       } catch (apiError) {
         console.log('API not available, using mock data:', apiError.message);
         // Mock response for demo
         await new Promise(resolve => setTimeout(resolve, 2000));
 
-        const domain = new URL(data.url).hostname;
+        const domain = new URL(normalizedUrl).hostname;
         const credibilityScore = Math.floor(Math.random() * 100);
         const securityScore = Math.floor(Math.random() * 100);
         const finalScore = Math.round((credibilityScore * 0.6) + (securityScore * 0.4));
@@ -60,7 +90,7 @@ const CheckLinkPage = () => {
         else status = 'dangerous';
 
         const mockResult = {
-          url: data.url,
+          url: normalizedUrl,
           status: status,
           credibilityScore: credibilityScore,
           securityScore: securityScore,

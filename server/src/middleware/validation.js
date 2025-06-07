@@ -75,10 +75,27 @@ const schemas = {
   }),
 
   checkLink: Joi.object({
-    url: Joi.string().uri().required().messages({
-      'string.uri': 'Please provide a valid URL',
-      'any.required': 'URL is required'
-    })
+    url: Joi.string()
+      .required()
+      .custom((value, helpers) => {
+        // Normalize URL by adding protocol if missing
+        let normalizedUrl = value.trim();
+        if (!/^https?:\/\//i.test(normalizedUrl)) {
+          normalizedUrl = 'https://' + normalizedUrl;
+        }
+
+        // Validate the normalized URL
+        try {
+          new URL(normalizedUrl);
+          return normalizedUrl; // Return the normalized URL
+        } catch (error) {
+          return helpers.error('string.uri');
+        }
+      })
+      .messages({
+        'string.uri': 'Please provide a valid URL',
+        'any.required': 'URL is required'
+      })
   }),
 
   chatMessage: Joi.object({
@@ -149,10 +166,27 @@ const schemas = {
   }),
 
   submitToCommunity: Joi.object({
-    url: Joi.string().uri().required().messages({
-      'string.uri': 'Please provide a valid URL',
-      'any.required': 'URL is required'
-    }),
+    url: Joi.string()
+      .required()
+      .custom((value, helpers) => {
+        // Normalize URL by adding protocol if missing
+        let normalizedUrl = value.trim();
+        if (!/^https?:\/\//i.test(normalizedUrl)) {
+          normalizedUrl = 'https://' + normalizedUrl;
+        }
+
+        // Validate the normalized URL
+        try {
+          new URL(normalizedUrl);
+          return normalizedUrl; // Return the normalized URL
+        } catch (error) {
+          return helpers.error('string.uri');
+        }
+      })
+      .messages({
+        'string.uri': 'Please provide a valid URL',
+        'any.required': 'URL is required'
+      }),
     title: Joi.string().min(10).max(200).optional().messages({
       'string.min': 'Title must be at least 10 characters long',
       'string.max': 'Title cannot exceed 200 characters'
