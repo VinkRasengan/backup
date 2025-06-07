@@ -1,6 +1,7 @@
 import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
+import './test-firebase'; // Test Firebase connection
 import { ThemeProvider } from './context/ThemeContext';
 import ModernNavigation from './components/ModernNavigation';
 import HomePage from './pages/HomePage';

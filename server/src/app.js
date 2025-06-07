@@ -150,26 +150,33 @@ app.get('/api/health', async (req, res) => {
 
 // API routes (with error handling)
 try {
-  // Try Firebase-Backend bridge first, then pure auth, then fallbacks
+  // Try Simple Firebase Auth first (most compatible)
   try {
-    const firebaseBackendRoutes = require('./routes/firebaseBackend');
-    app.use('/api/auth', firebaseBackendRoutes);
-    console.log('✅ Using Firebase-Backend bridge routes (Firebase Auth + Backend Features)');
-  } catch (firebaseBackendError) {
-    console.warn('⚠️ Firebase-Backend bridge not available, trying pure auth...');
+    const simpleFirebaseAuth = require('./routes/simpleFirebaseAuth');
+    app.use('/api/auth', simpleFirebaseAuth);
+    console.log('✅ Using Simple Firebase Auth routes (Firebase ID token support)');
+  } catch (simpleError) {
+    console.warn('⚠️ Simple Firebase Auth not available, trying Firebase-Backend bridge...');
     try {
-      const pureAuthRoutes = require('./routes/pureAuth');
-      app.use('/api/auth', pureAuthRoutes);
-      console.log('✅ Using pure backend auth routes (No Firebase)');
-    } catch (pureError) {
-      console.warn('⚠️ Pure auth not available, trying hybrid auth routes...');
+      const firebaseBackendRoutes = require('./routes/firebaseBackend');
+      app.use('/api/auth', firebaseBackendRoutes);
+      console.log('✅ Using Firebase-Backend bridge routes (Firebase Auth + Backend Features)');
+    } catch (firebaseBackendError) {
+      console.warn('⚠️ Firebase-Backend bridge not available, trying pure auth...');
       try {
-        const hybridAuthRoutes = require('./routes/hybridAuth');
-        app.use('/api/auth', hybridAuthRoutes);
-        console.log('✅ Using hybrid auth routes');
-      } catch (hybridError) {
-        console.warn('⚠️ Hybrid auth routes not available, using regular auth routes');
-        if (authRoutes) app.use('/api/auth', authRoutes);
+        const pureAuthRoutes = require('./routes/pureAuth');
+        app.use('/api/auth', pureAuthRoutes);
+        console.log('✅ Using pure backend auth routes (No Firebase)');
+      } catch (pureError) {
+        console.warn('⚠️ Pure auth not available, trying hybrid auth routes...');
+        try {
+          const hybridAuthRoutes = require('./routes/hybridAuth');
+          app.use('/api/auth', hybridAuthRoutes);
+          console.log('✅ Using hybrid auth routes');
+        } catch (hybridError) {
+          console.warn('⚠️ Hybrid auth routes not available, using regular auth routes');
+          if (authRoutes) app.use('/api/auth', authRoutes);
+        }
       }
     }
   }

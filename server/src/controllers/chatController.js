@@ -1,4 +1,36 @@
-const { db, collections, admin } = require('../config/firebase');
+// Use enhanced Firebase config
+const firebaseConfig = require('../config/firebase-config');
+const admin = require('firebase-admin');
+
+// Initialize Firebase if not already done
+let db;
+const initializeFirebase = async () => {
+  try {
+    // Initialize Firebase first
+    db = await firebaseConfig.initialize();
+    console.log('✅ ChatController: Firebase initialized successfully');
+    return db;
+  } catch (error) {
+    console.error('❌ ChatController: Firebase initialization failed:', error.message);
+    throw error;
+  }
+};
+
+// Initialize Firebase immediately
+initializeFirebase().catch(error => {
+  console.error('❌ ChatController: Failed to initialize Firebase:', error.message);
+});
+
+// Collections constants
+const collections = {
+  USERS: 'users',
+  CONVERSATIONS: 'conversations',
+  CHAT_MESSAGES: 'chat_messages',
+  LINKS: 'links',
+  VOTES: 'votes',
+  COMMENTS: 'comments',
+  REPORTS: 'reports'
+};
 const openaiService = require('../services/openaiService');
 
 class ChatController {
@@ -176,10 +208,9 @@ class ChatController {
 
       console.log('🔍 Getting conversations for user:', userId);
 
-      // Get conversations with simpler query
+      // Simplified query without orderBy to avoid index issues
       const conversationsQuery = await db.collection(collections.CONVERSATIONS)
         .where('userId', '==', userId)
-        .orderBy('updatedAt', 'desc')
         .limit(parseInt(limit))
         .get();
 
@@ -189,12 +220,15 @@ class ChatController {
         const data = doc.data();
         return {
           id: doc.id,
-          title: data.title,
-          updatedAt: data.updatedAt,
+          title: data.title || 'Cuộc trò chuyện mới',
+          updatedAt: data.updatedAt || data.createdAt || new Date().toISOString(),
           messageCount: data.messageCount || 0,
-          lastMessage: data.lastMessage
+          lastMessage: data.lastMessage || ''
         };
       });
+
+      // Sort in memory instead of Firestore
+      conversations.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
 
       res.json({
         conversations,
@@ -208,7 +242,18 @@ class ChatController {
 
     } catch (error) {
       console.error('❌ Error getting conversations:', error);
-      next(error);
+      console.error('Error details:', error.message);
+
+      // Return empty list instead of crashing
+      res.json({
+        conversations: [],
+        pagination: {
+          currentPage: parseInt(page || 1),
+          totalCount: 0,
+          hasNext: false,
+          hasPrev: false
+        }
+      });
     }
   }
 

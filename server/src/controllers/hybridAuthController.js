@@ -6,13 +6,26 @@ const crypto = require('crypto');
 
 // Try to load Firebase, fallback to PostgreSQL
 let useFirebase = false;
-let db, collections, auth;
+let db, collections, admin;
 
 try {
-  const firebase = require('../config/firebase');
-  db = firebase.db;
-  collections = firebase.collections;
-  auth = firebase.auth;
+  const firebaseConfig = require('../config/firebase-config');
+  admin = require('firebase-admin');
+
+  // Initialize Firebase if not already done
+  db = firebaseConfig.getDatabase();
+
+  // Collections constants
+  collections = {
+    USERS: 'users',
+    CONVERSATIONS: 'conversations',
+    CHAT_MESSAGES: 'chat_messages',
+    LINKS: 'links',
+    VOTES: 'votes',
+    COMMENTS: 'comments',
+    REPORTS: 'reports'
+  };
+
   useFirebase = true;
   console.log('✅ Hybrid Auth: Using Firebase backend');
 } catch (error) {
@@ -171,6 +184,11 @@ class HybridAuthController {
         code: 'TOKEN_MISSING'
       });
     }
+
+    try {
+      // Verify Firebase ID token
+      const decodedToken = await admin.auth().verifyIdToken(idToken);
+      const userId = decodedToken.uid;
 
     // Verify Firebase ID token
     const decodedToken = await auth.verifyIdToken(idToken);

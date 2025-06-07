@@ -67,6 +67,10 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (email, password) => {
     try {
+      console.log('Attempting login with Firebase Auth...');
+      console.log('Auth instance:', auth);
+      console.log('Firebase config:', auth.app.options);
+
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       let user = userCredential.user;
 
@@ -135,6 +139,18 @@ export const AuthProvider = ({ children }) => {
       } catch (firestoreError) {
         console.error('Failed to save user data to Firestore:', firestoreError);
         // Continue with login even if Firestore fails
+      }
+
+      // Sync with backend using Firebase ID token
+      try {
+        const idToken = await user.getIdToken();
+        console.log('Syncing login with backend...');
+
+        const backendResponse = await authAPI.syncLogin(idToken);
+        console.log('Backend sync successful:', backendResponse);
+      } catch (backendError) {
+        console.error('Backend sync failed (continuing with login):', backendError);
+        // Continue with login even if backend sync fails
       }
 
       setUser(userData);

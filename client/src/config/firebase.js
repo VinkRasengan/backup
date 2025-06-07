@@ -22,6 +22,20 @@ export const auth = getAuth(app);
 // Initialize Cloud Firestore and get a reference to the service
 export const db = getFirestore(app);
 
+// Debug Firebase connection
+console.log('Firebase initialized:', {
+  projectId: firebaseConfig.projectId,
+  authDomain: firebaseConfig.authDomain,
+  environment: process.env.NODE_ENV
+});
+
+// Test Firebase connection
+auth.onAuthStateChanged((user) => {
+  console.log('Firebase Auth state changed:', user ? 'User logged in' : 'User logged out');
+}, (error) => {
+  console.error('Firebase Auth connection error:', error);
+});
+
 // Connect to emulators in development
 if (process.env.NODE_ENV === 'development' && process.env.REACT_APP_USE_EMULATOR === 'true') {
   // Connect to Firestore emulator

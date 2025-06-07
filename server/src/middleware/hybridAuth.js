@@ -4,11 +4,10 @@ const jwt = require('jsonwebtoken');
 
 // Try to load Firebase
 let useFirebase = false;
-let auth;
+let admin;
 
 try {
-  const firebase = require('../config/firebase');
-  auth = firebase.auth;
+  admin = require('firebase-admin');
   useFirebase = true;
   console.log('✅ Hybrid Auth Middleware: Firebase available');
 } catch (error) {
@@ -34,7 +33,7 @@ class HybridAuthMiddleware {
       // Try Firebase first if available
       if (useFirebase) {
         try {
-          const decodedToken = await auth.verifyIdToken(token);
+          const decodedToken = await admin.auth().verifyIdToken(token);
           req.user = {
             userId: decodedToken.uid,
             email: decodedToken.email,
@@ -90,7 +89,7 @@ class HybridAuthMiddleware {
       // Try Firebase first if available
       if (useFirebase) {
         try {
-          const decodedToken = await auth.verifyIdToken(token);
+          const decodedToken = await admin.auth().verifyIdToken(token);
           req.user = {
             userId: decodedToken.uid,
             email: decodedToken.email,
