@@ -93,42 +93,12 @@ const DashboardPage = () => {
     fetchDashboardData();
   }, [fetchDashboardData]);
 
-  // Listen for link check events to auto-refresh dashboard
-  useEffect(() => {
-    const handleLinkChecked = (event) => {
-      console.log('🔄 Link checked, refreshing dashboard...', event.detail);
-      // Delay refresh slightly to ensure backend has processed the data
-      setTimeout(() => {
-        fetchDashboardData(true);
-      }, 1500);
-    };
-
-    window.addEventListener('linkChecked', handleLinkChecked);
-
-    return () => {
-      window.removeEventListener('linkChecked', handleLinkChecked);
-    };
-  }, [fetchDashboardData]);
-
-  // Auto-refresh dashboard every 30 seconds when user is active
-  useEffect(() => {
-    const interval = setInterval(() => {
-      // Only refresh if user is active (page is visible)
-      if (!document.hidden) {
-        console.log('🔄 Auto-refreshing dashboard...');
-        fetchDashboardData(true);
-      }
-    }, 30000); // 30 seconds
-
-    return () => clearInterval(interval);
-  }, [fetchDashboardData]);
-
   // Auto-refresh when navigating to dashboard (e.g., after checking a link)
   useEffect(() => {
     // Check if user came from CheckLinkPage or if there's a refresh flag
-    const shouldRefresh = location.state?.refreshDashboard ||
+    const shouldRefresh = location.state?.refreshDashboard || 
                          document.referrer.includes('/check');
-
+    
     if (shouldRefresh && dashboardData) {
       console.log('🔄 Auto-refreshing dashboard data...');
       fetchDashboardData();

@@ -1,4 +1,37 @@
-const { auth, db, collections } = require('../config/firebase');
+// Unified Authentication Middleware
+let auth, db, collections;
+
+try {
+  // Try to load Firebase config
+  const firebaseConfig = process.env.NODE_ENV === 'production'
+    ? require('../config/firebase-production')
+    : require('../config/firebase-emulator');
+
+  auth = firebaseConfig.auth;
+  db = firebaseConfig.db;
+  collections = firebaseConfig.collections;
+
+  console.log('✅ Auth Middleware: Firebase config loaded successfully');
+} catch (error) {
+  console.error('❌ Auth Middleware: Firebase config failed to load:', error.message);
+
+  // Fallback: Try to load Firebase admin directly
+  try {
+    const admin = require('firebase-admin');
+    auth = admin.auth();
+    db = admin.firestore();
+    collections = {
+      USERS: 'users',
+      LINKS: 'links',
+      VOTES: 'votes',
+      COMMENTS: 'comments'
+    };
+    console.log('✅ Auth Middleware: Using Firebase admin fallback');
+  } catch (fallbackError) {
+    console.error('❌ Auth Middleware: All Firebase options failed:', fallbackError.message);
+    throw new Error('Authentication middleware cannot initialize');
+  }
+}
 
 const authenticateToken = async (req, res, next) => {
   try {
@@ -6,24 +39,6 @@ const authenticateToken = async (req, res, next) => {
     const token = authHeader?.split(' ')[1]; // Bearer TOKEN
 
     if (!token) {
-      // In development mode, allow requests without token for testing
-      if (process.env.NODE_ENV === 'development') {
-        req.user = {
-          userId: 'dev-user-123',
-          email: 'dev@example.com',
-          emailVerified: true,
-          firstName: 'Dev',
-          lastName: 'User',
-          isVerified: true,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          stats: {
-            linksChecked: 0
-          }
-        };
-        return next();
-      }
-
       return res.status(401).json({
         error: 'Access token required',
         code: 'TOKEN_MISSING'
@@ -72,27 +87,19 @@ const authenticateToken = async (req, res, next) => {
   } catch (error) {
     console.error('Token verification error:', error);
 
-    // In development mode, fallback to mock user
-    if (process.env.NODE_ENV === 'development') {
-      req.user = {
-        userId: 'dev-user-123',
-        email: 'dev@example.com',
-        emailVerified: true,
-        firstName: 'Dev',
-        lastName: 'User',
-        isVerified: true,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        stats: {
-          linksChecked: 0
-        }
-      };
-      return next();
+    // Check if token is expired
+    if (error.code === 'auth/id-token-expired') {
+      return res.status(401).json({
+        error: 'Token expired',
+        code: 'TOKEN_EXPIRED',
+        message: 'Please refresh your token and try again'
+      });
     }
 
     return res.status(403).json({
       error: 'Invalid or expired token',
-      code: 'TOKEN_INVALID'
+      code: 'TOKEN_INVALID',
+      details: error.message
     });
   }
 };

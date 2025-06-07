@@ -80,35 +80,53 @@ class UserController {
   async getDashboard(req, res, next) {
     try {
       const userId = req.user.userId;
+      console.log('🎯 Dashboard request for user:', userId);
 
       // Get user data
       const userDoc = await db.collection(collections.USERS).doc(userId).get();
       const userData = userDoc.data();
+      console.log('👤 User data:', userData?.firstName, userData?.stats);
 
-      // Get recent links checked by user
-      const recentLinksQuery = await db.collection(collections.LINKS)
+      // Get ALL links checked by user (not just 10)
+      const allLinksQuery = await db.collection(collections.LINKS)
         .where('userId', '==', userId)
-        .orderBy('checkedAt', 'desc')
-        .limit(10)
         .get();
 
-      const recentLinks = recentLinksQuery.docs.map(doc => ({
+      const allLinks = allLinksQuery.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       }));
 
-      // Calculate stats
-      const totalLinksChecked = recentLinksQuery.size;
-      const averageCredibility = recentLinks.length > 0 
-        ? recentLinks.reduce((sum, link) => sum + link.credibilityScore, 0) / recentLinks.length
+      // Get recent links for display (sorted by date)
+      const recentLinks = allLinks
+        .sort((a, b) => new Date(b.checkedAt) - new Date(a.checkedAt))
+        .slice(0, 5);
+
+      // Calculate stats from ALL links
+      const totalLinksChecked = allLinks.length;
+      const averageCredibility = allLinks.length > 0
+        ? allLinks.reduce((sum, link) => sum + (link.credibilityScore || 0), 0) / allLinks.length
         : 0;
+
+      console.log('📊 Calculated stats:', {
+        totalLinksChecked,
+        averageCredibility,
+        allLinksCount: allLinks.length
+      });
 
       // Get links checked this week
       const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-      const weeklyLinksQuery = await db.collection(collections.LINKS)
-        .where('userId', '==', userId)
-        .where('checkedAt', '>=', oneWeekAgo.toISOString())
-        .get();
+      const linksThisWeek = allLinks.filter(link =>
+        new Date(link.checkedAt) >= oneWeekAgo
+      ).length;
+
+      // Update user stats in database to keep them in sync
+      if (userData.stats?.linksChecked !== totalLinksChecked) {
+        await db.collection(collections.USERS).doc(userId).update({
+          'stats.linksChecked': totalLinksChecked,
+          'updatedAt': new Date().toISOString()
+        });
+      }
 
       const dashboardData = {
         user: {
@@ -121,17 +139,20 @@ class UserController {
         },
         stats: {
           totalLinksChecked: totalLinksChecked,
-          linksThisWeek: weeklyLinksQuery.size,
+          linksThisWeek: linksThisWeek,
           averageCredibilityScore: Math.round(averageCredibility * 10) / 10
         },
-        recentLinks: recentLinks.slice(0, 5), // Show only 5 most recent
+        recentLinks: recentLinks,
         activity: {
           lastLoginAt: userData.lastLoginAt,
           accountCreated: userData.createdAt
         }
       };
 
-      res.json(dashboardData);
+      res.json({
+        success: true,
+        data: dashboardData
+      });
 
     } catch (error) {
       next(error);

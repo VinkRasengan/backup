@@ -11,6 +11,16 @@ class LinkController {
   async checkLink(req, res, next) {
     try {
       const { url } = req.body;
+
+      // Check if user is authenticated
+      if (!req.user || !req.user.userId) {
+        return res.status(401).json({
+          error: 'Authentication required',
+          code: 'AUTH_REQUIRED',
+          message: 'You must be logged in to check links'
+        });
+      }
+
       const userId = req.user.userId;
 
       // Validate URL format

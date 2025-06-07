@@ -30,6 +30,24 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  // Token refresh mechanism
+  const refreshToken = async () => {
+    try {
+      const currentUser = auth.currentUser;
+      if (currentUser) {
+        const token = await currentUser.getIdToken(true); // Force refresh
+        localStorage.setItem('token', token);
+        console.log('🔄 Token refreshed successfully');
+        return token;
+      }
+    } catch (error) {
+      console.error('❌ Token refresh failed:', error);
+      // If token refresh fails, sign out user
+      await signOut(auth);
+      throw error;
+    }
+  };
+
   // Check authentication status on mount
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
@@ -45,11 +63,24 @@ export const AuthProvider = ({ children }) => {
         };
         setUser(userData);
 
-        // Store Firebase ID token
+        // Store Firebase ID token with refresh mechanism
         try {
           const token = await user.getIdToken();
           localStorage.setItem('token', token);
           localStorage.setItem('user', JSON.stringify(userData));
+
+          // Set up token refresh timer (refresh every 50 minutes)
+          const refreshInterval = setInterval(async () => {
+            try {
+              await refreshToken();
+            } catch (error) {
+              console.error('Scheduled token refresh failed:', error);
+              clearInterval(refreshInterval);
+            }
+          }, 50 * 60 * 1000); // 50 minutes
+
+          // Store interval ID for cleanup
+          localStorage.setItem('tokenRefreshInterval', refreshInterval.toString());
         } catch (error) {
           console.error('Error getting ID token:', error);
         }
@@ -58,6 +89,13 @@ export const AuthProvider = ({ children }) => {
         setUser(null);
         localStorage.removeItem('token');
         localStorage.removeItem('user');
+
+        // Clear token refresh interval
+        const intervalId = localStorage.getItem('tokenRefreshInterval');
+        if (intervalId) {
+          clearInterval(parseInt(intervalId));
+          localStorage.removeItem('tokenRefreshInterval');
+        }
       }
       setLoading(false);
     });
@@ -498,7 +536,8 @@ export const AuthProvider = ({ children }) => {
     resetPassword,
     updateProfile,
     changePassword,
-    sendPasswordResetEmail: forgotPassword // Alias for consistency
+    sendPasswordResetEmail: forgotPassword, // Alias for consistency
+    refreshToken
   };
 
   return (

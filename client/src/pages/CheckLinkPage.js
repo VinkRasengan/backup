@@ -172,8 +172,13 @@ const CheckLinkPage = () => {
 
       toast.success('Kiểm tra link thành công!');
 
-      // Optionally save to history (this would be handled by the API in real implementation)
-      // The dashboard will automatically update when the user navigates to it
+      // Trigger dashboard refresh by dispatching a custom event
+      window.dispatchEvent(new CustomEvent('linkChecked', {
+        detail: {
+          url: normalizedUrl,
+          result: response?.data?.result || mockResult
+        }
+      }));
 
     } catch (error) {
       console.error('Error checking link:', error);

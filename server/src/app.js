@@ -29,23 +29,22 @@ let errorHandler, authenticateToken, authRoutes, userRoutes, linkRoutes;
 
 try {
   errorHandler = require('./middleware/errorHandler');
-
-  // Try pure auth first (no Firebase), then hybrid, then regular
+  // Try hybrid auth first (Firebase + JWT), then regular, then pure
   try {
-    const pureAuth = require('./middleware/pureAuth');
-    authenticateToken = pureAuth.authenticateToken;
-    console.log('✅ Using pure backend authentication (No Firebase)');
-  } catch (pureError) {
-    console.warn('⚠️ Pure auth not available, trying hybrid auth...');
+    const hybridAuth = require('./middleware/hybridAuth');
+    authenticateToken = hybridAuth.authenticateToken;
+    console.log('✅ Using hybrid authentication (Firebase + JWT)');
+  } catch (hybridError) {
+    console.warn('⚠️ Hybrid auth not available, trying regular auth...');
     try {
-      const hybridAuth = require('./middleware/hybridAuth');
-      authenticateToken = hybridAuth.authenticateToken;
-      console.log('✅ Using hybrid authentication (Firebase + JWT)');
-    } catch (hybridError) {
-      console.warn('⚠️ Hybrid auth not available, trying regular auth...');
       const authMiddleware = require('./middleware/auth');
       authenticateToken = authMiddleware.authenticateToken;
       console.log('✅ Using regular authentication');
+    } catch (regularError) {
+      console.warn('⚠️ Regular auth not available, trying pure auth...');
+      const pureAuth = require('./middleware/pureAuth');
+      authenticateToken = pureAuth.authenticateToken;
+      console.log('✅ Using pure backend authentication (No Firebase)');
     }
   }
 
@@ -69,7 +68,7 @@ try {
 }
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 5000;
 
 // Production environment check
 const isProduction = process.env.NODE_ENV === 'production'; // Changed from 5000 to avoid Firebase hosting conflict
@@ -182,7 +181,7 @@ try {
   }
 
   if (userRoutes) app.use('/api/users', authenticateToken, userRoutes);
-  if (linkRoutes) app.use('/api/links', linkRoutes); // Remove auth requirement for some link endpoints
+  if (linkRoutes) app.use('/api/links', linkRoutes); // Link routes handle their own authentication per endpoint
 } catch (error) {
   console.error('❌ Error loading main routes:', error.message);
 }
