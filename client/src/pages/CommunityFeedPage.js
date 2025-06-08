@@ -298,7 +298,10 @@ const CommunityFeedPage = () => {
       {/* Comment Preview - Always show */}
       <CommentPreview
         linkId={article.id}
-        onToggleFullComments={() => toggleComments(article.id)}
+        onToggleFullComments={() => {
+          console.log('🔗 Article data for comments:', { id: article.id, title: article.title, url: article.url });
+          toggleComments(article.id);
+        }}
       />
 
       {/* Full Comments Section */}

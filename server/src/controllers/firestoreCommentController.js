@@ -31,29 +31,29 @@ class FirestoreCommentController {
     /**
      * Get comments for a specific link
      */
-    async getComments(req, res) {
+    getComments = async (req, res) => {
         try {
             const { linkId } = req.params;
             const { page = 1, limit = 20 } = req.query;
             const offset = (page - 1) * limit;
 
+            console.log('🔍 getComments called with linkId:', linkId, 'db:', !!this.db);
+
             if (!this.db || this.useFallback) {
+                console.log('⚠️ Using fallback for comments');
                 return this.getCommentsFallback(req, res);
             }
 
-            // Get comments from Firestore
+            // Get comments from Firestore (without orderBy to avoid index requirement)
             const commentsRef = this.db.collection('comments')
-                .where('linkId', '==', linkId)
-                .orderBy('createdAt', 'desc')
-                .limit(parseInt(limit))
-                .offset(offset);
+                .where('linkId', '==', linkId);
 
             const snapshot = await commentsRef.get();
-            const comments = [];
+            const allComments = [];
 
             for (const doc of snapshot.docs) {
                 const commentData = doc.data();
-                
+
                 // Get user info
                 let userInfo = { email: 'Anonymous', displayName: 'Anonymous User' };
                 if (commentData.userId) {
@@ -71,7 +71,7 @@ class FirestoreCommentController {
                     }
                 }
 
-                comments.push({
+                allComments.push({
                     id: doc.id,
                     content: commentData.content,
                     created_at: commentData.createdAt?.toDate?.() || new Date(),
@@ -81,11 +81,16 @@ class FirestoreCommentController {
                 });
             }
 
-            // Get total count
-            const totalSnapshot = await this.db.collection('comments')
-                .where('linkId', '==', linkId)
-                .get();
-            const totalCount = totalSnapshot.size;
+            // Sort comments by created_at descending (newest first)
+            allComments.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+            // Apply pagination
+            const startIndex = (page - 1) * limit;
+            const endIndex = startIndex + parseInt(limit);
+            const comments = allComments.slice(startIndex, endIndex);
+
+            // Total count is the size of all comments
+            const totalCount = allComments.length;
 
             res.json({
                 success: true,
@@ -113,7 +118,7 @@ class FirestoreCommentController {
     /**
      * Create a new comment
      */
-    async createComment(req, res) {
+    createComment = async (req, res) => {
         try {
             const { linkId } = req.params;
             const { content } = req.body;
@@ -201,7 +206,7 @@ class FirestoreCommentController {
     /**
      * Update a comment
      */
-    async updateComment(req, res) {
+    updateComment = async (req, res) => {
         try {
             const { commentId } = req.params;
             const { content } = req.body;
@@ -270,7 +275,7 @@ class FirestoreCommentController {
     /**
      * Delete a comment
      */
-    async deleteComment(req, res) {
+    deleteComment = async (req, res) => {
         try {
             const { commentId } = req.params;
             const userId = req.user?.userId || req.user?.uid;
@@ -316,7 +321,7 @@ class FirestoreCommentController {
     /**
      * Get comment statistics for a link
      */
-    async getCommentStats(req, res) {
+    getCommentStats = async (req, res) => {
         try {
             const { linkId } = req.params;
 

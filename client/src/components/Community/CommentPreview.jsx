@@ -26,14 +26,20 @@ const CommentPreview = ({ linkId, onToggleFullComments }) => {
   const loadPreviewComments = async () => {
     try {
       setLoading(true);
+      console.log('🔍 Loading comments for linkId:', linkId);
       const response = await communityAPI.getComments(linkId, 1, 2, 'newest');
-      
+      console.log('📝 Comments API response:', response);
+
       if (response.data && response.data.success) {
         setComments(response.data.data.comments || []);
         setTotalComments(response.data.data.pagination?.totalComments || 0);
+        console.log('✅ Comments loaded:', response.data.data.comments?.length || 0);
+      } else {
+        console.warn('⚠️ Comments API response not successful:', response.data);
       }
     } catch (error) {
-      console.error('Load preview comments error:', error);
+      console.error('❌ Load preview comments error:', error);
+      console.error('Error details:', error.response?.data || error.message);
     } finally {
       setLoading(false);
     }
