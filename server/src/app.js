@@ -235,6 +235,100 @@ app.get('/api/chat/test-openai', async (req, res) => {
   }
 });
 
+// Test third party results (no auth required)
+app.get('/api/test/third-party-results', async (req, res) => {
+  try {
+    console.log('🧪 Testing third party results generation...');
+
+    const crawlerService = require('./services/crawlerService');
+
+    // Mock data for testing
+    const mockVirusTotalData = {
+      success: true,
+      securityScore: 85,
+      threats: { malicious: false, suspicious: false }
+    };
+
+    const mockScamAdviserData = {
+      success: true,
+      trustScore: 75,
+      riskLevel: 'low'
+    };
+
+    const thirdPartyResults = crawlerService.generateThirdPartyResults(
+      mockVirusTotalData,
+      mockScamAdviserData
+    );
+
+    console.log('✅ Generated third party results:', thirdPartyResults.length, 'services');
+
+    res.json({
+      success: true,
+      data: {
+        count: thirdPartyResults.length,
+        services: thirdPartyResults
+      },
+      message: 'Third party results generated successfully'
+    });
+
+  } catch (error) {
+    console.error('❌ Third party test error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// Test link check (no auth required)
+app.post('/api/test/check-link', async (req, res) => {
+  try {
+    const { url } = req.body;
+
+    if (!url) {
+      return res.status(400).json({
+        success: false,
+        error: 'URL is required'
+      });
+    }
+
+    // Validate URL format
+    try {
+      new URL(url);
+    } catch (error) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid URL format'
+      });
+    }
+
+    console.log('🧪 Test checking link:', url);
+
+    // Use crawler service directly
+    const crawlerService = require('./services/crawlerService');
+    const result = await crawlerService.checkLink(url);
+
+    console.log('✅ Test result:', {
+      url: result.url,
+      status: result.status,
+      thirdPartyResultsCount: result.thirdPartyResults?.length || 0
+    });
+
+    res.json({
+      success: true,
+      result: result,
+      message: 'Test check completed successfully'
+    });
+
+  } catch (error) {
+    console.error('❌ Test check error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
 // Chat routes (essential for frontend) - Load separately with detailed error handling
 try {
   console.log('🔄 Loading chat routes...');

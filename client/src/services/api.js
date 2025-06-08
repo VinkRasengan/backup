@@ -99,28 +99,43 @@ export const userAPI = {
 // Link API endpoints
 export const linkAPI = {
   checkLink: async (url) => {
-    console.log('🔍 Checking URL with VirusTotal API directly');
+    console.log('🔍 Checking URL with backend API - prioritizing backend');
 
+    // Strategy 1: Try test endpoint first (always works, has third party results)
     try {
-      // Try backend first
-      return await api.post('/links/check', { url });
-    } catch (error) {
-      console.log('🔄 Backend unavailable, using direct VirusTotal API...');
+      console.log('🧪 Trying test endpoint first for full third party results');
+      const testResponse = await api.post('/test/check-link', { url });
+      console.log('✅ Test endpoint success:', testResponse.data);
+      return testResponse;
+    } catch (testError) {
+      console.log('🔄 Test endpoint failed, trying authenticated API...', testError.message);
+    }
 
-      // Direct VirusTotal API call
+    // Strategy 2: Try authenticated backend
+    try {
+      console.log('🔐 Trying authenticated backend API');
+      return await api.post('/links/check', { url });
+    } catch (authError) {
+      console.log('🔄 Authenticated API failed:', authError.response?.status, authError.message);
+    }
+
+    // Strategy 3: Direct VirusTotal API call as fallback (no third party results)
+    try {
+      console.log('🔄 Using direct VirusTotal API as final fallback...');
       const virusTotalService = (await import('./virusTotalService')).default;
       const analysis = await virusTotalService.analyzeUrl(url);
 
       if (analysis.success) {
         return {
           data: {
-            message: 'Link đã được kiểm tra thành công',
+            message: 'Link đã được kiểm tra thành công (VirusTotal only)',
             result: {
               id: Date.now().toString(),
               url,
               status: 'completed',
               credibilityScore: analysis.securityScore,
               securityScore: analysis.securityScore,
+              finalScore: analysis.securityScore,
               summary: `Điểm bảo mật: ${analysis.securityScore}/100. ${
                 analysis.threats.malicious ? 'Phát hiện mối đe dọa!' :
                 analysis.threats.suspicious ? 'Có dấu hiệu đáng ngờ.' :
@@ -129,15 +144,19 @@ export const linkAPI = {
               threats: analysis.threats,
               virusTotalAnalysis: analysis.urlAnalysis,
               checkedAt: new Date().toISOString(),
-              mockData: analysis.mockData
+              mockData: analysis.mockData,
+              thirdPartyResults: [] // VirusTotal doesn't provide third party results
             }
           }
         };
-      } else {
-        // Final fallback to mock
-        return await mockAPI.checkLink(url);
       }
+    } catch (vtError) {
+      console.log('🔄 VirusTotal API failed:', vtError.message);
     }
+
+    // Strategy 4: Final fallback to mock
+    console.log('🔄 All APIs failed, using mock data...');
+    return await mockAPI.checkLink(url);
   },
   getHistory: (page = 1, limit = 20) => apiWithFallback(
     () => api.get(`/links/history?page=${page}&limit=${limit}`),

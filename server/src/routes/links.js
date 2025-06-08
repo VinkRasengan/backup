@@ -47,4 +47,103 @@ router.post('/submit-to-community',
 // @access  Public
 router.get('/trending', linkController.getTrendingArticles);
 
+// Test routes for debugging third party results
+// @route   POST /api/links/test-check
+// @desc    Test link checking without authentication (for debugging)
+// @access  Public
+router.post('/test-check', async (req, res) => {
+  try {
+    const { url } = req.body;
+
+    if (!url) {
+      return res.status(400).json({
+        success: false,
+        error: 'URL is required'
+      });
+    }
+
+    // Validate URL format
+    try {
+      new URL(url);
+    } catch (error) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid URL format'
+      });
+    }
+
+    console.log('🧪 Test checking link:', url);
+
+    // Use crawler service directly
+    const crawlerService = require('../services/crawlerService');
+    const result = await crawlerService.checkLink(url);
+
+    console.log('✅ Test result:', {
+      url: result.url,
+      status: result.status,
+      thirdPartyResultsCount: result.thirdPartyResults?.length || 0
+    });
+
+    res.json({
+      success: true,
+      result: result,
+      message: 'Test check completed successfully'
+    });
+
+  } catch (error) {
+    console.error('❌ Test check error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// @route   GET /api/links/test-third-party
+// @desc    Test third party results generation
+// @access  Public
+router.get('/test-third-party', async (req, res) => {
+  try {
+    console.log('🧪 Testing third party results generation...');
+
+    const crawlerService = require('../services/crawlerService');
+
+    // Mock data for testing
+    const mockVirusTotalData = {
+      success: true,
+      securityScore: 85,
+      threats: { malicious: false, suspicious: false }
+    };
+
+    const mockScamAdviserData = {
+      success: true,
+      trustScore: 75,
+      riskLevel: 'low'
+    };
+
+    const thirdPartyResults = crawlerService.generateThirdPartyResults(
+      mockVirusTotalData,
+      mockScamAdviserData
+    );
+
+    console.log('✅ Generated third party results:', thirdPartyResults.length, 'services');
+
+    res.json({
+      success: true,
+      data: {
+        count: thirdPartyResults.length,
+        services: thirdPartyResults
+      },
+      message: 'Third party results generated successfully'
+    });
+
+  } catch (error) {
+    console.error('❌ Third party test error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
 module.exports = router;
