@@ -2,17 +2,23 @@ const Joi = require('joi');
 
 const validateRequest = (schema) => {
   return (req, res, next) => {
+    console.log('🔍 Validation - Request body:', JSON.stringify(req.body, null, 2));
+    console.log('🔍 Validation - Request body keys:', Object.keys(req.body));
+
     const { error } = schema.validate(req.body);
-    
+
     if (error) {
       const errorMessage = error.details[0].message;
+      console.log('❌ Validation failed:', errorMessage);
+      console.log('❌ Validation error details:', error.details);
       return res.status(400).json({
         error: 'Validation failed',
         message: errorMessage,
         code: 'VALIDATION_ERROR'
       });
     }
-    
+
+    console.log('✅ Validation passed');
     next();
   };
 };
@@ -110,6 +116,18 @@ const schemas = {
     })
   }),
 
+  widgetMessage: Joi.object({
+    message: Joi.string().trim().min(1).max(1000).required().messages({
+      'string.empty': 'Tin nhắn không được để trống',
+      'string.min': 'Tin nhắn quá ngắn',
+      'string.max': 'Tin nhắn quá dài (tối đa 1000 ký tự)',
+      'any.required': 'Tin nhắn là bắt buộc'
+    }),
+    sessionId: Joi.string().optional().allow('').messages({
+      'string.base': 'Session ID không hợp lệ'
+    })
+  }),
+
   submitVote: Joi.object({
     voteType: Joi.string().valid('safe', 'unsafe', 'suspicious').required().messages({
       'any.only': 'Vote type must be: safe, unsafe, or suspicious',
@@ -187,11 +205,10 @@ const schemas = {
         'string.uri': 'Please provide a valid URL',
         'any.required': 'URL is required'
       }),
-    title: Joi.string().min(10).max(200).optional().messages({
-      'string.min': 'Title must be at least 10 characters long',
+    title: Joi.string().max(200).optional().allow('').messages({
       'string.max': 'Title cannot exceed 200 characters'
     }),
-    description: Joi.string().max(500).optional().messages({
+    description: Joi.string().max(500).optional().allow('').messages({
       'string.max': 'Description cannot exceed 500 characters'
     }),
     category: Joi.string().valid(
@@ -218,6 +235,7 @@ const validateResetPassword = validateRequest(schemas.resetPassword);
 const validateProfileUpdate = validateRequest(schemas.updateProfile);
 const validateLinkCheck = validateRequest(schemas.checkLink);
 const validateChatMessage = validateRequest(schemas.chatMessage);
+const validateWidgetMessage = validateRequest(schemas.widgetMessage);
 
 // Pagination validation
 const validatePagination = (req, res, next) => {
@@ -253,5 +271,6 @@ module.exports = {
   validateProfileUpdate,
   validateLinkCheck,
   validateChatMessage,
+  validateWidgetMessage,
   validatePagination
 };

@@ -30,10 +30,16 @@ class HybridAuthMiddleware {
 
       const token = authHeader.substring(7); // Remove 'Bearer ' prefix
 
+      console.log('🔍 Auth Debug - Token received:', token ? `${token.substring(0, 20)}...` : 'No token');
+      console.log('🔍 Auth Debug - Token length:', token ? token.length : 0);
+      console.log('🔍 Auth Debug - Token parts:', token ? token.split('.').length : 0);
+
       // Try Firebase first if available
       if (useFirebase) {
         try {
+          console.log('🔥 Attempting Firebase token verification...');
           const decodedToken = await admin.auth().verifyIdToken(token);
+          console.log('✅ Firebase token verified for user:', decodedToken.uid);
           req.user = {
             userId: decodedToken.uid,
             email: decodedToken.email,
@@ -42,7 +48,8 @@ class HybridAuthMiddleware {
           };
           return next();
         } catch (firebaseError) {
-          console.log('🔄 Firebase token invalid, trying JWT...');
+          console.log('❌ Firebase token verification failed:', firebaseError.message);
+          console.log('🔄 Trying JWT verification...');
           // Fall through to JWT verification
         }
       }

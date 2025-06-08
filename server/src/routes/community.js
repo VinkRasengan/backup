@@ -100,7 +100,7 @@ router.get('/trending', authenticateToken, injectCommunityController, async (req
 router.get('/my-posts', authenticateToken, async (req, res) => {
     try {
         const userId = req.user.userId;
-        
+
         // This would normally query the database for user's posts
         // For now, return empty array as this needs proper implementation
         const userPosts = [];
@@ -120,6 +120,24 @@ router.get('/my-posts', authenticateToken, async (req, res) => {
             message: error.message
         });
     }
+});
+
+/**
+ * @route GET /api/community/my-submissions
+ * @desc Get current user's community submissions
+ * @access Private
+ */
+router.get('/my-submissions', authenticateToken, injectCommunityController, (req, res) => {
+    req.communityController.getMySubmissions(req, res);
+});
+
+/**
+ * @route DELETE /api/community/submissions/:id
+ * @desc Delete a community submission (only by author)
+ * @access Private
+ */
+router.delete('/submissions/:id', authenticateToken, injectCommunityController, (req, res) => {
+    req.communityController.deleteSubmission(req, res);
 });
 
 /**

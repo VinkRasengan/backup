@@ -14,7 +14,7 @@ const getApiBaseUrl = () => {
     return '/api'; // Use relative URL for production (handled by _redirects)
   }
 
-  return 'http://localhost:3000/api'; // Development fallback (updated to match server port)
+  return 'http://localhost:5000/api'; // Development fallback (updated to match server port)
 };
 
 const api = axios.create({

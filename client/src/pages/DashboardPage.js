@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Search, BarChart3, Clock, TrendingUp, RefreshCw } from 'lucide-react';
+import { Search, BarChart3, Clock, TrendingUp, RefreshCw, Users } from 'lucide-react';
 import EmailVerificationBanner from '../components/EmailVerificationBanner';
 import { useAuth } from '../context/AuthContext';
 
@@ -190,7 +190,7 @@ const DashboardPage = () => {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm flex items-center gap-4">
           <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center text-blue-600 dark:text-blue-400">
             <Search size={24} />
@@ -232,6 +232,23 @@ const DashboardPage = () => {
             </div>
           </div>
         </div>
+
+        <Link
+          to="/my-submissions"
+          className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm flex items-center gap-4 hover:shadow-md transition-shadow"
+        >
+          <div className="w-12 h-12 bg-purple-100 dark:bg-purple-900 rounded-lg flex items-center justify-center text-purple-600 dark:text-purple-400">
+            <Users size={24} />
+          </div>
+          <div className="flex-1">
+            <div className="text-2xl font-bold text-gray-900 dark:text-white">
+              {stats?.communitySubmissions || 0}
+            </div>
+            <div className="text-sm text-gray-600 dark:text-gray-400">
+              Đã Gửi Cộng Đồng
+            </div>
+          </div>
+        </Link>
       </div>
 
       {/* Content Grid */}
@@ -304,6 +321,23 @@ const DashboardPage = () => {
                 </div>
                 <div className="text-sm text-gray-600 dark:text-gray-400">
                   Xác minh bài viết tin tức hoặc nguồn thông tin
+                </div>
+              </div>
+            </Link>
+
+            <Link
+              to="/submit"
+              className="flex items-center gap-3 p-4 border-2 border-gray-200 dark:border-gray-600 rounded-lg hover:border-purple-500 dark:hover:border-purple-400 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all group"
+            >
+              <div className="w-10 h-10 bg-purple-100 dark:bg-purple-900 rounded-lg flex items-center justify-center text-purple-600 dark:text-purple-400 group-hover:bg-purple-200 dark:group-hover:bg-purple-800 transition-colors">
+                <Users size={20} />
+              </div>
+              <div className="flex-1">
+                <div className="font-medium text-gray-900 dark:text-white mb-1">
+                  Gửi Đến Cộng Đồng
+                </div>
+                <div className="text-sm text-gray-600 dark:text-gray-400">
+                  Chia sẻ bài viết để cộng đồng đánh giá
                 </div>
               </div>
             </Link>

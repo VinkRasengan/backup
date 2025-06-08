@@ -129,8 +129,21 @@ const ChatBot = () => {
   const sendWidgetMessageDirect = async (message) => {
     console.log('🔄 [NEW CODE] Using direct fetch for widget message:', message);
     try {
-      // Use relative URL to work with both localhost and production
-      const response = await fetch('/api/chat/widget', {
+      // Use environment-based URL configuration
+      const getApiUrl = () => {
+        if (process.env.REACT_APP_API_URL) {
+          return process.env.REACT_APP_API_URL;
+        }
+        
+        if (process.env.NODE_ENV === 'production') {
+          return '/api'; // Use relative URL for production
+        }
+        
+        return 'http://localhost:5000/api'; // Development with correct port
+      };
+
+      const apiUrl = getApiUrl();
+      const response = await fetch(`${apiUrl}/chat/widget`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

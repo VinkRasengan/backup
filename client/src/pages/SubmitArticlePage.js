@@ -19,8 +19,10 @@ import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../components/ui/Card';
 import { linkAPI } from '../services/api';
+import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import toast from 'react-hot-toast';
+import { auth } from '../config/firebase';
 
 // Custom URL validation that auto-adds protocol
 const normalizeUrl = (url) => {
@@ -65,6 +67,7 @@ const schema = yup.object({
 
 const SubmitArticlePage = () => {
   const { isDarkMode } = useTheme();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
   const [checkResult, setCheckResult] = useState(null);
@@ -104,7 +107,7 @@ const SubmitArticlePage = () => {
       if (text && text.startsWith('http')) {
         setValue('url', text);
         toast.success('Đã dán URL từ clipboard!');
-        
+
         // Auto-extract title if possible
         try {
           const domain = new URL(text).hostname;
@@ -122,6 +125,8 @@ const SubmitArticlePage = () => {
       toast.error('Không thể truy cập clipboard');
     }
   };
+
+
 
   const checkArticle = async () => {
     if (!watchedUrl) {
@@ -152,32 +157,91 @@ const SubmitArticlePage = () => {
     setIsLoading(true);
     try {
       // Submit article to community
+      // Map status from checkResult to expected values
+      const mapStatus = (status, credibilityScore) => {
+        if (status === 'completed') {
+          // Map based on credibility score
+          if (credibilityScore >= 80) return 'safe';
+          if (credibilityScore >= 50) return 'warning';
+          return 'dangerous';
+        }
+        return status; // Keep original if already mapped
+      };
+
       const articleData = {
         ...data,
         checkResult,
         credibilityScore: checkResult.credibilityScore || checkResult.finalScore,
         securityScore: checkResult.securityScore,
-        status: checkResult.status
+        status: mapStatus(checkResult.status, checkResult.credibilityScore || checkResult.finalScore)
       };
 
-      // This would be a new API endpoint for submitting articles to community
-      const response = await fetch('/api/links/submit-to-community', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: JSON.stringify(articleData)
-      });
+      // Submit to community API endpoint with Firebase token
+      console.log('👤 Current user:', user);
+      if (!user) {
+        toast.error('Bạn cần đăng nhập để gửi bài viết');
+        setIsLoading(false);
+        return;
+      }
 
-      if (response.ok) {
+      // Get Firebase user and token
+      const firebaseUser = auth.currentUser;
+      console.log('🔥 Firebase user:', firebaseUser);
+      console.log('🔥 Firebase user UID:', firebaseUser?.uid);
+      console.log('🔥 Firebase user email:', firebaseUser?.email);
+
+      if (!firebaseUser) {
+        toast.error('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
+        setIsLoading(false);
+        return;
+      }
+
+      // Force refresh token to ensure it's valid
+      console.log('🔄 Getting fresh Firebase token...');
+      const token = await firebaseUser.getIdToken(true);
+      console.log('🚀 Submitting to community:', articleData);
+      console.log('🔑 Using Firebase token:', token ? `${token.substring(0, 20)}...` : 'No token found');
+      console.log('🔑 Token length:', token ? token.length : 0);
+      console.log('🔑 Token is valid JWT:', token && token.split('.').length === 3);
+
+      // Test token validity by decoding header
+      if (token) {
+        try {
+          const tokenParts = token.split('.');
+          const header = JSON.parse(atob(tokenParts[0]));
+          const payload = JSON.parse(atob(tokenParts[1]));
+          console.log('🔍 Token header:', header);
+          console.log('🔍 Token payload (user):', payload.uid, payload.email);
+          console.log('🔍 Token expiry:', new Date(payload.exp * 1000));
+        } catch (e) {
+          console.error('❌ Failed to decode token:', e);
+        }
+      }
+
+      console.log('🌐 Making request to backend API');
+      console.log('📦 Request payload:', JSON.stringify(articleData, null, 2));
+      console.log('🔑 Token length:', token ? token.length : 'No token');
+
+      try {
+        // Use API service instead of direct fetch to ensure correct backend URL
+        const api = (await import('../services/api')).default;
+        const response = await api.post('/links/submit-to-community', articleData);
+
+        console.log('✅ Submit success:', response.data);
+
+        // Trigger community refresh
+        localStorage.setItem('newCommunitySubmission', Date.now().toString());
+
         setStep(3);
         toast.success('Bài viết đã được gửi đến cộng đồng!');
         setTimeout(() => {
           navigate('/community');
         }, 2000);
-      } else {
-        throw new Error('Failed to submit article');
+      } catch (fetchError) {
+        console.error('❌ API error:', fetchError);
+        console.error('❌ Response status:', fetchError.response?.status);
+        console.error('❌ Response data:', fetchError.response?.data);
+        throw new Error(fetchError.response?.data?.message || fetchError.message || 'Failed to submit article');
       }
     } catch (error) {
       console.error('Error submitting article:', error);

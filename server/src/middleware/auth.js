@@ -35,10 +35,17 @@ try {
 
 const authenticateToken = async (req, res, next) => {
   try {
+    console.log('🔍 Auth Debug - Request URL:', req.url);
+    console.log('🔍 Auth Debug - Request method:', req.method);
+
     const authHeader = req.headers['authorization'];
     const token = authHeader?.split(' ')[1]; // Bearer TOKEN
 
+    console.log('🔍 Auth Debug - Auth header:', authHeader ? 'Present' : 'Missing');
+    console.log('🔍 Auth Debug - Token extracted:', token ? 'Yes' : 'No');
+
     if (!token) {
+      console.log('❌ Auth Debug - No token provided');
       return res.status(401).json({
         error: 'Access token required',
         code: 'TOKEN_MISSING'

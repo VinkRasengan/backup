@@ -97,6 +97,16 @@ class UserController {
         ...doc.data()
       }));
 
+      // Get community submissions by user
+      const communitySubmissionsQuery = await db.collection('community_submissions')
+        .where('userId', '==', userId)
+        .get();
+
+      const communitySubmissions = communitySubmissionsQuery.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+
       // Get recent links for display (sorted by date)
       const recentLinks = allLinks
         .sort((a, b) => new Date(b.checkedAt) - new Date(a.checkedAt))
@@ -140,7 +150,12 @@ class UserController {
         stats: {
           totalLinksChecked: totalLinksChecked,
           linksThisWeek: linksThisWeek,
-          averageCredibilityScore: Math.round(averageCredibility * 10) / 10
+          averageCredibilityScore: Math.round(averageCredibility * 10) / 10,
+          communitySubmissions: communitySubmissions.length,
+          communitySubmissionsThisWeek: communitySubmissions.filter(submission => {
+            const submissionDate = new Date(submission.createdAt);
+            return submissionDate >= oneWeekAgo;
+          }).length
         },
         recentLinks: recentLinks,
         activity: {

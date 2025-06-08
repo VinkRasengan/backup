@@ -112,7 +112,7 @@ class FirestoreCommunityController {
                     title: linkData.title || 'Untitled Link',
                     content: linkData.description || 'No description available',
                     url: linkData.url,
-                    imageUrl: null, // Could be added later
+                    imageUrl: linkData.screenshot || linkData.imageUrl || null,
                     author,
                     source: 'Community',
                     category: this.mapStatusToCategory(linkData.status),
@@ -124,7 +124,9 @@ class FirestoreCommunityController {
                     isVerified: linkData.status === 'safe',
                     trustScore,
                     status: linkData.status,
-                    scanResults: linkData.scanResults || {}
+                    scanResults: linkData.scanResults || {},
+                    metadata: linkData.metadata || {},
+                    screenshot: linkData.screenshot || null
                 };
 
                 posts.push(post);
@@ -321,6 +323,144 @@ class FirestoreCommunityController {
             res.status(500).json({
                 success: false,
                 error: 'Failed to fetch post',
+                message: error.message
+            });
+        }
+    }
+
+    // Get current user's submissions
+    async getMySubmissions(req, res) {
+        try {
+            const userId = req.user.userId;
+
+            if (!this.db) {
+                throw new Error('Firestore not initialized');
+            }
+
+            // Query links collection for user's submissions (using existing collection)
+            // Use simple where query without orderBy to avoid index requirement
+            const submissionsSnapshot = await this.db.collection('links')
+                .where('userId', '==', userId)
+                .get();
+
+            const submissions = [];
+            for (const doc of submissionsSnapshot.docs) {
+                const submissionData = doc.data();
+
+                // Get votes for this submission
+                const votesSnapshot = await this.db.collection('votes')
+                    .where('linkId', '==', doc.id)
+                    .get();
+
+                const votes = { safe: 0, unsafe: 0, suspicious: 0 };
+                votesSnapshot.forEach(voteDoc => {
+                    const vote = voteDoc.data();
+                    votes[vote.voteType]++;
+                });
+
+                // Get comments count
+                const commentsSnapshot = await this.db.collection('comments')
+                    .where('linkId', '==', doc.id)
+                    .get();
+
+                submissions.push({
+                    id: doc.id,
+                    ...submissionData,
+                    votes,
+                    commentsCount: commentsSnapshot.size
+                });
+            }
+
+            // Sort by createdAt in descending order (newest first)
+            submissions.sort((a, b) => {
+                const aDate = a.createdAt?.toDate?.() || new Date(a.createdAt) || new Date(0);
+                const bDate = b.createdAt?.toDate?.() || new Date(b.createdAt) || new Date(0);
+                return bDate - aDate;
+            });
+
+            res.json({
+                success: true,
+                data: {
+                    submissions,
+                    totalSubmissions: submissions.length
+                },
+                timestamp: new Date().toISOString()
+            });
+
+        } catch (error) {
+            console.error('Get my submissions error:', error);
+            res.status(500).json({
+                success: false,
+                error: 'Failed to fetch user submissions',
+                message: error.message
+            });
+        }
+    }
+
+    // Delete a submission (only by author)
+    async deleteSubmission(req, res) {
+        try {
+            const { id } = req.params;
+            const userId = req.user.userId;
+
+            if (!this.db) {
+                throw new Error('Firestore not initialized');
+            }
+
+            // Check if submission exists and belongs to user
+            const submissionDoc = await this.db.collection('links').doc(id).get();
+
+            if (!submissionDoc.exists) {
+                return res.status(404).json({
+                    success: false,
+                    error: 'Submission not found'
+                });
+            }
+
+            const submissionData = submissionDoc.data();
+            if (submissionData.userId !== userId) {
+                return res.status(403).json({
+                    success: false,
+                    error: 'You can only delete your own submissions'
+                });
+            }
+
+            // Delete the submission
+            await this.db.collection('links').doc(id).delete();
+
+            // Also delete related votes and comments
+            const votesSnapshot = await this.db.collection('votes')
+                .where('linkId', '==', id)
+                .get();
+
+            const commentsSnapshot = await this.db.collection('comments')
+                .where('linkId', '==', id)
+                .get();
+
+            // Delete votes
+            const batch = this.db.batch();
+            votesSnapshot.forEach(doc => {
+                batch.delete(doc.ref);
+            });
+
+            // Delete comments
+            commentsSnapshot.forEach(doc => {
+                batch.delete(doc.ref);
+            });
+
+            await batch.commit();
+
+            res.json({
+                success: true,
+                message: 'Submission deleted successfully',
+                timestamp: new Date().toISOString()
+            });
+
+        } catch (error) {
+            console.error('Delete submission error:', error);
+            res.status(500).json({
+                success: false,
+                error: 'Failed to delete submission',
                 message: error.message
             });
         }

@@ -88,28 +88,18 @@ try {
             }
           }
 
-          // Fallback response
-          res.json({
-            data: {
-              message: 'Phản hồi từ FactCheck AI (Fallback Mode)',
-              response: {
-                content: 'Xin chào! Tôi là FactCheck AI. Hiện tại hệ thống đang trong chế độ fallback. Vui lòng thử lại sau.',
-                createdAt: new Date().toISOString(),
-                source: 'fallback'
-              }
-            }
+          // Return error instead of fallback
+          res.status(503).json({
+            error: 'OpenAI service không khả dụng',
+            code: 'OPENAI_SERVICE_ERROR',
+            message: 'Dịch vụ AI tạm thời không khả dụng. Vui lòng thử lại sau hoặc sử dụng chat widget để được hỗ trợ cơ bản.'
           });
         } catch (error) {
-          console.error('OpenAI fallback error:', error);
-          res.json({
-            data: {
-              message: 'Phản hồi từ FactCheck AI (Error Mode)',
-              response: {
-                content: 'Xin lỗi, có lỗi xảy ra. Vui lòng thử lại sau.',
-                createdAt: new Date().toISOString(),
-                source: 'error'
-              }
-            }
+          console.error('OpenAI endpoint error:', error);
+          res.status(500).json({
+            error: 'Có lỗi xảy ra khi xử lý yêu cầu',
+            code: 'INTERNAL_ERROR',
+            message: 'Xin lỗi, có lỗi xảy ra. Vui lòng thử lại sau hoặc sử dụng chat widget.'
           });
         }
       },
@@ -147,7 +137,7 @@ try {
 }
 
 // Import middleware with fallbacks
-let authenticateToken, validateChatMessage, validatePagination;
+let authenticateToken, validateChatMessage, validateWidgetMessage, validatePagination;
 
 try {
   const authMiddleware = require('../middleware/auth');
@@ -164,10 +154,17 @@ try {
 try {
   const validationMiddleware = require('../middleware/validation');
   validateChatMessage = validationMiddleware.validateChatMessage;
+  validateWidgetMessage = validationMiddleware.validateWidgetMessage;
   validatePagination = validationMiddleware.validatePagination;
 } catch (error) {
   console.warn('⚠️ Validation middleware not found, using fallback');
   validateChatMessage = (req, res, next) => {
+    if (!req.body.message) {
+      return res.status(400).json({ error: 'Message is required' });
+    }
+    next();
+  };
+  validateWidgetMessage = (req, res, next) => {
     if (!req.body.message) {
       return res.status(400).json({ error: 'Message is required' });
     }
@@ -224,7 +221,7 @@ router.get('/starters', (req, res) => chatController.getConversationStarters(req
 router.get('/tips', (req, res) => chatController.getSecurityTips(req, res));
 
 // Chat widget endpoint - Always uses mock responses (no OpenAI API)
-router.post('/widget', validateChatMessage, (req, res) => {
+router.post('/widget', validateWidgetMessage, (req, res) => {
   try {
     const { message } = req.body;
 
@@ -257,15 +254,15 @@ router.post('/openai', validateChatMessage, (req, res) => chatController.sendOpe
 router.use(authenticateToken);
 
 // Send message to security chatbot
-router.post('/message', validateChatMessage, (req, res) => chatController.sendMessage(req, res));
+router.post('/message', validateChatMessage, (req, res, next) => chatController.sendMessage(req, res, next));
 
 // Get conversation history
-router.get('/conversations/:conversationId', (req, res) => chatController.getConversation(req, res));
+router.get('/conversations/:conversationId', (req, res, next) => chatController.getConversation(req, res, next));
 
 // Get user's conversations list
-router.get('/conversations', validatePagination, (req, res) => chatController.getConversations(req, res));
+router.get('/conversations', validatePagination, (req, res, next) => chatController.getConversations(req, res, next));
 
 // Delete conversation
-router.delete('/conversations/:conversationId', (req, res) => chatController.deleteConversation(req, res));
+router.delete('/conversations/:conversationId', (req, res, next) => chatController.deleteConversation(req, res, next));
 
 module.exports = router;

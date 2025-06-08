@@ -37,10 +37,18 @@ router.get('/community-feed', optionalAuth, linkController.getCommunityFeed);
 // @desc    Submit article to community for verification
 // @access  Private (requires authentication)
 router.post('/submit-to-community',
+  (req, res, next) => {
+    console.log('🔍 Route Debug - submit-to-community called');
+    console.log('🔍 Route Debug - Method:', req.method);
+    console.log('🔍 Route Debug - Headers:', req.headers);
+    next();
+  },
   authenticateToken,
   validateRequest(schemas.submitToCommunity),
   linkController.submitToCommunity
 );
+
+
 
 // @route   GET /api/links/trending
 // @desc    Get trending/hot articles

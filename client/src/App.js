@@ -19,6 +19,7 @@ import AdminDashboard from './pages/AdminDashboard';
 import CommunityFeedPage from './pages/CommunityFeedPage';
 import SubmitArticlePage from './pages/SubmitArticlePage';
 import KnowledgeBasePage from './pages/KnowledgeBasePage';
+import MySubmissionsPage from './pages/MySubmissionsPage';
 import VerifyEmailPage from './pages/VerifyEmailPage';
 import EmailVerificationRequiredPage from './pages/EmailVerificationRequiredPage';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
@@ -123,6 +124,16 @@ function App() {
               <ProtectedRoute>
                 <EmailVerifiedRoute>
                   <SubmitArticlePage />
+                </EmailVerifiedRoute>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/my-submissions"
+            element={
+              <ProtectedRoute>
+                <EmailVerifiedRoute>
+                  <MySubmissionsPage />
                 </EmailVerifiedRoute>
               </ProtectedRoute>
             }

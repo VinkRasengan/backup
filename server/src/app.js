@@ -77,6 +77,7 @@ app.use(helmet());
 app.use(cors({
   origin: [
     'http://localhost:3000',
+    'http://localhost:3001',
     'https://factcheck-frontend.onrender.com',
     process.env.FRONTEND_URL
   ].filter(Boolean),
@@ -96,6 +97,15 @@ app.use(morgan('combined'));
 // Body parsing middleware
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
+
+// Debug middleware to log all requests
+app.use((req, res, next) => {
+  console.log(`🔍 Request: ${req.method} ${req.path}`);
+  if (req.method === 'POST') {
+    console.log(`🔍 Request body keys:`, Object.keys(req.body || {}));
+  }
+  next();
+});
 
 // Serve static files from React build
 app.use(express.static(path.join(__dirname, '../../client/build')));

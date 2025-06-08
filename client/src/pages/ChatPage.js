@@ -122,37 +122,38 @@ const ChatPage = () => {
 
     try {
       setIsSending(true);
-      console.log('📤 Sending message:', messageText);
-      const response = await chatAPI.sendOpenAIMessage({
-        message: messageText
+      console.log('📤 Sending authenticated message to AI assistant:', messageText);
+      const response = await chatAPI.sendMessage({
+        message: messageText,
+        conversationId: currentConversation?.id
       });
-      console.log('✅ Message sent:', response.data);
+      console.log('✅ AI Assistant message sent:', response.data);
 
-      // Add user message immediately
-      const userMessage = {
-        role: 'user',
-        content: messageText,
-        createdAt: new Date().toISOString()
-      };
+      // Handle authenticated chat response structure
+      if (response.data.data && response.data.data.conversation) {
+        // Update conversation and messages from backend
+        setCurrentConversation(response.data.data.conversation);
+        setMessages(response.data.data.messages);
 
-      // Add AI response
-      const aiMessage = {
-        role: 'assistant',
-        content: response.data.data.response.content,
-        createdAt: response.data.data.response.createdAt
-      };
-
-      setMessages(prev => [...prev, userMessage, aiMessage]);
-
-      // Create a simple conversation for UI purposes (no backend storage for public endpoint)
-      if (!currentConversation) {
-        const newConversation = {
-          id: `temp-${Date.now()}`,
-          title: messageText.substring(0, 50) + (messageText.length > 50 ? '...' : ''),
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString()
+        // Update conversations list if this is a new conversation
+        if (!currentConversation) {
+          setConversations(prev => [response.data.data.conversation, ...prev]);
+        }
+      } else {
+        // Fallback for simple response structure
+        const userMessage = {
+          role: 'user',
+          content: messageText,
+          createdAt: new Date().toISOString()
         };
-        setCurrentConversation(newConversation);
+
+        const aiMessage = {
+          role: 'assistant',
+          content: response.data.data?.response?.content || response.data.message || 'Có lỗi xảy ra',
+          createdAt: new Date().toISOString()
+        };
+
+        setMessages(prev => [...prev, userMessage, aiMessage]);
       }
 
       setNewMessage('');

@@ -360,18 +360,10 @@ class ChatController {
       const aiResponse = await openaiService.sendMessage(validation.message, []);
 
       if (!aiResponse.success) {
-        // Fallback to mock response
-        const mockResponse = this.generateMockResponse(validation.message);
-
-        return res.json({
-          data: {
-            message: 'Phản hồi từ FactCheck AI (Offline Mode)',
-            response: {
-              content: mockResponse,
-              createdAt: new Date().toISOString(),
-              source: 'mock'
-            }
-          }
+        return res.status(503).json({
+          error: aiResponse.error || 'OpenAI service không khả dụng',
+          code: 'AI_SERVICE_ERROR',
+          message: 'Dịch vụ AI tạm thời không khả dụng. Vui lòng thử lại sau.'
         });
       }
 

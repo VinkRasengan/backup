@@ -469,6 +469,13 @@ class LinkController {
   // Submit article to community
   async submitToCommunity(req, res, next) {
     try {
+      console.log('🚀 submitToCommunity called');
+      console.log('📦 Request body:', JSON.stringify(req.body, null, 2));
+      console.log('👤 User:', req.user);
+      console.log('🔍 Request body keys:', Object.keys(req.body));
+      console.log('🔍 checkResult type:', typeof req.body.checkResult);
+      console.log('🔍 checkResult value:', req.body.checkResult);
+
       const {
         url,
         title,
@@ -481,7 +488,9 @@ class LinkController {
       } = req.body;
       const userId = req.user.userId;
 
-      const database = require('../config/database');
+      // Use Firestore for community submissions
+      const firebaseDb = require('../config/firebase-database');
+      const db = firebaseDb.getDb();
 
       // Extract metadata from URL if title not provided
       let finalTitle = title;
@@ -494,106 +503,62 @@ class LinkController {
         }
       }
 
-      if (database.isConnected) {
-        // PostgreSQL implementation
-        const insertQuery = `
-          INSERT INTO links (
-            user_id, url, title, description, security_score, is_safe,
-            threats, analysis_result, created_at, updated_at
-          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW(), NOW())
-          RETURNING *
-        `;
+      // Save to Firestore links collection
+      const isSafe = status === 'safe' || (credibilityScore || 0) >= 70;
+      const threats = checkResult.security?.threats || {};
+      const analysisResult = {
+        category,
+        checkResult,
+        credibilityScore: credibilityScore || checkResult.credibilityScore || checkResult.finalScore,
+        securityScore: securityScore || checkResult.securityScore,
+        status: status || checkResult.status,
+        submittedAt: new Date().toISOString()
+      };
 
-        const isSafe = status === 'safe' || (credibilityScore || 0) >= 70;
-        const threats = checkResult.security?.threats || {};
-        const analysisResult = {
-          category,
-          checkResult,
-          credibilityScore: credibilityScore || checkResult.credibilityScore || checkResult.finalScore,
-          securityScore: securityScore || checkResult.securityScore,
-          status: status || checkResult.status,
-          submittedAt: new Date().toISOString()
-        };
+      const submissionData = {
+        userId,
+        url,
+        title: finalTitle,
+        description: description || null,
+        category,
+        credibilityScore: analysisResult.credibilityScore,
+        securityScore: analysisResult.securityScore,
+        status: analysisResult.status,
+        threats,
+        analysisResult,
+        checkResult,
+        screenshot: checkResult.screenshot || null,
+        imageUrl: checkResult.screenshot || null, // For compatibility
+        metadata: checkResult.metadata || {},
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        votes: { safe: 0, unsafe: 0, suspicious: 0 },
+        commentsCount: 0,
+        isPublished: true
+      };
 
-        const values = [
-          userId,
-          url,
-          finalTitle,
-          description || null,
-          securityScore || checkResult.securityScore || 0,
-          isSafe,
-          JSON.stringify(threats),
-          JSON.stringify(analysisResult)
-        ];
+      console.log('💾 Saving community submission to Firestore:', submissionData);
 
-        const result = await database.pool.query(insertQuery, values);
-        const newLink = result.rows[0];
+      const submissionRef = await db.collection('links').add(submissionData);
+      const submissionId = submissionRef.id;
 
-        res.status(201).json({
-          message: 'Article submitted to community successfully',
-          link: {
-            id: newLink.id,
-            url: newLink.url,
-            title: newLink.title,
-            description: newLink.description,
-            category,
-            credibilityScore: analysisResult.credibilityScore,
-            securityScore: newLink.security_score,
-            status: analysisResult.status,
-            createdAt: newLink.created_at
-          }
-        });
+      console.log('✅ Community submission saved with ID:', submissionId);
 
-      } else {
-        // In-memory fallback
-        const { v4: uuidv4 } = require('uuid');
-        const linkId = uuidv4();
-
-        const isSafe = status === 'safe' || (credibilityScore || 0) >= 70;
-        const analysisResult = {
-          category,
-          checkResult,
-          credibilityScore: credibilityScore || checkResult.credibilityScore || checkResult.finalScore,
-          securityScore: securityScore || checkResult.securityScore,
-          status: status || checkResult.status,
-          submittedAt: new Date().toISOString()
-        };
-
-        const newLink = {
-          id: linkId,
-          userId,
-          url,
-          title: finalTitle,
-          description: description || null,
-          security_score: securityScore || checkResult.securityScore || 0,
-          is_safe: isSafe,
-          threats: checkResult.security?.threats || {},
-          analysis_result: analysisResult,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString()
-        };
-
-        // Store in memory
-        if (!global.inMemoryDB.links) {
-          global.inMemoryDB.links = new Map();
+      res.status(201).json({
+        message: 'Article submitted to community successfully',
+        link: {
+          id: submissionId,
+          url: submissionData.url,
+          title: submissionData.title,
+          description: submissionData.description,
+          category: submissionData.category,
+          credibilityScore: submissionData.credibilityScore,
+          securityScore: submissionData.securityScore,
+          status: submissionData.status,
+          createdAt: submissionData.createdAt
         }
-        global.inMemoryDB.links.set(linkId, newLink);
+      });
 
-        res.status(201).json({
-          message: 'Article submitted to community successfully',
-          link: {
-            id: newLink.id,
-            url: newLink.url,
-            title: newLink.title,
-            description: newLink.description,
-            category,
-            credibilityScore: analysisResult.credibilityScore,
-            securityScore: newLink.security_score,
-            status: analysisResult.status,
-            createdAt: newLink.createdAt
-          }
-        });
-      }
 
     } catch (error) {
       next(error);

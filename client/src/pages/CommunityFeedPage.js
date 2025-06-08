@@ -35,9 +35,11 @@ const CommunityFeedPage = () => {
   const [showReportModal, setShowReportModal] = useState(null);
   const [page, setPage] = useState(1);
   const [isSearching, setIsSearching] = useState(false);
+  const [lastRefresh, setLastRefresh] = useState(Date.now());
 
-  // Refs for debouncing
+  // Refs for debouncing and auto-refresh
   const searchTimeoutRef = useRef(null);
+  const refreshIntervalRef = useRef(null);
 
   // Extract data from hook
   const articles = communityData.posts || [];
@@ -90,6 +92,43 @@ const CommunityFeedPage = () => {
       loadData({ page: page + 1 });
     }
   }, [loading, hasMore, page, loadData]);
+
+  // Auto-refresh function
+  const refreshData = useCallback(() => {
+    console.log('🔄 Auto-refreshing community data...');
+    loadData({ page: 1 });
+    setLastRefresh(Date.now());
+  }, [loadData]);
+
+  // Setup auto-refresh interval
+  useEffect(() => {
+    // Refresh every 30 seconds
+    refreshIntervalRef.current = setInterval(refreshData, 30000);
+
+    return () => {
+      if (refreshIntervalRef.current) {
+        clearInterval(refreshIntervalRef.current);
+      }
+    };
+  }, [refreshData]);
+
+  // Listen for new submissions from other tabs/windows
+  useEffect(() => {
+    const handleStorageChange = (e) => {
+      if (e.key === 'newCommunitySubmission') {
+        console.log('🆕 New submission detected, refreshing...');
+        refreshData();
+        // Clear the flag
+        localStorage.removeItem('newCommunitySubmission');
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+    };
+  }, [refreshData]);
 
   const toggleComments = (articleId) => {
     setShowComments(prev => ({
@@ -171,6 +210,20 @@ const CommunityFeedPage = () => {
                 <p className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'} mb-3 line-clamp-3`}>
                   {article.content}
                 </p>
+              )}
+
+              {/* Screenshot/Image */}
+              {(article.imageUrl || article.screenshot) && (
+                <div className="mb-3">
+                  <img
+                    src={article.imageUrl || article.screenshot}
+                    alt={article.title}
+                    className="w-full max-w-md h-48 object-cover rounded-lg border border-gray-200 dark:border-gray-700"
+                    onError={(e) => {
+                      e.target.style.display = 'none';
+                    }}
+                  />
+                </div>
               )}
 
               {/* URL Preview */}
