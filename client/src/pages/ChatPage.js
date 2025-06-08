@@ -400,19 +400,25 @@ const ChatPage = () => {
                         </span>
                       </div>
                       <div className="grid grid-cols-1 gap-2">
-                        {conversationStarters.slice(0, 4).map((starter, index) => (
-                          <motion.button
-                            key={`starter-${index}`}
-                            whileHover={{ scale: 1.01 }}
-                            whileTap={{ scale: 0.99 }}
-                            className="p-2.5 text-left bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded-lg border border-blue-200 dark:border-blue-700 transition-colors"
-                            onClick={() => sendMessage(starter)}
-                          >
-                            <span className="text-xs text-blue-800 dark:text-blue-200">
-                              {starter}
-                            </span>
-                          </motion.button>
-                        ))}
+                        {conversationStarters.slice(0, 4).map((starter, index) => {
+                          // Handle both string and object formats
+                          const starterText = typeof starter === 'string' ? starter : starter.text;
+                          const starterKey = typeof starter === 'object' && starter.id ? starter.id : index;
+
+                          return (
+                            <motion.button
+                              key={`starter-${starterKey}`}
+                              whileHover={{ scale: 1.01 }}
+                              whileTap={{ scale: 0.99 }}
+                              className="p-2.5 text-left bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded-lg border border-blue-200 dark:border-blue-700 transition-colors"
+                              onClick={() => sendMessage(starterText)}
+                            >
+                              <span className="text-xs text-blue-800 dark:text-blue-200">
+                                {starterText}
+                              </span>
+                            </motion.button>
+                          );
+                        })}
                       </div>
                     </div>
                   </div>

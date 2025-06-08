@@ -124,6 +124,19 @@ app.get('/health', (req, res) => {
   });
 });
 
+// AI service status endpoint (public)
+app.get('/api/ai-status', (req, res) => {
+  try {
+    const aiService = require('./services/aiService');
+    res.json(aiService.getStatus());
+  } catch (error) {
+    res.status(500).json({
+      error: 'Unable to get AI service status',
+      details: error.message
+    });
+  }
+});
+
 // API health check
 app.get('/api/health', async (req, res) => {
   try {

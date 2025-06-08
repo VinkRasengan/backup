@@ -8,11 +8,18 @@ const errorHandler = (err, req, res, next) => {
     code: err.code || 'INTERNAL_ERROR'
   };
 
-  // Firebase errors
-  if (err.code && err.code.startsWith('auth/')) {
+  // Firebase/Firestore errors
+  if (err.code === 9 || (err.details && err.details.includes('requires an index'))) {
+    error.status = 500;
+    error.code = 'DATABASE_INDEX_REQUIRED';
+    error.message = 'Database index required for this query';
+  }
+
+  // Firebase Auth errors (string codes)
+  if (err.code && typeof err.code === 'string' && err.code.startsWith('auth/')) {
     error.status = 400;
     error.code = 'FIREBASE_AUTH_ERROR';
-    
+
     switch (err.code) {
       case 'auth/email-already-exists':
         error.message = 'Email already registered';
@@ -33,6 +40,13 @@ const errorHandler = (err, req, res, next) => {
       default:
         error.message = 'Authentication error';
     }
+  }
+
+  // Other Firebase errors (numeric codes)
+  if (err.code && typeof err.code === 'number' && err.code !== 9) {
+    error.status = 500;
+    error.code = 'DATABASE_ERROR';
+    error.message = 'Database operation failed';
   }
 
   // Validation errors

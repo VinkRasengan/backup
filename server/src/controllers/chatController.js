@@ -31,7 +31,7 @@ const collections = {
   COMMENTS: 'comments',
   REPORTS: 'reports'
 };
-const openaiService = require('../services/openaiService');
+const aiService = require('../services/aiService');
 
 class ChatController {
   // Send message to security chatbot
@@ -41,7 +41,7 @@ class ChatController {
       const userId = req.user.userId;
 
       // Validate message
-      const validation = openaiService.validateMessage(message);
+      const validation = aiService.validateMessage(message);
       if (!validation.valid) {
         return res.status(400).json({
           error: validation.error,
@@ -74,23 +74,45 @@ class ChatController {
         conversation = { id: conversationRef.id, ...newConversation };
       }
 
-      // Get conversation history
-      const messagesQuery = await db.collection(collections.CHAT_MESSAGES)
-        .where('conversationId', '==', conversation.id)
-        .orderBy('createdAt', 'asc')
-        .limit(20)
-        .get();
+      // Get conversation history with fallback for missing index
+      let conversationHistory = [];
+      try {
+        const messagesQuery = await db.collection(collections.CHAT_MESSAGES)
+          .where('conversationId', '==', conversation.id)
+          .orderBy('createdAt', 'asc')
+          .limit(20)
+          .get();
 
-      const conversationHistory = messagesQuery.docs.map(doc => {
-        const data = doc.data();
-        return {
-          role: data.role,
-          content: data.content
-        };
-      });
+        conversationHistory = messagesQuery.docs.map(doc => {
+          const data = doc.data();
+          return {
+            role: data.role,
+            content: data.content
+          };
+        });
+      } catch (indexError) {
+        console.log('⚠️ Index not ready, using simple query without orderBy');
+        // Fallback: Get messages without orderBy
+        const messagesQuery = await db.collection(collections.CHAT_MESSAGES)
+          .where('conversationId', '==', conversation.id)
+          .limit(20)
+          .get();
 
-      // Send message to OpenAI
-      const aiResponse = await openaiService.sendMessage(validation.message, conversationHistory);
+        conversationHistory = messagesQuery.docs
+          .map(doc => {
+            const data = doc.data();
+            return {
+              role: data.role,
+              content: data.content,
+              createdAt: data.createdAt
+            };
+          })
+          .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))
+          .map(({ role, content }) => ({ role, content }));
+      }
+
+      // Send message to AI service
+      let aiResponse = await aiService.sendMessage(validation.message, conversationHistory);
 
       if (!aiResponse.success) {
         return res.status(500).json({
@@ -117,6 +139,7 @@ class ChatController {
         content: aiResponse.message,
         createdAt: new Date().toISOString(),
         metadata: {
+          provider: aiResponse.provider,
           model: aiResponse.model,
           usage: aiResponse.usage
         }
@@ -136,16 +159,43 @@ class ChatController {
         updatedAt: new Date().toISOString()
       });
 
+      // Get updated messages for this conversation
+      let updatedMessages = [];
+      try {
+        const messagesQuery = await db.collection(collections.CHAT_MESSAGES)
+          .where('conversationId', '==', conversation.id)
+          .orderBy('createdAt', 'asc')
+          .get();
+
+        updatedMessages = messagesQuery.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }));
+      } catch (indexError) {
+        console.log('⚠️ Index not ready, using simple query without orderBy');
+        // Fallback: Get messages without orderBy
+        const messagesQuery = await db.collection(collections.CHAT_MESSAGES)
+          .where('conversationId', '==', conversation.id)
+          .get();
+
+        updatedMessages = messagesQuery.docs
+          .map(doc => ({
+            id: doc.id,
+            ...doc.data()
+          }))
+          .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+      }
+
       res.json({
-        message: 'Tin nhắn đã được gửi thành công',
-        conversation: {
-          id: conversation.id,
-          title: conversation.title
+        data: {
+          conversation: {
+            id: conversation.id,
+            title: conversation.title,
+            updatedAt: new Date().toISOString()
+          },
+          messages: updatedMessages
         },
-        response: {
-          content: aiResponse.message,
-          createdAt: assistantMessage.createdAt
-        }
+        message: 'Tin nhắn đã được gửi thành công'
       });
 
     } catch (error) {
@@ -176,16 +226,32 @@ class ChatController {
         });
       }
 
-      // Get messages
-      const messagesQuery = await db.collection(collections.CHAT_MESSAGES)
-        .where('conversationId', '==', conversationId)
-        .orderBy('createdAt', 'asc')
-        .get();
+      // Get messages with fallback for missing index
+      let messages = [];
+      try {
+        const messagesQuery = await db.collection(collections.CHAT_MESSAGES)
+          .where('conversationId', '==', conversationId)
+          .orderBy('createdAt', 'asc')
+          .get();
 
-      const messages = messagesQuery.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
+        messages = messagesQuery.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }));
+      } catch (indexError) {
+        console.log('⚠️ Index not ready, using simple query without orderBy');
+        // Fallback: Get messages without orderBy
+        const messagesQuery = await db.collection(collections.CHAT_MESSAGES)
+          .where('conversationId', '==', conversationId)
+          .get();
+
+        messages = messagesQuery.docs
+          .map(doc => ({
+            id: doc.id,
+            ...doc.data()
+          }))
+          .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+      }
 
       res.json({
         conversation: {
@@ -307,8 +373,8 @@ class ChatController {
   // Get conversation starters
   async getConversationStarters(req, res, next) {
     try {
-      const starters = openaiService.getConversationStarters();
-      
+      const starters = aiService.getConversationStarters();
+
       res.json({
         starters
       });
@@ -323,7 +389,7 @@ class ChatController {
     try {
       const { category = 'general' } = req.query;
 
-      const response = await openaiService.getSecurityTips(category);
+      const response = await aiService.getSecurityTips(category);
 
       if (!response.success) {
         return res.status(500).json({
@@ -342,13 +408,13 @@ class ChatController {
     }
   }
 
-  // Send message to OpenAI directly (no auth required for frontend)
+  // Send message to AI directly (no auth required for frontend)
   async sendOpenAIMessage(req, res, next) {
     try {
       const { message } = req.body;
 
       // Validate message
-      const validation = openaiService.validateMessage(message);
+      const validation = aiService.validateMessage(message);
       if (!validation.valid) {
         return res.status(400).json({
           error: validation.error,
@@ -356,12 +422,12 @@ class ChatController {
         });
       }
 
-      // Send message to OpenAI without conversation history
-      const aiResponse = await openaiService.sendMessage(validation.message, []);
+      // Send message to AI without conversation history
+      const aiResponse = await aiService.sendMessage(validation.message, []);
 
       if (!aiResponse.success) {
         return res.status(503).json({
-          error: aiResponse.error || 'OpenAI service không khả dụng',
+          error: aiResponse.error || 'AI service không khả dụng',
           code: 'AI_SERVICE_ERROR',
           message: 'Dịch vụ AI tạm thời không khả dụng. Vui lòng thử lại sau.'
         });
@@ -369,24 +435,26 @@ class ChatController {
 
       res.json({
         data: {
-          message: 'Phản hồi từ FactCheck AI',
+          message: `Phản hồi từ FactCheck AI (${aiResponse.provider})`,
           response: {
             content: aiResponse.message,
             createdAt: new Date().toISOString(),
-            source: 'openai'
+            source: aiResponse.provider,
+            model: aiResponse.model
           }
         }
       });
 
     } catch (error) {
       // Fallback to mock response on error
-      const mockResponse = this.generateMockResponse(req.body.message || '');
+      console.error('❌ AI service error:', error);
+      const mockResponse = aiService.generateMockResponse(req.body.message || '');
 
       res.json({
         data: {
           message: 'Phản hồi từ FactCheck AI (Offline Mode)',
           response: {
-            content: mockResponse,
+            content: mockResponse.message,
             createdAt: new Date().toISOString(),
             source: 'mock'
           }

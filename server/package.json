@@ -9,7 +9,6 @@
     "test": "jest",
     "build": "echo 'No build step required'",
     "vercel-build": "echo 'No build step required'",
-
     "db:migrate": "node migrate-data.js",
     "db:verify": "node ../scripts/verify-firestore-data.js",
     "db:clear": "node ../scripts/verify-firestore-data.js clear",
@@ -17,6 +16,7 @@
     "deploy:local": "npm run db:seed && npm run test:local"
   },
   "dependencies": {
+    "@google/generative-ai": "^0.24.1",
     "axios": "^1.5.0",
     "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",
@@ -28,6 +28,7 @@
     "joi": "^17.9.2",
     "jsonwebtoken": "^9.0.2",
     "morgan": "^1.10.0",
+    "node-fetch": "^3.3.2",
     "nodemailer": "^6.9.4",
     "openai": "^4.104.0",
     "uuid": "^11.1.0"

@@ -245,15 +245,66 @@ Hãy kết hợp thông tin này để đưa ra phân tích toàn diện.`;
    */
   getConversationStarters() {
     return [
-      "Làm thế nào để nhận biết email lừa đảo?",
-      "Cách tạo mật khẩu mạnh và an toàn?",
-      "Phần mềm diệt virus nào tốt nhất?",
-      "Cách bảo vệ thông tin cá nhân trên mạng?",
-      "Dấu hiệu nhận biết website giả mạo?",
-      "Cách bảo mật tài khoản mạng xã hội?",
-      "Phải làm gì khi bị hack tài khoản?",
-      "Cách kiểm tra link có an toàn không?"
+      {
+        id: 1,
+        text: "Làm thế nào để nhận biết email lừa đảo?",
+        category: "phishing"
+      },
+      {
+        id: 2,
+        text: "Cách tạo mật khẩu mạnh và an toàn?",
+        category: "password"
+      },
+      {
+        id: 3,
+        text: "Phần mềm diệt virus nào tốt nhất?",
+        category: "antivirus"
+      },
+      {
+        id: 4,
+        text: "Cách bảo vệ thông tin cá nhân trên mạng?",
+        category: "privacy"
+      },
+      {
+        id: 5,
+        text: "Dấu hiệu nhận biết website giả mạo?",
+        category: "website"
+      },
+      {
+        id: 6,
+        text: "Cách bảo mật tài khoản mạng xã hội?",
+        category: "social"
+      },
+      {
+        id: 7,
+        text: "Phải làm gì khi bị hack tài khoản?",
+        category: "incident"
+      },
+      {
+        id: 8,
+        text: "Cách kiểm tra link có an toàn không?",
+        category: "url"
+      }
     ];
+  }
+
+  /**
+   * Check if service is available
+   */
+  isAvailable() {
+    return this.isConfigured();
+  }
+
+  /**
+   * Get service status
+   */
+  getStatus() {
+    return {
+      provider: 'openai',
+      model: this.model,
+      available: this.isAvailable(),
+      apiKey: this.apiKey ? 'configured' : 'missing'
+    };
   }
 }
 

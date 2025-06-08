@@ -1,6 +1,24 @@
 const express = require('express');
 const router = express.Router();
 
+// Test endpoint (public - no auth required)
+router.get('/test', (req, res) => {
+  res.json({ message: 'Chat routes working!' });
+});
+
+// AI service status (public endpoint - no auth required)
+router.get('/status', (req, res) => {
+  try {
+    const aiService = require('../services/aiService');
+    res.json(aiService.getStatus());
+  } catch (error) {
+    res.status(500).json({
+      error: 'Unable to get AI service status',
+      details: error.message
+    });
+  }
+});
+
 // Test route first
 router.get('/test', (req, res) => {
   res.json({
