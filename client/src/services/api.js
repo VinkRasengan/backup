@@ -238,7 +238,21 @@ export const communityAPI = {
   getMySubmissions: () => api.get('/community/my-submissions'),
 
   // Delete submission
-  deleteSubmission: (id) => api.delete(`/community/submissions/${id}`)
+  deleteSubmission: (id) => api.delete(`/community/submissions/${id}`),
+
+  // Comments API
+  getComments: (linkId, page = 1, limit = 10, sortBy = 'newest') => {
+    const params = new URLSearchParams({ page, limit, sortBy });
+    return api.get(`/comments/${linkId}?${params}`);
+  },
+
+  addComment: (linkId, content) => api.post(`/comments/${linkId}`, { content }),
+
+  updateComment: (commentId, content) => api.put(`/comments/comment/${commentId}`, { content }),
+
+  deleteComment: (commentId) => api.delete(`/comments/comment/${commentId}`),
+
+  getCommentStats: (linkId) => api.get(`/comments/${linkId}/stats`)
 };
 
 // Main API service object

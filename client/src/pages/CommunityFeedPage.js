@@ -20,6 +20,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 import VoteComponent from '../components/Community/VoteComponent';
 import CommentsSection from '../components/Community/CommentsSection';
+import CommentPreview from '../components/Community/CommentPreview';
 import ReportModal from '../components/Community/ReportModal';
 
 const CommunityFeedPage = () => {
@@ -261,11 +262,14 @@ const CommunityFeedPage = () => {
           <div className="flex items-center space-x-4 text-sm">
             <button
               onClick={() => toggleComments(article.id)}
-              className={`flex items-center space-x-1 px-3 py-1.5 rounded-full transition-colors
-                ${isDarkMode ? 'hover:bg-gray-700 text-gray-400' : 'hover:bg-gray-100 text-gray-600'}`}
+              className={`flex items-center space-x-1 px-3 py-1.5 rounded-full transition-colors ${
+                showComments[article.id]
+                  ? 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400'
+                  : 'text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700'
+              }`}
             >
               <MessageCircle size={16} />
-              <span>{article.commentsCount || 0} bình luận</span>
+              <span>{showComments[article.id] ? 'Ẩn bình luận' : 'Xem tất cả'}</span>
             </button>
 
             <button
@@ -291,7 +295,13 @@ const CommunityFeedPage = () => {
         </div>
       </div>
 
-      {/* Comments Section */}
+      {/* Comment Preview - Always show */}
+      <CommentPreview
+        linkId={article.id}
+        onToggleFullComments={() => toggleComments(article.id)}
+      />
+
+      {/* Full Comments Section */}
       <AnimatePresence>
         {showComments[article.id] && (
           <motion.div

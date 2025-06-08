@@ -67,7 +67,7 @@ try {
 }
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5001;
 
 // Production environment check
 const isProduction = process.env.NODE_ENV === 'production'; // Changed from 5000 to avoid Firebase hosting conflict
@@ -476,9 +476,9 @@ try {
   app.use('/api/votes', require('./routes/votes'));
   console.log('✅ Vote routes loaded (public access)');
 
-  // Other community routes with auth
+  // Other community routes (comments handle their own auth per endpoint)
   try {
-    app.use('/api/comments', authenticateToken, require('./routes/comments'));
+    app.use('/api/comments', require('./routes/comments'));
     app.use('/api/reports', authenticateToken, require('./routes/reports'));
     app.use('/api/admin', authenticateToken, require('./routes/admin'));
     console.log('✅ Community features routes loaded');
