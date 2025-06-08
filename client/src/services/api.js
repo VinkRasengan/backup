@@ -226,4 +226,31 @@ export const chatAPI = {
   getSecurityTips: (params) => api.get('/chat/tips', { params })
 };
 
+// Community API endpoints
+export const communityAPI = {
+  // Get community posts
+  getPosts: (params) => api.get('/community/posts', { params }),
+
+  // Submit to community
+  submitToCommunity: (data) => api.post('/community/submit', data),
+
+  // Get my submissions
+  getMySubmissions: () => api.get('/community/my-submissions'),
+
+  // Delete submission
+  deleteSubmission: (id) => api.delete(`/community/submissions/${id}`)
+};
+
+// Main API service object
+export const apiService = {
+  auth: authAPI,
+  user: userAPI,
+  link: linkAPI,
+  chat: chatAPI,
+  community: communityAPI,
+
+  // Direct methods for convenience
+  getMySubmissions: () => communityAPI.getMySubmissions()
+};
+
 export default api;

@@ -332,6 +332,7 @@ class FirestoreCommunityController {
     async getMySubmissions(req, res) {
         try {
             const userId = req.user.userId;
+            console.log('🔍 getMySubmissions - userId:', userId);
 
             if (!this.db) {
                 throw new Error('Firestore not initialized');
@@ -342,6 +343,8 @@ class FirestoreCommunityController {
             const submissionsSnapshot = await this.db.collection('links')
                 .where('userId', '==', userId)
                 .get();
+
+            console.log('🔍 getMySubmissions - found documents:', submissionsSnapshot.size);
 
             const submissions = [];
             for (const doc of submissionsSnapshot.docs) {
@@ -377,6 +380,14 @@ class FirestoreCommunityController {
                 const bDate = b.createdAt?.toDate?.() || new Date(b.createdAt) || new Date(0);
                 return bDate - aDate;
             });
+
+            console.log('🔍 getMySubmissions - returning submissions count:', submissions.length);
+            console.log('🔍 getMySubmissions - first submission:', submissions[0] ? {
+                id: submissions[0].id,
+                title: submissions[0].title,
+                url: submissions[0].url,
+                createdAt: submissions[0].createdAt
+            } : 'No submissions');
 
             res.json({
                 success: true,

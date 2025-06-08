@@ -4,6 +4,7 @@ import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import { auth } from '../config/firebase';
 import { toast } from 'react-hot-toast';
+import { apiService } from '../services/api';
 import { 
   ArrowLeft, 
   Trash2, 
@@ -29,22 +30,9 @@ const MySubmissionsPage = () => {
     try {
       if (!user) return;
 
-      const firebaseUser = auth.currentUser;
-      if (!firebaseUser) return;
-
-      const token = await firebaseUser.getIdToken();
-      const response = await fetch('/api/community/my-submissions', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setSubmissions(data.submissions || []);
-      } else {
-        console.error('Failed to fetch submissions');
-      }
+      const response = await apiService.getMySubmissions();
+      const submissions = response.data?.data?.submissions || response.data?.submissions || [];
+      setSubmissions(submissions);
     } catch (error) {
       console.error('Error fetching submissions:', error);
       toast.error('Không thể tải danh sách bài viết');
