@@ -1,46 +1,35 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { useCommunityData } from '../hooks/useCommunityData';
 import {
-  TrendingUp,
-  Clock,
-  Filter,
   Plus,
   Search,
   Eye,
   MessageCircle,
-  ThumbsUp,
-  ThumbsDown,
   AlertTriangle,
   ExternalLink,
-  Users
+  Users,
+  RefreshCw
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import toast from 'react-hot-toast';
 import VoteComponent from '../components/Community/VoteComponent';
 import CommentsSection from '../components/Community/CommentsSection';
 import CommentPreview from '../components/Community/CommentPreview';
 import ReportModal from '../components/Community/ReportModal';
 
 const CommunityFeedPage = () => {
-  const { user } = useAuth();
   const { isDarkMode } = useTheme();
-  const { data: communityData, loading, error, fetchData, getCacheStats } = useCommunityData();
-
-  const [sortBy, setSortBy] = useState('trending');
+  const { data: communityData, loading, fetchData } = useCommunityData();
+  const [sortBy] = useState('trending');
   const [filterBy, setFilterBy] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedArticle, setSelectedArticle] = useState(null);
   const [showComments, setShowComments] = useState({});
   const [showReportModal, setShowReportModal] = useState(null);
   const [page, setPage] = useState(1);
   const [isSearching, setIsSearching] = useState(false);
-  const [lastRefresh, setLastRefresh] = useState(Date.now());
 
-  // Refs for debouncing and auto-refresh
+  // Refs for debouncing
   const searchTimeoutRef = useRef(null);
-  const refreshIntervalRef = useRef(null);
 
   // Extract data from hook
   const articles = communityData.posts || [];
@@ -92,26 +81,14 @@ const CommunityFeedPage = () => {
     if (!loading && hasMore) {
       loadData({ page: page + 1 });
     }
-  }, [loading, hasMore, page, loadData]);
-
-  // Auto-refresh function
+  }, [loading, hasMore, page, loadData]);  // Manual refresh function
   const refreshData = useCallback(() => {
-    console.log('🔄 Auto-refreshing community data...');
+    console.log('🔄 Manually refreshing community data...');
     loadData({ page: 1 });
-    setLastRefresh(Date.now());
   }, [loadData]);
 
-  // Setup auto-refresh interval
-  useEffect(() => {
-    // Refresh every 30 seconds
-    refreshIntervalRef.current = setInterval(refreshData, 30000);
-
-    return () => {
-      if (refreshIntervalRef.current) {
-        clearInterval(refreshIntervalRef.current);
-      }
-    };
-  }, [refreshData]);
+  // Removed auto-refresh interval for Facebook-like experience
+  // Users can manually refresh using pull-to-refresh or refresh button
 
   // Listen for new submissions from other tabs/windows
   useEffect(() => {
@@ -337,9 +314,7 @@ const CommunityFeedPage = () => {
                 Cộng đồng kiểm tra và xác minh thông tin
               </p>
             </div>
-          </div>
-
-          <div className="flex items-center justify-between">
+          </div>          <div className="flex items-center justify-between">
             <div className="flex items-center space-x-6 text-sm">
               <div className={`${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
                 <span className="font-semibold">1.2k</span> thành viên
@@ -349,13 +324,52 @@ const CommunityFeedPage = () => {
               </div>
             </div>
 
-            <button
-              onClick={() => window.location.href = '/submit'}
-              className="flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-full transition-colors text-sm font-medium"
-            >
-              <Plus size={16} />
-              <span>Tạo bài viết</span>
-            </button>
+            <div className="flex items-center space-x-3">
+              <button
+                onClick={refreshData}
+                disabled={loading}
+                className={`flex items-center space-x-2 px-4 py-2 rounded-full transition-colors text-sm font-medium ${
+                  loading 
+                    ? 'bg-gray-200 text-gray-500 cursor-not-allowed dark:bg-gray-700 dark:text-gray-400'
+                    : 'bg-gray-100 hover:bg-gray-200 text-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-300'
+                }`}
+              >
+                <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
+                <span>{loading ? 'Đang tải...' : 'Làm mới'}</span>
+              </button>
+              
+              <button
+                onClick={() => window.location.href = '/submit'}
+                className="flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-full transition-colors text-sm font-medium"
+              >
+                <Plus size={16} />
+                <span>Tạo bài viết</span>
+              </button>
+            </div>
+          </div>        </div>
+
+        {/* Search Bar */}
+        <div className="mb-6">
+          <div className="relative">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <Search className={`h-5 w-5 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`} />
+            </div>
+            <input
+              type="text"
+              placeholder="Tìm kiếm bài viết..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className={`block w-full pl-10 pr-3 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                isDarkMode 
+                  ? 'bg-gray-800 border-gray-600 text-white placeholder-gray-400'
+                  : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
+              }`}
+            />
+            {isSearching && (
+              <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+              </div>
+            )}
           </div>
         </div>
 

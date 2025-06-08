@@ -111,19 +111,8 @@ const DashboardPage = () => {
       window.removeEventListener('linkChecked', handleLinkChecked);
     };
   }, [fetchDashboardData]);
-
-  // Auto-refresh dashboard every 30 seconds when user is active
-  useEffect(() => {
-    const interval = setInterval(() => {
-      // Only refresh if user is active (page is visible)
-      if (!document.hidden) {
-        console.log('🔄 Auto-refreshing dashboard...');
-        fetchDashboardData(true);
-      }
-    }, 30000); // 30 seconds
-
-    return () => clearInterval(interval);
-  }, [fetchDashboardData]);
+  // Removed auto-refresh interval for better UX
+  // Users can manually refresh using the refresh button
 
   // Auto-refresh when navigating to dashboard (e.g., after checking a link)
   useEffect(() => {
