@@ -48,6 +48,7 @@
   "license": "MIT",
   "dependencies": {
     "@firebasegen/default-connector": "file:dataconnect-generated/js/default-connector",
+    "axios": "^1.9.0",
     "dotenv": "^16.5.0",
     "firebase": "^11.8.1",
     "firebase-admin": "^13.4.0"

@@ -1,35 +1,54 @@
 const axios = require('axios');
 const virusTotalService = require('./virusTotalService');
+const scamAdviserService = require('./scamAdviserService');
 
 class CrawlerService {
   constructor() {
     this.apiUrl = process.env.CRAWLER_API_URL;
     this.apiKey = process.env.CRAWLER_API_KEY;
   }
-
   async checkLink(url) {
     try {
-      // Get VirusTotal security analysis
-      console.log('Starting VirusTotal analysis for:', url);
-      const virusTotalAnalysis = await virusTotalService.analyzeUrl(url);
+      // Run security analyses in parallel for better performance
+      console.log('Starting security analysis for:', url);
+      const [virusTotalAnalysis, scamAdviserAnalysis] = await Promise.allSettled([
+        virusTotalService.analyzeUrl(url),
+        scamAdviserService.analyzeUrl(url)
+      ]);
+
+      // Process VirusTotal results
+      const virusTotalData = virusTotalAnalysis.status === 'fulfilled' 
+        ? virusTotalAnalysis.value 
+        : { success: false, error: 'VirusTotal analysis failed' };
+
+      // Process ScamAdviser results
+      const scamAdviserData = scamAdviserAnalysis.status === 'fulfilled' 
+        ? scamAdviserAnalysis.value 
+        : { success: false, error: 'ScamAdviser analysis failed' };
 
       // Get content credibility analysis (mock implementation)
       const contentAnalysis = await this.mockCrawlerAPI(url);
 
+      // Calculate enhanced security score combining both sources
+      const combinedSecurityScore = this.calculateCombinedSecurityScore(
+        virusTotalData,
+        scamAdviserData
+      );
+
       // Combine security and credibility scores
       const finalScore = this.calculateFinalScore(
         contentAnalysis.credibilityScore,
-        virusTotalAnalysis.success ? virusTotalAnalysis.securityScore : null
+        combinedSecurityScore
       );
 
       return {
         url: url,
         status: 'completed',
         credibilityScore: contentAnalysis.credibilityScore,
-        securityScore: virusTotalAnalysis.success ? virusTotalAnalysis.securityScore : null,
+        securityScore: combinedSecurityScore,
         finalScore: finalScore,
         sources: contentAnalysis.sources,
-        summary: this.generateEnhancedSummary(contentAnalysis, virusTotalAnalysis),
+        summary: this.generateEnhancedSummary(contentAnalysis, virusTotalData, scamAdviserData),
         checkedAt: new Date().toISOString(),
         metadata: {
           title: contentAnalysis.title,
@@ -37,13 +56,26 @@ class CrawlerService {
           publishDate: contentAnalysis.publishDate,
           author: contentAnalysis.author
         },
-        security: virusTotalAnalysis.success ? {
-          threats: virusTotalAnalysis.threats,
-          urlAnalysis: virusTotalAnalysis.urlAnalysis,
-          domainAnalysis: virusTotalAnalysis.domainAnalysis,
-          analyzedAt: virusTotalAnalysis.analyzedAt
-        } : {
-          error: virusTotalAnalysis.error || 'Security analysis not available'
+        security: {
+          virusTotal: virusTotalData.success ? {
+            threats: virusTotalData.threats,
+            urlAnalysis: virusTotalData.urlAnalysis,
+            domainAnalysis: virusTotalData.domainAnalysis,
+            analyzedAt: virusTotalData.analyzedAt,
+            securityScore: virusTotalData.securityScore
+          } : {
+            error: virusTotalData.error || 'VirusTotal analysis not available'
+          },
+          scamAdviser: scamAdviserData.success ? {
+            trustScore: scamAdviserData.trustScore,
+            riskLevel: scamAdviserData.riskLevel,
+            riskFactors: scamAdviserData.riskFactors,
+            details: scamAdviserData.details,
+            analyzedAt: scamAdviserData.analyzedAt
+          } : {
+            error: scamAdviserData.error || 'ScamAdviser analysis not available'
+          },
+          combinedScore: combinedSecurityScore
         }
       };
     } catch (error) {
@@ -51,12 +83,49 @@ class CrawlerService {
       throw new Error('Failed to check link credibility and security');
     }
   }
+  /**
+   * Calculate combined security score from multiple sources
+   */  calculateCombinedSecurityScore(virusTotalData, scamAdviserData) {
+    const scores = [];
+    const weights = [];
 
+    // Add VirusTotal score if available
+    if (virusTotalData.success && virusTotalData.securityScore != null) {
+      scores.push(virusTotalData.securityScore);
+      weights.push(0.6); // Higher weight for VirusTotal (malware detection)
+    }
+
+    // Add ScamAdviser score if available
+    if (scamAdviserData.success && scamAdviserData.trustScore != null) {
+      const scamAdviserSecurityScore = scamAdviserService.convertToSecurityScore(
+        scamAdviserData.trustScore, 
+        scamAdviserData.riskLevel
+      );
+      scores.push(scamAdviserSecurityScore);
+      weights.push(0.4); // Lower weight for ScamAdviser (trust/scam detection)
+    }
+
+    // If no scores available, return null
+    if (scores.length === 0) {
+      return null;
+    }
+
+    // If only one score available, return it
+    if (scores.length === 1) {
+      return scores[0];
+    }
+
+    // Calculate weighted average
+    const totalWeight = weights.reduce((sum, weight) => sum + weight, 0);
+    const weightedSum = scores.reduce((sum, score, index) => sum + (score * weights[index]), 0);
+    
+    return Math.round(weightedSum / totalWeight);
+  }
   /**
    * Calculate final score combining credibility and security
    */
   calculateFinalScore(credibilityScore, securityScore) {
-    if (securityScore === null) {
+    if (securityScore == null) {
       return credibilityScore; // Use only credibility if security analysis failed
     }
 
@@ -72,34 +141,92 @@ class CrawlerService {
 
     // If security score is good (60+), use weighted average
     return Math.round((credibilityScore * 0.6) + (securityScore * 0.4));
+  }/**
+   * Generate enhanced summary including security information from multiple sources
+   */
+  generateEnhancedSummary(contentAnalysis, virusTotalData, scamAdviserData) {
+    let summary = contentAnalysis.summary;
+
+    // Add VirusTotal security information
+    summary += this.addVirusTotalSummary(virusTotalData);
+
+    // Add ScamAdviser security information
+    summary += this.addScamAdviserSummary(scamAdviserData);
+
+    // Add combined security assessment
+    summary += this.addCombinedSecurityAssessment(virusTotalData.success, scamAdviserData.success);
+
+    return summary;
   }
 
   /**
-   * Generate enhanced summary including security information
+   * Add VirusTotal information to summary
    */
-  generateEnhancedSummary(contentAnalysis, virusTotalAnalysis) {
-    let summary = contentAnalysis.summary;
-
-    if (virusTotalAnalysis.success) {
-      const { threats, securityScore } = virusTotalAnalysis;
-
-      if (threats.malicious) {
-        summary += '\n\n⚠️ CẢNH BÁO BẢO MẬT: URL này được phát hiện là độc hại bởi các công cụ bảo mật.';
-        if (threats.threatNames.length > 0) {
-          summary += ` Các mối đe dọa được phát hiện: ${threats.threatNames.join(', ')}.`;
-        }
-      } else if (threats.suspicious) {
-        summary += '\n\n⚠️ CẢNH BÁO: URL này được đánh dấu là đáng nghi ngờ bởi một số công cụ bảo mật.';
-      } else if (securityScore >= 80) {
-        summary += '\n\n✅ BẢO MẬT: URL này được đánh giá là an toàn bởi các công cụ bảo mật.';
-      }
-
-      summary += ` Điểm bảo mật: ${securityScore}/100.`;
-    } else {
-      summary += '\n\nℹ️ Không thể thực hiện phân tích bảo mật cho URL này.';
+  addVirusTotalSummary(virusTotalData) {
+    if (!virusTotalData.success) {
+      return '';
     }
 
-    return summary;
+    const { threats } = virusTotalData;
+    let vtSummary = '';
+
+    if (threats.malicious) {
+      vtSummary += '\n\n⚠️ CẢNH BÁO BẢO MẬT: URL này được VirusTotal phát hiện là độc hại.';
+      if (threats.threatNames.length > 0) {
+        vtSummary += ` Các mối đe dọa: ${threats.threatNames.join(', ')}.`;
+      }
+    } else if (threats.suspicious) {
+      vtSummary += '\n\n⚠️ CẢNH BÁO: URL này được VirusTotal đánh dấu là đáng nghi ngờ.';
+    }
+
+    return vtSummary;
+  }
+
+  /**
+   * Add ScamAdviser information to summary
+   */
+  addScamAdviserSummary(scamAdviserData) {
+    if (!scamAdviserData.success) {
+      return '';
+    }
+
+    const { trustScore, riskLevel, riskFactors } = scamAdviserData;
+    let saSummary = '';
+
+    const riskMessages = {
+      'very_high': '\n\n🚨 CẢNH BÁO SCAM: ScamAdviser đánh giá trang web này có nguy cơ lừa đảo rất cao.',
+      'high': '\n\n⚠️ CẢNH BÁO: ScamAdviser đánh giá trang web này có nguy cơ lừa đảo cao.',
+      'medium': '\n\n⚠️ LƯU Ý: ScamAdviser đánh giá trang web này có nguy cơ lừa đảo trung bình.',
+      'low': '\n\n✅ AN TOÀN: ScamAdviser đánh giá trang web này có độ tin cậy cao.'    };
+
+    if (riskMessages[riskLevel]) {
+      saSummary += riskMessages[riskLevel];
+    }
+
+    if (trustScore != null) {
+      saSummary += ` Điểm tin cậy: ${trustScore}/100.`;
+    }
+
+    if (riskFactors?.length > 0) {
+      saSummary += `\n\nCác yếu tố rủi ro được phát hiện: ${riskFactors.join(', ')}.`;
+    }
+
+    return saSummary;
+  }
+
+  /**
+   * Add combined security assessment to summary
+   */
+  addCombinedSecurityAssessment(hasVirusTotal, hasScamAdviser) {
+    if (hasVirusTotal && hasScamAdviser) {
+      return '\n\n🔒 Đã thực hiện kiểm tra bảo mật toàn diện với VirusTotal và ScamAdviser.';
+    } else if (hasVirusTotal) {
+      return '\n\n🔒 Đã kiểm tra bảo mật với VirusTotal. ScamAdviser không khả dụng.';
+    } else if (hasScamAdviser) {
+      return '\n\n🔒 Đã kiểm tra độ tin cậy với ScamAdviser. VirusTotal không khả dụng.';
+    } else {
+      return '\n\nℹ️ Không thể thực hiện phân tích bảo mật chi tiết cho URL này.';
+    }
   }
 
   // Mock implementation - replace with actual API call

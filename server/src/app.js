@@ -47,7 +47,6 @@ try {
       console.log('✅ Using pure backend authentication (No Firebase)');
     }
   }
-
   authRoutes = require('./routes/auth');
   userRoutes = require('./routes/users');
   linkRoutes = require('./routes/links');
@@ -123,10 +122,10 @@ app.get('/api/health', async (req, res) => {
     res.status(200).json({
       status: 'OK',
       timestamp: new Date().toISOString(),
-      database: dbHealth,
-      apis: {
+      database: dbHealth,      apis: {
         openai: !!process.env.OPENAI_API_KEY,
         virustotal: !!process.env.VIRUSTOTAL_API_KEY,
+        scamadviser: !!process.env.SCAMADVISER_API_KEY,
         newsapi: !!process.env.NEWSAPI_API_KEY,
         newsdata: !!process.env.NEWSDATA_API_KEY
       },
@@ -179,9 +178,17 @@ try {
       }
     }
   }
-
   if (userRoutes) app.use('/api/users', authenticateToken, userRoutes);
   if (linkRoutes) app.use('/api/links', linkRoutes); // Link routes handle their own authentication per endpoint
+  
+  // ScamAdviser routes
+  try {
+    const scamAdviserRoutes = require('./routes/scamAdviserRoutes');
+    app.use('/api/scamadviser', scamAdviserRoutes);
+    console.log('✅ ScamAdviser routes loaded successfully');
+  } catch (scamAdviserError) {
+    console.warn('⚠️ ScamAdviser routes not available:', scamAdviserError.message);
+  }
 } catch (error) {
   console.error('❌ Error loading main routes:', error.message);
 }

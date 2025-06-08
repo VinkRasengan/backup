@@ -242,13 +242,33 @@ app.get("/users/profile", authenticateToken, async (req, res) => {
 
 app.get("/users/dashboard", authenticateToken, async (req, res) => {
   try {
+    const userId = req.user.userId;
+    logger.info('🔄 Fetching dashboard data', {
+      userId,
+      timestamp: new Date().toISOString()
+    });
+
     // Get user stats
-    const userDoc = await db.collection("users").doc(req.user.userId).get();
+    const userDoc = await db.collection("users").doc(userId).get();
     const userData = userDoc.data();
+
+    if (!userData) {
+      logger.error('❌ User data not found', {
+        userId,
+        timestamp: new Date().toISOString()
+      });
+      return res.status(404).json({ error: "User data not found" });
+    }
+
+    logger.info('📊 User stats retrieved', {
+      userId,
+      stats: userData.stats,
+      timestamp: new Date().toISOString()
+    });
 
     // Get recent links
     const recentLinksQuery = await db.collection("links")
-      .where("userId", "==", req.user.userId)
+      .where("userId", "==", userId)
       .orderBy("checkedAt", "desc")
       .limit(5)
       .get();
@@ -258,13 +278,23 @@ app.get("/users/dashboard", authenticateToken, async (req, res) => {
       ...doc.data()
     }));
 
+    logger.info('🔗 Recent links retrieved', {
+      userId,
+      linkCount: recentLinks.length,
+      timestamp: new Date().toISOString()
+    });
+
     res.json({
       stats: userData.stats || { linksChecked: 0 },
       recentLinks
     });
 
   } catch (error) {
-    logger.error("Dashboard error:", error);
+    logger.error('❌ Dashboard error:', {
+      error: error.message,
+      stack: error.stack,
+      timestamp: new Date().toISOString()
+    });
     res.status(500).json({ error: "Failed to get dashboard" });
   }
 });
@@ -410,17 +440,33 @@ exports.updateUserStats = onDocumentCreated({
   try {
     const linkData = event.data.data();
     const userId = linkData.userId;
+    const linkId = event.params.linkId;
 
-    logger.info(`Updating stats for user: ${userId}`);
+    logger.info('🔄 Starting updateUserStats', {
+      linkId,
+      userId,
+      timestamp: new Date().toISOString()
+    });
 
     // Get user document
     const userRef = db.collection("users").doc(userId);
     const userDoc = await userRef.get();
 
     if (!userDoc.exists) {
-      logger.error(`User not found: ${userId}`);
+      logger.error('❌ User not found', {
+        userId,
+        linkId,
+        timestamp: new Date().toISOString()
+      });
       return;
     }
+
+    const userData = userDoc.data();
+    logger.info('📊 Current user stats', {
+      userId,
+      currentStats: userData.stats,
+      timestamp: new Date().toISOString()
+    });
 
     // Update user stats
     await userRef.update({
@@ -428,9 +474,17 @@ exports.updateUserStats = onDocumentCreated({
       "updatedAt": new Date().toISOString()
     });
 
-    logger.info(`Successfully updated stats for user: ${userId}`);
+    logger.info('✅ Successfully updated user stats', {
+      userId,
+      linkId,
+      timestamp: new Date().toISOString()
+    });
   } catch (error) {
-    logger.error("Error updating user stats:", error);
+    logger.error('❌ Error updating user stats:', {
+      error: error.message,
+      stack: error.stack,
+      timestamp: new Date().toISOString()
+    });
   }
 });
 

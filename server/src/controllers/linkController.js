@@ -11,9 +11,11 @@ class LinkController {
   async checkLink(req, res, next) {
     try {
       const { url } = req.body;
+      console.log('🔍 Checking link:', { url });
 
       // Check if user is authenticated
       if (!req.user || !req.user.userId) {
+        console.log('❌ Authentication required');
         return res.status(401).json({
           error: 'Authentication required',
           code: 'AUTH_REQUIRED',
@@ -22,11 +24,13 @@ class LinkController {
       }
 
       const userId = req.user.userId;
+      console.log('👤 User ID:', userId);
 
       // Validate URL format
       try {
         new URL(url);
       } catch (error) {
+        console.log('❌ Invalid URL format:', url);
         return res.status(400).json({
           error: 'Invalid URL format',
           code: 'INVALID_URL'
@@ -47,6 +51,7 @@ class LinkController {
         const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
 
         if (lastCheckTime > oneHourAgo) {
+          console.log('ℹ️ Link was recently checked:', { url, lastCheckTime });
           return res.json({
             message: 'Link was recently checked',
             result: {
@@ -57,8 +62,10 @@ class LinkController {
         }
       }
 
+      console.log('🔄 Using crawler service to check link');
       // Use crawler service to check the link
       const crawlerResult = await crawlerService.checkLink(url);
+      console.log('✅ Crawler result:', crawlerResult);
 
       // Save result to database
       const linkData = {
@@ -68,13 +75,17 @@ class LinkController {
         checkedAt: new Date().toISOString()
       };
 
+      console.log('💾 Saving link data to database:', linkData);
       const linkRef = await db.collection(collections.LINKS).add(linkData);
+      console.log('✅ Link saved with ID:', linkRef.id);
 
       // Update user stats
+      console.log('📊 Updating user stats');
       await db.collection(collections.USERS).doc(userId).update({
         'stats.linksChecked': db.FieldValue.increment(1),
         updatedAt: new Date().toISOString()
       });
+      console.log('✅ User stats updated');
 
       res.json({
         message: 'Link checked successfully',
@@ -85,6 +96,7 @@ class LinkController {
       });
 
     } catch (error) {
+      console.error('❌ Error in checkLink:', error);
       next(error);
     }
   }

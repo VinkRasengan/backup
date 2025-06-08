@@ -95,23 +95,42 @@ const CheckLinkPage = () => {
       } catch (apiError) {
         console.log('API not available, using mock data:', apiError.message);
         // Mock response for demo
-        await new Promise(resolve => setTimeout(resolve, 2000));
-
-        const domain = new URL(normalizedUrl).hostname;
+        await new Promise(resolve => setTimeout(resolve, 2000));        const domain = new URL(normalizedUrl).hostname;
         const credibilityScore = Math.floor(Math.random() * 100);
-        const securityScore = Math.floor(Math.random() * 100);
-        const finalScore = Math.round((credibilityScore * 0.6) + (securityScore * 0.4));
+        const vtSecurityScore = Math.floor(Math.random() * 100);
+        const saScore = Math.floor(Math.random() * 100);
+        const combinedSecurityScore = Math.round((vtSecurityScore * 0.6) + (saScore * 0.4));
+        const finalScore = Math.round((credibilityScore * 0.6) + (combinedSecurityScore * 0.4));
 
         let status;
         if (finalScore >= 70) status = 'safe';
         else if (finalScore >= 40) status = 'warning';
         else status = 'dangerous';
 
+        // Generate ScamAdviser risk level
+        let riskLevel;
+        if (saScore >= 80) riskLevel = 'low';
+        else if (saScore >= 60) riskLevel = 'medium';
+        else if (saScore >= 40) riskLevel = 'high';
+        else riskLevel = 'very_high';
+
+        // Generate risk factors for ScamAdviser
+        const possibleRiskFactors = [
+          'Suspicious activity detected',
+          'High phishing risk',
+          'Very new domain',
+          'No SSL/HTTPS security',
+          'High-risk country'
+        ];
+        const riskFactors = riskLevel === 'very_high' ? possibleRiskFactors.slice(0, 3) :
+                           riskLevel === 'high' ? possibleRiskFactors.slice(0, 2) :
+                           riskLevel === 'medium' ? possibleRiskFactors.slice(0, 1) : [];
+
         resultData = {
           url: normalizedUrl,
           status: status,
           credibilityScore: credibilityScore,
-          securityScore: securityScore,
+          securityScore: combinedSecurityScore,
           finalScore: finalScore,
           metadata: {
             title: `Trang web ${domain}`,
@@ -123,40 +142,60 @@ const CheckLinkPage = () => {
             organization: `${domain.charAt(0).toUpperCase() + domain.slice(1)} Inc.`
           },
           security: {
-            threats: {
-              malicious: securityScore < 30,
-              suspicious: securityScore >= 30 && securityScore < 60,
-              threatNames: securityScore < 30 ? ['Phishing', 'Malware'] : securityScore < 60 ? ['Suspicious Content'] : []
+            virusTotal: {
+              threats: {
+                malicious: vtSecurityScore < 30,
+                suspicious: vtSecurityScore >= 30 && vtSecurityScore < 60,
+                threatNames: vtSecurityScore < 30 ? ['Phishing', 'Malware'] : vtSecurityScore < 60 ? ['Suspicious Content'] : []
+              },
+              urlAnalysis: {
+                success: true,
+                stats: {
+                  malicious: vtSecurityScore < 30 ? 2 : 0,
+                  suspicious: vtSecurityScore >= 30 && vtSecurityScore < 60 ? 1 : 0,
+                  harmless: vtSecurityScore >= 60 ? 5 : 3,
+                  undetected: 2
+                }
+              },
+              domainAnalysis: {
+                success: true,
+                reputation: vtSecurityScore >= 60 ? 1 : vtSecurityScore >= 30 ? 0 : -1
+              },
+              securityScore: vtSecurityScore,
+              analyzedAt: new Date().toISOString()
             },
-            urlAnalysis: {
-              success: true,
-              stats: {
-                malicious: securityScore < 30 ? 2 : 0,
-                suspicious: securityScore >= 30 && securityScore < 60 ? 1 : 0,
-                harmless: securityScore >= 60 ? 5 : 3,
-                undetected: 2
-              }
+            scamAdviser: {
+              trustScore: saScore,
+              riskLevel: riskLevel,
+              riskFactors: riskFactors,
+              details: {
+                domain: domain,
+                country: 'Vietnam',
+                registrationDate: new Date(Date.now() - Math.random() * 365 * 24 * 60 * 60 * 1000).toISOString(),
+                ssl: saScore >= 50,
+                socialMedia: saScore >= 70,
+                reviews: Math.floor(saScore / 20),
+                lastChecked: new Date().toISOString()
+              },
+              analyzedAt: new Date().toISOString()
             },
-            domainAnalysis: {
-              success: true,
-              reputation: securityScore >= 60 ? 1 : securityScore >= 30 ? 0 : -1
-            }
+            combinedScore: combinedSecurityScore
           },
           thirdPartyResults: [
             {
               name: 'VirusTotal',
-              status: securityScore >= 70 ? 'clean' : securityScore >= 40 ? 'suspicious' : 'malicious',
-              details: securityScore >= 70 ? 'An toàn' : securityScore >= 40 ? 'Đáng ngờ' : 'Nguy hiểm'
+              status: vtSecurityScore >= 70 ? 'clean' : vtSecurityScore >= 40 ? 'suspicious' : 'malicious',
+              details: vtSecurityScore >= 70 ? 'An toàn' : vtSecurityScore >= 40 ? 'Đáng ngờ' : 'Nguy hiểm'
             },
             {
               name: 'URLScan',
-              status: securityScore >= 60 ? 'clean' : 'suspicious',
-              details: securityScore >= 60 ? 'An toàn' : 'Đáng ngờ'
+              status: vtSecurityScore >= 60 ? 'clean' : 'suspicious',
+              details: vtSecurityScore >= 60 ? 'An toàn' : 'Đáng ngờ'
             },
             {
               name: 'ScamAdviser',
-              status: credibilityScore >= 50 ? 'clean' : 'suspicious',
-              details: credibilityScore >= 50 ? 'An toàn' : 'Đáng ngờ'
+              status: saScore >= 50 ? 'clean' : 'suspicious',
+              details: saScore >= 50 ? 'An toàn' : 'Đáng ngờ'
             }
           ],
           screenshot: `https://via.placeholder.com/400x300/f0f0f0/666666?text=${encodeURIComponent(domain)}`,
@@ -166,7 +205,7 @@ const CheckLinkPage = () => {
             { name: 'ScamAdviser', color: 'orange' },
             { name: 'Thông gia cộng đồng', color: 'green' }
           ],
-          summary: `Kết quả phân tích cho ${domain}. Điểm tin cậy: ${credibilityScore}/100, Điểm bảo mật: ${securityScore}/100. ${status === 'safe' ? 'Trang web này được đánh giá là an toàn.' : status === 'warning' ? 'Trang web này có một số dấu hiệu đáng ngờ.' : 'Trang web này có thể không an toàn.'} ${securityScore < 30 ? '⚠️ CẢNH BÁO BẢO MẬT: Phát hiện mối đe dọa bảo mật!' : securityScore < 60 ? '⚠️ Có dấu hiệu đáng ngờ về bảo mật.' : '✅ Không phát hiện mối đe dọa bảo mật.'}`
+          summary: `Kết quả phân tích cho ${domain}. Điểm tin cậy: ${credibilityScore}/100, Điểm bảo mật tổng hợp: ${combinedSecurityScore}/100 (VirusTotal: ${vtSecurityScore}, ScamAdviser: ${saScore}). ${status === 'safe' ? 'Trang web này được đánh giá là an toàn.' : status === 'warning' ? 'Trang web này có một số dấu hiệu đáng ngờ.' : 'Trang web này có thể không an toàn.'} ${vtSecurityScore < 30 ? '⚠️ CẢNH BÁO BẢO MẬT: VirusTotal phát hiện mối đe dọa!' : vtSecurityScore < 60 ? '⚠️ VirusTotal phát hiện dấu hiệu đáng ngờ.' : '✅ VirusTotal xác nhận an toàn.'} ${riskLevel === 'very_high' ? '🚨 ScamAdviser cảnh báo nguy cơ lừa đảo rất cao!' : riskLevel === 'high' ? '⚠️ ScamAdviser cảnh báo nguy cơ lừa đảo cao.' : riskLevel === 'medium' ? '⚠️ ScamAdviser đánh giá có rủi ro trung bình.' : '✅ ScamAdviser đánh giá an toàn.'}`
         };
         setResult(resultData);
       }
@@ -378,9 +417,7 @@ const CheckLinkPage = () => {
                     </div>
                   </div>
                 </CardContent>
-              </Card>
-
-              {/* Security Analysis */}
+              </Card>              {/* Security Analysis */}
               <Card className="shadow-xl border-0 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm">
                 <CardHeader className="text-center pb-4">
                   <CardTitle className="text-lg flex items-center justify-center gap-2">
@@ -389,36 +426,60 @@ const CheckLinkPage = () => {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="text-center">
-                  {result.security?.threats?.malicious ? (
-                    <div className="inline-flex flex-col items-center gap-3 px-6 py-4 rounded-lg bg-red-100 dark:bg-red-900/30">
-                      <XCircle className="w-12 h-12 text-red-800 dark:text-red-200" />
-                      <span className="text-xl font-bold text-red-800 dark:text-red-200">
-                        Nguy hiểm
-                      </span>
-                    </div>
-                  ) : result.security?.threats?.suspicious ? (
-                    <div className="inline-flex flex-col items-center gap-3 px-6 py-4 rounded-lg bg-yellow-100 dark:bg-yellow-900/30">
-                      <AlertTriangle className="w-12 h-12 text-yellow-800 dark:text-yellow-200" />
-                      <span className="text-xl font-bold text-yellow-800 dark:text-yellow-200">
-                        Đáng ngờ
-                      </span>
-                    </div>
-                  ) : (
-                    <div className="inline-flex flex-col items-center gap-3 px-6 py-4 rounded-lg bg-green-100 dark:bg-green-900/30">
-                      <CheckCircle className="w-12 h-12 text-green-800 dark:text-green-200" />
-                      <span className="text-xl font-bold text-green-800 dark:text-green-200">
-                        An toàn
-                      </span>
-                    </div>
-                  )}
-                  <div className="mt-4 text-sm text-gray-600 dark:text-gray-400">
-                    Điểm bảo mật: {result.securityScore}/100
-                  </div>
-                  {result.security?.threats?.threatNames?.length > 0 && (
-                    <div className="mt-2 text-xs text-red-600 dark:text-red-400">
-                      Phát hiện: {result.security.threats.threatNames.join(', ')}
-                    </div>
-                  )}
+                  {(() => {
+                    // Determine overall security status from combined score or individual scores
+                    const securityScore = result.securityScore;
+                    const hasVirusTotal = result.security?.virusTotal && !result.security.virusTotal.error;
+                    const hasScamAdviser = result.security?.scamAdviser && !result.security.scamAdviser.error;
+                    
+                    let status, icon, colorClass;
+                    
+                    if (securityScore >= 70) {
+                      status = 'An toàn';
+                      icon = CheckCircle;
+                      colorClass = 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200';
+                    } else if (securityScore >= 40) {
+                      status = 'Đáng ngờ';
+                      icon = AlertTriangle;
+                      colorClass = 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200';
+                    } else if (securityScore !== null) {
+                      status = 'Nguy hiểm';
+                      icon = XCircle;
+                      colorClass = 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-200';
+                    } else {
+                      status = 'Không xác định';
+                      icon = AlertTriangle;
+                      colorClass = 'bg-gray-100 dark:bg-gray-900/30 text-gray-800 dark:text-gray-200';
+                    }
+                    
+                    const StatusIcon = icon;
+                    
+                    return (
+                      <>
+                        <div className={`inline-flex flex-col items-center gap-3 px-6 py-4 rounded-lg ${colorClass}`}>
+                          <StatusIcon className="w-12 h-12" />
+                          <span className="text-xl font-bold">
+                            {status}
+                          </span>
+                        </div>
+                        <div className="mt-4 space-y-2">                          <div className="text-sm text-gray-600 dark:text-gray-400">
+                            Điểm bảo mật tổng hợp: {securityScore != null ? `${securityScore}/100` : 'N/A'}
+                          </div>
+                          <div className="text-xs text-gray-500 dark:text-gray-500 space-y-1">
+                            {hasVirusTotal && (
+                              <div>VirusTotal: {result.security.virusTotal.securityScore ?? 'N/A'}/100</div>
+                            )}
+                            {hasScamAdviser && (
+                              <div>ScamAdviser: {result.security.scamAdviser.trustScore ?? 'N/A'}/100</div>
+                            )}
+                            {!hasVirusTotal && !hasScamAdviser && (
+                              <div>Không có dữ liệu bảo mật chi tiết</div>
+                            )}
+                          </div>
+                        </div>
+                      </>
+                    );
+                  })()}
                 </CardContent>
               </Card>
 
@@ -518,9 +579,7 @@ const CheckLinkPage = () => {
                   </p>
                 </div>
               </CardContent>
-            </Card>
-
-            {/* Security Details */}
+            </Card>            {/* Security Details */}
             {result.security && (
               <Card className="shadow-xl border-0 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm">
                 <CardHeader>
@@ -529,117 +588,237 @@ const CheckLinkPage = () => {
                     Chi tiết phân tích bảo mật
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {/* URL Analysis */}
-                    <div className="space-y-3">
-                      <h4 className="font-semibold text-gray-900 dark:text-gray-100">Phân tích URL</h4>
-                      {result.security.urlAnalysis?.success ? (
-                        <div className="space-y-2">
-                          <div className="flex justify-between">
-                            <span className="text-gray-600 dark:text-gray-400">Độc hại:</span>
-                            <span className="font-medium text-red-600 dark:text-red-400">
-                              {result.security.urlAnalysis.stats.malicious || 0}
-                            </span>
+                <CardContent className="space-y-6">
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {/* VirusTotal Section */}
+                    <div className="space-y-4">
+                      <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+                        <div className="w-6 h-6 bg-blue-600 rounded flex items-center justify-center">
+                          <Shield className="w-4 h-4 text-white" />
+                        </div>
+                        VirusTotal
+                      </h3>
+                      
+                      {result.security.virusTotal && !result.security.virusTotal.error ? (
+                        <div className="space-y-4">
+                          {/* URL Analysis */}
+                          <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
+                            <h4 className="font-semibold text-gray-900 dark:text-gray-100 mb-3">Phân tích URL</h4>
+                            {result.security.virusTotal.urlAnalysis ? (
+                              <div className="grid grid-cols-2 gap-3">
+                                <div className="text-center">
+                                  <div className="text-lg font-bold text-red-600 dark:text-red-400">
+                                    {result.security.virusTotal.urlAnalysis.stats?.malicious || 0}
+                                  </div>
+                                  <div className="text-xs text-gray-600 dark:text-gray-400">Độc hại</div>
+                                </div>
+                                <div className="text-center">
+                                  <div className="text-lg font-bold text-yellow-600 dark:text-yellow-400">
+                                    {result.security.virusTotal.urlAnalysis.stats?.suspicious || 0}
+                                  </div>
+                                  <div className="text-xs text-gray-600 dark:text-gray-400">Đáng ngờ</div>
+                                </div>
+                                <div className="text-center">
+                                  <div className="text-lg font-bold text-green-600 dark:text-green-400">
+                                    {result.security.virusTotal.urlAnalysis.stats?.harmless || 0}
+                                  </div>
+                                  <div className="text-xs text-gray-600 dark:text-gray-400">An toàn</div>
+                                </div>
+                                <div className="text-center">
+                                  <div className="text-lg font-bold text-gray-600 dark:text-gray-400">
+                                    {result.security.virusTotal.urlAnalysis.stats?.undetected || 0}
+                                  </div>
+                                  <div className="text-xs text-gray-600 dark:text-gray-400">Không phát hiện</div>
+                                </div>
+                              </div>
+                            ) : (
+                              <p className="text-gray-500 dark:text-gray-400 text-sm">Không có dữ liệu phân tích URL</p>
+                            )}
                           </div>
-                          <div className="flex justify-between">
-                            <span className="text-gray-600 dark:text-gray-400">Đáng ngờ:</span>
-                            <span className="font-medium text-yellow-600 dark:text-yellow-400">
-                              {result.security.urlAnalysis.stats.suspicious || 0}
-                            </span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-gray-600 dark:text-gray-400">An toàn:</span>
-                            <span className="font-medium text-green-600 dark:text-green-400">
-                              {result.security.urlAnalysis.stats.harmless || 0}
-                            </span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-gray-600 dark:text-gray-400">Không phát hiện:</span>
-                            <span className="font-medium text-gray-600 dark:text-gray-400">
-                              {result.security.urlAnalysis.stats.undetected || 0}
-                            </span>
-                          </div>
+
+                          {/* Threat Information */}
+                          {result.security.virusTotal.threats && (
+                            <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
+                              <h4 className="font-semibold text-gray-900 dark:text-gray-100 mb-3">Mối đe dọa</h4>
+                              <div className="grid grid-cols-3 gap-3 text-center">
+                                <div>
+                                  <div className={`text-lg font-bold ${
+                                    result.security.virusTotal.threats.malicious ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'
+                                  }`}>
+                                    {result.security.virusTotal.threats.malicious ? 'CÓ' : 'KHÔNG'}
+                                  </div>
+                                  <div className="text-xs text-gray-600 dark:text-gray-400">Độc hại</div>
+                                </div>
+                                <div>
+                                  <div className={`text-lg font-bold ${
+                                    result.security.virusTotal.threats.suspicious ? 'text-yellow-600 dark:text-yellow-400' : 'text-green-600 dark:text-green-400'
+                                  }`}>
+                                    {result.security.virusTotal.threats.suspicious ? 'CÓ' : 'KHÔNG'}
+                                  </div>
+                                  <div className="text-xs text-gray-600 dark:text-gray-400">Đáng ngờ</div>
+                                </div>
+                                <div>
+                                  <div className="text-lg font-bold text-blue-600 dark:text-blue-400">
+                                    {result.security.virusTotal.threats.threatNames?.length || 0}
+                                  </div>
+                                  <div className="text-xs text-gray-600 dark:text-gray-400">Loại mối đe dọa</div>
+                                </div>
+                              </div>
+                              
+                              {result.security.virusTotal.threats.threatNames?.length > 0 && (
+                                <div className="mt-3 p-3 bg-red-50 dark:bg-red-900/20 rounded-lg">
+                                  <div className="text-sm font-medium text-red-800 dark:text-red-200 mb-2">
+                                    Các mối đe dọa được phát hiện:
+                                  </div>
+                                  <div className="flex flex-wrap gap-1">
+                                    {result.security.virusTotal.threats.threatNames.map((threat, index) => (
+                                      <span
+                                        key={`vt-threat-${index}`}
+                                        className="px-2 py-1 bg-red-100 dark:bg-red-800/30 text-red-800 dark:text-red-200 text-xs rounded-full"
+                                      >
+                                        {threat}
+                                      </span>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          )}
                         </div>
                       ) : (
-                        <p className="text-gray-500 dark:text-gray-400">Không có dữ liệu phân tích URL</p>
+                        <div className="text-center py-8">
+                          <XCircle className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+                          <p className="text-gray-500 dark:text-gray-400 text-sm">
+                            {result.security.virusTotal?.error || 'VirusTotal không khả dụng'}
+                          </p>
+                        </div>
                       )}
                     </div>
 
-                    {/* Domain Analysis */}
-                    <div className="space-y-3">
-                      <h4 className="font-semibold text-gray-900 dark:text-gray-100">Phân tích Domain</h4>
-                      {result.security.domainAnalysis?.success ? (
-                        <div className="space-y-2">
-                          <div className="flex justify-between">
-                            <span className="text-gray-600 dark:text-gray-400">Uy tín:</span>
-                            <span className={`font-medium ${
-                              result.security.domainAnalysis.reputation > 0
-                                ? 'text-green-600 dark:text-green-400'
-                                : result.security.domainAnalysis.reputation === 0
-                                ? 'text-yellow-600 dark:text-yellow-400'
-                                : 'text-red-600 dark:text-red-400'
-                            }`}>
-                              {result.security.domainAnalysis.reputation > 0 ? 'Tốt' :
-                               result.security.domainAnalysis.reputation === 0 ? 'Trung tính' : 'Xấu'}
-                            </span>
+                    {/* ScamAdviser Section */}
+                    <div className="space-y-4">
+                      <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+                        <div className="w-6 h-6 bg-orange-600 rounded flex items-center justify-center">
+                          <Globe className="w-4 h-4 text-white" />
+                        </div>
+                        ScamAdviser
+                      </h3>
+                      
+                      {result.security.scamAdviser && !result.security.scamAdviser.error ? (
+                        <div className="space-y-4">
+                          {/* Trust Score */}
+                          <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
+                            <h4 className="font-semibold text-gray-900 dark:text-gray-100 mb-3">Đánh giá độ tin cậy</h4>
+                            <div className="text-center">                              <div className={`text-3xl font-bold mb-2 ${
+                                result.security.scamAdviser.riskLevel === 'low' ? 'text-green-600 dark:text-green-400' :
+                                result.security.scamAdviser.riskLevel === 'medium' ? 'text-yellow-600 dark:text-yellow-400' :
+                                result.security.scamAdviser.riskLevel === 'high' ? 'text-orange-600 dark:text-orange-400' :
+                                result.security.scamAdviser.riskLevel === 'very_high' ? 'text-red-600 dark:text-red-400' :
+                                'text-gray-600 dark:text-gray-400'
+                              }`}>
+                                {result.security.scamAdviser.trustScore ?? 'N/A'}
+                                {result.security.scamAdviser.trustScore != null && '/100'}
+                              </div>
+                              <div className={`text-sm font-medium ${
+                                result.security.scamAdviser.riskLevel === 'low' ? 'text-green-800 dark:text-green-200' :
+                                result.security.scamAdviser.riskLevel === 'medium' ? 'text-yellow-800 dark:text-yellow-200' :
+                                result.security.scamAdviser.riskLevel === 'high' ? 'text-orange-800 dark:text-orange-200' :
+                                result.security.scamAdviser.riskLevel === 'very_high' ? 'text-red-800 dark:text-red-200' :
+                                'text-gray-800 dark:text-gray-200'
+                              }`}>
+                                Mức rủi ro: {
+                                  result.security.scamAdviser.riskLevel === 'low' ? 'Thấp' :
+                                  result.security.scamAdviser.riskLevel === 'medium' ? 'Trung bình' :
+                                  result.security.scamAdviser.riskLevel === 'high' ? 'Cao' :
+                                  result.security.scamAdviser.riskLevel === 'very_high' ? 'Rất cao' :
+                                  'Không xác định'
+                                }
+                              </div>
+                            </div>
                           </div>
+
+                          {/* Risk Factors */}
+                          {result.security.scamAdviser.riskFactors?.length > 0 && (
+                            <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
+                              <h4 className="font-semibold text-gray-900 dark:text-gray-100 mb-3">Yếu tố rủi ro</h4>
+                              <div className="space-y-2">
+                                {result.security.scamAdviser.riskFactors.map((factor, index) => (
+                                  <div key={`risk-factor-${index}`} className="flex items-start gap-2">
+                                    <AlertTriangle className="w-4 h-4 text-orange-500 mt-0.5 flex-shrink-0" />
+                                    <span className="text-sm text-gray-700 dark:text-gray-300">{factor}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Domain Details */}
+                          {result.security.scamAdviser.details && (
+                            <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
+                              <h4 className="font-semibold text-gray-900 dark:text-gray-100 mb-3">Thông tin domain</h4>
+                              <div className="space-y-2 text-sm">
+                                {result.security.scamAdviser.details.country && (
+                                  <div className="flex justify-between">
+                                    <span className="text-gray-600 dark:text-gray-400">Quốc gia:</span>
+                                    <span className="font-medium text-gray-900 dark:text-gray-100">
+                                      {result.security.scamAdviser.details.country}
+                                    </span>
+                                  </div>
+                                )}
+                                {result.security.scamAdviser.details.registrationDate && (
+                                  <div className="flex justify-between">
+                                    <span className="text-gray-600 dark:text-gray-400">Ngày đăng ký:</span>
+                                    <span className="font-medium text-gray-900 dark:text-gray-100">
+                                      {new Date(result.security.scamAdviser.details.registrationDate).toLocaleDateString('vi-VN')}
+                                    </span>
+                                  </div>
+                                )}
+                                <div className="flex justify-between">
+                                  <span className="text-gray-600 dark:text-gray-400">HTTPS:</span>
+                                  <span className={`font-medium ${
+                                    result.security.scamAdviser.details.ssl ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
+                                  }`}>
+                                    {result.security.scamAdviser.details.ssl ? 'Có' : 'Không'}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                          )}
                         </div>
                       ) : (
-                        <p className="text-gray-500 dark:text-gray-400">Không có dữ liệu phân tích domain</p>
+                        <div className="text-center py-8">
+                          <XCircle className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+                          <p className="text-gray-500 dark:text-gray-400 text-sm">
+                            {result.security.scamAdviser?.error || 'ScamAdviser không khả dụng'}
+                          </p>
+                        </div>
                       )}
                     </div>
                   </div>
 
-                  {/* Threat Information */}
-                  {result.security.threats && (
-                    <div className="mt-6 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                      <h4 className="font-semibold text-gray-900 dark:text-gray-100 mb-3">
-                        Thông tin mối đe dọa
-                      </h4>
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div className="text-center">
-                          <div className={`text-2xl font-bold ${
-                            result.security.threats.malicious ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'
-                          }`}>
-                            {result.security.threats.malicious ? 'CÓ' : 'KHÔNG'}
-                          </div>
-                          <div className="text-sm text-gray-600 dark:text-gray-400">Độc hại</div>
-                        </div>
-                        <div className="text-center">
-                          <div className={`text-2xl font-bold ${
-                            result.security.threats.suspicious ? 'text-yellow-600 dark:text-yellow-400' : 'text-green-600 dark:text-green-400'
-                          }`}>
-                            {result.security.threats.suspicious ? 'CÓ' : 'KHÔNG'}
-                          </div>
-                          <div className="text-sm text-gray-600 dark:text-gray-400">Đáng ngờ</div>
-                        </div>
-                        <div className="text-center">
-                          <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
-                            {result.security.threats.threatNames?.length || 0}
-                          </div>
-                          <div className="text-sm text-gray-600 dark:text-gray-400">Mối đe dọa</div>
-                        </div>
-                      </div>
-                      {result.security.threats.threatNames?.length > 0 && (
-                        <div className="mt-4 p-3 bg-red-50 dark:bg-red-900/20 rounded-lg">
-                          <div className="text-sm font-medium text-red-800 dark:text-red-200 mb-2">
-                            Các mối đe dọa được phát hiện:
-                          </div>
-                          <div className="flex flex-wrap gap-2">
-                            {result.security.threats.threatNames.map((threat, index) => (
-                              <span
-                                key={`threat-${index}`}
-                                className="px-2 py-1 bg-red-100 dark:bg-red-800/30 text-red-800 dark:text-red-200 text-xs rounded-full"
-                              >
-                                {threat}
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  )}
+                  {/* Combined Security Summary */}
+                  <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                    <h4 className="font-semibold text-blue-900 dark:text-blue-200 mb-2">
+                      Tổng kết bảo mật:
+                    </h4>
+                    <p className="text-blue-800 dark:text-blue-300 text-sm leading-relaxed">
+                      {(() => {
+                        const hasVT = result.security.virusTotal && !result.security.virusTotal.error;
+                        const hasSA = result.security.scamAdviser && !result.security.scamAdviser.error;
+                        const combinedScore = result.security.combinedScore;
+                        
+                        if (combinedScore >= 80) {
+                          return `Trang web này được đánh giá là an toàn với điểm bảo mật ${combinedScore}/100. ${hasVT && hasSA ? 'Cả VirusTotal và ScamAdviser đều xác nhận không có mối đe dọa đáng kể.' : hasVT ? 'VirusTotal xác nhận không có mối đe dọa về malware.' : hasSA ? 'ScamAdviser đánh giá độ tin cậy cao.' : ''}`;
+                        } else if (combinedScore >= 50) {
+                          return `Trang web này có một số cảnh báo với điểm bảo mật ${combinedScore}/100. Khuyến nghị thận trọng khi truy cập và không cung cấp thông tin cá nhân.`;
+                        } else if (combinedScore !== null) {
+                          return `Cảnh báo: Trang web này có nguy cơ cao với điểm bảo mật chỉ ${combinedScore}/100. Không nên truy cập hoặc cung cấp bất kỳ thông tin cá nhân nào.`;
+                        } else {
+                          return 'Không thể đánh giá mức độ an toàn của trang web này do thiếu dữ liệu. Khuyến nghị thận trọng khi truy cập.';
+                        }
+                      })()}
+                    </p>
+                  </div>
                 </CardContent>
               </Card>
             )}
