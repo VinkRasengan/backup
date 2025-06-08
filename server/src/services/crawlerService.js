@@ -2,6 +2,7 @@ const axios = require('axios');
 const virusTotalService = require('./virusTotalService');
 const scamAdviserService = require('./scamAdviserService');
 const screenshotService = require('./screenshotService');
+const geminiService = require('./geminiService');
 
 class CrawlerService {
   constructor() {
@@ -10,12 +11,13 @@ class CrawlerService {
   }
   async checkLink(url) {
     try {
-      // Run security analyses and screenshot in parallel for better performance
-      console.log('Starting security analysis and screenshot for:', url);
-      const [virusTotalAnalysis, scamAdviserAnalysis, screenshotAnalysis] = await Promise.allSettled([
+      // Run security analyses, screenshot, and AI analysis in parallel for better performance
+      console.log('Starting comprehensive analysis for:', url);
+      const [virusTotalAnalysis, scamAdviserAnalysis, screenshotAnalysis, geminiAnalysis] = await Promise.allSettled([
         virusTotalService.analyzeUrl(url),
         scamAdviserService.analyzeUrl(url),
-        screenshotService.takeScreenshotWithRetry(url)
+        screenshotService.takeScreenshotWithRetry(url),
+        geminiService.analyzeUrl(url)
       ]);
 
       // Process VirusTotal results
@@ -32,6 +34,11 @@ class CrawlerService {
       const screenshotData = screenshotAnalysis.status === 'fulfilled'
         ? screenshotAnalysis.value
         : { success: false, error: 'Screenshot capture failed', screenshotUrl: screenshotService.getFallbackScreenshot(url) };
+
+      // Process Gemini AI analysis results
+      const geminiData = geminiAnalysis.status === 'fulfilled'
+        ? geminiAnalysis.value
+        : { success: false, error: 'Gemini AI analysis failed', analysis: null, credibilityScore: null };
 
       // Get content credibility analysis (mock implementation)
       const contentAnalysis = await this.mockCrawlerAPI(url);
@@ -56,7 +63,7 @@ class CrawlerService {
         securityScore: combinedSecurityScore,
         finalScore: finalScore,
         sources: contentAnalysis.sources,
-        summary: this.generateEnhancedSummary(contentAnalysis, virusTotalData, scamAdviserData),
+        summary: this.generateEnhancedSummary(contentAnalysis, virusTotalData, scamAdviserData, geminiData),
         checkedAt: new Date().toISOString(),
         screenshot: screenshotData.screenshotUrl,
         metadata: {
@@ -64,6 +71,15 @@ class CrawlerService {
           domain: contentAnalysis.domain,
           publishDate: contentAnalysis.publishDate,
           author: contentAnalysis.author
+        },
+        aiAnalysis: geminiData.success ? {
+          analysis: geminiData.analysis,
+          credibilityScore: geminiData.credibilityScore,
+          riskLevel: geminiData.riskLevel,
+          analyzedAt: geminiData.analyzedAt,
+          model: geminiData.model
+        } : {
+          error: geminiData.error || 'AI analysis not available'
         },
         security: {
           virusTotal: virusTotalData.success ? {
@@ -161,8 +177,11 @@ class CrawlerService {
   }/**
    * Generate enhanced summary including security information from multiple sources
    */
-  generateEnhancedSummary(contentAnalysis, virusTotalData, scamAdviserData) {
+  generateEnhancedSummary(contentAnalysis, virusTotalData, scamAdviserData, geminiData) {
     let summary = contentAnalysis.summary;
+
+    // Add Gemini AI analysis first (most comprehensive)
+    summary += this.addGeminiAISummary(geminiData);
 
     // Add VirusTotal security information
     summary += this.addVirusTotalSummary(virusTotalData);
@@ -171,9 +190,23 @@ class CrawlerService {
     summary += this.addScamAdviserSummary(scamAdviserData);
 
     // Add combined security assessment
-    summary += this.addCombinedSecurityAssessment(virusTotalData.success, scamAdviserData.success);
+    summary += this.addCombinedSecurityAssessment(virusTotalData.success, scamAdviserData.success, geminiData.success);
 
     return summary;
+  }
+
+  /**
+   * Add Gemini AI analysis to summary
+   */
+  addGeminiAISummary(geminiData) {
+    if (!geminiData.success) {
+      return '';
+    }
+
+    let aiSummary = '\n\n🤖 **Phân tích AI từ FactCheck:**\n';
+    aiSummary += geminiData.analysis;
+
+    return aiSummary;
   }
 
   /**
@@ -234,16 +267,21 @@ class CrawlerService {
   /**
    * Add combined security assessment to summary
    */
-  addCombinedSecurityAssessment(hasVirusTotal, hasScamAdviser) {
-    if (hasVirusTotal && hasScamAdviser) {
-      return '\n\n🔒 Đã thực hiện kiểm tra bảo mật toàn diện với VirusTotal và ScamAdviser.';
-    } else if (hasVirusTotal) {
-      return '\n\n🔒 Đã kiểm tra bảo mật với VirusTotal. ScamAdviser không khả dụng.';
-    } else if (hasScamAdviser) {
-      return '\n\n🔒 Đã kiểm tra độ tin cậy với ScamAdviser. VirusTotal không khả dụng.';
-    } else {
+  addCombinedSecurityAssessment(hasVirusTotal, hasScamAdviser, hasGemini) {
+    const services = [];
+    if (hasGemini) services.push('FactCheck AI');
+    if (hasVirusTotal) services.push('VirusTotal');
+    if (hasScamAdviser) services.push('ScamAdviser');
+
+    if (services.length === 0) {
       return '\n\nℹ️ Không thể thực hiện phân tích bảo mật chi tiết cho URL này.';
     }
+
+    if (services.length === 3) {
+      return '\n\n🔒 Đã thực hiện phân tích toàn diện với FactCheck AI, VirusTotal và ScamAdviser.';
+    }
+
+    return `\n\n🔒 Đã phân tích với ${services.join(', ')}.`;
   }
 
   // Mock implementation - replace with actual API call

@@ -56,6 +56,25 @@ router.get('/stats', injectCommunityController, (req, res) => {
     req.communityController.getCommunityStats(req, res);
 });
 
+/**
+ * @route GET /api/community/ai-recommendations
+ * @desc Get AI-generated security recommendations based on community content
+ * @access Public
+ */
+router.get('/ai-recommendations', injectCommunityController, (req, res) => {
+    req.communityController.getAIRecommendations(req, res);
+});
+
+/**
+ * @route POST /api/community/posts/:id/analyze
+ * @desc Analyze a specific post with AI
+ * @access Public
+ * @param {string} id - Post ID
+ */
+router.post('/posts/:id/analyze', injectCommunityController, (req, res) => {
+    req.communityController.analyzePost(req, res);
+});
+
 // Protected routes (authentication required)
 
 /**

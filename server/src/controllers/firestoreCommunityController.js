@@ -1,5 +1,6 @@
 const firebaseConfig = require('../config/firebase-config');
 const logger = require('../utils/logger');
+const geminiService = require('../services/geminiService');
 
 class FirestoreCommunityController {
     constructor() {
@@ -472,6 +473,153 @@ class FirestoreCommunityController {
             res.status(500).json({
                 success: false,
                 error: 'Failed to delete submission',
+                message: error.message
+            });
+        }
+    }
+
+    // Get AI recommendations based on community content
+    async getAIRecommendations(req, res) {
+        try {
+            if (!this.db) {
+                throw new Error('Firestore not initialized');
+            }
+
+            // Get recent posts (last 10)
+            const postsSnapshot = await this.db.collection('links')
+                .limit(10)
+                .get();
+
+            const posts = [];
+            postsSnapshot.forEach(doc => {
+                const data = doc.data();
+                posts.push({
+                    title: data.title || 'Untitled',
+                    content: data.description || 'No description',
+                    url: data.url,
+                    status: data.status
+                });
+            });
+
+            // Get recent comments (last 10)
+            const commentsSnapshot = await this.db.collection('comments')
+                .limit(10)
+                .get();
+
+            const comments = [];
+            commentsSnapshot.forEach(doc => {
+                const data = doc.data();
+                comments.push({
+                    content: data.content || 'No content'
+                });
+            });
+
+            // Generate AI recommendations
+            console.log('🤖 Generating AI recommendations for community...');
+            const aiResult = await geminiService.generateCommunityRecommendations(posts, comments);
+
+            if (!aiResult.success) {
+                return res.status(500).json({
+                    success: false,
+                    error: 'Failed to generate AI recommendations',
+                    message: aiResult.error
+                });
+            }
+
+            res.json({
+                success: true,
+                data: {
+                    recommendations: aiResult.recommendations,
+                    generatedAt: aiResult.generatedAt,
+                    model: aiResult.model,
+                    basedOn: {
+                        postsAnalyzed: posts.length,
+                        commentsAnalyzed: comments.length
+                    }
+                },
+                timestamp: new Date().toISOString()
+            });
+
+        } catch (error) {
+            console.error('Get AI recommendations error:', error);
+            res.status(500).json({
+                success: false,
+                error: 'Failed to generate AI recommendations',
+                message: error.message
+            });
+        }
+    }
+
+    // Analyze a specific post with AI
+    async analyzePost(req, res) {
+        try {
+            const { id } = req.params;
+
+            if (!this.db) {
+                throw new Error('Firestore not initialized');
+            }
+
+            const doc = await this.db.collection('links').doc(id).get();
+
+            if (!doc.exists) {
+                return res.status(404).json({
+                    success: false,
+                    error: 'Post not found'
+                });
+            }
+
+            const postData = doc.data();
+
+            // Analyze with Gemini AI
+            console.log('🤖 Analyzing post with AI:', postData.title);
+            const aiResult = await geminiService.analyzeCommunityPost(
+                postData.title || 'Untitled',
+                postData.description || 'No description',
+                postData.url
+            );
+
+            if (!aiResult.success) {
+                return res.status(500).json({
+                    success: false,
+                    error: 'Failed to analyze post with AI',
+                    message: aiResult.error
+                });
+            }
+
+            // Optionally save AI analysis to the post
+            try {
+                await this.db.collection('links').doc(id).update({
+                    aiAnalysis: {
+                        analysis: aiResult.analysis,
+                        trustScore: aiResult.trustScore,
+                        alertLevel: aiResult.alertLevel,
+                        analyzedAt: aiResult.analyzedAt,
+                        model: aiResult.model
+                    },
+                    updatedAt: new Date().toISOString()
+                });
+            } catch (updateError) {
+                console.warn('Failed to save AI analysis to post:', updateError);
+            }
+
+            res.json({
+                success: true,
+                data: {
+                    postId: id,
+                    analysis: aiResult.analysis,
+                    trustScore: aiResult.trustScore,
+                    alertLevel: aiResult.alertLevel,
+                    analyzedAt: aiResult.analyzedAt,
+                    model: aiResult.model
+                },
+                timestamp: new Date().toISOString()
+            });
+
+        } catch (error) {
+            console.error('Analyze post error:', error);
+            res.status(500).json({
+                success: false,
+                error: 'Failed to analyze post',
                 message: error.message
             });
         }
