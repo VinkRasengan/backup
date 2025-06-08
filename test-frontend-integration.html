@@ -174,13 +174,28 @@
                                     </div>
                                 ` : '<p style="color: red;">❌ No third party results found in response!</p>'}
                                 
+                                <h4>📸 Screenshot Check:</h4>
+                                ${result.screenshot ? `
+                                    <div style="margin: 10px 0;">
+                                        <img src="${result.screenshot}" alt="Website Screenshot"
+                                             style="max-width: 300px; border: 1px solid #ddd; border-radius: 4px;"
+                                             onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                                        <div style="display: none; padding: 20px; background: #f8f9fa; border: 1px solid #ddd; border-radius: 4px; text-align: center;">
+                                            Screenshot not available
+                                        </div>
+                                    </div>
+                                    <p><strong>Screenshot URL:</strong> <a href="${result.screenshot}" target="_blank">${result.screenshot}</a></p>
+                                ` : '<p style="color: red;">❌ No screenshot URL found</p>'}
+
                                 <h4>📋 Data Structure Check:</h4>
                                 <ul>
                                     <li>result.url: ${result.url ? '✅' : '❌'}</li>
                                     <li>result.status: ${result.status ? '✅' : '❌'}</li>
                                     <li>result.finalScore: ${result.finalScore !== undefined ? '✅' : '❌'}</li>
+                                    <li>result.screenshot: ${result.screenshot ? '✅' : '❌'}</li>
                                     <li>result.thirdPartyResults: ${result.thirdPartyResults ? '✅' : '❌'}</li>
                                     <li>result.thirdPartyResults.length: ${result.thirdPartyResults?.length || 0}</li>
+                                    <li>result.screenshotInfo: ${result.screenshotInfo ? '✅' : '❌'}</li>
                                 </ul>
                             </div>
                         `;

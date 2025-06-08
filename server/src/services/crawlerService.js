@@ -1,6 +1,7 @@
 const axios = require('axios');
 const virusTotalService = require('./virusTotalService');
 const scamAdviserService = require('./scamAdviserService');
+const screenshotService = require('./screenshotService');
 
 class CrawlerService {
   constructor() {
@@ -9,11 +10,12 @@ class CrawlerService {
   }
   async checkLink(url) {
     try {
-      // Run security analyses in parallel for better performance
-      console.log('Starting security analysis for:', url);
-      const [virusTotalAnalysis, scamAdviserAnalysis] = await Promise.allSettled([
+      // Run security analyses and screenshot in parallel for better performance
+      console.log('Starting security analysis and screenshot for:', url);
+      const [virusTotalAnalysis, scamAdviserAnalysis, screenshotAnalysis] = await Promise.allSettled([
         virusTotalService.analyzeUrl(url),
-        scamAdviserService.analyzeUrl(url)
+        scamAdviserService.analyzeUrl(url),
+        screenshotService.takeScreenshotWithRetry(url)
       ]);
 
       // Process VirusTotal results
@@ -22,9 +24,14 @@ class CrawlerService {
         : { success: false, error: 'VirusTotal analysis failed' };
 
       // Process ScamAdviser results
-      const scamAdviserData = scamAdviserAnalysis.status === 'fulfilled' 
-        ? scamAdviserAnalysis.value 
+      const scamAdviserData = scamAdviserAnalysis.status === 'fulfilled'
+        ? scamAdviserAnalysis.value
         : { success: false, error: 'ScamAdviser analysis failed' };
+
+      // Process Screenshot results
+      const screenshotData = screenshotAnalysis.status === 'fulfilled'
+        ? screenshotAnalysis.value
+        : { success: false, error: 'Screenshot capture failed', screenshotUrl: screenshotService.getFallbackScreenshot(url) };
 
       // Get content credibility analysis (mock implementation)
       const contentAnalysis = await this.mockCrawlerAPI(url);
@@ -51,6 +58,7 @@ class CrawlerService {
         sources: contentAnalysis.sources,
         summary: this.generateEnhancedSummary(contentAnalysis, virusTotalData, scamAdviserData),
         checkedAt: new Date().toISOString(),
+        screenshot: screenshotData.screenshotUrl,
         metadata: {
           title: contentAnalysis.title,
           domain: contentAnalysis.domain,
@@ -77,6 +85,13 @@ class CrawlerService {
             error: scamAdviserData.error || 'ScamAdviser analysis not available'
           },
           combinedScore: combinedSecurityScore
+        },
+        screenshotInfo: {
+          success: screenshotData.success,
+          url: screenshotData.screenshotUrl,
+          fallback: screenshotData.fallback || false,
+          takenAt: screenshotData.takenAt || new Date().toISOString(),
+          error: screenshotData.error || null
         },
         thirdPartyResults: thirdPartyResults
       };

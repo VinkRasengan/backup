@@ -126,6 +126,7 @@ app.get('/api/health', async (req, res) => {
         openai: !!process.env.OPENAI_API_KEY,
         virustotal: !!process.env.VIRUSTOTAL_API_KEY,
         scamadviser: !!process.env.SCAMADVISER_API_KEY,
+        screenshotlayer: !!process.env.SCREENSHOTLAYER_API_KEY,
         newsapi: !!process.env.NEWSAPI_API_KEY,
         newsdata: !!process.env.NEWSDATA_API_KEY
       },
@@ -311,7 +312,8 @@ app.post('/api/test/check-link', async (req, res) => {
     console.log('✅ Test result:', {
       url: result.url,
       status: result.status,
-      thirdPartyResultsCount: result.thirdPartyResults?.length || 0
+      thirdPartyResultsCount: result.thirdPartyResults?.length || 0,
+      hasScreenshot: !!result.screenshot
     });
 
     res.json({
@@ -322,6 +324,55 @@ app.post('/api/test/check-link', async (req, res) => {
 
   } catch (error) {
     console.error('❌ Test check error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// Test screenshot functionality (no auth required)
+app.post('/api/test/screenshot', async (req, res) => {
+  try {
+    const { url } = req.body;
+
+    if (!url) {
+      return res.status(400).json({
+        success: false,
+        error: 'URL is required'
+      });
+    }
+
+    // Validate URL format
+    try {
+      new URL(url);
+    } catch (error) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid URL format'
+      });
+    }
+
+    console.log('🧪 Test taking screenshot:', url);
+
+    // Use screenshot service directly
+    const screenshotService = require('./services/screenshotService');
+    const result = await screenshotService.takeScreenshotWithRetry(url);
+
+    console.log('✅ Screenshot result:', {
+      success: result.success,
+      screenshotUrl: result.screenshotUrl,
+      fallback: result.fallback || false
+    });
+
+    res.json({
+      success: true,
+      result: result,
+      message: 'Screenshot test completed successfully'
+    });
+
+  } catch (error) {
+    console.error('❌ Screenshot test error:', error);
     res.status(500).json({
       success: false,
       error: error.message
