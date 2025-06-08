@@ -119,11 +119,19 @@ temp/
 # Documentation and test files (generated)
 *_GUIDE.md
 *_FIX.md
+*_SETUP.md
+*_DEPLOYMENT*.md
+*_INTEGRATION.md
+*_SOLUTION*.md
 test-*.js
+test-*.html
 deploy-*.sh
 deploy-*.bat
 setup-*.sh
 setup-*.bat
+*-debug.js
+*-test.js
+check-*.js
 
 # API keys and sensitive data
 *.key
