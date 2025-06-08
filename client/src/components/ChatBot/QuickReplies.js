@@ -5,30 +5,40 @@ const QuickReplies = ({ onQuickReply, disabled = false }) => {
   const quickReplies = [
     {
       id: 1,
-      text: 'Cách sử dụng FactCheck?',
-      icon: '❓'
+      text: 'Cách kiểm tra link an toàn?',
+      icon: '🔍'
     },
     {
       id: 2,
-      text: 'Tính năng của nền tảng',
-      icon: '⚡'
+      text: 'Phân tích bảo mật website',
+      icon: '🛡️'
     },
     {
       id: 3,
-      text: 'Cách đăng ký tài khoản',
-      icon: '👤'
+      text: 'Cách nhận biết lừa đảo',
+      icon: '⚠️'
     },
     {
       id: 4,
-      text: 'Hỗ trợ kỹ thuật',
-      icon: '🛠️'
+      text: 'Tính năng FactCheck AI',
+      icon: '🤖'
+    },
+    {
+      id: 5,
+      text: 'Hướng dẫn sử dụng',
+      icon: '📖'
+    },
+    {
+      id: 6,
+      text: 'Báo cáo link độc hại',
+      icon: '🚨'
     }
   ];
 
   return (
     <div className="bg-gray-50/50 dark:bg-gray-800/50">
       <p className="text-xs text-gray-500 dark:text-gray-400 mb-2 font-medium px-1">Câu hỏi thường gặp:</p>
-      <div className="grid grid-cols-2 gap-2">
+      <div className="grid grid-cols-2 gap-2 max-h-32 overflow-y-auto">
         {quickReplies.map((reply) => (
           <motion.button
             key={reply.id}

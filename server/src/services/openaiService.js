@@ -40,7 +40,18 @@ Phong cách: Thân thiện, chuyên nghiệp, tự tin và luôn ưu tiên an to
    * Check if OpenAI API is configured
    */
   isConfigured() {
-    return !!this.apiKey && this.apiKey !== 'your-openai-api-key-here';
+    const isValid = this.apiKey &&
+                   this.apiKey !== 'disabled-for-development' &&
+                   this.apiKey !== 'your-openai-api-key-here' &&
+                   this.apiKey.startsWith('sk-') &&
+                   this.apiKey.length > 20;
+
+    console.log(`🔑 OpenAI API Key Status: ${isValid ? 'Valid ✅' : 'Invalid ❌'}`);
+    if (!isValid) {
+      console.log(`🔑 API Key: ${this.apiKey ? this.apiKey.substring(0, 10) + '...' : 'Not set'}`);
+    }
+
+    return isValid;
   }
 
   /**

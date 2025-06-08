@@ -502,26 +502,99 @@ const CheckLinkPage = () => {
                 </CardContent>
               </Card>
 
-              {/* Screenshot */}
+              {/* Screenshot - Enhanced Display */}
               <Card className="shadow-xl border-0 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm">
                 <CardHeader className="text-center pb-4">
-                  <CardTitle className="text-lg">Ảnh chụp màn hình</CardTitle>
+                  <CardTitle className="text-lg flex items-center justify-center gap-2">
+                    📸 Ảnh chụp màn hình
+                    {result.screenshotInfo && (
+                      <span className={`text-xs px-2 py-1 rounded-full ${
+                        result.screenshotInfo.success
+                          ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                          : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
+                      }`}>
+                        {result.screenshotInfo.success ? 'Live' : 'Fallback'}
+                      </span>
+                    )}
+                  </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="aspect-video bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden">
-                    <img
-                      src={result.screenshot}
-                      alt="Website screenshot"
-                      className="w-full h-full object-cover"
-                      onError={(e) => {
-                        e.target.src = 'https://via.placeholder.com/400x300/f0f0f0/666666?text=No+Screenshot';
-                      }}
-                    />
-                  </div>
-                  <div className="mt-3 text-center">
-                    <span className="text-sm text-gray-600 dark:text-gray-400">
-                      {result.metadata?.domain}
-                    </span>
+                  <div className="space-y-4">
+                    {/* Main Screenshot Display */}
+                    <div className="relative group">
+                      <div className="aspect-video bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden border-2 border-gray-200 dark:border-gray-600 hover:border-blue-300 dark:hover:border-blue-500 transition-colors">
+                        <img
+                          src={result.screenshot}
+                          alt="Website screenshot"
+                          className="w-full h-full object-cover cursor-pointer transition-transform group-hover:scale-105"
+                          onError={(e) => {
+                            console.log('Screenshot failed to load, using fallback');
+                            e.target.src = `https://via.placeholder.com/1280x720/f0f0f0/666666?text=${encodeURIComponent(result.metadata?.domain || 'No Screenshot')}`;
+                          }}
+                          onClick={() => {
+                            // Open screenshot in new tab
+                            window.open(result.screenshot, '_blank');
+                          }}
+                        />
+
+                        {/* Overlay with click hint */}
+                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
+                          <div className="bg-white/90 dark:bg-gray-800/90 px-3 py-1 rounded-lg text-sm font-medium">
+                            🔍 Click để xem full size
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Screenshot Info */}
+                    <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3 space-y-2">
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-gray-600 dark:text-gray-400">Domain:</span>
+                        <span className="font-medium text-gray-900 dark:text-gray-100">
+                          {result.metadata?.domain || new URL(result.url).hostname}
+                        </span>
+                      </div>
+
+                      {result.screenshotInfo && (
+                        <>
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="text-gray-600 dark:text-gray-400">Status:</span>
+                            <span className={`font-medium ${
+                              result.screenshotInfo.success
+                                ? 'text-green-600 dark:text-green-400'
+                                : 'text-yellow-600 dark:text-yellow-400'
+                            }`}>
+                              {result.screenshotInfo.success ? '✅ Thành công' : '⚠️ Fallback'}
+                            </span>
+                          </div>
+
+                          {result.screenshotInfo.takenAt && (
+                            <div className="flex items-center justify-between text-sm">
+                              <span className="text-gray-600 dark:text-gray-400">Chụp lúc:</span>
+                              <span className="font-medium text-gray-900 dark:text-gray-100">
+                                {new Date(result.screenshotInfo.takenAt).toLocaleString('vi-VN')}
+                              </span>
+                            </div>
+                          )}
+
+                          {result.screenshotInfo.error && (
+                            <div className="text-xs text-yellow-600 dark:text-yellow-400 bg-yellow-50 dark:bg-yellow-900/20 p-2 rounded">
+                              ⚠️ {result.screenshotInfo.error}
+                            </div>
+                          )}
+                        </>
+                      )}
+
+                      {/* View Original Button */}
+                      <div className="pt-2 border-t border-gray-200 dark:border-gray-600">
+                        <button
+                          onClick={() => window.open(result.screenshot, '_blank')}
+                          className="w-full bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/20 dark:hover:bg-blue-900/30 text-blue-700 dark:text-blue-300 py-2 px-3 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2"
+                        >
+                          🖼️ Xem ảnh gốc
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 </CardContent>
               </Card>

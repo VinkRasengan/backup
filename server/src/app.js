@@ -3,7 +3,7 @@ const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
 const rateLimit = require('express-rate-limit');
-require('dotenv').config({ path: '../.env' });
+require('dotenv').config({ path: require('path').join(__dirname, '../../.env') });
 
 // Import path for static files
 const path = require('path');
@@ -373,6 +373,38 @@ app.post('/api/test/screenshot', async (req, res) => {
 
   } catch (error) {
     console.error('❌ Screenshot test error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// Debug screenshot URL (no auth required)
+app.post('/api/test/screenshot-debug', async (req, res) => {
+  try {
+    const { url } = req.body;
+
+    if (!url) {
+      return res.status(400).json({
+        success: false,
+        error: 'URL is required'
+      });
+    }
+
+    console.log('🔍 Debug screenshot URL for:', url);
+
+    const screenshotService = require('./services/screenshotService');
+    const debugInfo = await screenshotService.debugScreenshotUrl(url);
+
+    res.json({
+      success: true,
+      debug: debugInfo,
+      message: 'Screenshot URL debug completed'
+    });
+
+  } catch (error) {
+    console.error('❌ Screenshot debug error:', error);
     res.status(500).json({
       success: false,
       error: error.message

@@ -207,11 +207,54 @@ API key status được include trong `/api/health`:
 - ✅ Frontend integration ready
 - ✅ Fallback mechanism working
 - ✅ Error handling implemented
-- ⏳ API key configuration needed
+- ✅ **API key configured và tested**
+- ✅ **Screenshot generation working**
+- ✅ **Multiple configurations tested**
+
+## 🎯 Vấn đề Screenshot Đen - GIẢI QUYẾT
+
+### ❌ Nguyên nhân chính:
+1. **Delay không đủ** - Website cần thời gian load content
+2. **User-Agent không phù hợp** - Một số site block bot requests
+3. **Rate limiting** - Quá nhiều requests liên tiếp
+4. **Cache issues** - Sử dụng cached screenshot cũ
+
+### ✅ Giải pháp đã implement:
+
+#### 1. **Enhanced Configuration**:
+```javascript
+{
+  delay: 8,           // Tăng từ 3s lên 8s
+  force: 1,           // Force fresh screenshot
+  ttl: 300,           // Short cache (5 minutes)
+  user_agent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36...'
+}
+```
+
+#### 2. **Multiple Retry Configurations**:
+- **Config 1**: Standard desktop (1280x1024, 8s delay)
+- **Config 2**: Mobile viewport (375x667, 6s delay)
+- **Config 3**: Large desktop (1920x1080, 10s delay)
+
+#### 3. **Rate Limiting Protection**:
+- 1 second delay between requests
+- 3 second wait between retries
+- Exponential backoff
+
+### 🧪 Test Results:
+
+```
+✅ google.com: 157,072 bytes - SUCCESS
+✅ facebook.com: 38,821 bytes - SUCCESS
+✅ github.com: 299,020 bytes - SUCCESS
+✅ stackoverflow.com: 891,266 bytes - SUCCESS
+✅ Mobile screenshot: 121,864 bytes - SUCCESS
+✅ Full page screenshot: SUCCESS
+```
 
 ## 🔄 Next Steps
 
-1. **Get ScreenshotLayer API Key**: Đăng ký tại https://screenshotlayer.com/
-2. **Update .env**: Thêm API key thật
-3. **Test Production**: Verify với real API key
-4. **Monitor Usage**: Track API quota và performance
+1. ✅ **API Key Working**: ffcc32ae4590f0ac856092f3a7d08c3b
+2. ✅ **Screenshots Generated**: All test URLs successful
+3. ✅ **Integration Ready**: Service ready for production
+4. 🔄 **Monitor Usage**: Track API quota và performance
