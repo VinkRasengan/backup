@@ -29,23 +29,14 @@ let errorHandler, authenticateToken, authRoutes, userRoutes, linkRoutes;
 
 try {
   errorHandler = require('./middleware/errorHandler');
-  // Try hybrid auth first (Firebase + JWT), then regular, then pure
+  // Use Firebase authentication middleware
   try {
-    const hybridAuth = require('./middleware/hybridAuth');
-    authenticateToken = hybridAuth.authenticateToken;
-    console.log('✅ Using hybrid authentication (Firebase + JWT)');
-  } catch (hybridError) {
-    console.warn('⚠️ Hybrid auth not available, trying regular auth...');
-    try {
-      const authMiddleware = require('./middleware/auth');
-      authenticateToken = authMiddleware.authenticateToken;
-      console.log('✅ Using regular authentication');
-    } catch (regularError) {
-      console.warn('⚠️ Regular auth not available, trying pure auth...');
-      const pureAuth = require('./middleware/pureAuth');
-      authenticateToken = pureAuth.authenticateToken;
-      console.log('✅ Using pure backend authentication (No Firebase)');
-    }
+    const authMiddleware = require('./middleware/auth');
+    authenticateToken = authMiddleware.authenticateToken;
+    console.log('✅ Using Firebase authentication');
+  } catch (authError) {
+    console.error('❌ Firebase authentication middleware failed to load:', authError.message);
+    throw new Error('Authentication middleware is required');
   }
   authRoutes = require('./routes/auth');
   userRoutes = require('./routes/users');
@@ -152,13 +143,11 @@ app.get('/api/health', async (req, res) => {
         screenshotlayer: !!process.env.SCREENSHOTLAYER_API_KEY,
         newsapi: !!process.env.NEWSAPI_API_KEY,
         newsdata: !!process.env.NEWSDATA_API_KEY
-      },
-      authentication: {
-        type: 'firebase-backend-bridge',
+      },      authentication: {
+        type: 'firebase-only',
         frontend: 'Firebase Auth (login/email verification)',
-        backend: 'JWT tokens (API access)',
-        database: dbHealth.type,
-        jwt: !!process.env.JWT_SECRET
+        backend: 'Firebase ID tokens (API access)',
+        database: dbHealth.type
       }
     });
   } catch (error) {
@@ -172,36 +161,16 @@ app.get('/api/health', async (req, res) => {
 
 // API routes (with error handling)
 try {
-  // Try Simple Firebase Auth first (most compatible)
+  // Use Simple Firebase Auth (most compatible)
   try {
     const simpleFirebaseAuth = require('./routes/simpleFirebaseAuth');
     app.use('/api/auth', simpleFirebaseAuth);
     console.log('✅ Using Simple Firebase Auth routes (Firebase ID token support)');
   } catch (simpleError) {
-    console.warn('⚠️ Simple Firebase Auth not available, trying Firebase-Backend bridge...');
-    try {
-      const firebaseBackendRoutes = require('./routes/firebaseBackend');
-      app.use('/api/auth', firebaseBackendRoutes);
-      console.log('✅ Using Firebase-Backend bridge routes (Firebase Auth + Backend Features)');
-    } catch (firebaseBackendError) {
-      console.warn('⚠️ Firebase-Backend bridge not available, trying pure auth...');
-      try {
-        const pureAuthRoutes = require('./routes/pureAuth');
-        app.use('/api/auth', pureAuthRoutes);
-        console.log('✅ Using pure backend auth routes (No Firebase)');
-      } catch (pureError) {
-        console.warn('⚠️ Pure auth not available, trying hybrid auth routes...');
-        try {
-          const hybridAuthRoutes = require('./routes/hybridAuth');
-          app.use('/api/auth', hybridAuthRoutes);
-          console.log('✅ Using hybrid auth routes');
-        } catch (hybridError) {
-          console.warn('⚠️ Hybrid auth routes not available, using regular auth routes');
-          if (authRoutes) app.use('/api/auth', authRoutes);
-        }
-      }
-    }
+    console.warn('⚠️ Simple Firebase Auth not available, using fallback auth routes');
+    if (authRoutes) app.use('/api/auth', authRoutes);
   }
+
   if (userRoutes) app.use('/api/users', authenticateToken, userRoutes);
   if (linkRoutes) app.use('/api/links', linkRoutes); // Link routes handle their own authentication per endpoint
   

@@ -29,9 +29,9 @@ A comprehensive anti-fraud platform that helps users verify the safety and credi
 - **Admin dashboard**: Content moderation tools
 
 ### 🔐 **Authentication & Security**
-- **Firebase Authentication**: Secure user management
-- **Email verification**: Mandatory email confirmation
-- **JWT tokens**: Secure API access
+- **Firebase Authentication**: Complete user management
+- **Email verification**: Mandatory email confirmation  
+- **Firebase ID Tokens**: Secure API access
 - **Rate limiting**: API protection
 
 ## 🛠️ Technology Stack
@@ -46,9 +46,9 @@ A comprehensive anti-fraud platform that helps users verify the safety and credi
 ### **Backend**
 - **Node.js**: Server runtime
 - **Express.js**: Web framework
-- **Firebase Admin**: Backend authentication
+- **Firebase Admin**: Backend authentication & database
 - **Firestore**: NoSQL database
-- **JWT**: Token-based authentication
+- **Firebase ID Tokens**: Secure authentication
 
 ### **APIs & Services**
 - **VirusTotal API**: Malware detection
