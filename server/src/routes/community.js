@@ -75,6 +75,26 @@ router.post('/posts/:id/analyze', injectCommunityController, (req, res) => {
     req.communityController.analyzePost(req, res);
 });
 
+/**
+ * @route GET /api/community/trending-posts
+ * @desc Get trending posts with optimization
+ * @access Public
+ * @param {number} [limit] - Number of posts to return (default: 5)
+ * @param {number} [offset] - Offset for pagination (default: 0)
+ */
+router.get('/trending-posts', injectCommunityController, (req, res) => {
+    req.communityController.getTrendingPosts(req, res);
+});
+
+/**
+ * @route GET /api/community/cache-stats
+ * @desc Get cache statistics for monitoring
+ * @access Public
+ */
+router.get('/cache-stats', injectCommunityController, (req, res) => {
+    req.communityController.getCacheStats(req, res);
+});
+
 // Protected routes (authentication required)
 
 /**

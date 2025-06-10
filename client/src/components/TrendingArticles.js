@@ -24,11 +24,34 @@ const TrendingArticles = () => {
   const loadTrendingArticles = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/community/posts?sort=trending&limit=5');
+      console.log('🚀 Loading trending articles with optimization...');
+
+      // Try optimized endpoint first
+      let response = await fetch('/api/community/trending-posts?limit=5');
+      let data;
+
       if (response.ok) {
-        const data = await response.json();
-        setTrendingArticles(data.data.posts);
+        data = await response.json();
+        if (data.success && data.data.posts) {
+          console.log('✅ Loaded trending articles from optimized endpoint');
+          setTrendingArticles(data.data.posts);
+          return;
+        }
       }
+
+      // Fallback to regular endpoint
+      console.log('⚠️ Falling back to regular endpoint...');
+      response = await fetch('/api/community/posts?sort=trending&limit=5');
+      if (response.ok) {
+        data = await response.json();
+        if (data.success && data.data.posts) {
+          console.log('✅ Loaded trending articles from regular endpoint');
+          setTrendingArticles(data.data.posts);
+          return;
+        }
+      }
+
+      throw new Error('Failed to load trending articles');
     } catch (error) {
       console.error('Error loading trending articles:', error);
       // Fallback to mock data

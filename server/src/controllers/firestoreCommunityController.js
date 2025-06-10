@@ -1,6 +1,7 @@
 const firebaseConfig = require('../config/firebase-config');
 const logger = require('../utils/logger');
 const geminiService = require('../services/geminiService');
+const firestoreOptimization = require('../services/firestoreOptimizationService');
 
 class FirestoreCommunityController {
     constructor() {
@@ -15,6 +16,9 @@ class FirestoreCommunityController {
 
             // Use enhanced Firebase config
             this.db = await firebaseConfig.initialize();
+
+            // Initialize optimization service
+            firestoreOptimization.initialize(this.db);
 
             this.isInitialized = true;
             logger.success('Firestore Community Controller initialized successfully via enhanced config');
@@ -33,21 +37,58 @@ class FirestoreCommunityController {
         }
     }
 
-    // Get community posts from Firestore
+    // Get community posts from Firestore with optimization
     async getCommunityPosts(req, res) {
         try {
-            const { 
-                sort = 'newest', 
-                category, 
-                search, 
-                page = 1, 
-                limit = 10 
+            const {
+                sort = 'newest',
+                category = 'all',
+                search = '',
+                page = 1,
+                limit = 10
             } = req.query;
 
             // Use fallback data if Firestore not available
             if (!this.db || this.useFallback) {
                 return this.getCommunityPostsFallback(req, res);
             }
+
+            console.log('🚀 Using optimized community posts query');
+
+            // Use optimization service for better performance
+            const result = await firestoreOptimization.getCommunityPosts({
+                sort,
+                category,
+                search,
+                page: parseInt(page),
+                limit: parseInt(limit)
+            });
+
+            res.json({
+                success: true,
+                data: result,
+                timestamp: new Date().toISOString()
+            });
+
+        } catch (error) {
+            console.error('Get community posts error:', error);
+
+            // Fallback to old method if optimization fails
+            console.log('⚠️ Falling back to legacy method...');
+            return this.getCommunityPostsLegacy(req, res);
+        }
+    }
+
+    // Legacy method as fallback
+    async getCommunityPostsLegacy(req, res) {
+        try {
+            const {
+                sort = 'newest',
+                category,
+                search,
+                page = 1,
+                limit = 10
+            } = req.query;
 
             // Base query
             let query = this.db.collection('links');
@@ -200,53 +241,21 @@ class FirestoreCommunityController {
         }
     }
 
-    // Get community statistics from Firestore
+    // Get community statistics from Firestore with optimization
     async getCommunityStats(req, res) {
         try {
             if (!this.db) {
                 throw new Error('Firestore not initialized');
             }
 
-            // Get total posts
-            const linksSnapshot = await this.db.collection('links').get();
-            const totalPosts = linksSnapshot.size;
+            console.log('🚀 Using optimized community stats query');
 
-            // Count by status
-            const statusCounts = { safe: 0, unsafe: 0, suspicious: 0 };
-            linksSnapshot.forEach(doc => {
-                const data = doc.data();
-                if (statusCounts.hasOwnProperty(data.status)) {
-                    statusCounts[data.status]++;
-                }
-            });
-
-            // Get total votes
-            const votesSnapshot = await this.db.collection('votes').get();
-            const totalVotes = votesSnapshot.size;
-
-            // Get total users
-            const usersSnapshot = await this.db.collection('users').get();
-            const totalUsers = usersSnapshot.size;
-
-            // Get total comments
-            const commentsSnapshot = await this.db.collection('comments').get();
-            const totalComments = commentsSnapshot.size;
+            // Use optimization service for better performance
+            const stats = await firestoreOptimization.getCommunityStats();
 
             res.json({
                 success: true,
-                data: {
-                    totalPosts,
-                    totalUsers,
-                    totalVotes,
-                    totalComments,
-                    statusBreakdown: statusCounts,
-                    verifiedPosts: statusCounts.safe,
-                    avgTrustScore: statusCounts.safe > 0 ? Math.round((statusCounts.safe / totalPosts) * 100) : 50,
-                    recentActivity: {
-                        postsToday: 0, // TODO: Implement date filtering
-                        postsThisWeek: 0
-                    }
-                },
+                data: stats,
                 timestamp: new Date().toISOString()
             });
 
@@ -255,6 +264,66 @@ class FirestoreCommunityController {
             res.status(500).json({
                 success: false,
                 error: 'Failed to fetch community statistics',
+                message: error.message
+            });
+        }
+    }
+
+    // Get trending posts with optimization
+    async getTrendingPosts(req, res) {
+        try {
+            const { limit = 5, offset = 0 } = req.query;
+
+            if (!this.db) {
+                throw new Error('Firestore not initialized');
+            }
+
+            console.log('🚀 Using optimized trending posts query');
+
+            // Use optimization service for better performance
+            const result = await firestoreOptimization.getTrendingPosts(
+                parseInt(limit),
+                parseInt(offset)
+            );
+
+            res.json({
+                success: true,
+                data: result,
+                timestamp: new Date().toISOString()
+            });
+
+        } catch (error) {
+            console.error('Get trending posts error:', error);
+            res.status(500).json({
+                success: false,
+                error: 'Failed to fetch trending posts',
+                message: error.message
+            });
+        }
+    }
+
+    // Get cache statistics for monitoring
+    async getCacheStats(req, res) {
+        try {
+            const stats = firestoreOptimization.getCacheStats();
+
+            res.json({
+                success: true,
+                data: {
+                    cache: stats,
+                    optimization: {
+                        enabled: true,
+                        service: 'FirestoreOptimizationService'
+                    }
+                },
+                timestamp: new Date().toISOString()
+            });
+
+        } catch (error) {
+            console.error('Get cache stats error:', error);
+            res.status(500).json({
+                success: false,
+                error: 'Failed to fetch cache statistics',
                 message: error.message
             });
         }
