@@ -23,6 +23,15 @@ class ScamAdviserService {  constructor() {
     this.lastRequestTime = Date.now();
   }
   /**
+   * Check if ScamAdviser service is configured
+   */
+  isConfigured() {
+    return this.apiKey && 
+           this.apiKey !== 'your-scamadviser-api-key-here' &&
+           this.apiKey.length > 10;
+  }
+
+  /**
    * Extract domain from URL
    */
   extractDomain(url) {
@@ -261,6 +270,18 @@ class ScamAdviserService {  constructor() {
       default:
         return trustScore;
     }
+  }
+  /**
+   * Get service status
+   */
+  getStatus() {
+    return {
+      name: 'ScamAdviser',
+      configured: this.isConfigured(),
+      baseUrl: this.apiUrl,
+      documentation: 'https://scamadviser.com/api',
+      capabilities: ['Trust Score', 'Domain Analysis', 'Risk Assessment', 'Phishing Detection']
+    };
   }
 }
 

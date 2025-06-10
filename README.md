@@ -91,13 +91,20 @@ npm install
 
 ### 3. Environment Configuration
 
-Create `.env` file in the root directory:
+**📋 IMPORTANT: Use the comprehensive environment template**
 
-```env
-# OpenAI API Configuration
-OPENAI_API_KEY=your-openai-api-key
-OPENAI_MODEL=gpt-3.5-turbo
-OPENAI_MAX_TOKENS=500
+```bash
+# Copy the main configuration template
+cp .env.template .env
+```
+
+Edit `.env` with your actual API keys and configuration. See **[ENV_SETUP_GUIDE.md](ENV_SETUP_GUIDE.md)** for detailed instructions.
+
+**🔑 Essential API Keys:**
+- Firebase configuration (required)
+- Google Safe Browsing API (recommended - free tier)
+- VirusTotal API (recommended - free tier)
+- OpenAI/Gemini API (for AI features)
 OPENAI_TEMPERATURE=0.7
 
 # VirusTotal API

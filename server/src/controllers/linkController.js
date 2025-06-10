@@ -5,6 +5,44 @@ const firebaseConfig = process.env.NODE_ENV === 'production'
 
 const { db, collections } = firebaseConfig;
 const crawlerService = require('../services/crawlerService');
+const securityAggregatorService = require('../services/securityAggregatorService');
+const screenshotService = require('../services/screenshotService');
+const geminiService = require('../services/geminiService');
+
+// Helper function to generate enhanced summary
+function generateEnhancedSummary(contentAnalysis, securityData, geminiData) {
+  let summary = contentAnalysis.summary;
+
+  // Add Gemini AI analysis first
+  if (geminiData.success && geminiData.analysis) {
+    summary += '\n\n🤖 **Phân tích AI từ FactCheck:**\n';
+    summary += geminiData.analysis;
+  }
+
+  // Add security aggregator summary
+  if (securityData.success && securityData.summary) {
+    summary += '\n\n🔒 **Phân tích bảo mật tổng hợp:**\n';
+    summary += securityData.summary;
+  }
+
+  // Add risk factors if any
+  if (securityData.success && securityData.riskFactors && securityData.riskFactors.length > 0) {
+    summary += '\n\n⚠️ **Cảnh báo bảo mật:**\n';
+    securityData.riskFactors.forEach(factor => {
+      summary += `• ${factor}\n`;
+    });
+  }
+
+  // Add recommendations
+  if (securityData.success && securityData.recommendations && securityData.recommendations.length > 0) {
+    summary += '\n\n💡 **Khuyến nghị:**\n';
+    securityData.recommendations.forEach(rec => {
+      summary += `• ${rec}\n`;
+    });
+  }
+
+  return summary;
+}
 
 class LinkController {
   // Check a new link
@@ -60,12 +98,133 @@ class LinkController {
             }
           });
         }
-      }
+      }      console.log('🔄 Using enhanced security aggregator and services');
+      
+      // Run comprehensive analysis with new security aggregator
+      const [securityAnalysis, screenshotAnalysis, geminiAnalysis] = await Promise.allSettled([
+        securityAggregatorService.analyzeUrl(url),
+        screenshotService.takeScreenshotWithRetry(url),
+        geminiService.analyzeUrl(url)
+      ]);
 
-      console.log('🔄 Using crawler service to check link');
-      // Use crawler service to check the link
-      const crawlerResult = await crawlerService.checkLink(url);
-      console.log('✅ Crawler result:', crawlerResult);
+      // Process security results
+      const securityData = securityAnalysis.status === 'fulfilled' 
+        ? securityAnalysis.value 
+        : { success: false, error: 'Security analysis failed' };
+
+      // Process Screenshot results
+      const screenshotData = screenshotAnalysis.status === 'fulfilled'
+        ? screenshotAnalysis.value
+        : { success: false, error: 'Screenshot capture failed', screenshotUrl: screenshotService.getFallbackScreenshot(url) };
+
+      // Process Gemini AI analysis results
+      const geminiData = geminiAnalysis.status === 'fulfilled'
+        ? geminiAnalysis.value
+        : { success: false, error: 'Gemini AI analysis failed', analysis: null, credibilityScore: null };
+
+      // Get basic content analysis (mock for now)
+      const contentAnalysis = await crawlerService.mockCrawlerAPI(url);
+
+      // Calculate combined security score from aggregated results
+      const securityScore = securityData.success 
+        ? (100 - securityData.overallRisk.score) // Convert risk score to security score
+        : 50;
+
+      // Calculate final score combining credibility and security
+      const finalScore = crawlerService.calculateFinalScore(
+        contentAnalysis.credibilityScore,
+        securityScore
+      );
+
+      // Generate thirdPartyResults for frontend compatibility
+      const thirdPartyResults = crawlerService.generateThirdPartyResults(
+        { 
+          success: securityData.success && securityData.results.virusTotal,
+          securityScore: securityData.results.virusTotal?.securityScore || securityScore 
+        },
+        { 
+          success: securityData.success && securityData.results.scamAdviser,
+          trustScore: securityData.results.scamAdviser?.trustScore || 50 
+        }
+      );
+
+      // Create comprehensive result object
+      const crawlerResult = {
+        url: url,
+        status: 'completed',
+        credibilityScore: contentAnalysis.credibilityScore,
+        securityScore: securityScore,
+        finalScore: finalScore,
+        sources: contentAnalysis.sources,
+        summary: generateEnhancedSummary(contentAnalysis, securityData, geminiData),
+        checkedAt: new Date().toISOString(),
+        screenshot: screenshotData.screenshotUrl,
+        metadata: {
+          title: contentAnalysis.title,
+          domain: contentAnalysis.domain,
+          publishDate: contentAnalysis.publishDate,
+          author: contentAnalysis.author
+        },
+        aiAnalysis: geminiData.success ? {
+          analysis: geminiData.analysis,
+          credibilityScore: geminiData.credibilityScore,
+          riskLevel: geminiData.riskLevel,
+          analyzedAt: geminiData.analyzedAt,
+          model: geminiData.model
+        } : {
+          error: geminiData.error || 'AI analysis not available'
+        },
+        security: {
+          // Aggregated security results
+          overallRisk: securityData.success ? securityData.overallRisk : null,
+          riskFactors: securityData.success ? securityData.riskFactors : [],
+          recommendations: securityData.success ? securityData.recommendations : [],
+          
+          // Individual service results for backward compatibility
+          virusTotal: securityData.success && securityData.results.virusTotal ? {
+            securityScore: securityData.results.virusTotal.securityScore,
+            threats: securityData.results.virusTotal.threats,
+            urlAnalysis: securityData.results.virusTotal.urlAnalysis,
+            domainAnalysis: securityData.results.virusTotal.domainAnalysis,
+            analyzedAt: securityData.results.virusTotal.analyzedAt
+          } : {
+            error: securityData.errors?.virusTotal || 'VirusTotal analysis not available'
+          },
+          scamAdviser: securityData.success && securityData.results.scamAdviser ? {
+            trustScore: securityData.results.scamAdviser.trustScore,
+            riskLevel: securityData.results.scamAdviser.riskLevel,
+            riskFactors: securityData.results.scamAdviser.riskFactors,
+            details: securityData.results.scamAdviser.details,
+            analyzedAt: securityData.results.scamAdviser.analyzedAt
+          } : {
+            error: securityData.errors?.scamAdviser || 'ScamAdviser analysis not available'
+          },
+          combinedScore: securityScore,
+          
+          // New aggregated security data
+          aggregatedResults: securityData.success ? {
+            servicesChecked: securityData.servicesChecked,
+            servicesSucceeded: securityData.servicesSucceeded,
+            servicesFailed: securityData.servicesFailed,
+            analysisTime: securityData.analysisTime,
+            summary: securityData.summary
+          } : null
+        },
+        screenshotInfo: {
+          success: screenshotData.success,
+          url: screenshotData.screenshotUrl,
+          fallback: screenshotData.fallback || false,
+          takenAt: screenshotData.takenAt || new Date().toISOString(),
+          error: screenshotData.error || null
+        },
+        thirdPartyResults: thirdPartyResults
+      };
+
+      console.log('✅ Enhanced security analysis completed:', {
+        securityScore,
+        servicesChecked: securityData.servicesChecked || 0,
+        riskFactors: securityData.riskFactors?.length || 0
+      });
 
       // Save result to database
       const linkData = {
@@ -501,10 +660,7 @@ class LinkController {
         } catch (e) {
           finalTitle = 'Bài viết không có tiêu đề';
         }
-      }
-
-      // Save to Firestore links collection
-      const isSafe = status === 'safe' || (credibilityScore || 0) >= 70;
+      }      // Save to Firestore links collection
       const threats = checkResult.security?.threats || {};
       const analysisResult = {
         category,
@@ -672,9 +828,7 @@ class LinkController {
           articles: trendingArticles,
           count: trendingArticles.length
         });
-      }
-
-    } catch (error) {
+      }    } catch (error) {
       next(error);
     }
   }

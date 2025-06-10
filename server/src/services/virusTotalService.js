@@ -272,6 +272,26 @@ class VirusTotalService {
       };
     }
   }
+
+  /**
+   * Check URL (wrapper for analyzeUrl for SecurityAggregator compatibility)
+   */
+  async checkUrl(url) {
+    return await this.analyzeUrl(url);
+  }
+
+  /**
+   * Get service status
+   */
+  getStatus() {
+    return {
+      name: 'VirusTotal',
+      configured: this.apiKey && this.apiKey !== 'your-virustotal-api-key-here',
+      baseUrl: this.apiUrl,
+      documentation: 'https://developers.virustotal.com/reference',
+      capabilities: ['URL Analysis', 'Domain Analysis', 'File Scanning', 'IP Analysis']
+    };
+  }
 }
 
 module.exports = new VirusTotalService();

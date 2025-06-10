@@ -3,6 +3,7 @@ const router = express.Router();
 const linkController = require('../controllers/linkController');
 const { validateRequest, schemas } = require('../middleware/validation');
 const { authenticateToken, optionalAuth } = require('../middleware/auth');
+const securityAggregatorService = require('../services/securityAggregatorService');
 
 // @route   POST /api/links/check
 // @desc    Check a link for credibility
@@ -47,8 +48,6 @@ router.post('/submit-to-community',
   validateRequest(schemas.submitToCommunity),
   linkController.submitToCommunity
 );
-
-
 
 // @route   GET /api/links/trending
 // @desc    Get trending/hot articles
@@ -150,6 +149,26 @@ router.get('/test-third-party', async (req, res) => {
     res.status(500).json({
       success: false,
       error: error.message
+    });
+  }
+});
+
+// @route   GET /api/links/security-status
+// @desc    Get security services status
+// @access  Public
+router.get('/security-status', async (req, res) => {
+  try {
+    const status = securityAggregatorService.getServicesStatus();
+    res.json({
+      success: true,
+      data: status,
+      message: 'Security services status retrieved successfully'
+    });
+  } catch (error) {
+    console.error('Error getting security status:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to get security services status'
     });
   }
 });
