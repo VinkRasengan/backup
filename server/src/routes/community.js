@@ -289,4 +289,125 @@ router.get('/feed', authenticateToken, async (req, res) => {
     }
 });
 
+/**
+ * @route GET /api/community/cache-stats
+ * @desc Get cache statistics for monitoring
+ * @access Public
+ */
+router.get('/cache-stats', async (req, res) => {
+    try {
+        const firestoreOptimization = require('../services/firestoreOptimizationService');
+
+        const stats = firestoreOptimization.getCacheStats();
+
+        res.json({
+            success: true,
+            data: {
+                cache: stats,
+                optimization: {
+                    enabled: true,
+                    service: 'FirestoreOptimizationService'
+                }
+            }
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            error: 'Failed to fetch cache statistics',
+            message: error.message
+        });
+    }
+});
+
+/**
+ * @route GET /api/community/optimized/votes/:linkId
+ * @desc Get optimized votes for a link
+ * @access Public
+ */
+router.get('/optimized/votes/:linkId', async (req, res) => {
+    try {
+        const { linkId } = req.params;
+        const userId = req.user?.userId || req.user?.uid;
+        const firestoreOptimization = require('../services/firestoreOptimizationService');
+
+        const result = await firestoreOptimization.getVotesForLink(linkId, {
+            includeUserVote: !!userId,
+            userId: userId
+        });
+
+        res.json({
+            success: true,
+            data: result
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            error: 'Failed to fetch votes',
+            message: error.message
+        });
+    }
+});
+
+/**
+ * @route GET /api/community/optimized/comments/:linkId
+ * @desc Get optimized comments for a link
+ * @access Public
+ */
+router.get('/optimized/comments/:linkId', async (req, res) => {
+    try {
+        const { linkId } = req.params;
+        const { page = 1, limit = 10 } = req.query;
+        const firestoreOptimization = require('../services/firestoreOptimizationService');
+
+        const result = await firestoreOptimization.getCommentsForLink(linkId, {
+            page: parseInt(page),
+            limit: parseInt(limit),
+            includeUserInfo: true
+        });
+
+        res.json({
+            success: true,
+            data: result
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            error: 'Failed to fetch comments',
+            message: error.message
+        });
+    }
+});
+
+/**
+ * @route GET /api/community/optimized/user-profile/:userId
+ * @desc Get optimized user profile
+ * @access Private
+ */
+router.get('/optimized/user-profile/:userId', authenticateToken, async (req, res) => {
+    try {
+        const { userId } = req.params;
+        const firestoreOptimization = require('../services/firestoreOptimizationService');
+
+        const result = await firestoreOptimization.getUserProfile(userId);
+
+        if (!result) {
+            return res.status(404).json({
+                success: false,
+                error: 'User not found'
+            });
+        }
+
+        res.json({
+            success: true,
+            data: result
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            error: 'Failed to fetch user profile',
+            message: error.message
+        });
+    }
+});
+
 module.exports = router;

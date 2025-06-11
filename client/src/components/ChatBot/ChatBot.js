@@ -4,6 +4,7 @@ import { MessageCircle, X, Minimize2 } from 'lucide-react';
 import ChatMessage from './ChatMessage';
 import ChatInput from './ChatInput';
 import QuickReplies from './QuickReplies';
+import { chatAPI } from '../../services/api';
 
 const ChatBot = () => {
   console.log('🔄 [INIT] ChatBot component initialized - NEW VERSION');
@@ -56,22 +57,34 @@ const ChatBot = () => {
     await new Promise(resolve => setTimeout(resolve, 1000));
 
     try {
-      // Send message to widget endpoint using direct fetch (bypass axios interceptors)
-      console.log('📤 [NEW CODE] Sending to widget chat:', text.trim());
-      const response = await sendWidgetMessageDirect(text.trim());
+      // Send message to widget endpoint using chatAPI
+      console.log('📤 Sending to widget chat:', text.trim());
+      const response = await chatAPI.sendWidgetMessage({ message: text.trim() });
 
       console.log('✅ Widget Response:', response);
       console.log('✅ Response data:', response.data);
       console.log('✅ Response content:', response.data?.response?.content);
+      console.log('🔍 Full response structure:', JSON.stringify(response, null, 2));
 
-      // Validate response structure
-      if (!response.data?.response?.content) {
-        throw new Error('Invalid response structure from server');
+      // Validate response structure - axios wraps response in data
+      const responseContent = response.data?.data?.response?.content;
+      if (!responseContent) {
+        console.error('❌ Invalid response structure. Expected: response.data.data.response.content');
+        console.error('❌ Actual structure:', {
+          hasData: !!response.data,
+          hasDataData: !!response.data?.data,
+          hasResponse: !!response.data?.data?.response,
+          hasContent: !!response.data?.data?.response?.content,
+          dataKeys: response.data ? Object.keys(response.data) : 'no data',
+          dataDataKeys: response.data?.data ? Object.keys(response.data.data) : 'no data.data',
+          responseKeys: response.data?.data?.response ? Object.keys(response.data.data.response) : 'no response'
+        });
+        throw new Error(`Invalid response structure from server. Got: ${JSON.stringify(response.data)}`);
       }
 
       const botMessage = {
         id: Date.now() + 1,
-        text: response.data.response.content,
+        text: responseContent,
         isBot: true,
         timestamp: new Date()
       };
@@ -123,63 +136,19 @@ const ChatBot = () => {
     handleSendMessage(text);
   };
 
-
-
-  // Alternative widget message function using fetch instead of axios
-  const sendWidgetMessageDirect = async (message) => {
-    console.log('🔄 [NEW CODE] Using direct fetch for widget message:', message);
-    try {
-      // Use environment-based URL configuration
-      const getApiUrl = () => {
-        if (process.env.REACT_APP_API_URL) {
-          return process.env.REACT_APP_API_URL;
-        }
-        
-        if (process.env.NODE_ENV === 'production') {
-          return '/api'; // Use relative URL for production
-        }
-        
-        return 'http://localhost:5000/api'; // Development with correct port
-      };
-
-      const apiUrl = getApiUrl();
-      const response = await fetch(`${apiUrl}/chat/widget`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          message: message
-        })
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-
-      const data = await response.json();
-      console.log('✅ [NEW CODE] Direct fetch response:', data);
-      // Return the data directly, not wrapped in another data object
-      return data;
-    } catch (error) {
-      console.error('❌ [NEW CODE] Direct fetch error:', error);
-      throw error;
-    }
-  };
-
-  // Calculate chat window classes
+  // Calculate chat window classes - Expanded sizes
   const getChatWindowClasses = () => {
     if (isMinimized) {
       return 'bottom-4 right-4 sm:bottom-6 sm:right-6 w-64 h-14 cursor-pointer';
     }
 
-    // Responsive sizing with better proportions
+    // Responsive sizing with larger proportions
     if (window.innerWidth < 640) { // Mobile
-      return 'bottom-4 right-4 left-4 h-[450px] max-h-[75vh]';
+      return 'bottom-4 right-4 left-4 h-[500px] max-h-[80vh]';
     } else if (window.innerWidth < 1024) { // Tablet
-      return 'bottom-4 right-4 w-80 h-[480px] max-h-[80vh] sm:bottom-6 sm:right-6';
+      return 'bottom-4 right-4 w-96 h-[550px] max-h-[85vh] sm:bottom-6 sm:right-6';
     } else { // Desktop
-      return 'bottom-4 right-4 w-96 h-[520px] max-h-[85vh] sm:bottom-6 sm:right-6';
+      return 'bottom-4 right-4 w-[420px] h-[600px] max-h-[90vh] sm:bottom-6 sm:right-6';
     }
   };
 
@@ -272,11 +241,11 @@ const ChatBot = () => {
             {/* Content - chỉ hiển thị khi không minimize */}
             {!isMinimized && (
               <div className="flex flex-col flex-1 min-h-0">
-                {/* Messages Area - Optimized height */}
+                {/* Messages Area - Expanded height */}
                 <div
                   className="flex-1 overflow-y-auto p-4 space-y-3 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-transparent min-h-0"
                   style={{
-                    maxHeight: showQuickReplies ? '280px' : '380px'
+                    maxHeight: showQuickReplies ? '350px' : '450px'
                   }}
                 >
                   {messages.map((message) => (

@@ -22,6 +22,7 @@ import VerifyEmailPage from './pages/VerifyEmailPage';
 import EmailVerificationRequiredPage from './pages/EmailVerificationRequiredPage';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
+import ChatTestPage from './pages/ChatTestPage';
 import ProtectedRoute from './components/ProtectedRoute';
 import EmailVerifiedRoute from './components/EmailVerifiedRoute';
 import LoadingSpinner from './components/LoadingSpinner';
@@ -143,6 +144,11 @@ function App() {
           <Route
             path="/chat-test"
             element={<ChatTest />}
+          />
+
+          <Route
+            path="/chat-widget-test"
+            element={<ChatTestPage />}
           />
 
           {/* Catch all route */}

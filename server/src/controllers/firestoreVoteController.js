@@ -1,5 +1,6 @@
 const { v4: uuidv4 } = require('uuid');
 const admin = require('firebase-admin');
+const firestoreOptimization = require('../services/firestoreOptimizationService');
 
 class FirestoreVoteController {
   constructor() {
@@ -136,29 +137,51 @@ class FirestoreVoteController {
     }
   }
 
-  // Get vote statistics
+  // Get vote statistics (optimized)
   getVoteStats = async (req, res) => {
     try {
       const { linkId } = req.params;
-      
+      const userId = req.user?.userId || req.user?.uid;
+
       if (this.useFallback) {
         return this.getVoteStatsFallback(req, res);
       }
 
-      const summary = await this.getVoteSummary(linkId);
-      
+      console.log('🚀 Using optimized vote stats query');
+
+      // Use optimization service for better performance
+      const result = await firestoreOptimization.getVotesForLink(linkId, {
+        includeUserVote: !!userId,
+        userId: userId
+      });
+
       res.json({
         success: true,
         linkId,
-        statistics: summary
+        statistics: result.stats,
+        userVote: result.userVote,
+        lastUpdated: result.lastUpdated
       });
 
     } catch (error) {
       console.error('Get vote stats error:', error);
-      res.status(500).json({
-        success: false,
-        error: 'Failed to get vote statistics'
-      });
+
+      // Fallback to legacy method
+      console.log('⚠️ Falling back to legacy vote stats method...');
+      try {
+        const summary = await this.getVoteSummary(linkId);
+
+        res.json({
+          success: true,
+          linkId,
+          statistics: summary
+        });
+      } catch (fallbackError) {
+        res.status(500).json({
+          success: false,
+          error: 'Failed to get vote statistics'
+        });
+      }
     }
   }
 

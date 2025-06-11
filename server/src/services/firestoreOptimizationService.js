@@ -390,6 +390,422 @@ class FirestoreOptimizationService {
   }
 
   /**
+   * Get votes for a specific link with caching
+   */
+  async getVotesForLink(linkId, options = {}) {
+    const { includeUserVote = false, userId = null } = options;
+    const cacheKey = `votes_${linkId}_${includeUserVote}_${userId || 'all'}`;
+
+    // Check cache
+    const cached = this.cache.get(cacheKey);
+    if (cached) {
+      console.log('📦 Cache hit: votes for link');
+      return cached;
+    }
+
+    try {
+      console.log('🔍 Fetching votes from Firestore...');
+
+      // Get all votes for the link
+      const votesQuery = this.db.collection('votes')
+        .where('linkId', '==', linkId)
+        .orderBy('createdAt', 'desc');
+
+      const votesSnapshot = await votesQuery.get();
+
+      // Process votes efficiently
+      const votes = [];
+      const voteStats = {
+        safe: 0,
+        suspicious: 0,
+        unsafe: 0,
+        total: 0
+      };
+
+      let userVote = null;
+
+      votesSnapshot.forEach(doc => {
+        const voteData = doc.data();
+        votes.push({
+          id: doc.id,
+          ...voteData
+        });
+
+        // Count vote types
+        if (voteStats.hasOwnProperty(voteData.voteType)) {
+          voteStats[voteData.voteType]++;
+          voteStats.total++;
+        }
+
+        // Check for user's vote
+        if (includeUserVote && userId && voteData.userId === userId) {
+          userVote = voteData.voteType;
+        }
+      });
+
+      const result = {
+        votes,
+        stats: voteStats,
+        userVote,
+        lastUpdated: new Date().toISOString()
+      };
+
+      // Cache the result
+      this.cache.set(cacheKey, result, this.cacheTTL.community);
+
+      console.log(`✅ Votes fetched: ${votes.length} votes`);
+      return result;
+
+    } catch (error) {
+      console.error('❌ Error fetching votes:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get comments for a specific link with caching and pagination
+   */
+  async getCommentsForLink(linkId, options = {}) {
+    const { page = 1, limit = 10, includeUserInfo = true } = options;
+    const cacheKey = `comments_${linkId}_${page}_${limit}_${includeUserInfo}`;
+
+    // Check cache
+    const cached = this.cache.get(cacheKey);
+    if (cached) {
+      console.log('📦 Cache hit: comments for link');
+      return cached;
+    }
+
+    try {
+      console.log('🔍 Fetching comments from Firestore...');
+
+      // Calculate offset for pagination
+      const offset = (page - 1) * limit;
+
+      // Get comments with pagination
+      const commentsQuery = this.db.collection('comments')
+        .where('linkId', '==', linkId)
+        .orderBy('createdAt', 'desc')
+        .limit(limit + offset);
+
+      const commentsSnapshot = await commentsQuery.get();
+
+      if (commentsSnapshot.empty) {
+        return { comments: [], pagination: { page, limit, total: 0, hasMore: false } };
+      }
+
+      // Process comments efficiently
+      const allComments = [];
+      const userIds = new Set();
+
+      commentsSnapshot.forEach((doc, index) => {
+        if (index >= offset) {
+          const commentData = doc.data();
+          allComments.push({
+            id: doc.id,
+            ...commentData
+          });
+
+          if (commentData.userId) {
+            userIds.add(commentData.userId);
+          }
+        }
+      });
+
+      // Batch fetch user information if needed
+      let userInfoMap = {};
+      if (includeUserInfo && userIds.size > 0) {
+        const userPromises = Array.from(userIds).map(async (userId) => {
+          try {
+            const userDoc = await this.db.collection('users').doc(userId).get();
+            if (userDoc.exists) {
+              const userData = userDoc.data();
+              return {
+                userId,
+                displayName: userData.displayName || userData.firstName || 'Anonymous User',
+                email: userData.email || 'Anonymous'
+              };
+            }
+          } catch (error) {
+            console.warn(`Failed to fetch user ${userId}:`, error);
+          }
+          return { userId, displayName: 'Anonymous User', email: 'Anonymous' };
+        });
+
+        const userInfoArray = await Promise.all(userPromises);
+        userInfoMap = userInfoArray.reduce((map, userInfo) => {
+          map[userInfo.userId] = userInfo;
+          return map;
+        }, {});
+      }
+
+      // Enhance comments with user info
+      const enhancedComments = allComments.map(comment => ({
+        ...comment,
+        userInfo: userInfoMap[comment.userId] || { displayName: 'Anonymous User', email: 'Anonymous' }
+      }));
+
+      const result = {
+        comments: enhancedComments,
+        pagination: {
+          page: parseInt(page),
+          limit: parseInt(limit),
+          total: enhancedComments.length,
+          hasMore: commentsSnapshot.size > limit + offset
+        },
+        lastUpdated: new Date().toISOString()
+      };
+
+      // Cache the result (shorter TTL for comments)
+      this.cache.set(cacheKey, result, 120); // 2 minutes
+
+      console.log(`✅ Comments fetched: ${enhancedComments.length} comments`);
+      return result;
+
+    } catch (error) {
+      console.error('❌ Error fetching comments:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get user profile with caching
+   */
+  async getUserProfile(userId) {
+    const cacheKey = `user_profile_${userId}`;
+
+    // Check cache
+    const cached = this.cache.get(cacheKey);
+    if (cached) {
+      console.log('📦 Cache hit: user profile');
+      return cached;
+    }
+
+    try {
+      console.log('🔍 Fetching user profile from Firestore...');
+
+      const userDoc = await this.db.collection('users').doc(userId).get();
+
+      if (!userDoc.exists) {
+        return null;
+      }
+
+      const userData = userDoc.data();
+      const result = {
+        id: userDoc.id,
+        ...userData,
+        lastUpdated: new Date().toISOString()
+      };
+
+      // Cache for longer period (user profiles don't change often)
+      this.cache.set(cacheKey, result, this.cacheTTL.userProfile);
+
+      console.log('✅ User profile fetched');
+      return result;
+
+    } catch (error) {
+      console.error('❌ Error fetching user profile:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get chat messages with caching and pagination
+   */
+  async getChatMessages(conversationId, options = {}) {
+    const { page = 1, limit = 50 } = options;
+    const cacheKey = `chat_messages_${conversationId}_${page}_${limit}`;
+
+    // Check cache (shorter TTL for chat messages)
+    const cached = this.cache.get(cacheKey);
+    if (cached) {
+      console.log('📦 Cache hit: chat messages');
+      return cached;
+    }
+
+    try {
+      console.log('🔍 Fetching chat messages from Firestore...');
+
+      // Calculate offset for pagination
+      const offset = (page - 1) * limit;
+
+      // Get messages with pagination
+      const messagesQuery = this.db.collection('chat_messages')
+        .where('conversationId', '==', conversationId)
+        .orderBy('createdAt', 'desc')
+        .limit(limit + offset);
+
+      const messagesSnapshot = await messagesQuery.get();
+
+      if (messagesSnapshot.empty) {
+        return { messages: [], pagination: { page, limit, total: 0, hasMore: false } };
+      }
+
+      // Process messages efficiently
+      const allMessages = [];
+
+      messagesSnapshot.forEach((doc, index) => {
+        if (index >= offset) {
+          const messageData = doc.data();
+          allMessages.push({
+            id: doc.id,
+            ...messageData
+          });
+        }
+      });
+
+      // Reverse to show oldest first
+      allMessages.reverse();
+
+      const result = {
+        messages: allMessages,
+        pagination: {
+          page: parseInt(page),
+          limit: parseInt(limit),
+          total: allMessages.length,
+          hasMore: messagesSnapshot.size > limit + offset
+        },
+        lastUpdated: new Date().toISOString()
+      };
+
+      // Cache for shorter period (chat is more dynamic)
+      this.cache.set(cacheKey, result, 60); // 1 minute
+
+      console.log(`✅ Chat messages fetched: ${allMessages.length} messages`);
+      return result;
+
+    } catch (error) {
+      console.error('❌ Error fetching chat messages:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get reports with caching and filtering
+   */
+  async getReports(options = {}) {
+    const { status = 'all', category = 'all', page = 1, limit = 20 } = options;
+    const cacheKey = `reports_${status}_${category}_${page}_${limit}`;
+
+    // Check cache
+    const cached = this.cache.get(cacheKey);
+    if (cached) {
+      console.log('📦 Cache hit: reports');
+      return cached;
+    }
+
+    try {
+      console.log('🔍 Fetching reports from Firestore...');
+
+      let query = this.db.collection('reports');
+
+      // Apply filters
+      if (status !== 'all') {
+        query = query.where('status', '==', status);
+      }
+
+      if (category !== 'all') {
+        query = query.where('category', '==', category);
+      }
+
+      // Apply sorting and pagination
+      query = query.orderBy('createdAt', 'desc')
+                   .limit(limit);
+
+      const reportsSnapshot = await query.get();
+
+      const reports = [];
+      reportsSnapshot.forEach(doc => {
+        reports.push({
+          id: doc.id,
+          ...doc.data()
+        });
+      });
+
+      const result = {
+        reports,
+        pagination: {
+          page: parseInt(page),
+          limit: parseInt(limit),
+          total: reports.length,
+          hasMore: reports.length === limit
+        },
+        filters: { status, category },
+        lastUpdated: new Date().toISOString()
+      };
+
+      // Cache the result
+      this.cache.set(cacheKey, result, this.cacheTTL.community);
+
+      console.log(`✅ Reports fetched: ${reports.length} reports`);
+      return result;
+
+    } catch (error) {
+      console.error('❌ Error fetching reports:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Batch update vote counts for links
+   */
+  async batchUpdateVoteCounts(linkIds) {
+    try {
+      console.log('🔄 Batch updating vote counts...');
+
+      const batch = this.db.batch();
+      let updateCount = 0;
+
+      for (const linkId of linkIds) {
+        // Get vote counts for this link
+        const votesSnapshot = await this.db.collection('votes')
+          .where('linkId', '==', linkId)
+          .get();
+
+        const voteCounts = {
+          safe: 0,
+          suspicious: 0,
+          unsafe: 0,
+          total: 0
+        };
+
+        votesSnapshot.forEach(doc => {
+          const voteData = doc.data();
+          if (voteCounts.hasOwnProperty(voteData.voteType)) {
+            voteCounts[voteData.voteType]++;
+            voteCounts.total++;
+          }
+        });
+
+        // Update link document
+        const linkRef = this.db.collection('links').doc(linkId);
+        batch.update(linkRef, {
+          voteCount: voteCounts.total,
+          votes: voteCounts,
+          updatedAt: new Date().toISOString()
+        });
+
+        updateCount++;
+      }
+
+      if (updateCount > 0) {
+        await batch.commit();
+        console.log(`✅ Updated vote counts for ${updateCount} links`);
+
+        // Clear related caches
+        this.clearCacheByPattern('votes_');
+        this.clearCacheByPattern('community_posts_');
+      }
+
+      return updateCount;
+
+    } catch (error) {
+      console.error('❌ Error in batch vote count update:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Get last document snapshot for pagination
    */
   async getLastDocumentSnapshot(sort, category, userId, offset) {
