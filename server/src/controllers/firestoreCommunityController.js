@@ -53,22 +53,10 @@ class FirestoreCommunityController {
                 return this.getCommunityPostsFallback(req, res);
             }
 
-            console.log('🚀 Using optimized community posts query');
+            console.log('🚀 Using direct Firestore query (bypass optimization for vote accuracy)');
 
-            // Use optimization service for better performance
-            const result = await firestoreOptimization.getCommunityPosts({
-                sort,
-                category,
-                search,
-                page: parseInt(page),
-                limit: parseInt(limit)
-            });
-
-            res.json({
-                success: true,
-                data: result,
-                timestamp: new Date().toISOString()
-            });
+            // Use direct Firestore query to get accurate vote data
+            return await this.getCommunityPostsLegacy(req, res);
 
         } catch (error) {
             console.error('Get community posts error:', error);
@@ -159,7 +147,12 @@ class FirestoreCommunityController {
                     source: 'Community',
                     category: this.mapStatusToCategory(linkData.status),
                     tags: this.generateTags(linkData),
-                    votes,
+                    voteStats: {
+                        safe: votes.safe,
+                        unsafe: votes.unsafe,
+                        suspicious: votes.suspicious,
+                        total: totalVotes
+                    },
                     userVote: null, // TODO: Get user's vote if authenticated
                     commentsCount: commentsSnapshot.size,
                     createdAt: linkData.createdAt?.toDate?.()?.toISOString() || new Date().toISOString(),
@@ -188,16 +181,14 @@ class FirestoreCommunityController {
             switch (sort) {
                 case 'trending':
                     posts.sort((a, b) => {
-                        const aScore = (a.votes.safe + a.votes.unsafe + a.votes.suspicious) * a.trustScore;
-                        const bScore = (b.votes.safe + b.votes.unsafe + b.votes.suspicious) * b.trustScore;
+                        const aScore = a.voteStats.total * a.trustScore;
+                        const bScore = b.voteStats.total * b.trustScore;
                         return bScore - aScore;
                     });
                     break;
                 case 'most_voted':
                     posts.sort((a, b) => {
-                        const aVotes = a.votes.safe + a.votes.unsafe + a.votes.suspicious;
-                        const bVotes = b.votes.safe + b.votes.unsafe + b.votes.suspicious;
-                        return bVotes - aVotes;
+                        return b.voteStats.total - a.voteStats.total;
                     });
                     break;
                 case 'newest':
@@ -439,7 +430,12 @@ class FirestoreCommunityController {
                 submissions.push({
                     id: doc.id,
                     ...submissionData,
-                    votes,
+                    voteStats: {
+                        safe: votes.safe,
+                        unsafe: votes.unsafe,
+                        suspicious: votes.suspicious,
+                        total: votes.safe + votes.unsafe + votes.suspicious
+                    },
                     commentsCount: commentsSnapshot.size
                 });
             }
@@ -721,7 +717,7 @@ class FirestoreCommunityController {
                 source: 'Community',
                 category: 'security',
                 tags: ['scam', 'banking', 'phishing'],
-                votes: { safe: 2, unsafe: 15, suspicious: 3 },
+                voteStats: { safe: 2, unsafe: 15, suspicious: 3, total: 20 },
                 userVote: null,
                 commentsCount: 8,
                 createdAt: new Date(Date.now() - 86400000).toISOString(),
@@ -744,7 +740,7 @@ class FirestoreCommunityController {
                 source: 'Community',
                 category: 'health',
                 tags: ['official', 'health', 'government'],
-                votes: { safe: 25, unsafe: 0, suspicious: 1 },
+                voteStats: { safe: 25, unsafe: 0, suspicious: 1, total: 26 },
                 userVote: null,
                 commentsCount: 12,
                 createdAt: new Date(Date.now() - 172800000).toISOString(),
@@ -768,8 +764,8 @@ class FirestoreCommunityController {
         // Sort
         if (sort === 'trending') {
             filteredPosts.sort((a, b) => {
-                const aScore = (a.votes.safe + a.votes.unsafe + a.votes.suspicious) * a.trustScore;
-                const bScore = (b.votes.safe + b.votes.unsafe + b.votes.suspicious) * b.trustScore;
+                const aScore = a.voteStats.total * a.trustScore;
+                const bScore = b.voteStats.total * b.trustScore;
                 return bScore - aScore;
             });
         }

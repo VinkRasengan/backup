@@ -147,20 +147,53 @@ class FirestoreVoteController {
         return this.getVoteStatsFallback(req, res);
       }
 
-      console.log('🚀 Using optimized vote stats query');
+      console.log('🚀 Using direct Firestore vote query (bypass optimization)');
 
-      // Use optimization service for better performance
-      const result = await firestoreOptimization.getVotesForLink(linkId, {
-        includeUserVote: !!userId,
-        userId: userId
+      // Direct Firestore query without composite index
+      const votesRef = this.db.collection('votes')
+        .where('linkId', '==', linkId);
+
+      const snapshot = await votesRef.get();
+
+      // Calculate vote statistics
+      const stats = {
+        safe: 0,
+        unsafe: 0,
+        suspicious: 0,
+        total: 0,
+        trustScore: 50
+      };
+
+      let userVote = null;
+
+      snapshot.forEach(doc => {
+        const voteData = doc.data();
+        if (stats.hasOwnProperty(voteData.voteType)) {
+          stats[voteData.voteType]++;
+          stats.total++;
+        }
+
+        // Check for user's vote
+        if (userId && voteData.userId === userId) {
+          userVote = {
+            voteType: voteData.voteType,
+            createdAt: voteData.createdAt,
+            updatedAt: voteData.updatedAt
+          };
+        }
       });
+
+      // Calculate trust score
+      if (stats.total > 0) {
+        stats.trustScore = Math.round(((stats.safe * 100) + (stats.suspicious * 50) + (stats.unsafe * 0)) / stats.total);
+      }
 
       res.json({
         success: true,
         linkId,
-        statistics: result.stats,
-        userVote: result.userVote,
-        lastUpdated: result.lastUpdated
+        statistics: stats,
+        userVote: userVote,
+        lastUpdated: new Date().toISOString()
       });
 
     } catch (error) {

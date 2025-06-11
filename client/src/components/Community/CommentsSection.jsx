@@ -147,9 +147,12 @@ const CommentsSection = ({ linkId, className = '' }) => {
   };
 
   const getUserDisplayName = (author) => {
+    if (!author) return 'Người dùng ẩn danh';
     if (author.firstName || author.lastName) {
       return `${author.firstName} ${author.lastName}`.trim();
     }
+    if (author.name) return author.name;
+    if (author.user_name) return author.user_name;
     return 'Người dùng ẩn danh';
   };
 
@@ -237,7 +240,7 @@ const CommentsSection = ({ linkId, className = '' }) => {
             <div key={comment.id} className="p-4">
               <div className="flex space-x-3">
                 <div className="flex-shrink-0">
-                  {comment.author.avatar ? (
+                  {comment.author?.avatar ? (
                     <img
                       src={comment.author.avatar}
                       alt={getUserDisplayName(comment.author)}

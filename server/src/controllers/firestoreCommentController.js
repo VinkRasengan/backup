@@ -44,21 +44,69 @@ class FirestoreCommentController {
                 return this.getCommentsFallback(req, res);
             }
 
-            console.log('🚀 Using optimized comments query');
+            console.log('🚀 Using direct Firestore query (bypass optimization)');
 
-            // Use optimization service for better performance
-            const result = await firestoreOptimization.getCommentsForLink(linkId, {
-                page: parseInt(page),
-                limit: parseInt(limit),
-                includeUserInfo: true
-            });
+            // Direct Firestore query without composite index
+            const commentsRef = this.db.collection('comments')
+                .where('linkId', '==', linkId);
+
+            const snapshot = await commentsRef.get();
+            const allComments = [];
+
+            for (const doc of snapshot.docs) {
+                const commentData = doc.data();
+
+                // Get user info
+                let userInfo = { email: 'Anonymous', displayName: 'Anonymous User' };
+                if (commentData.userId) {
+                    try {
+                        const userDoc = await this.db.collection('users').doc(commentData.userId).get();
+                        if (userDoc.exists) {
+                            const userData = userDoc.data();
+                            userInfo = {
+                                email: userData.email || 'Anonymous',
+                                displayName: userData.displayName || userData.firstName || 'Anonymous User'
+                            };
+                        }
+                    } catch (userError) {
+                        console.warn('Could not fetch user info:', userError);
+                    }
+                }
+
+                allComments.push({
+                    id: doc.id,
+                    content: commentData.content,
+                    createdAt: commentData.createdAt?.toDate?.() || new Date(),
+                    updatedAt: commentData.updatedAt?.toDate?.() || new Date(),
+                    userInfo: userInfo
+                });
+            }
+
+            // Sort comments by created_at descending (newest first)
+            allComments.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+            // Apply pagination
+            const startIndex = (page - 1) * limit;
+            const endIndex = startIndex + parseInt(limit);
+            const paginatedComments = allComments.slice(startIndex, endIndex);
+
+            const result = {
+                comments: paginatedComments,
+                pagination: {
+                    page: parseInt(page),
+                    limit: parseInt(limit),
+                    total: allComments.length,
+                    hasMore: endIndex < allComments.length
+                },
+                lastUpdated: new Date().toISOString()
+            };
 
             // Transform to match expected format
             const transformedComments = result.comments.map(comment => ({
                 id: comment.id,
                 content: comment.content,
-                created_at: comment.createdAt?.toDate?.() || new Date(comment.createdAt) || new Date(),
-                updated_at: comment.updatedAt?.toDate?.() || new Date(comment.updatedAt) || new Date(),
+                created_at: comment.createdAt || new Date(),
+                updated_at: comment.updatedAt || new Date(),
                 user_email: comment.userInfo?.email || 'Anonymous',
                 user_name: comment.userInfo?.displayName || 'Anonymous User'
             }));

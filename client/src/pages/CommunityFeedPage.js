@@ -159,7 +159,7 @@ const CommunityFeedPage = () => {
               <div className="flex items-center space-x-2 text-xs text-gray-500 dark:text-gray-400 mb-2">
                 <span className="font-medium">{getPostTypeIcon(article.type)} {article.source}</span>
                 <span>•</span>
-                <span>Đăng bởi {article.author?.name}</span>
+                <span>Đăng bởi {article.author?.name || article.userInfo?.name || 'Ẩn danh'}</span>
                 <span>•</span>
                 <span>{new Date(article.createdAt).toLocaleDateString('vi-VN')}</span>
                 {article.isVerified && (

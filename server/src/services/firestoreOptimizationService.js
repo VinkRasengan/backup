@@ -185,7 +185,18 @@ class FirestoreOptimizationService {
           // Ensure required fields
           voteCount: data.voteCount || 0,
           commentCount: data.commentCount || 0,
-          engagementScore: data.engagementScore || this.calculateEngagementScore(data)
+          engagementScore: data.engagementScore || this.calculateEngagementScore(data),
+          // Add missing fields that frontend expects
+          imageUrl: data.imageUrl || data.screenshot || null,
+          screenshot: data.screenshot || data.imageUrl || null,
+          content: data.content || data.description || '',
+          // Ensure proper date formatting
+          createdAt: data.createdAt || new Date(),
+          updatedAt: data.updatedAt || data.createdAt || new Date(),
+          // Add user info placeholder
+          userInfo: data.userInfo || { displayName: 'Anonymous User' },
+          // Add vote stats placeholder
+          voteStats: data.voteStats || { safe: 0, suspicious: 0, unsafe: 0, total: 0 }
         });
       });
 
@@ -503,11 +514,10 @@ class FirestoreOptimizationService {
       // Calculate offset for pagination
       const offset = (page - 1) * limit;
 
-      // Get comments with pagination
+      // Use simple query without orderBy to avoid composite index requirement
+      console.warn('⚠️ Using simple query without composite index...');
       const commentsQuery = this.db.collection('comments')
-        .where('linkId', '==', linkId)
-        .orderBy('createdAt', 'desc')
-        .limit(limit + offset);
+        .where('linkId', '==', linkId);
 
       const commentsSnapshot = await commentsQuery.get();
 
@@ -516,22 +526,39 @@ class FirestoreOptimizationService {
       }
 
       // Process comments efficiently
-      const allComments = [];
+      let allComments = [];
       const userIds = new Set();
 
-      commentsSnapshot.forEach((doc, index) => {
-        if (index >= offset) {
-          const commentData = doc.data();
-          allComments.push({
-            id: doc.id,
-            ...commentData
-          });
+      // Convert all documents to array first
+      const allDocs = [];
+      commentsSnapshot.forEach(doc => {
+        allDocs.push({
+          id: doc.id,
+          ...doc.data()
+        });
+      });
 
-          if (commentData.userId) {
-            userIds.add(commentData.userId);
-          }
+      // Sort manually if we used fallback method (no composite index)
+      allDocs.sort((a, b) => {
+        const aTime = a.createdAt?.toDate?.() || new Date(a.createdAt) || new Date(0);
+        const bTime = b.createdAt?.toDate?.() || new Date(b.createdAt) || new Date(0);
+        return bTime - aTime; // Descending order (newest first)
+      });
+
+      // Apply pagination manually
+      const startIndex = offset;
+      const endIndex = startIndex + limit;
+      const paginatedComments = allDocs.slice(startIndex, endIndex);
+
+      // Process paginated comments
+      paginatedComments.forEach(commentData => {
+        allComments.push(commentData);
+        if (commentData.userId) {
+          userIds.add(commentData.userId);
         }
       });
+
+
 
       // Batch fetch user information if needed
       let userInfoMap = {};
@@ -571,8 +598,8 @@ class FirestoreOptimizationService {
         pagination: {
           page: parseInt(page),
           limit: parseInt(limit),
-          total: enhancedComments.length,
-          hasMore: commentsSnapshot.size > limit + offset
+          total: allDocs.length, // Total comments for this link
+          hasMore: (offset + limit) < allDocs.length
         },
         lastUpdated: new Date().toISOString()
       };
@@ -585,7 +612,19 @@ class FirestoreOptimizationService {
 
     } catch (error) {
       console.error('❌ Error fetching comments:', error);
-      throw error;
+
+      // Return empty result instead of throwing error
+      return {
+        comments: [],
+        pagination: {
+          page: parseInt(page),
+          limit: parseInt(limit),
+          total: 0,
+          hasMore: false
+        },
+        lastUpdated: new Date().toISOString(),
+        error: 'Failed to fetch comments'
+      };
     }
   }
 

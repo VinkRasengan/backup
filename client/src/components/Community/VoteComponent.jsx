@@ -23,13 +23,13 @@ const VoteComponent = ({ linkId, postData, className = '' }) => {
 
   // Load vote data on component mount
   useEffect(() => {
-    if (postData) {
+    if (postData && postData.voteStats) {
       // Use data from post
       setVoteStats({
-        safe: postData.votes?.safe || 0,
-        unsafe: postData.votes?.unsafe || 0,
-        suspicious: postData.votes?.suspicious || 0,
-        total: (postData.votes?.safe || 0) + (postData.votes?.unsafe || 0) + (postData.votes?.suspicious || 0)
+        safe: postData.voteStats.safe || 0,
+        unsafe: postData.voteStats.unsafe || 0,
+        suspicious: postData.voteStats.suspicious || 0,
+        total: postData.voteStats.total || 0
       });
       setUserVote(postData.userVote || null);
     } else if (linkId) {
@@ -42,7 +42,7 @@ const VoteComponent = ({ linkId, postData, className = '' }) => {
       setLoading(true);
 
       // Try to load from API
-      const response = await fetch(`/api/votes/${linkId}`, {
+      const response = await fetch(`/api/votes/${linkId}/stats`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
@@ -51,10 +51,10 @@ const VoteComponent = ({ linkId, postData, className = '' }) => {
       if (response.ok) {
         const data = await response.json();
         setVoteStats({
-          safe: data.votes?.safe || 0,
-          unsafe: data.votes?.unsafe || 0,
-          suspicious: data.votes?.suspicious || 0,
-          total: (data.votes?.safe || 0) + (data.votes?.unsafe || 0) + (data.votes?.suspicious || 0)
+          safe: data.statistics?.safe || 0,
+          unsafe: data.statistics?.unsafe || 0,
+          suspicious: data.statistics?.suspicious || 0,
+          total: data.statistics?.total || 0
         });
         setUserVote(data.userVote);
       } else {
@@ -152,15 +152,15 @@ const VoteComponent = ({ linkId, postData, className = '' }) => {
     } catch (error) {
       console.error('Vote error:', error);
       // Revert changes on error
-      if (postData) {
+      if (postData && postData.voteStats) {
         setVoteStats({
-          safe: postData.votes?.safe || 0,
-          unsafe: postData.votes?.unsafe || 0,
-          suspicious: postData.votes?.suspicious || 0,
-          total: (postData.votes?.safe || 0) + (postData.votes?.unsafe || 0) + (postData.votes?.suspicious || 0)
+          safe: postData.voteStats.safe || 0,
+          unsafe: postData.voteStats.unsafe || 0,
+          suspicious: postData.voteStats.suspicious || 0,
+          total: postData.voteStats.total || 0
         });
         setUserVote(postData.userVote || null);
-      } else {
+      } else if (linkId) {
         await loadVoteData();
       }
     } finally {
