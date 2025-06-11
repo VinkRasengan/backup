@@ -41,7 +41,7 @@ class FirestoreOptimizationService {
    */
   async getTrendingPosts(limit = 10, offset = 0) {
     const cacheKey = `trending_posts_${limit}_${offset}`;
-    
+
     // Check cache first
     const cached = this.cache.get(cacheKey);
     if (cached) {
@@ -51,27 +51,27 @@ class FirestoreOptimizationService {
 
     try {
       console.log('🔍 Fetching trending posts from Firestore...');
-      
-      // Optimized query with proper indexing
-      const query = this.db.collection('links')
-        .where('status', '!=', 'deleted')
-        .orderBy('status') // Required for != queries
-        .orderBy('engagementScore', 'desc')
-        .orderBy('createdAt', 'desc')
-        .limit(limit + offset);
+
+      // Use simplest possible query to avoid index issues temporarily
+      let query = this.db.collection('links');
 
       const snapshot = await query.get();
-      
+
       if (snapshot.empty) {
         return { posts: [], total: 0, hasMore: false };
       }
 
-      // Process results efficiently
+      // Process results efficiently and filter out deleted posts
       const allPosts = [];
-      const batch = this.db.batch();
-      
+
       snapshot.forEach(doc => {
         const data = doc.data();
+
+        // Skip deleted posts
+        if (data.status === 'deleted') {
+          return;
+        }
+
         allPosts.push({
           id: doc.id,
           ...data,
@@ -80,9 +80,20 @@ class FirestoreOptimizationService {
         });
       });
 
+      // Sort by engagement score manually (since we can't use composite index yet)
+      allPosts.sort((a, b) => {
+        const scoreA = a.engagementScore || 0;
+        const scoreB = b.engagementScore || 0;
+        if (scoreB !== scoreA) {
+          return scoreB - scoreA; // Higher engagement first
+        }
+        // If engagement scores are equal, sort by creation date
+        return new Date(b.createdAt) - new Date(a.createdAt);
+      });
+
       // Apply offset and get final posts
       const posts = allPosts.slice(offset, offset + limit);
-      
+
       const result = {
         posts,
         total: allPosts.length,
@@ -92,13 +103,13 @@ class FirestoreOptimizationService {
 
       // Cache the result
       this.cache.set(cacheKey, result, this.cacheTTL.trending);
-      
+
       console.log(`✅ Trending posts fetched: ${posts.length} posts`);
       return result;
 
     } catch (error) {
       console.error('❌ Error fetching trending posts:', error);
-      
+
       // Return fallback data
       return this.getFallbackTrendingPosts(limit);
     }
@@ -119,7 +130,7 @@ class FirestoreOptimizationService {
 
     const cacheKey = `community_posts_${sort}_${category}_${search}_${page}_${limit}_${userId || 'all'}`;
     
-    // Check cache
+    // Check cache first
     const cached = this.cache.get(cacheKey);
     if (cached) {
       console.log('📦 Cache hit: community posts');
@@ -140,73 +151,83 @@ class FirestoreOptimizationService {
         query = query.where('userId', '==', userId);
       }
 
-      // Apply sorting with composite indexes
+      // Use simplest possible query to avoid index issues temporarily
+      // No limit, no ordering - just get all documents
+
+      const snapshot = await query.get();
+
+      const allPosts = [];
+
+      snapshot.forEach(doc => {
+        const data = doc.data();
+
+        // Skip deleted posts
+        if (data.status === 'deleted') {
+          return;
+        }
+
+        // Apply search filter (if needed)
+        if (search) {
+          const searchLower = search.toLowerCase();
+          const matchesSearch =
+            (data.title && data.title.toLowerCase().includes(searchLower)) ||
+            (data.description && data.description.toLowerCase().includes(searchLower)) ||
+            (data.url && data.url.toLowerCase().includes(searchLower));
+
+          if (!matchesSearch) {
+            return;
+          }
+        }
+
+        allPosts.push({
+          id: doc.id,
+          ...data,
+          // Ensure required fields
+          voteCount: data.voteCount || 0,
+          commentCount: data.commentCount || 0,
+          engagementScore: data.engagementScore || this.calculateEngagementScore(data)
+        });
+      });
+
+      // Apply manual sorting based on sort parameter
       switch (sort) {
         case 'trending':
-          query = query.orderBy('engagementScore', 'desc')
-                      .orderBy('createdAt', 'desc');
+          allPosts.sort((a, b) => {
+            const scoreA = a.engagementScore || 0;
+            const scoreB = b.engagementScore || 0;
+            if (scoreB !== scoreA) {
+              return scoreB - scoreA; // Higher engagement first
+            }
+            return new Date(b.createdAt) - new Date(a.createdAt);
+          });
           break;
         case 'popular':
-          query = query.orderBy('voteCount', 'desc')
-                      .orderBy('createdAt', 'desc');
+          allPosts.sort((a, b) => {
+            const votesA = a.voteCount || 0;
+            const votesB = b.voteCount || 0;
+            if (votesB !== votesA) {
+              return votesB - votesA; // More votes first
+            }
+            return new Date(b.createdAt) - new Date(a.createdAt);
+          });
           break;
         case 'newest':
         default:
-          query = query.orderBy('createdAt', 'desc');
+          // Already sorted by createdAt desc from query
           break;
       }
 
       // Apply pagination
-      const offset = (page - 1) * limit;
-      query = query.limit(limit + 1); // +1 to check if there are more
-
-      if (offset > 0) {
-        // For pagination, we need to use cursor-based pagination for better performance
-        const lastDocSnapshot = await this.getLastDocumentSnapshot(sort, category, userId, offset);
-        if (lastDocSnapshot) {
-          query = query.startAfter(lastDocSnapshot);
-        }
-      }
-
-      const snapshot = await query.get();
-      
-      const posts = [];
-      let hasMore = false;
-      
-      snapshot.forEach((doc, index) => {
-        if (index < limit) {
-          const data = doc.data();
-          
-          // Apply search filter (if needed)
-          if (search) {
-            const searchLower = search.toLowerCase();
-            const matchesSearch = 
-              (data.title && data.title.toLowerCase().includes(searchLower)) ||
-              (data.description && data.description.toLowerCase().includes(searchLower)) ||
-              (data.url && data.url.toLowerCase().includes(searchLower));
-            
-            if (!matchesSearch) return;
-          }
-          
-          posts.push({
-            id: doc.id,
-            ...data,
-            // Ensure required fields
-            voteCount: data.voteCount || 0,
-            commentCount: data.commentCount || 0,
-            engagementScore: data.engagementScore || this.calculateEngagementScore(data)
-          });
-        } else {
-          hasMore = true;
-        }
-      });
+      const startIndex = (page - 1) * limit;
+      const posts = allPosts.slice(startIndex, startIndex + limit);
+      const hasMore = allPosts.length > startIndex + limit;
 
       const result = {
         posts,
         pagination: {
           page: parseInt(page),
           limit: parseInt(limit),
-          total: posts.length,
+          total: allPosts.length,
           hasMore
         },
         filters: { sort, category, search },

@@ -1,13 +1,34 @@
-const database = require('../config/database');
+const { initializeFirebaseAdmin } = require('../config/firebase');
 
 class ReportController {
+    constructor() {
+        this.db = null;
+        this.initializeFirestore();
+    }
+
+    async initializeFirestore() {
+        try {
+            const { db } = await initializeFirebaseAdmin();
+            this.db = db;
+            console.log('✅ Report Controller: Firestore initialized');
+        } catch (error) {
+            console.error('❌ Report Controller: Failed to initialize Firestore:', error);
+        }
+    }
     /**
      * Create a new report
      */
     async createReport(req, res) {
         try {
+            if (!this.db) {
+                return res.status(500).json({
+                    success: false,
+                    error: 'Database not initialized'
+                });
+            }
+
             const { linkId, type, reason, description } = req.body;
-            const userId = req.user.userId;
+            const userId = req.user?.userId || req.user?.uid;
 
             // Validate required fields
             if (!linkId || !type || !reason) {
@@ -27,11 +48,8 @@ class ReportController {
             }
 
             // Check if link exists
-            const linkExists = await database.query(`
-                SELECT id FROM links WHERE id = $1
-            `, [linkId]);
-
-            if (linkExists.rows.length === 0) {
+            const linkDoc = await this.db.collection('links').doc(linkId).get();
+            if (!linkDoc.exists) {
                 return res.status(404).json({
                     success: false,
                     error: 'Link not found'
@@ -39,12 +57,12 @@ class ReportController {
             }
 
             // Check if user already reported this link
-            const existingReport = await database.query(`
-                SELECT id FROM reports 
-                WHERE link_id = $1 AND user_id = $2
-            `, [linkId, userId]);
+            const existingReports = await this.db.collection('reports')
+                .where('linkId', '==', linkId)
+                .where('userId', '==', userId)
+                .get();
 
-            if (existingReport.rows.length > 0) {
+            if (!existingReports.empty) {
                 return res.status(409).json({
                     success: false,
                     error: 'You have already reported this link'
@@ -52,15 +70,26 @@ class ReportController {
             }
 
             // Create report
-            const result = await database.query(`
-                INSERT INTO reports (link_id, user_id, type, reason, description, status, created_at, updated_at)
-                VALUES ($1, $2, $3, $4, $5, 'pending', NOW(), NOW())
-                RETURNING id, type, reason, description, status, created_at
-            `, [linkId, userId, type, reason, description || null]);
+            const reportData = {
+                linkId,
+                userId,
+                type,
+                reason,
+                description: description || null,
+                status: 'pending',
+                createdAt: new Date(),
+                updatedAt: new Date()
+            };
+
+            const reportRef = await this.db.collection('reports').add(reportData);
+            const reportDoc = await reportRef.get();
 
             res.status(201).json({
                 success: true,
-                data: result.rows[0],
+                data: {
+                    id: reportRef.id,
+                    ...reportDoc.data()
+                },
                 message: 'Report submitted successfully'
             });
         } catch (error) {
@@ -78,43 +107,68 @@ class ReportController {
      */
     async getReportsForLink(req, res) {
         try {
+            if (!this.db) {
+                return res.status(500).json({
+                    success: false,
+                    error: 'Database not initialized'
+                });
+            }
+
             const { linkId } = req.params;
             const { page = 1, limit = 20 } = req.query;
-            const offset = (page - 1) * limit;
 
-            const reports = await database.query(`
-                SELECT 
-                    r.id,
-                    r.type,
-                    r.reason,
-                    r.description,
-                    r.status,
-                    r.created_at,
-                    r.updated_at,
-                    u.email as reporter_email,
-                    u.display_name as reporter_name
-                FROM reports r
-                LEFT JOIN users u ON r.user_id = u.id
-                WHERE r.link_id = $1
-                ORDER BY r.created_at DESC
-                LIMIT $2 OFFSET $3
-            `, [linkId, limit, offset]);
+            // Get reports for the link
+            const reportsQuery = this.db.collection('reports')
+                .where('linkId', '==', linkId)
+                .orderBy('createdAt', 'desc')
+                .limit(parseInt(limit))
+                .offset((parseInt(page) - 1) * parseInt(limit));
 
-            const totalCount = await database.query(`
-                SELECT COUNT(*) as count
-                FROM reports
-                WHERE link_id = $1
-            `, [linkId]);
+            const reportsSnapshot = await reportsQuery.get();
+
+            // Get total count
+            const totalSnapshot = await this.db.collection('reports')
+                .where('linkId', '==', linkId)
+                .get();
+
+            const reports = [];
+            for (const doc of reportsSnapshot.docs) {
+                const reportData = doc.data();
+
+                // Get user info if userId exists
+                let reporterInfo = null;
+                if (reportData.userId) {
+                    try {
+                        const userDoc = await this.db.collection('users').doc(reportData.userId).get();
+                        if (userDoc.exists) {
+                            const userData = userDoc.data();
+                            reporterInfo = {
+                                email: userData.email,
+                                displayName: userData.displayName || userData.firstName + ' ' + userData.lastName
+                            };
+                        }
+                    } catch (error) {
+                        console.warn('Failed to fetch user info for report:', error);
+                    }
+                }
+
+                reports.push({
+                    id: doc.id,
+                    ...reportData,
+                    reporterEmail: reporterInfo?.email,
+                    reporterName: reporterInfo?.displayName
+                });
+            }
 
             res.json({
                 success: true,
                 data: {
-                    reports: reports.rows,
+                    reports,
                     pagination: {
                         page: parseInt(page),
                         limit: parseInt(limit),
-                        total: parseInt(totalCount.rows[0].count),
-                        totalPages: Math.ceil(totalCount.rows[0].count / limit)
+                        total: totalSnapshot.size,
+                        totalPages: Math.ceil(totalSnapshot.size / parseInt(limit))
                     }
                 }
             });
@@ -133,62 +187,101 @@ class ReportController {
      */
     async getAllReports(req, res) {
         try {
-            const { status, type, page = 1, limit = 20 } = req.query;
-            const offset = (page - 1) * limit;
+            if (!this.db) {
+                return res.status(500).json({
+                    success: false,
+                    error: 'Database not initialized'
+                });
+            }
 
-            let whereClause = '';
-            let queryParams = [];
-            let paramCount = 0;
+            const { status, type, page = 1, limit = 20 } = req.query;
+
+            // Build query with filters
+            let query = this.db.collection('reports');
 
             if (status) {
-                paramCount++;
-                whereClause += `WHERE r.status = $${paramCount}`;
-                queryParams.push(status);
+                query = query.where('status', '==', status);
             }
 
             if (type) {
-                paramCount++;
-                whereClause += whereClause ? ` AND r.type = $${paramCount}` : `WHERE r.type = $${paramCount}`;
-                queryParams.push(type);
+                query = query.where('type', '==', type);
             }
 
-            const reports = await database.query(`
-                SELECT 
-                    r.id,
-                    r.link_id,
-                    r.type,
-                    r.reason,
-                    r.description,
-                    r.status,
-                    r.created_at,
-                    r.updated_at,
-                    u.email as reporter_email,
-                    u.display_name as reporter_name,
-                    l.url as link_url,
-                    l.title as link_title
-                FROM reports r
-                LEFT JOIN users u ON r.user_id = u.id
-                LEFT JOIN links l ON r.link_id = l.id
-                ${whereClause}
-                ORDER BY r.created_at DESC
-                LIMIT $${paramCount + 1} OFFSET $${paramCount + 2}
-            `, [...queryParams, limit, offset]);
+            // Get total count for pagination
+            const totalSnapshot = await query.get();
+            const total = totalSnapshot.size;
 
-            const totalCount = await database.query(`
-                SELECT COUNT(*) as count
-                FROM reports r
-                ${whereClause}
-            `, queryParams);
+            // Apply pagination and ordering
+            const reportsQuery = query
+                .orderBy('createdAt', 'desc')
+                .limit(parseInt(limit))
+                .offset((parseInt(page) - 1) * parseInt(limit));
+
+            const reportsSnapshot = await reportsQuery.get();
+
+            const reports = [];
+            for (const doc of reportsSnapshot.docs) {
+                const reportData = doc.data();
+
+                // Get user info
+                let reporterInfo = null;
+                if (reportData.userId) {
+                    try {
+                        const userDoc = await this.db.collection('users').doc(reportData.userId).get();
+                        if (userDoc.exists) {
+                            const userData = userDoc.data();
+                            reporterInfo = {
+                                email: userData.email,
+                                displayName: userData.displayName || userData.firstName + ' ' + userData.lastName
+                            };
+                        }
+                    } catch (error) {
+                        console.warn('Failed to fetch user info:', error);
+                    }
+                }
+
+                // Get link info
+                let linkInfo = null;
+                if (reportData.linkId) {
+                    try {
+                        const linkDoc = await this.db.collection('links').doc(reportData.linkId).get();
+                        if (linkDoc.exists) {
+                            const linkData = linkDoc.data();
+                            linkInfo = {
+                                url: linkData.url,
+                                title: linkData.title
+                            };
+                        }
+                    } catch (error) {
+                        console.warn('Failed to fetch link info:', error);
+                    }
+                }
+
+                reports.push({
+                    id: doc.id,
+                    linkId: reportData.linkId,
+                    type: reportData.type,
+                    reason: reportData.reason,
+                    description: reportData.description,
+                    status: reportData.status,
+                    createdAt: reportData.createdAt,
+                    updatedAt: reportData.updatedAt,
+                    reporterEmail: reporterInfo?.email,
+                    reporterName: reporterInfo?.displayName,
+                    linkUrl: linkInfo?.url,
+                    linkTitle: linkInfo?.title
+                });
+            }
 
             res.json({
                 success: true,
                 data: {
-                    reports: reports.rows,
+                    reports,
                     pagination: {
                         page: parseInt(page),
                         limit: parseInt(limit),
-                        total: parseInt(totalCount.rows[0].count),
-                        totalPages: Math.ceil(totalCount.rows[0].count / limit)
+                        total,
+                        totalPages: Math.ceil(total / parseInt(limit))
                     }
                 }
             });
@@ -207,6 +300,13 @@ class ReportController {
      */
     async updateReportStatus(req, res) {
         try {
+            if (!this.db) {
+                return res.status(500).json({
+                    success: false,
+                    error: 'Database not initialized'
+                });
+            }
+
             const { reportId } = req.params;
             const { status, adminNotes } = req.body;
 
@@ -220,11 +320,10 @@ class ReportController {
             }
 
             // Check if report exists
-            const existingReport = await database.query(`
-                SELECT id FROM reports WHERE id = $1
-            `, [reportId]);
+            const reportRef = this.db.collection('reports').doc(reportId);
+            const reportDoc = await reportRef.get();
 
-            if (existingReport.rows.length === 0) {
+            if (!reportDoc.exists) {
                 return res.status(404).json({
                     success: false,
                     error: 'Report not found'
@@ -232,16 +331,23 @@ class ReportController {
             }
 
             // Update report
-            const result = await database.query(`
-                UPDATE reports 
-                SET status = $1, admin_notes = $2, updated_at = NOW()
-                WHERE id = $3
-                RETURNING id, status, admin_notes, updated_at
-            `, [status, adminNotes || null, reportId]);
+            const updateData = {
+                status,
+                adminNotes: adminNotes || null,
+                updatedAt: new Date()
+            };
+
+            await reportRef.update(updateData);
+
+            // Get updated document
+            const updatedDoc = await reportRef.get();
 
             res.json({
                 success: true,
-                data: result.rows[0],
+                data: {
+                    id: reportId,
+                    ...updatedDoc.data()
+                },
                 message: 'Report status updated successfully'
             });
         } catch (error) {
@@ -259,24 +365,72 @@ class ReportController {
      */
     async getReportStats(req, res) {
         try {
-            const stats = await database.query(`
-                SELECT 
-                    COUNT(*) as total_reports,
-                    COUNT(CASE WHEN status = 'pending' THEN 1 END) as pending_reports,
-                    COUNT(CASE WHEN status = 'reviewed' THEN 1 END) as reviewed_reports,
-                    COUNT(CASE WHEN status = 'resolved' THEN 1 END) as resolved_reports,
-                    COUNT(CASE WHEN status = 'dismissed' THEN 1 END) as dismissed_reports,
-                    COUNT(CASE WHEN type = 'spam' THEN 1 END) as spam_reports,
-                    COUNT(CASE WHEN type = 'misinformation' THEN 1 END) as misinformation_reports,
-                    COUNT(CASE WHEN type = 'inappropriate' THEN 1 END) as inappropriate_reports,
-                    COUNT(CASE WHEN type = 'fake' THEN 1 END) as fake_reports,
-                    COUNT(CASE WHEN type = 'other' THEN 1 END) as other_reports
-                FROM reports
-            `);
+            if (!this.db) {
+                return res.status(500).json({
+                    success: false,
+                    error: 'Database not initialized'
+                });
+            }
+
+            // Get all reports
+            const reportsSnapshot = await this.db.collection('reports').get();
+
+            const stats = {
+                totalReports: 0,
+                pendingReports: 0,
+                reviewedReports: 0,
+                resolvedReports: 0,
+                dismissedReports: 0,
+                spamReports: 0,
+                misinformationReports: 0,
+                inappropriateReports: 0,
+                fakeReports: 0,
+                otherReports: 0
+            };
+
+            reportsSnapshot.forEach(doc => {
+                const data = doc.data();
+                stats.totalReports++;
+
+                // Count by status
+                switch (data.status) {
+                    case 'pending':
+                        stats.pendingReports++;
+                        break;
+                    case 'reviewed':
+                        stats.reviewedReports++;
+                        break;
+                    case 'resolved':
+                        stats.resolvedReports++;
+                        break;
+                    case 'dismissed':
+                        stats.dismissedReports++;
+                        break;
+                }
+
+                // Count by type
+                switch (data.type) {
+                    case 'spam':
+                        stats.spamReports++;
+                        break;
+                    case 'misinformation':
+                        stats.misinformationReports++;
+                        break;
+                    case 'inappropriate':
+                        stats.inappropriateReports++;
+                        break;
+                    case 'fake':
+                        stats.fakeReports++;
+                        break;
+                    case 'other':
+                        stats.otherReports++;
+                        break;
+                }
+            });
 
             res.json({
                 success: true,
-                data: stats.rows[0]
+                data: stats
             });
         } catch (error) {
             console.error('Get report stats error:', error);
@@ -293,14 +447,20 @@ class ReportController {
      */
     async deleteReport(req, res) {
         try {
+            if (!this.db) {
+                return res.status(500).json({
+                    success: false,
+                    error: 'Database not initialized'
+                });
+            }
+
             const { reportId } = req.params;
 
             // Check if report exists
-            const existingReport = await database.query(`
-                SELECT id FROM reports WHERE id = $1
-            `, [reportId]);
+            const reportRef = this.db.collection('reports').doc(reportId);
+            const reportDoc = await reportRef.get();
 
-            if (existingReport.rows.length === 0) {
+            if (!reportDoc.exists) {
                 return res.status(404).json({
                     success: false,
                     error: 'Report not found'
@@ -308,9 +468,7 @@ class ReportController {
             }
 
             // Delete report
-            await database.query(`
-                DELETE FROM reports WHERE id = $1
-            `, [reportId]);
+            await reportRef.delete();
 
             res.json({
                 success: true,

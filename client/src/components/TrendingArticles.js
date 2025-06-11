@@ -26,32 +26,56 @@ const TrendingArticles = () => {
       setLoading(true);
       console.log('🚀 Loading trending articles with optimization...');
 
-      // Try optimized endpoint first
-      let response = await fetch('/api/community/trending-posts?limit=5');
-      let data;
+      // Use AbortController for request timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
 
-      if (response.ok) {
-        data = await response.json();
-        if (data.success && data.data.posts) {
-          console.log('✅ Loaded trending articles from optimized endpoint');
-          setTrendingArticles(data.data.posts);
-          return;
+      try {
+        // Try optimized endpoint first with timeout
+        let response = await fetch('/api/community/trending-posts?limit=5', {
+          signal: controller.signal,
+          headers: {
+            'Cache-Control': 'max-age=60' // Cache for 1 minute
+          }
+        });
+
+        clearTimeout(timeoutId);
+
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success && data.data.posts && data.data.posts.length > 0) {
+            console.log('✅ Loaded trending articles from optimized endpoint');
+            setTrendingArticles(data.data.posts);
+            return;
+          }
         }
-      }
 
-      // Fallback to regular endpoint
-      console.log('⚠️ Falling back to regular endpoint...');
-      response = await fetch('/api/community/posts?sort=trending&limit=5');
-      if (response.ok) {
-        data = await response.json();
-        if (data.success && data.data.posts) {
-          console.log('✅ Loaded trending articles from regular endpoint');
-          setTrendingArticles(data.data.posts);
-          return;
+        // Fallback to regular endpoint
+        console.log('⚠️ Falling back to regular endpoint...');
+        response = await fetch('/api/community/posts?sort=trending&limit=5', {
+          headers: {
+            'Cache-Control': 'max-age=60'
+          }
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success && data.data.posts && data.data.posts.length > 0) {
+            console.log('✅ Loaded trending articles from regular endpoint');
+            setTrendingArticles(data.data.posts);
+            return;
+          }
         }
-      }
 
-      throw new Error('Failed to load trending articles');
+        throw new Error('Failed to load trending articles from both endpoints');
+      } catch (fetchError) {
+        if (fetchError.name === 'AbortError') {
+          console.warn('⏰ Request timed out, using fallback data');
+        } else {
+          console.error('❌ Error loading trending articles:', fetchError);
+        }
+        throw fetchError;
+      }
     } catch (error) {
       console.error('Error loading trending articles:', error);
       // Fallback to mock data
