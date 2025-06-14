@@ -30,9 +30,8 @@ import ChatTestPage from './pages/ChatTestPage';
 // Components - organized imports
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import EmailVerifiedRoute from './components/auth/EmailVerifiedRoute';
-import { LoadingSpinner, FloatingActionButton, ErrorBoundary } from './components/common';
-import { RedditLayout, TabSpecificLayout } from './components/layout';
-import ChatBot from './components/ChatBot/ChatBot';
+import { LoadingSpinner, ErrorBoundary } from './components/common';
+import { RedditLayout, TabSpecificLayout, WidgetManager } from './components/layout';
 import GSAPDemo from './components/GSAPDemo';
 
 function App() {
@@ -173,11 +172,8 @@ function App() {
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>
 
-        {/* ChatBot - hiển thị trên tất cả các trang */}
-        <ChatBot />
-
-        {/* Floating Action Button - Premium quick access */}
-        <FloatingActionButton />
+        {/* Widget Manager - handles chat and FAB positioning */}
+        <WidgetManager />
         </TabSpecificLayout>
         </RedditLayout>
       </div>

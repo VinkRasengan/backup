@@ -57,40 +57,44 @@ const AnimatedStats = () => {
     const container = containerRef.current;
     if (!container) return;
 
-    // Stagger animation for stats cards
-    gsap.fromTo(container.children, 
+    // Create timeline for better control
+    const tl = gsap.timeline({
+      scrollTrigger: {
+        trigger: container,
+        start: "top 80%",
+        onEnter: () => {
+          // Start counter animations when visible
+          setTimeout(() => {
+            stats.forEach(stat => stat.start());
+          }, 300);
+        }
+      }
+    });
+
+    // Stagger animation for stats cards with improved performance
+    tl.fromTo(container.children,
       {
         opacity: 0,
-        y: 50,
-        scale: 0.8
+        y: 30,
+        scale: 0.9
       },
       {
         opacity: 1,
         y: 0,
         scale: 1,
-        duration: 0.8,
-        ease: "back.out(1.7)",
-        stagger: 0.2,
-        scrollTrigger: {
-          trigger: container,
-          start: "top 80%",
-          onEnter: () => {
-            // Start counter animations when visible
-            setTimeout(() => {
-              stats.forEach(stat => stat.start());
-            }, 500);
-          }
-        }
+        duration: 0.6,
+        ease: "power2.out",
+        stagger: 0.15
       }
     );
 
-    // Add hover effects to each stat card
-    Array.from(container.children).forEach((card, index) => {
+    // Simplified hover effects with better performance
+    const cards = Array.from(container.children);
+    cards.forEach((card) => {
       const handleMouseEnter = () => {
         gsap.to(card, {
-          y: -10,
-          scale: 1.05,
-          rotationY: 5,
+          y: -8,
+          scale: 1.02,
           duration: 0.3,
           ease: "power2.out"
         });
@@ -100,15 +104,23 @@ const AnimatedStats = () => {
         gsap.to(card, {
           y: 0,
           scale: 1,
-          rotationY: 0,
-          duration: 0.4,
-          ease: "elastic.out(1, 0.3)"
+          duration: 0.3,
+          ease: "power2.out"
         });
       };
 
       card.addEventListener('mouseenter', handleMouseEnter);
       card.addEventListener('mouseleave', handleMouseLeave);
     });
+
+    // Cleanup function
+    return () => {
+      tl.kill();
+      cards.forEach((card) => {
+        card.removeEventListener('mouseenter', () => {});
+        card.removeEventListener('mouseleave', () => {});
+      });
+    };
   }, []);
 
   return (
@@ -128,7 +140,7 @@ const AnimatedStats = () => {
         </div>
 
         <div ref={containerRef} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {stats.map((stat, index) => {
+          {stats.map((stat) => {
             const IconComponent = stat.icon;
             return (
               <div

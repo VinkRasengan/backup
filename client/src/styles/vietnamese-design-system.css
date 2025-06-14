@@ -1,0 +1,318 @@
+/* Vietnamese Design System - Consistent UI/UX for Vietnamese Language */
+
+/* Typography for Vietnamese */
+.vietnamese-text {
+  font-family: 'Inter', 'Segoe UI', 'Roboto', 'Noto Sans', sans-serif;
+  line-height: 1.6;
+  letter-spacing: 0.01em;
+}
+
+.vietnamese-heading {
+  font-family: 'Inter', 'Segoe UI', 'Roboto', 'Noto Sans', sans-serif;
+  font-weight: 600;
+  line-height: 1.3;
+  letter-spacing: -0.02em;
+}
+
+/* Vietnamese-specific spacing for better readability */
+.vietnamese-content p {
+  margin-bottom: 1rem;
+  line-height: 1.7;
+}
+
+.vietnamese-content h1,
+.vietnamese-content h2,
+.vietnamese-content h3 {
+  margin-bottom: 0.75rem;
+  margin-top: 1.5rem;
+}
+
+/* Navigation Vietnamese styling */
+.nav-vietnamese {
+  font-weight: 500;
+  font-size: 0.95rem;
+  letter-spacing: 0.01em;
+}
+
+/* Button text for Vietnamese */
+.btn-vietnamese {
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  padding: 0.625rem 1.25rem;
+}
+
+/* Form labels in Vietnamese */
+.form-label-vietnamese {
+  font-weight: 500;
+  font-size: 0.875rem;
+  color: rgb(55 65 81);
+  margin-bottom: 0.375rem;
+  display: block;
+}
+
+.dark .form-label-vietnamese {
+  color: rgb(209 213 219);
+}
+
+/* Vietnamese placeholder styling */
+.input-vietnamese::placeholder {
+  color: rgb(156 163 175);
+  font-style: normal;
+}
+
+.dark .input-vietnamese::placeholder {
+  color: rgb(107 114 128);
+}
+
+/* Status messages in Vietnamese */
+.status-success-vietnamese {
+  background-color: rgb(240 253 244);
+  border: 1px solid rgb(34 197 94);
+  color: rgb(21 128 61);
+  padding: 0.75rem 1rem;
+  border-radius: 0.5rem;
+  font-weight: 500;
+}
+
+.dark .status-success-vietnamese {
+  background-color: rgba(34, 197, 94, 0.1);
+  border-color: rgba(34, 197, 94, 0.3);
+  color: rgb(74 222 128);
+}
+
+.status-error-vietnamese {
+  background-color: rgb(254 242 242);
+  border: 1px solid rgb(239 68 68);
+  color: rgb(185 28 28);
+  padding: 0.75rem 1rem;
+  border-radius: 0.5rem;
+  font-weight: 500;
+}
+
+.dark .status-error-vietnamese {
+  background-color: rgba(239, 68, 68, 0.1);
+  border-color: rgba(239, 68, 68, 0.3);
+  color: rgb(248 113 113);
+}
+
+.status-warning-vietnamese {
+  background-color: rgb(255 251 235);
+  border: 1px solid rgb(245 158 11);
+  color: rgb(146 64 14);
+  padding: 0.75rem 1rem;
+  border-radius: 0.5rem;
+  font-weight: 500;
+}
+
+.dark .status-warning-vietnamese {
+  background-color: rgba(245, 158, 11, 0.1);
+  border-color: rgba(245, 158, 11, 0.3);
+  color: rgb(251 191 36);
+}
+
+/* Card styling for Vietnamese content */
+.card-vietnamese {
+  background: white;
+  border: 1px solid rgb(229 231 235);
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+  box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1);
+  transition: all 0.2s ease;
+}
+
+.dark .card-vietnamese {
+  background: rgb(31 41 55);
+  border-color: rgb(55 65 81);
+}
+
+.card-vietnamese:hover {
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+  transform: translateY(-1px);
+}
+
+/* Vietnamese breadcrumb styling */
+.breadcrumb-vietnamese {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  color: rgb(107 114 128);
+  margin-bottom: 1rem;
+}
+
+.breadcrumb-vietnamese a {
+  color: rgb(59 130 246);
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.breadcrumb-vietnamese a:hover {
+  color: rgb(37 99 235);
+}
+
+.dark .breadcrumb-vietnamese {
+  color: rgb(156 163 175);
+}
+
+.dark .breadcrumb-vietnamese a {
+  color: rgb(96 165 250);
+}
+
+.dark .breadcrumb-vietnamese a:hover {
+  color: rgb(59 130 246);
+}
+
+/* Vietnamese table styling */
+.table-vietnamese {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.table-vietnamese th {
+  background-color: rgb(249 250 251);
+  border-bottom: 1px solid rgb(229 231 235);
+  padding: 0.75rem 1rem;
+  text-align: left;
+  font-weight: 600;
+  color: rgb(55 65 81);
+}
+
+.dark .table-vietnamese th {
+  background-color: rgb(55 65 81);
+  border-bottom-color: rgb(75 85 99);
+  color: rgb(209 213 219);
+}
+
+.table-vietnamese td {
+  border-bottom: 1px solid rgb(229 231 235);
+  padding: 0.75rem 1rem;
+  color: rgb(75 85 99);
+}
+
+.dark .table-vietnamese td {
+  border-bottom-color: rgb(55 65 81);
+  color: rgb(156 163 175);
+}
+
+/* Vietnamese modal styling */
+.modal-vietnamese {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+  padding: 1rem;
+}
+
+.modal-content-vietnamese {
+  background: white;
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+  max-width: 28rem;
+  width: 100%;
+  box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1);
+}
+
+.dark .modal-content-vietnamese {
+  background: rgb(31 41 55);
+}
+
+/* Vietnamese notification styling */
+.notification-vietnamese {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  background: white;
+  border: 1px solid rgb(229 231 235);
+  border-radius: 0.5rem;
+  padding: 1rem;
+  box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+  max-width: 20rem;
+  z-index: 50;
+}
+
+.dark .notification-vietnamese {
+  background: rgb(31 41 55);
+  border-color: rgb(55 65 81);
+}
+
+/* Vietnamese loading states */
+.loading-vietnamese {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 2rem;
+  color: rgb(107 114 128);
+}
+
+.dark .loading-vietnamese {
+  color: rgb(156 163 175);
+}
+
+.spinner-vietnamese {
+  width: 1.5rem;
+  height: 1.5rem;
+  border: 2px solid rgb(229 231 235);
+  border-top-color: rgb(59 130 246);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+.dark .spinner-vietnamese {
+  border-color: rgb(55 65 81);
+  border-top-color: rgb(96 165 250);
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Vietnamese responsive utilities */
+@media (max-width: 640px) {
+  .vietnamese-heading {
+    font-size: 1.5rem;
+    line-height: 1.4;
+  }
+  
+  .card-vietnamese {
+    padding: 1rem;
+  }
+  
+  .btn-vietnamese {
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+  }
+}
+
+/* Vietnamese focus states for accessibility */
+.focus-vietnamese:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5);
+  border-color: rgb(59 130 246);
+}
+
+/* Vietnamese link styling */
+.link-vietnamese {
+  color: rgb(59 130 246);
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.link-vietnamese:hover {
+  color: rgb(37 99 235);
+  text-decoration: underline;
+}
+
+.dark .link-vietnamese {
+  color: rgb(96 165 250);
+}
+
+.dark .link-vietnamese:hover {
+  color: rgb(59 130 246);
+}
