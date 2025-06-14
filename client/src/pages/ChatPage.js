@@ -18,30 +18,9 @@ import { chatAPI } from '../services/api';
 // import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
 
-// Debug function
-const debugAPI = async () => {
-  console.log('🔍 Debug API calls...');
-  try {
-    const starters = await chatAPI.getConversationStarters();
-    console.log('✅ Starters:', starters.data);
-  } catch (error) {
-    console.error('❌ Starters error:', error.response?.data || error.message);
-  }
 
-  try {
-    const conversations = await chatAPI.getConversations();
-    console.log('✅ Conversations:', conversations.data);
-  } catch (error) {
-    console.error('❌ Conversations error:', error.response?.data || error.message);
-  }
-};
-
-// Add to window for debugging
-window.debugAPI = debugAPI;
 
 const ChatPage = () => {
-  // const { user } = useAuth(); // Unused for now
-  const [debugInfo, setDebugInfo] = useState('');
   const [conversations, setConversations] = useState([]);
   const [currentConversation, setCurrentConversation] = useState(null);
   const [messages, setMessages] = useState([]);
@@ -78,13 +57,9 @@ const ChatPage = () => {
   const loadConversations = async () => {
     try {
       setIsLoading(true);
-      console.log('🔄 Loading conversations...');
       const response = await chatAPI.getConversations();
-      console.log('✅ Conversations loaded:', response.data);
       setConversations(response.data.conversations);
     } catch (error) {
-      console.error('❌ Error loading conversations:', error);
-      console.error('Error details:', error.response?.data || error.message);
       toast.error(`Không thể tải danh sách cuộc trò chuyện: ${error.response?.data?.error || error.message}`);
     } finally {
       setIsLoading(false);
@@ -98,7 +73,6 @@ const ChatPage = () => {
         setConversationStarters(response.data.starters);
       }
     } catch (error) {
-      console.error('Error loading conversation starters:', error);
       // Keep default starters if API fails
     }
   };
@@ -110,7 +84,6 @@ const ChatPage = () => {
       setCurrentConversation(response.data.conversation);
       setMessages(response.data.messages);
     } catch (error) {
-      console.error('Error loading conversation:', error);
       toast.error('Không thể tải cuộc trò chuyện');
     } finally {
       setIsLoading(false);
@@ -122,15 +95,13 @@ const ChatPage = () => {
 
     try {
       setIsSending(true);
-      console.log('📤 Sending authenticated message to AI assistant:', messageText);
       const response = await chatAPI.sendMessage({
         message: messageText,
         conversationId: currentConversation?.id
       });
-      console.log('✅ AI Assistant message sent:', response.data);
 
       // Handle authenticated chat response structure
-      if (response.data.data && response.data.data.conversation) {
+      if (response.data.data?.conversation) {
         // Update conversation and messages from backend
         setCurrentConversation(response.data.data.conversation);
         setMessages(response.data.data.messages);
@@ -168,9 +139,6 @@ const ChatPage = () => {
       toast.success('Tin nhắn đã được gửi');
 
     } catch (error) {
-      console.error('❌ Error sending message:', error);
-      console.error('Error details:', error.response?.data || error.message);
-
       // Show appropriate error message based on error type
       let errorMessage = 'Không thể gửi tin nhắn';
 
@@ -213,7 +181,6 @@ const ChatPage = () => {
       
       toast.success('Đã xóa cuộc trò chuyện');
     } catch (error) {
-      console.error('Error deleting conversation:', error);
       toast.error('Không thể xóa cuộc trò chuyện');
     }
   };
@@ -234,58 +201,37 @@ const ChatPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
-      <div className="max-w-7xl mx-auto h-screen flex flex-col">
-        {/* Page Header */}
+    <div className="h-screen flex flex-col overflow-hidden">
+      <div className="max-w-7xl mx-auto h-full flex flex-col">
+        {/* Compact Header - Messenger style */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className="text-center py-4 px-4 md:px-6 flex-shrink-0 border-b border-gray-200/50 dark:border-gray-700/50"
+          className="flex items-center justify-between py-3 px-4 md:px-6 flex-shrink-0 border-b border-gray-200/50 dark:border-gray-700/50 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm"
         >
-          <div className="mx-auto w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center mb-2">
-            <Shield className="w-5 h-5 text-white" />
-          </div>
-          <h1 className="text-xl md:text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-1">
-            FactCheck AI
-          </h1>
-          <p className="text-gray-600 dark:text-gray-300 text-sm md:text-base">
-            Trợ lý bảo mật thông minh - Phân tích mối đe dọa & Kiểm tra độ tin cậy
-          </p>
-
-
-
-          {/* Debug Panel */}
-          {process.env.NODE_ENV === 'development' && (
-            <div className="mt-4 p-3 bg-yellow-100 dark:bg-yellow-900/20 rounded-lg border border-yellow-300 dark:border-yellow-700 max-w-md mx-auto">
-              <div className="flex items-center gap-2 mb-2">
-                <span className="text-sm font-medium text-yellow-800 dark:text-yellow-200">🔧 Debug</span>
-                <button
-                  onClick={async () => {
-                    setDebugInfo('Testing...');
-                    try {
-                      const starters = await chatAPI.getConversationStarters();
-                      const conversations = await chatAPI.getConversations();
-                      setDebugInfo(`✅ API OK - Starters: ${starters.data.starters?.length}, Conversations: ${conversations.data.conversations?.length}`);
-                    } catch (error) {
-                      setDebugInfo(`❌ API Error: ${error.response?.data?.error || error.message}`);
-                    }
-                  }}
-                  className="px-2 py-1 text-xs bg-yellow-200 dark:bg-yellow-800 rounded hover:bg-yellow-300 dark:hover:bg-yellow-700"
-                >
-                  Test API
-                </button>
-              </div>
-              {debugInfo && (
-                <p className="text-xs text-yellow-700 dark:text-yellow-300 font-mono break-all">{debugInfo}</p>
-              )}
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
+              <Shield className="w-4 h-4 text-white" />
             </div>
-          )}
+            <div>
+              <h1 className="text-lg font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                FactCheck AI
+              </h1>
+              <p className="text-xs text-gray-500 dark:text-gray-400">
+                Trợ lý bảo mật thông minh
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-1">
+            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+            <span className="text-xs text-gray-500 dark:text-gray-400">Online</span>
+          </div>
         </motion.div>
 
-        {/* Main Content Area */}
-        <div className="flex-1 min-h-0 p-4 md:p-6">
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 h-full">
+        {/* Main Content Area - Messenger layout */}
+        <div className="flex-1 min-h-0 p-2 md:p-4">
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-3 h-full max-h-full">
             {/* Conversations Sidebar */}
             <motion.div
               initial={{ opacity: 0, x: -20 }}
@@ -293,10 +239,10 @@ const ChatPage = () => {
               transition={{ duration: 0.5, delay: 0.1 }}
               className="lg:col-span-1 h-full"
             >
-              <Card className="h-full shadow-lg border border-gray-200/50 dark:border-gray-700/50 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm">
-              <CardHeader className="py-4 px-4">
+              <Card className="h-full shadow-sm border border-gray-200/50 dark:border-gray-700/50 bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm">
+              <CardHeader className="py-3 px-3 border-b border-gray-100 dark:border-gray-700">
                 <div className="flex items-center justify-between">
-                  <CardTitle className="text-base flex items-center gap-2">
+                  <CardTitle className="text-sm flex items-center gap-2 font-medium">
                     <MessageCircle className="w-4 h-4" />
                     Cuộc trò chuyện
                   </CardTitle>
@@ -304,13 +250,13 @@ const ChatPage = () => {
                     variant="outline"
                     size="sm"
                     onClick={startNewConversation}
-                    className="p-2 h-8 w-8"
+                    className="p-1.5 h-7 w-7 hover:bg-blue-50 dark:hover:bg-blue-900/20"
                   >
                     <Plus className="w-3 h-3" />
                   </Button>
                 </div>
               </CardHeader>
-              <CardContent className="flex-1 overflow-y-auto px-4 pb-4">
+              <CardContent className="flex-1 overflow-y-auto px-2 py-2 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-transparent">
                 <div className="space-y-2">
                   {conversations.map((conversation) => (
                     <motion.div
@@ -370,17 +316,16 @@ const ChatPage = () => {
               transition={{ duration: 0.5, delay: 0.2 }}
               className="lg:col-span-3 h-full"
             >
-              <Card className="h-full shadow-lg border border-gray-200/50 dark:border-gray-700/50 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm flex flex-col">
-                {/* Chat Header */}
-                <CardHeader className="py-3 px-4 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
-                  <CardTitle className="text-lg flex items-center gap-2">
-                    <Bot className="w-5 h-5 text-blue-500" />
+              <Card className="h-full shadow-sm border border-gray-200/50 dark:border-gray-700/50 bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm flex flex-col chat-container">
+                {/* Chat Header - Compact */}
+                <CardHeader className="py-2.5 px-4 border-b border-gray-100 dark:border-gray-700 flex-shrink-0">
+                  <CardTitle className="text-base flex items-center gap-2 font-medium">
+                    <Bot className="w-4 h-4 text-blue-500" />
                     {currentConversation ? currentConversation.title : 'Cuộc trò chuyện mới'}
                   </CardTitle>
                 </CardHeader>
 
-                {/* Messages Area - Fixed height calculation */}
-                <CardContent className="flex-1 overflow-y-auto p-4 min-h-0">
+                {/* Messages Area - Messenger-like with better scroll */}                <CardContent className="flex-1 overflow-y-auto p-3 min-h-0 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-transparent messages-area">
                 {messages.length === 0 && !currentConversation && (
                   <div className="h-full flex flex-col items-center justify-center">
                     <Bot className="w-12 h-12 text-blue-500 mb-3" />
@@ -472,8 +417,8 @@ const ChatPage = () => {
                 <div ref={messagesEndRef} />
               </CardContent>
 
-              {/* Message Input */}
-              <div className="p-4 border-t border-gray-200 dark:border-gray-700 flex-shrink-0 bg-white/50 dark:bg-gray-800/50">
+              {/* Message Input - Messenger style */}
+              <div className="p-3 border-t border-gray-100 dark:border-gray-700 flex-shrink-0 bg-gray-50/50 dark:bg-gray-800/50 chat-input-area">
                 <form
                   onSubmit={(e) => {
                     e.preventDefault();

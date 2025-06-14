@@ -1,0 +1,292 @@
+/* Z-index Management - Enterprise Level */
+:root {
+  /* Base layers */
+  --z-index-base: 0;
+  --z-index-content: 10;
+  --z-index-sticky: 100;
+
+  /* Interactive elements */
+  --z-index-dropdown: 1000;
+  --z-index-popover: 1010;
+  --z-index-tooltip: 1020;
+  --z-index-modal-backdrop: 1030;
+  --z-index-modal: 1040;
+  --z-index-toast: 1050;
+
+  /* Navigation */
+  --z-index-navbar: 1060;
+  --z-index-sidebar: 1070;
+
+  /* Widgets */
+  --z-index-chatbot: 9990;
+  --z-index-floating-action: 9995;
+  --z-index-overlay: 9999;
+}
+
+/* Z-index utilities */
+.z-base { z-index: var(--z-index-base); }
+.z-content { z-index: var(--z-index-content); }
+.z-sticky { z-index: var(--z-index-sticky); }
+.z-dropdown { z-index: var(--z-index-dropdown); }
+.z-popover { z-index: var(--z-index-popover); }
+.z-tooltip { z-index: var(--z-index-tooltip); }
+.z-modal-backdrop { z-index: var(--z-index-modal-backdrop); }
+.z-modal { z-index: var(--z-index-modal); }
+.z-toast { z-index: var(--z-index-toast); }
+.z-navbar { z-index: var(--z-index-navbar); }
+.z-sidebar { z-index: var(--z-index-sidebar); }
+.z-chatbot { z-index: var(--z-index-chatbot); }
+.z-floating-action { z-index: var(--z-index-floating-action); }
+.z-overlay { z-index: var(--z-index-overlay); }
+
+/* Card System Improvements */
+.card-interactive {
+  @apply cursor-pointer transform transition-all duration-200 hover:scale-[1.02] hover:shadow-lg;
+}
+
+.card-interactive:active {
+  @apply scale-[0.98];
+}
+
+/* Better responsive spacing */
+.responsive-grid {
+  @apply grid gap-4 sm:gap-6 lg:gap-8;
+}
+
+.responsive-grid-1 { @apply grid-cols-1; }
+.responsive-grid-2 { @apply grid-cols-1 md:grid-cols-2; }
+.responsive-grid-3 { @apply grid-cols-1 md:grid-cols-2 lg:grid-cols-3; }
+.responsive-grid-4 { @apply grid-cols-1 md:grid-cols-2 lg:grid-cols-4; }
+
+/* Card sizing */
+.card-sm { @apply p-4 rounded-lg; }
+.card-md { @apply p-6 rounded-xl; }
+.card-lg { @apply p-8 rounded-2xl; }
+
+/* Widget positioning improvements */
+.widget-floating {
+  position: fixed;
+  bottom: 1rem;
+  right: 1rem;
+}
+
+/* Mobile adjustments */
+@media (max-width: 768px) {
+  .widget-floating {
+    bottom: 5rem;
+    right: 1rem;
+  }
+}
+
+/* Chat widget specific positioning */
+.chatbot-widget {
+  z-index: var(--z-index-chatbot);
+  position: fixed;
+  bottom: 1rem;
+  left: 1rem;
+}
+
+/* Mobile adjustments for chatbot */
+@media (max-width: 1024px) {
+  .chatbot-widget {
+    width: 20rem;
+    max-height: 75vh;
+  }
+}
+
+@media (max-width: 768px) {
+  .chatbot-widget {
+    left: 0.5rem;
+    right: 0.5rem;
+    width: auto;
+    max-height: 70vh;
+  }
+}
+
+/* Floating action button positioning */
+.fab-widget {
+  z-index: var(--z-index-floating-action);
+  position: fixed;
+  bottom: 1rem;
+  right: 1rem;
+}
+
+/* Adjust position when chat page is active */
+body.tab-chat .fab-widget {
+  bottom: 6rem;
+}
+
+@media (max-width: 768px) {
+  body.tab-chat .fab-widget {
+    bottom: 5rem;
+  }
+}
+
+/* Widget collision prevention */
+.widget-container {
+  position: fixed;
+  pointer-events: none;
+  z-index: var(--z-index-chatbot);
+}
+
+.widget-container > * {
+  pointer-events: auto;
+}
+
+/* Responsive widget stacking */
+@media (max-width: 768px) {
+  .widget-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    position: fixed;
+    bottom: 1rem;
+    right: 1rem;
+    z-index: var(--z-index-floating-action);
+  }
+
+  .widget-stack .chatbot-widget {
+    position: relative;
+    bottom: auto;
+    left: auto;
+    right: auto;
+  }
+
+  .widget-stack .fab-widget {
+    position: relative;
+    bottom: auto;
+    right: auto;
+  }
+}
+
+/* Better shadow system */
+.shadow-card { box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06); }
+.shadow-card-hover { box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1), 0 2px 4px rgba(0, 0, 0, 0.06); }
+.shadow-card-active { box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1), 0 4px 6px rgba(0, 0, 0, 0.05); }
+
+/* Loading states */
+.skeleton {
+  @apply animate-pulse bg-gray-200 dark:bg-gray-700 rounded;
+}
+
+.skeleton-text {
+  @apply skeleton h-4;
+}
+
+.skeleton-title {
+  @apply skeleton h-6;
+}
+
+.skeleton-avatar {
+  @apply skeleton w-12 h-12 rounded-full;
+}
+
+/* Focus states */
+.focus-ring {
+  @apply focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800;
+}
+
+/* Animation improvements */
+.animate-fade-in-up {
+  animation: fadeInUp 0.5s ease-out;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px) translateZ(0);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) translateZ(0);
+  }
+}
+
+.animate-scale-in {
+  animation: scaleIn 0.3s ease-out;
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.8) translateZ(0);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateZ(0);
+  }
+}
+
+/* Mobile-first responsive utilities */
+@media (max-width: 640px) {
+  .responsive-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .responsive-hide {
+    display: none;
+  }
+
+  .card-mobile {
+    padding: 1rem;
+    margin: 0 0.5rem;
+  }
+}
+
+/* Tablet adjustments */
+@media (min-width: 641px) and (max-width: 1024px) {
+  .tablet-grid-2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .tablet-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+}
+
+/* Desktop optimizations */
+@media (min-width: 1025px) {
+  .desktop-grid-3 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .desktop-grid-4 {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+/* Dark mode improvements */
+.dark-mode-card {
+  background-color: rgb(31 41 55);
+  border-color: rgb(55 65 81);
+  color: white;
+}
+
+.dark-mode-card-hover:hover {
+  background-color: rgb(55 65 81);
+}
+
+/* Widget stacking for mobile */
+@media (max-width: 768px) {
+  .widget-stack {
+    position: relative;
+    bottom: auto;
+    right: auto;
+    width: 100%;
+    margin-bottom: 1rem;
+  }
+  
+  .widget-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: var(--z-index-modal);
+  }
+}

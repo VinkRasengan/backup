@@ -19,6 +19,10 @@ const ChatBot = () => {
       timestamp: new Date()
     }
   ]);
+
+  // Giới hạn số lượng messages hiển thị như Messenger (tối đa 20 tin nhắn)
+  const MAX_MESSAGES = 20;
+  const displayMessages = messages.slice(-MAX_MESSAGES);
   const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef(null);
 
@@ -136,20 +140,27 @@ const ChatBot = () => {
     handleSendMessage(text);
   };
 
-  // Calculate chat window classes - Expanded sizes
+  // Calculate chat window classes - Better positioning and z-index
   const getChatWindowClasses = () => {
     if (isMinimized) {
-      return 'bottom-4 right-4 sm:bottom-6 sm:right-6 w-64 h-14 cursor-pointer';
+      return 'bottom-4 left-4 w-64 h-14 cursor-pointer';
     }
 
-    // Responsive sizing with larger proportions
+    // Improved responsive sizing with better positioning
     if (window.innerWidth < 640) { // Mobile
-      return 'bottom-4 right-4 left-4 h-[500px] max-h-[80vh]';
+      return 'bottom-4 left-4 right-4 h-[450px] max-h-[70vh]';
     } else if (window.innerWidth < 1024) { // Tablet
-      return 'bottom-4 right-4 w-96 h-[550px] max-h-[85vh] sm:bottom-6 sm:right-6';
+      return 'bottom-4 left-4 w-80 h-[480px] max-h-[75vh]';
     } else { // Desktop
-      return 'bottom-4 right-4 w-[420px] h-[600px] max-h-[90vh] sm:bottom-6 sm:right-6';
+      return 'bottom-4 left-4 w-[380px] h-[520px] max-h-[80vh]';
     }
+  };
+
+  // Check if we're on a page where we should adjust positioning
+  const shouldAdjustPosition = () => {
+    if (typeof window === 'undefined') return false;
+    const path = window.location.pathname;
+    return path === '/chat' || path.startsWith('/chat');
   };
 
   return (
@@ -164,7 +175,7 @@ const ChatBot = () => {
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.9 }}
             onClick={toggleChat}
-            className="fixed bottom-2 right-4 sm:bottom-4 sm:right-6 z-50 w-14 h-14 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center group"
+            className="fixed bottom-4 left-4 z-chatbot w-14 h-14 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center group"
           >
             <MessageCircle size={24} className="group-hover:scale-110 transition-transform" />
             
@@ -193,7 +204,7 @@ const ChatBot = () => {
             }}
             exit={{ opacity: 0, scale: 0.8, y: 20 }}
             transition={{ duration: 0.3, ease: 'easeOut' }}
-            className={`fixed z-50 bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 flex flex-col overflow-hidden ${getChatWindowClasses()}`}
+            className={`fixed z-chatbot bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 flex flex-col overflow-hidden ${getChatWindowClasses()}`}
             onClick={isMinimized ? maximizeChat : undefined}
             style={{ cursor: isMinimized ? 'pointer' : 'default' }}
           >
@@ -241,16 +252,27 @@ const ChatBot = () => {
             {/* Content - chỉ hiển thị khi không minimize */}
             {!isMinimized && (
               <div className="flex flex-col flex-1 min-h-0">
-                {/* Messages Area - Expanded height */}
+                {/* Messages Area - Messenger-like with limited history */}
                 <div
                   className="flex-1 overflow-y-auto p-4 space-y-3 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-transparent min-h-0"
                   style={{
-                    maxHeight: showQuickReplies ? '350px' : '450px'
+                    maxHeight: showQuickReplies ? '280px' : '360px',
+                    minHeight: '200px'
                   }}
                 >
-                  {messages.map((message) => (
+                  {/* Hiển thị tối đa 20 tin nhắn gần nhất */}
+                  {messages.slice(-MAX_MESSAGES).map((message) => (
                     <ChatMessage key={message.id} message={message} />
                   ))}
+
+                  {/* Hiển thị thông báo nếu có nhiều tin nhắn hơn */}
+                  {messages.length > MAX_MESSAGES && (
+                    <div className="text-center py-2">
+                      <span className="text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-3 py-1 rounded-full">
+                        Hiển thị {MAX_MESSAGES} tin nhắn gần nhất
+                      </span>
+                    </div>
+                  )}
 
                   {isTyping && (
                     <div className="flex items-start gap-3">
@@ -260,19 +282,43 @@ const ChatBot = () => {
                       <div className="bg-gray-100 dark:bg-gray-700 rounded-2xl px-4 py-3 max-w-xs">
                         <div className="flex space-x-1">
                           <motion.div
-                            animate={{ scale: [1, 1.2, 1] }}
-                            transition={{ repeat: Infinity, duration: 0.8, delay: 0 }}
-                            className="w-2 h-2 bg-gray-400 rounded-full"
+                            animate={{
+                              scale: [1, 1.3, 1],
+                              opacity: [0.5, 1, 0.5]
+                            }}
+                            transition={{
+                              repeat: Infinity,
+                              duration: 1.2,
+                              delay: 0,
+                              ease: "easeInOut"
+                            }}
+                            className="w-2 h-2 bg-blue-500 rounded-full"
                           />
                           <motion.div
-                            animate={{ scale: [1, 1.2, 1] }}
-                            transition={{ repeat: Infinity, duration: 0.8, delay: 0.2 }}
-                            className="w-2 h-2 bg-gray-400 rounded-full"
+                            animate={{
+                              scale: [1, 1.3, 1],
+                              opacity: [0.5, 1, 0.5]
+                            }}
+                            transition={{
+                              repeat: Infinity,
+                              duration: 1.2,
+                              delay: 0.3,
+                              ease: "easeInOut"
+                            }}
+                            className="w-2 h-2 bg-blue-500 rounded-full"
                           />
                           <motion.div
-                            animate={{ scale: [1, 1.2, 1] }}
-                            transition={{ repeat: Infinity, duration: 0.8, delay: 0.4 }}
-                            className="w-2 h-2 bg-gray-400 rounded-full"
+                            animate={{
+                              scale: [1, 1.3, 1],
+                              opacity: [0.5, 1, 0.5]
+                            }}
+                            transition={{
+                              repeat: Infinity,
+                              duration: 1.2,
+                              delay: 0.6,
+                              ease: "easeInOut"
+                            }}
+                            className="w-2 h-2 bg-blue-500 rounded-full"
                           />
                         </div>
                       </div>

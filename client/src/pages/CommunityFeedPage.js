@@ -16,6 +16,8 @@ import VoteComponent from '../components/Community/VoteComponent';
 import CommentsSection from '../components/Community/CommentsSection';
 import CommentPreview from '../components/Community/CommentPreview';
 import ReportModal from '../components/Community/ReportModal';
+import { useStaggerAnimation, useScrollTrigger, useFadeIn } from '../hooks/useGSAP';
+import { gsap } from '../utils/gsap';
 
 const CommunityFeedPage = () => {
   const { isDarkMode } = useTheme();
@@ -33,6 +35,12 @@ const CommunityFeedPage = () => {
 
   // Extract data from hook
   const articles = communityData.posts || [];
+
+  // GSAP animations
+  const headerRef = useFadeIn('fadeInUp', 0.2);
+  const searchRef = useFadeIn('fadeInUp', 0.4);
+  const filtersRef = useFadeIn('fadeInUp', 0.6);
+  const articlesContainerRef = useStaggerAnimation('staggerFadeIn', !loading && articles.length > 0);
   const hasMore = communityData.pagination?.hasNext || false;
 
   // Smart data fetching with caching
@@ -301,7 +309,7 @@ const CommunityFeedPage = () => {
     <div className="p-6">
       <div className="max-w-4xl mx-auto">
         {/* Community Header */}
-        <div className="mb-6">
+        <div ref={headerRef} className="mb-6">
           <div className="flex items-center space-x-4 mb-4">
             <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
               <Users className="w-6 h-6 text-white" />
@@ -349,7 +357,7 @@ const CommunityFeedPage = () => {
           </div>        </div>
 
         {/* Search Bar */}
-        <div className="mb-6">
+        <div ref={searchRef} className="mb-6">
           <div className="relative">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
               <Search className={`h-5 w-5 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`} />
@@ -374,7 +382,7 @@ const CommunityFeedPage = () => {
         </div>
 
         {/* Filter Tabs */}
-        <div className="flex items-center space-x-1 mb-6 border-b border-gray-200 dark:border-gray-700">
+        <div ref={filtersRef} className="flex items-center space-x-1 mb-6 border-b border-gray-200 dark:border-gray-700">
           {[
             { value: 'all', label: 'Tất cả', icon: '📋' },
             { value: 'health', label: 'Sức khỏe', icon: '🏥' },
@@ -398,7 +406,7 @@ const CommunityFeedPage = () => {
         </div>
 
         {/* Articles Feed */}
-        <div className="space-y-4">
+        <div ref={articlesContainerRef} className="space-y-4">
           {loading && articles.length === 0 ? (
             <div className="text-center py-12">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>

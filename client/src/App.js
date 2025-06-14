@@ -1,10 +1,13 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
+import './styles/tab-specific.css';
 import { useAuth } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
+import { initAccessibility } from './utils/accessibility';
+
+// Pages
 import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
-
 import ModernRegisterPage from './pages/ModernRegisterPage';
 import TestRegisterPage from './pages/TestRegisterPage';
 import RegistrationSuccessPage from './pages/RegistrationSuccessPage';
@@ -23,23 +26,33 @@ import EmailVerificationRequiredPage from './pages/EmailVerificationRequiredPage
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
 import ChatTestPage from './pages/ChatTestPage';
-import ProtectedRoute from './components/ProtectedRoute';
-import EmailVerifiedRoute from './components/EmailVerifiedRoute';
-import LoadingSpinner from './components/LoadingSpinner';
+
+// Components - organized imports
+import ProtectedRoute from './components/auth/ProtectedRoute';
+import EmailVerifiedRoute from './components/auth/EmailVerifiedRoute';
+import { LoadingSpinner, FloatingActionButton, ErrorBoundary } from './components/common';
+import { RedditLayout, TabSpecificLayout } from './components/layout';
 import ChatBot from './components/ChatBot/ChatBot';
-import RedditLayout from './components/RedditLayout';
+import GSAPDemo from './components/GSAPDemo';
 
 function App() {
   const { user, loading } = useAuth();
+
+  // Initialize accessibility features
+  useEffect(() => {
+    initAccessibility();
+  }, []);
 
   if (loading) {
     return <LoadingSpinner />;
   }
 
   return (
-    <ThemeProvider>
-      <div className="App min-h-screen bg-white dark:bg-gray-900 transition-colors">
-        <RedditLayout>
+    <ErrorBoundary>
+      <ThemeProvider>
+        <div className="App min-h-screen bg-white dark:bg-gray-900 transition-colors">
+          <RedditLayout>
+            <TabSpecificLayout>
           <Routes>
             {/* Public routes */}
             <Route
@@ -151,15 +164,25 @@ function App() {
             element={<ChatTestPage />}
           />
 
+          <Route
+            path="/gsap-demo"
+            element={<GSAPDemo />}
+          />
+
           {/* Catch all route */}
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>
 
         {/* ChatBot - hiển thị trên tất cả các trang */}
         <ChatBot />
+
+        {/* Floating Action Button - Premium quick access */}
+        <FloatingActionButton />
+        </TabSpecificLayout>
         </RedditLayout>
       </div>
     </ThemeProvider>
+    </ErrorBoundary>
   );
 }
 

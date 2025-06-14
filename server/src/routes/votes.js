@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const { authenticateToken } = require('../middleware/auth');
 
 // Try Firestore controller first, fallback to regular controller
 let voteController;
@@ -16,7 +17,8 @@ try {
       submitVote: (req, res) => res.status(503).json({ error: 'Vote service unavailable' }),
       getVoteStats: (req, res) => res.status(503).json({ error: 'Vote service unavailable' }),
       getUserVote: (req, res) => res.status(503).json({ error: 'Vote service unavailable' }),
-      deleteVote: (req, res) => res.status(503).json({ error: 'Vote service unavailable' })
+      deleteVote: (req, res) => res.status(503).json({ error: 'Vote service unavailable' }),
+      getUserVotedPosts: (req, res) => res.status(503).json({ error: 'Vote service unavailable' })
     };
   }
 }
@@ -40,5 +42,10 @@ router.get('/:linkId/user', voteController.getUserVote);
 // @desc    Delete user's vote for a link
 // @access  Private
 router.delete('/:linkId', voteController.deleteVote);
+
+// @route   GET /api/votes/user/voted-posts
+// @desc    Get posts that user has voted on
+// @access  Private
+router.get('/user/voted-posts', authenticateToken, voteController.getUserVotedPosts);
 
 module.exports = router;

@@ -3,6 +3,8 @@ import { Link, useLocation } from 'react-router-dom';
 import { Search, BarChart3, Clock, TrendingUp, RefreshCw, Users } from 'lucide-react';
 import EmailVerificationBanner from '../components/EmailVerificationBanner';
 import { useAuth } from '../context/AuthContext';
+import { StatsCard } from '../components/ui/StandardCard';
+import { ResponsiveContainer, StatsGridLayout, DashboardLayout } from '../components/ui/ResponsiveLayout';
 
 // Helper function to get credibility score styling
 const getCredibilityScoreClasses = (score) => {
@@ -176,11 +178,9 @@ const DashboardPage = () => {
           />
           {refreshing ? 'Đang tải...' : 'Làm mới'}
         </button>
-      </div>
-
-      {/* Stats Grid */}
+      </div>      {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm flex items-center gap-4">
+        <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 flex items-center gap-4 hover:shadow-md transition-shadow">
           <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center text-blue-600 dark:text-blue-400">
             <Search size={24} />
           </div>
@@ -194,7 +194,7 @@ const DashboardPage = () => {
           </div>
         </div>
 
-        <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm flex items-center gap-4">
+        <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 flex items-center gap-4 hover:shadow-md transition-shadow">
           <div className="w-12 h-12 bg-yellow-100 dark:bg-yellow-900 rounded-lg flex items-center justify-center text-yellow-600 dark:text-yellow-400">
             <Clock size={24} />
           </div>
@@ -208,7 +208,7 @@ const DashboardPage = () => {
           </div>
         </div>
 
-        <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm flex items-center gap-4">
+        <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 flex items-center gap-4 hover:shadow-md transition-shadow">
           <div className="w-12 h-12 bg-green-100 dark:bg-green-900 rounded-lg flex items-center justify-center text-green-600 dark:text-green-400">
             <TrendingUp size={24} />
           </div>
@@ -224,9 +224,9 @@ const DashboardPage = () => {
 
         <Link
           to="/my-submissions"
-          className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm flex items-center gap-4 hover:shadow-md transition-shadow"
+          className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 flex items-center gap-4 hover:shadow-md transition-shadow group"
         >
-          <div className="w-12 h-12 bg-purple-100 dark:bg-purple-900 rounded-lg flex items-center justify-center text-purple-600 dark:text-purple-400">
+          <div className="w-12 h-12 bg-purple-100 dark:bg-purple-900 rounded-lg flex items-center justify-center text-purple-600 dark:text-purple-400 group-hover:scale-110 transition-transform">
             <Users size={24} />
           </div>
           <div className="flex-1">

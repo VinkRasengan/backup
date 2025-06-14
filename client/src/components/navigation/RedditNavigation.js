@@ -18,8 +18,8 @@ import {
   Sun,
   Moon
 } from 'lucide-react';
-import { useTheme } from '../context/ThemeContext';
-import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../../context/ThemeContext';
+import { useAuth } from '../../context/AuthContext';
 
 const RedditNavigation = ({ onCollapseChange }) => {
   const { theme, toggleTheme } = useTheme();
@@ -78,7 +78,7 @@ const RedditNavigation = ({ onCollapseChange }) => {
   );
 
   return (
-    <div className={`fixed left-0 top-0 h-full z-40 ${
+    <div className={`fixed left-0 top-0 h-full z-sidebar ${
       isCollapsed ? 'w-16' : 'w-64'
     } bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700 transition-all duration-300`}>
       <div className="flex flex-col h-full">

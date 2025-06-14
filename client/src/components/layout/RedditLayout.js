@@ -1,9 +1,7 @@
 import React, { useState } from 'react';
 import { useLocation } from 'react-router-dom';
-import RedditNavigation from './RedditNavigation';
-import TopBar from './TopBar';
-import ModernNavigation from './ModernNavigation';
-import { useTheme } from '../context/ThemeContext';
+import { RedditNavigation, TopBar, ModernNavigation } from '../navigation';
+import { useTheme } from '../../context/ThemeContext';
 
 const RedditLayout = ({ children }) => {
   const { isDarkMode } = useTheme();

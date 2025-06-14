@@ -189,79 +189,78 @@ const TrendingArticles = () => {
             </p>
           </div>
         ) : (
-          <div className="space-y-4">
-            {trendingArticles.map((article, index) => (
-              <motion.div
-                key={article.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.1 }}
-                className={`p-4 rounded-lg border ${
-                  isDarkMode ? 'border-gray-700 hover:bg-gray-700/50' : 'border-gray-200 hover:bg-gray-50'
-                } transition-colors cursor-pointer group`}
-                onClick={() => window.open(article.url, '_blank')}
-              >
-                {/* Ranking Badge */}
-                <div className="flex items-start space-x-3">
-                  <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
-                    index === 0 ? 'bg-yellow-500 text-white' :
-                    index === 1 ? 'bg-gray-400 text-white' :
-                    index === 2 ? 'bg-orange-600 text-white' :
-                    'bg-gray-300 text-gray-700'
-                  }`}>
-                    {index + 1}
-                  </div>
-                  
-                  <div className="flex-1 min-w-0">
-                    {/* Title */}
-                    <h4 className={`font-medium text-sm leading-5 mb-2 group-hover:text-blue-600 transition-colors ${
-                      isDarkMode ? 'text-gray-200' : 'text-gray-900'
-                    }`}>
-                      {article.title}
-                    </h4>
-                    
-                    {/* Credibility Score */}
-                    <div className="flex items-center space-x-2 mb-2">
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${getCredibilityColor(article.credibilityScore)}`}>
-                        {article.credibilityScore}% - {getCredibilityLabel(article.credibilityScore)}
-                      </span>
+          <div className="space-y-4">                {trendingArticles.map((article, index) => (
+                  <motion.div
+                    key={article.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.1 }}
+                    className={`p-4 rounded-lg border hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors cursor-pointer group ${
+                      isDarkMode ? 'border-gray-700' : 'border-gray-200'
+                    }`}
+                    onClick={() => window.open(article.url, '_blank')}
+                  >
+                    {/* Ranking Badge */}
+                    <div className="flex items-start space-x-3">
+                      <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${
+                        index === 0 ? 'bg-yellow-500 text-white' :
+                        index === 1 ? 'bg-gray-400 text-white' :
+                        index === 2 ? 'bg-orange-600 text-white' :
+                        'bg-gray-300 text-gray-700'
+                      }`}>
+                        {index + 1}
+                      </div>
+                      
+                      <div className="flex-1 min-w-0">
+                        {/* Title */}
+                        <h4 className={`font-medium text-sm leading-5 mb-2 group-hover:text-blue-600 transition-colors line-clamp-2 ${
+                          isDarkMode ? 'text-gray-200' : 'text-gray-900'
+                        }`}>
+                          {article.title}
+                        </h4>
+                        
+                        {/* Credibility Score */}
+                        <div className="flex items-center space-x-2 mb-2">
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${getCredibilityColor(article.credibilityScore)}`}>
+                            {article.credibilityScore}% - {getCredibilityLabel(article.credibilityScore)}
+                          </span>
+                        </div>
+                        
+                        {/* Stats */}
+                        <div className="flex items-center space-x-3 text-xs text-gray-500">
+                          <div className="flex items-center space-x-1">
+                            <ThumbsUp size={12} />
+                            <span>{article.voteCount}</span>
+                          </div>
+                          <div className="flex items-center space-x-1">
+                            <MessageCircle size={12} />
+                            <span>{article.commentCount}</span>
+                          </div>
+                          <div className="flex items-center space-x-1">
+                            <TrendingUp size={12} />
+                            <span>{Math.round(article.engagementScore)}</span>
+                          </div>
+                          <div className="flex items-center space-x-1">
+                            <Clock size={12} />
+                            <span>{formatTimeAgo(article.createdAt)}</span>
+                          </div>
+                        </div>
+                        
+                        {/* Author */}
+                        {article.author && (
+                          <div className="mt-2 text-xs text-gray-400">
+                            Bởi {article.author.firstName} {article.author.lastName}
+                          </div>
+                        )}
+                      </div>
+                      
+                      {/* External Link Icon */}
+                      <div className="flex-shrink-0">
+                        <ExternalLink size={16} className="text-gray-400 group-hover:text-blue-500 transition-colors" />
+                      </div>
                     </div>
-                    
-                    {/* Stats */}
-                    <div className="flex items-center space-x-4 text-xs text-gray-500">
-                      <div className="flex items-center space-x-1">
-                        <ThumbsUp size={12} />
-                        <span>{article.voteCount}</span>
-                      </div>
-                      <div className="flex items-center space-x-1">
-                        <MessageCircle size={12} />
-                        <span>{article.commentCount}</span>
-                      </div>
-                      <div className="flex items-center space-x-1">
-                        <TrendingUp size={12} />
-                        <span>{Math.round(article.engagementScore)}</span>
-                      </div>
-                      <div className="flex items-center space-x-1">
-                        <Clock size={12} />
-                        <span>{formatTimeAgo(article.createdAt)}</span>
-                      </div>
-                    </div>
-                    
-                    {/* Author */}
-                    {article.author && (
-                      <div className="mt-2 text-xs text-gray-400">
-                        Bởi {article.author.firstName} {article.author.lastName}
-                      </div>
-                    )}
-                  </div>
-                  
-                  {/* External Link Icon */}
-                  <div className="flex-shrink-0">
-                    <ExternalLink size={16} className="text-gray-400 group-hover:text-blue-500 transition-colors" />
-                  </div>
-                </div>
-              </motion.div>
-            ))}
+                  </motion.div>
+                ))}
           </div>
         )}
         

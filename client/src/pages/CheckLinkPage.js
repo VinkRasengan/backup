@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
@@ -12,6 +12,8 @@ import VoteComponent from '../components/Community/VoteComponent';
 import CommentsSection from '../components/Community/CommentsSection';
 import ReportModal from '../components/Community/ReportModal';
 import toast from 'react-hot-toast';
+import { useFadeIn, useCounterAnimation, useLoadingAnimation } from '../hooks/useGSAP';
+import { gsap } from '../utils/gsap';
 
 // Custom URL validation that auto-adds protocol
 const normalizeUrl = (url) => {
@@ -56,6 +58,39 @@ const CheckLinkPage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [result, setResult] = useState(null);
   const [showReportModal, setShowReportModal] = useState(false);
+
+  // GSAP animations
+  const headerRef = useFadeIn('fadeInUp', 0.2);
+  const formRef = useFadeIn('fadeInUp', 0.4);
+  const resultsRef = useFadeIn('fadeInUp', 0.6);
+  const loadingRef = useLoadingAnimation(isLoading);
+
+  // Counter animations for scores
+  const [finalScoreRef, startFinalScoreAnimation] = useCounterAnimation(result?.finalScore || 0, {
+    duration: 1.5,
+    ease: "power2.out"
+  });
+
+  const [credibilityScoreRef, startCredibilityAnimation] = useCounterAnimation(result?.credibilityScore || 0, {
+    duration: 1.2,
+    ease: "power2.out"
+  });
+
+  const [securityScoreRef, startSecurityAnimation] = useCounterAnimation(result?.securityScore || 0, {
+    duration: 1.0,
+    ease: "power2.out"
+  });
+
+  // Trigger animations when result changes
+  useEffect(() => {
+    if (result) {
+      setTimeout(() => {
+        startFinalScoreAnimation();
+        startCredibilityAnimation();
+        startSecurityAnimation();
+      }, 300);
+    }
+  }, [result, startFinalScoreAnimation, startCredibilityAnimation, startSecurityAnimation]);
 
   const {
     register,
@@ -306,6 +341,7 @@ const CheckLinkPage = () => {
       <div className="max-w-6xl mx-auto p-6">
         {/* Page Header */}
         <motion.div
+          ref={headerRef}
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
@@ -328,6 +364,7 @@ const CheckLinkPage = () => {
 
         {/* Check Form */}
         <motion.div
+          ref={formRef}
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.1 }}
@@ -373,6 +410,7 @@ const CheckLinkPage = () => {
                   size="lg"
                 >
                   {!isLoading && <Search className="w-5 h-5 mr-2" />}
+                  {isLoading && <div ref={loadingRef} className="w-5 h-5 mr-2 border-2 border-white border-t-transparent rounded-full"></div>}
                   Kiểm Tra Link
                 </Button>
               </form>
@@ -383,6 +421,7 @@ const CheckLinkPage = () => {
         {/* Results */}
         {result && (
           <motion.div
+            ref={resultsRef}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.2 }}
@@ -410,10 +449,10 @@ const CheckLinkPage = () => {
                   })()}
                   <div className="mt-4 space-y-1">
                     <div className="text-sm text-gray-600 dark:text-gray-400">
-                      Điểm tổng: {result.finalScore}/100
+                      Điểm tổng: <span ref={finalScoreRef}>{result.finalScore}</span>/100
                     </div>
                     <div className="text-xs text-gray-500 dark:text-gray-500">
-                      Tin cậy: {result.credibilityScore} | Bảo mật: {result.securityScore}
+                      Tin cậy: <span ref={credibilityScoreRef}>{result.credibilityScore}</span> | Bảo mật: <span ref={securityScoreRef}>{result.securityScore}</span>
                     </div>
                   </div>
                 </CardContent>

@@ -431,6 +431,167 @@ class FirestoreVoteController {
       }
     });
   }
+
+  // Get posts that user has voted on
+  getUserVotedPosts = async (req, res) => {
+    try {
+      const userId = req.user?.userId || req.user?.uid;
+
+      if (!userId) {
+        return res.status(401).json({
+          success: false,
+          error: 'Authentication required'
+        });
+      }
+
+      if (this.useFallback) {
+        return this.getUserVotedPostsFallback(req, res);
+      }
+
+      const { page = 1, limit = 10, voteType } = req.query;
+      const offset = (page - 1) * limit;
+
+      // Build query for user's votes
+      let votesQuery = this.db.collection('votes')
+        .where('userId', '==', userId)
+        .orderBy('createdAt', 'desc')
+        .limit(parseInt(limit))
+        .offset(offset);
+
+      // Filter by vote type if specified
+      if (voteType && ['safe', 'unsafe', 'suspicious'].includes(voteType)) {
+        votesQuery = votesQuery.where('voteType', '==', voteType);
+      }
+
+      const votesSnapshot = await votesQuery.get();
+
+      if (votesSnapshot.empty) {
+        return res.json({
+          success: true,
+          data: {
+            posts: [],
+            pagination: {
+              page: parseInt(page),
+              limit: parseInt(limit),
+              total: 0,
+              totalPages: 0
+            }
+          }
+        });
+      }
+
+      // Get link IDs from votes
+      const linkIds = votesSnapshot.docs.map(doc => doc.data().linkId);
+
+      // Get link details
+      const linksPromises = linkIds.map(linkId =>
+        this.db.collection('links').doc(linkId).get()
+      );
+
+      const linksSnapshots = await Promise.all(linksPromises);
+
+      // Combine vote and link data
+      const posts = [];
+      votesSnapshot.docs.forEach((voteDoc, index) => {
+        const voteData = voteDoc.data();
+        const linkSnapshot = linksSnapshots[index];
+
+        if (linkSnapshot.exists) {
+          const linkData = linkSnapshot.data();
+          posts.push({
+            id: linkData.id,
+            title: linkData.title || linkData.url,
+            url: linkData.url,
+            imageUrl: linkData.imageUrl,
+            category: linkData.category,
+            source: linkData.source,
+            createdAt: linkData.createdAt,
+            userVote: {
+              voteType: voteData.voteType,
+              votedAt: voteData.createdAt,
+              updatedAt: voteData.updatedAt
+            },
+            voteStats: {
+              safe: linkData.votes?.safe || 0,
+              unsafe: linkData.votes?.unsafe || 0,
+              suspicious: linkData.votes?.suspicious || 0,
+              total: (linkData.votes?.safe || 0) + (linkData.votes?.unsafe || 0) + (linkData.votes?.suspicious || 0)
+            }
+          });
+        }
+      });
+
+      // Get total count for pagination
+      const totalQuery = this.db.collection('votes').where('userId', '==', userId);
+      const totalSnapshot = await totalQuery.get();
+      const total = totalSnapshot.size;
+
+      res.json({
+        success: true,
+        data: {
+          posts,
+          pagination: {
+            page: parseInt(page),
+            limit: parseInt(limit),
+            total,
+            totalPages: Math.ceil(total / limit)
+          }
+        }
+      });
+
+    } catch (error) {
+      console.error('Get user voted posts error:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to get voted posts'
+      });
+    }
+  }
+
+  getUserVotedPostsFallback(req, res) {
+    // Mock data for fallback
+    const mockPosts = [
+      {
+        id: 'mock_1',
+        title: 'Cảnh báo: Trang web lừa đảo mới',
+        url: 'https://example-scam.com',
+        category: 'security',
+        source: 'Cộng đồng',
+        createdAt: new Date(Date.now() - 86400000).toISOString(),
+        userVote: {
+          voteType: 'unsafe',
+          votedAt: new Date(Date.now() - 3600000).toISOString()
+        },
+        voteStats: { safe: 2, unsafe: 15, suspicious: 3, total: 20 }
+      },
+      {
+        id: 'mock_2',
+        title: 'Trang tin tức đáng tin cậy',
+        url: 'https://vnexpress.net',
+        category: 'news',
+        source: 'Cộng đồng',
+        createdAt: new Date(Date.now() - 172800000).toISOString(),
+        userVote: {
+          voteType: 'safe',
+          votedAt: new Date(Date.now() - 7200000).toISOString()
+        },
+        voteStats: { safe: 25, unsafe: 1, suspicious: 2, total: 28 }
+      }
+    ];
+
+    res.json({
+      success: true,
+      data: {
+        posts: mockPosts,
+        pagination: {
+          page: 1,
+          limit: 10,
+          total: 2,
+          totalPages: 1
+        }
+      }
+    });
+  }
 }
 
 module.exports = new FirestoreVoteController();

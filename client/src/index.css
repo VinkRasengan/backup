@@ -2,6 +2,10 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Import design system and utilities */
+@import './styles/design-system.css';
+@import './styles/widget-system.css';
+
 @layer base {
   :root {
     --background: 0 0% 100%;
@@ -51,7 +55,7 @@
 
 @layer base {
   * {
-    @apply border-border;
+    @apply border-secondary-200;
     margin: 0;
     padding: 0;
     box-sizing: border-box;
@@ -76,111 +80,7 @@ code {
     monospace;
 }
 
-/* Global styles */
-.container {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 0 1rem;
-}
-
-.btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0.75rem 1.5rem;
-  border: none;
-  border-radius: 0.5rem;
-  font-size: 1rem;
-  font-weight: 500;
-  text-decoration: none;
-  cursor: pointer;
-  transition: all 0.2s ease-in-out;
-  min-height: 44px;
-}
-
-.btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.btn-primary {
-  background-color: #3b82f6;
-  color: white;
-}
-
-.btn-primary:hover:not(:disabled) {
-  background-color: #2563eb;
-}
-
-.btn-secondary {
-  background-color: #6b7280;
-  color: white;
-}
-
-.btn-secondary:hover:not(:disabled) {
-  background-color: #4b5563;
-}
-
-.btn-danger {
-  background-color: #ef4444;
-  color: white;
-}
-
-.btn-danger:hover:not(:disabled) {
-  background-color: #dc2626;
-}
-
-.btn-outline {
-  background-color: transparent;
-  border: 2px solid #3b82f6;
-  color: #3b82f6;
-}
-
-.btn-outline:hover:not(:disabled) {
-  background-color: #3b82f6;
-  color: white;
-}
-
-.form-group {
-  margin-bottom: 1.5rem;
-}
-
-.form-label {
-  display: block;
-  margin-bottom: 0.5rem;
-  font-weight: 500;
-  color: #374151;
-}
-
-.form-input {
-  width: 100%;
-  padding: 0.75rem;
-  border: 2px solid #d1d5db;
-  border-radius: 0.5rem;
-  font-size: 1rem;
-  transition: border-color 0.2s ease-in-out;
-}
-
-.form-input:focus {
-  outline: none;
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-}
-
-.form-input.error {
-  border-color: #ef4444;
-}
-
-.form-error {
-  color: #ef4444;
-  font-size: 0.875rem;
-  margin-top: 0.25rem;
-}
-
-.card {
-  @apply bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6;
-}
-
+/* Legacy styles - to be removed gradually */
 .loading {
   display: flex;
   align-items: center;
@@ -250,3 +150,24 @@ code {
 * {
   transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
 }
+
+/* Legacy component styles - moved to design-system.css */
+
+/* Responsive Design */
+@layer utilities {
+  @media (max-width: 768px) {
+    .sidebar {
+      @apply -translate-x-full;
+    }
+
+    .sidebar-mobile-open {
+      @apply translate-x-0;
+    }
+
+    .container {
+      @apply px-2;
+    }
+  }
+}
+
+/* Animations moved to design-system.css */
