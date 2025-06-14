@@ -6,8 +6,8 @@ class CommunityDataManager {
     this.cache = new Map();
     this.prefetchQueue = new Set();
     this.activeRequests = new Map();
-    this.cacheTimeout = 5 * 60 * 1000; // 5 minutes
-    this.maxCacheSize = 50;
+    this.cacheTimeout = 10 * 60 * 1000; // 10 minutes - longer cache time
+    this.maxCacheSize = 100; // Increased cache size
   }
 
   // Generate cache key
@@ -93,14 +93,14 @@ class CommunityDataManager {
     }
   }
 
-  // Make actual API request
+  // Make actual API request with optimization
   async makeRequest(params) {
     const { sort = 'trending', filter = 'all', search = '', page = 1 } = params;
-    
+
     const urlParams = new URLSearchParams({
       page,
       sort,
-      limit: 10,
+      limit: 15, // Increased limit for better UX
       includeNews: 'true'
     });
 
@@ -108,7 +108,7 @@ class CommunityDataManager {
       urlParams.append('category', filter);
     }
 
-    if (search && search.trim()) {
+    if (search?.trim()) {
       urlParams.append('search', search.trim());
     }
 
@@ -116,7 +116,8 @@ class CommunityDataManager {
 
     const response = await fetch(`/api/community/posts?${urlParams}`, {
       headers: {
-        'Authorization': `Bearer ${localStorage.getItem('authToken') || localStorage.getItem('backendToken')}`
+        'Authorization': `Bearer ${localStorage.getItem('authToken') || localStorage.getItem('backendToken')}`,
+        'Cache-Control': 'max-age=300' // 5 minutes cache
       }
     });
 

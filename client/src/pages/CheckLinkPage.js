@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
@@ -7,13 +7,13 @@ import { Search, CheckCircle, AlertTriangle, XCircle, Clipboard, Shield, Globe, 
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../components/ui/Card';
+import PageLayout from '../components/layout/PageLayout';
 import { linkAPI } from '../services/api';
 import VoteComponent from '../components/Community/VoteComponent';
 import CommentsSection from '../components/Community/CommentsSection';
 import ReportModal from '../components/Community/ReportModal';
 import toast from 'react-hot-toast';
 import { useFadeIn, useCounterAnimation, useLoadingAnimation } from '../hooks/useGSAP';
-import { gsap } from '../utils/gsap';
 
 // Custom URL validation that auto-adds protocol
 const normalizeUrl = (url) => {
@@ -60,7 +60,6 @@ const CheckLinkPage = () => {
   const [showReportModal, setShowReportModal] = useState(false);
 
   // GSAP animations
-  const headerRef = useFadeIn('fadeInUp', 0.2);
   const formRef = useFadeIn('fadeInUp', 0.4);
   const resultsRef = useFadeIn('fadeInUp', 0.6);
   const loadingRef = useLoadingAnimation(isLoading);
@@ -337,30 +336,12 @@ const CheckLinkPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <div className="max-w-6xl mx-auto p-6">
-        {/* Page Header */}
-        <motion.div
-          ref={headerRef}
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="mb-8"
-        >
-          <div className="flex items-center gap-4 mb-6">
-            <div className="w-12 h-12 bg-blue-600 rounded-lg flex items-center justify-center">
-              <Shield className="w-6 h-6 text-white" />
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-                Kiểm Tra Link
-              </h1>
-              <p className="text-gray-600 dark:text-gray-400">
-                Xác minh độ tin cậy của bài viết và nguồn thông tin
-              </p>
-            </div>
-          </div>
-        </motion.div>
+    <PageLayout
+      title="Kiểm Tra Link"
+      subtitle="Xác minh độ tin cậy của bài viết và nguồn thông tin"
+      maxWidth="6xl"
+      padding="lg"
+    >
 
         {/* Check Form */}
         <motion.div
@@ -1020,8 +1001,7 @@ const CheckLinkPage = () => {
           linkId={result?.id}
           linkUrl={result?.url}
         />
-      </div>
-    </div>
+    </PageLayout>
   );
 };
 

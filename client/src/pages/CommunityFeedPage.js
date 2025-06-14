@@ -8,16 +8,21 @@ import {
   MessageCircle,
   AlertTriangle,
   ExternalLink,
-  Users,
-  RefreshCw
+  RefreshCw,
+  Settings,
+  Grid,
+  List,
+  MoreHorizontal,
+  Image,
+  RotateCcw
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import VoteComponent from '../components/Community/VoteComponent';
 import CommentsSection from '../components/Community/CommentsSection';
 import CommentPreview from '../components/Community/CommentPreview';
 import ReportModal from '../components/Community/ReportModal';
-import { useStaggerAnimation, useScrollTrigger, useFadeIn } from '../hooks/useGSAP';
-import { gsap } from '../utils/gsap';
+import { useStaggerAnimation, useFadeIn } from '../hooks/useGSAP';
+import PageLayout from '../components/layout/PageLayout';
 
 const CommunityFeedPage = () => {
   const { isDarkMode } = useTheme();
@@ -29,9 +34,37 @@ const CommunityFeedPage = () => {
   const [showReportModal, setShowReportModal] = useState(null);
   const [page, setPage] = useState(1);
   const [isSearching, setIsSearching] = useState(false);
+  const [showSettingsMenu, setShowSettingsMenu] = useState(false);
+  const [viewMode, setViewMode] = useState('card'); // card, list, compact
+  const [autoRefresh, setAutoRefresh] = useState(false);
+  const [showImages, setShowImages] = useState(true);
 
-  // Refs for debouncing
+  // Refs for debouncing and stable references
   const searchTimeoutRef = useRef(null);
+  const fetchDataRef = useRef(fetchData);
+  const settingsMenuRef = useRef(null);
+
+  // Update ref when fetchData changes
+  useEffect(() => {
+    fetchDataRef.current = fetchData;
+  }, [fetchData]);
+
+  // Close settings menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (settingsMenuRef.current && !settingsMenuRef.current.contains(event.target)) {
+        setShowSettingsMenu(false);
+      }
+    };
+
+    if (showSettingsMenu) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showSettingsMenu]);
 
   // Extract data from hook
   const articles = communityData.posts || [];
@@ -43,7 +76,7 @@ const CommunityFeedPage = () => {
   const articlesContainerRef = useStaggerAnimation('staggerFadeIn', !loading && articles.length > 0);
   const hasMore = communityData.pagination?.hasNext || false;
 
-  // Smart data fetching with caching
+  // Fixed data fetching using ref to avoid dependency issues
   const loadData = useCallback((params) => {
     const finalParams = {
       sort: params.sort || sortBy,
@@ -52,37 +85,52 @@ const CommunityFeedPage = () => {
       page: params.page || 1
     };
 
-    fetchData(finalParams);
+    fetchDataRef.current(finalParams);
     setPage(finalParams.page);
-  }, [fetchData, sortBy, filterBy, searchQuery]);
+  }, [sortBy, filterBy, searchQuery]);
 
-  // Debounced search function
-  const debouncedSearch = useCallback((query) => {
+  // Fixed effect with stable dependencies
+  useEffect(() => {
+    console.log('🔄 Parameters changed:', { sortBy, filterBy, searchQuery });
+
+    // Clear any existing timeout
     if (searchTimeoutRef.current) {
       clearTimeout(searchTimeoutRef.current);
     }
 
-    setIsSearching(true);
-    searchTimeoutRef.current = setTimeout(() => {
-      loadData({ search: query, page: 1 });
-      setIsSearching(false);
-    }, 300);
-  }, [loadData]);
-
-  // Effect for immediate filter/sort changes (no debounce)
-  useEffect(() => {
-    console.log('🔄 Filter/Sort changed:', { sortBy, filterBy });
-    loadData({ page: 1 });
-  }, [sortBy, filterBy, loadData]);
-
-  // Effect for search query changes (with debounce)
-  useEffect(() => {
+    // If search query exists, use debounced search
     if (searchQuery.trim()) {
-      debouncedSearch(searchQuery);
-    } else if (searchQuery === '') {
-      loadData({ search: '', page: 1 });
+      setIsSearching(true);
+      searchTimeoutRef.current = setTimeout(() => {
+        const finalParams = {
+          sort: sortBy,
+          filter: filterBy,
+          search: searchQuery.trim(),
+          page: 1
+        };
+        fetchDataRef.current(finalParams);
+        setPage(1);
+        setIsSearching(false);
+      }, 500); // Increased debounce time
+    } else {
+      // For filter/sort changes without search, fetch immediately
+      const finalParams = {
+        sort: sortBy,
+        filter: filterBy,
+        search: '',
+        page: 1
+      };
+      fetchDataRef.current(finalParams);
+      setPage(1);
     }
-  }, [searchQuery, debouncedSearch, loadData]);
+
+    // Cleanup timeout on unmount
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+    };
+  }, [sortBy, filterBy, searchQuery]);
 
   // Load more articles (pagination)
   const loadMore = useCallback(() => {
@@ -115,6 +163,18 @@ const CommunityFeedPage = () => {
       window.removeEventListener('storage', handleStorageChange);
     };
   }, [refreshData]);
+
+  // Auto-refresh functionality
+  useEffect(() => {
+    if (!autoRefresh) return;
+
+    const interval = setInterval(() => {
+      console.log('🔄 Auto-refreshing community data...');
+      fetchDataRef.current({ page: 1 }); // Use fetchDataRef instead of refreshData
+    }, 30000); // Refresh every 30 seconds
+
+    return () => clearInterval(interval);
+  }, [autoRefresh]); // Remove refreshData dependency
 
   const toggleComments = (articleId) => {
     setShowComments(prev => ({
@@ -199,7 +259,7 @@ const CommunityFeedPage = () => {
               )}
 
               {/* Screenshot/Image */}
-              {(article.imageUrl || article.screenshot) && (
+              {showImages && (article.imageUrl || article.screenshot) && (
                 <div className="mb-3">
                   <img
                     src={article.imageUrl || article.screenshot}
@@ -306,23 +366,14 @@ const CommunityFeedPage = () => {
   );
 
   return (
-    <div className="p-6">
-      <div className="max-w-4xl mx-auto">
-        {/* Community Header */}
-        <div ref={headerRef} className="mb-6">
-          <div className="flex items-center space-x-4 mb-4">
-            <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
-              <Users className="w-6 h-6 text-white" />
-            </div>
-            <div>
-              <h1 className={`text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                r/factcheck
-              </h1>
-              <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                Cộng đồng kiểm tra và xác minh thông tin
-              </p>
-            </div>
-          </div>          <div className="flex items-center justify-between">
+    <PageLayout
+      title="Cộng đồng FactCheck"
+      subtitle="Cộng đồng kiểm tra và xác minh thông tin"
+      maxWidth="6xl"
+      padding="lg"
+    >
+        {/* Community Stats */}
+        <div ref={headerRef} className="mb-6">          <div className="flex items-center justify-between">
             <div className="flex items-center space-x-6 text-sm">
               <div className={`${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
                 <span className="font-semibold">1.2k</span> thành viên
@@ -337,7 +388,7 @@ const CommunityFeedPage = () => {
                 onClick={refreshData}
                 disabled={loading}
                 className={`flex items-center space-x-2 px-4 py-2 rounded-full transition-colors text-sm font-medium ${
-                  loading 
+                  loading
                     ? 'bg-gray-200 text-gray-500 cursor-not-allowed dark:bg-gray-700 dark:text-gray-400'
                     : 'bg-gray-100 hover:bg-gray-200 text-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-300'
                 }`}
@@ -345,7 +396,104 @@ const CommunityFeedPage = () => {
                 <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
                 <span>{loading ? 'Đang tải...' : 'Làm mới'}</span>
               </button>
-              
+
+              {/* Settings Menu */}
+              <div className="relative" ref={settingsMenuRef}>
+                <button
+                  onClick={() => setShowSettingsMenu(!showSettingsMenu)}
+                  className="flex items-center space-x-2 px-4 py-2 rounded-full transition-colors text-sm font-medium bg-gray-100 hover:bg-gray-200 text-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-300"
+                >
+                  <Settings size={16} />
+                  <span>Tùy chọn</span>
+                </button>
+
+                {/* Settings Dropdown */}
+                <AnimatePresence>
+                  {showSettingsMenu && (
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.95, y: -10 }}
+                      animate={{ opacity: 1, scale: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.95, y: -10 }}
+                      className="absolute right-0 mt-2 w-64 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-50"
+                    >
+                      <div className="p-4 space-y-4">
+                        {/* View Mode */}
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Chế độ hiển thị
+                          </label>
+                          <div className="flex space-x-2">
+                            <button
+                              onClick={() => setViewMode('card')}
+                              className={`flex items-center space-x-2 px-3 py-2 rounded-lg text-sm transition-colors ${
+                                viewMode === 'card'
+                                  ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300'
+                                  : 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                              }`}
+                            >
+                              <Grid size={14} />
+                              <span>Card</span>
+                            </button>
+                            <button
+                              onClick={() => setViewMode('list')}
+                              className={`flex items-center space-x-2 px-3 py-2 rounded-lg text-sm transition-colors ${
+                                viewMode === 'list'
+                                  ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300'
+                                  : 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                              }`}
+                            >
+                              <List size={14} />
+                              <span>List</span>
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Display Options */}
+                        <div className="space-y-3">
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                            Tùy chọn hiển thị
+                          </label>
+
+                          <label className="flex items-center space-x-3">
+                            <input
+                              type="checkbox"
+                              checked={showImages}
+                              onChange={(e) => setShowImages(e.target.checked)}
+                              className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                            />
+                            <span className="text-sm text-gray-700 dark:text-gray-300">Hiển thị hình ảnh</span>
+                          </label>
+
+                          <label className="flex items-center space-x-3">
+                            <input
+                              type="checkbox"
+                              checked={autoRefresh}
+                              onChange={(e) => setAutoRefresh(e.target.checked)}
+                              className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                            />
+                            <span className="text-sm text-gray-700 dark:text-gray-300">Tự động làm mới</span>
+                          </label>
+                        </div>
+
+                        {/* Quick Actions */}
+                        <div className="pt-3 border-t border-gray-200 dark:border-gray-600">
+                          <button
+                            onClick={() => {
+                              // Clear cache and refresh
+                              window.location.reload();
+                            }}
+                            className="flex items-center space-x-2 w-full px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                          >
+                            <RotateCcw size={14} />
+                            <span>Làm mới hoàn toàn</span>
+                          </button>
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+
               <button
                 onClick={() => window.location.href = '/submit'}
                 className="flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-full transition-colors text-sm font-medium"
@@ -439,7 +587,6 @@ const CommunityFeedPage = () => {
             </button>
           </div>
         )}
-      </div>
 
       {/* Report Modal */}
       {showReportModal && (
@@ -448,7 +595,7 @@ const CommunityFeedPage = () => {
           onClose={() => setShowReportModal(null)}
         />
       )}
-    </div>
+    </PageLayout>
   );
 };
 

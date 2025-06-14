@@ -22,7 +22,91 @@
   - `Section`: Section wrapper với spacing chuẩn
   - Layout patterns chuyên biệt: `StatsGridLayout`, `FeatureGridLayout`, etc.
 
-### 3. **Cải thiện HomePage.js**
+### 3. **Cải thiện HomePage.js** ✅
+
+### 4. **Thêm Chat AI vào Navigation Bar** ✅
+**Files Modified:**
+- `client/src/components/navigation/TopBar.js`
+
+**Changes:**
+- Thêm Chat AI icon vào top navigation bar
+- Positioned bên cạnh notifications bell
+- Hover effects và transition animations
+- Link trực tiếp đến `/chat` page
+
+**Code:**
+```jsx
+{/* Chat AI Button */}
+{user && (
+  <Link
+    to="/chat"
+    className={`p-2 rounded-full transition-colors ${
+      isDarkMode ? 'hover:bg-gray-800' : 'hover:bg-gray-100'
+    } relative group`}
+    title="Trợ lý AI"
+  >
+    <MessageCircle className="w-5 h-5 text-gray-600 dark:text-gray-400 group-hover:text-blue-500 transition-colors" />
+  </Link>
+)}
+```
+
+### 5. **Cải thiện Widget Positioning - Unified Across All Tabs** ✅
+**Files Modified:**
+- `client/src/styles/widget-system.css`
+- `client/src/components/layout/WidgetManager.js`
+
+**Changes:**
+- Tạo global CSS classes: `.global-widget-chat` và `.global-widget-fab`
+- Override tab-specific positioning để đảm bảo consistency
+- Tăng kích thước widgets: `4rem x 4rem` cho buttons
+- Chat expanded: `28rem x 37.5rem` (450px x 600px)
+- FAB expanded: `25rem x 31.25rem` (400px x 500px)
+- Sử dụng CSS variables cho z-index management
+
+**CSS Classes:**
+```css
+.global-widget-chat {
+  position: fixed !important;
+  bottom: 1rem !important;
+  right: 1rem !important;
+  z-index: var(--z-index-chatbot) !important;
+}
+
+.global-widget-fab {
+  position: fixed !important;
+  bottom: 1rem !important;
+  right: 6rem !important;
+  z-index: var(--z-index-floating-action) !important;
+}
+```
+
+### 6. **Fix Tab AI (Chat Page) - Enhanced Functionality** ✅
+**Files Modified:**
+- `client/src/pages/ChatPage.js`
+- `client/src/components/chat/MessengerLayout.js`
+
+**Changes:**
+- Thêm `tab-chat` class cho styling consistency
+- Auto-select FactCheck AI conversation khi load
+- Enhanced welcome message với emoji và formatting
+- Improved layout với messenger-specific CSS classes
+- Better API integration với error handling
+
+**Enhanced Welcome Message:**
+```javascript
+{
+  id: '1',
+  text: 'Xin chào! Tôi là trợ lý ảo FactCheck. Tôi có thể giúp bạn:',
+  sender: 'bot',
+  timestamp: new Date()
+},
+{
+  id: '2',
+  text: '🔍 Kiểm tra độ tin cậy của link và website\n🛡️ Phát hiện email lừa đảo và phishing\n📰 Xác minh thông tin và tin tức\n💡 Tư vấn về an toàn mạng\n\nHãy gửi cho tôi link hoặc câu hỏi bạn muốn kiểm tra!',
+  sender: 'bot',
+  timestamp: new Date()
+}
+```
 - Giảm bớt các animation phức tạp gây layout shift
 - Loại bỏ magnetic effects không cần thiết
 - Chuẩn hóa grid spacing (từ `gap-8` xuống `gap-6`)

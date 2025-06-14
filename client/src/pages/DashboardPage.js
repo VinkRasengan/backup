@@ -3,8 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { Search, BarChart3, Clock, TrendingUp, RefreshCw, Users } from 'lucide-react';
 import EmailVerificationBanner from '../components/EmailVerificationBanner';
 import { useAuth } from '../context/AuthContext';
-import { StatsCard } from '../components/ui/StandardCard';
-import { ResponsiveContainer, StatsGridLayout, DashboardLayout } from '../components/ui/ResponsiveLayout';
+import PageLayout from '../components/layout/PageLayout';
 
 // Helper function to get credibility score styling
 const getCredibilityScoreClasses = (score) => {
@@ -150,35 +149,30 @@ const DashboardPage = () => {
   }
 
   return (
-    <div className="max-w-6xl mx-auto p-4 md:p-8">
-      {showVerificationBanner && (
-        <EmailVerificationBanner
-          onDismiss={() => setShowVerificationBanner(false)}
-        />
-      )}
-
-      {/* Dashboard Header with Refresh Button */}
-      <div className="mb-8 flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-2">
-            Chào mừng trở lại, {user?.firstName}!
-          </h1>
-          <p className="text-gray-600 dark:text-gray-300 text-lg">
-            Tổng quan hoạt động kiểm tra thông tin của bạn
-          </p>
-        </div>
+    <PageLayout
+      title={`Chào mừng trở lại, ${user?.firstName}!`}
+      subtitle="Tổng quan hoạt động kiểm tra thông tin của bạn"
+      maxWidth="6xl"
+      padding="lg"
+      actions={
         <button
           onClick={handleManualRefresh}
           disabled={refreshing}
           className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
-          <RefreshCw 
-            size={16} 
-            className={refreshing ? 'animate-spin' : ''} 
+          <RefreshCw
+            size={16}
+            className={refreshing ? 'animate-spin' : ''}
           />
           {refreshing ? 'Đang tải...' : 'Làm mới'}
         </button>
-      </div>      {/* Stats Grid */}
+      }
+    >
+      {showVerificationBanner && (
+        <EmailVerificationBanner
+          onDismiss={() => setShowVerificationBanner(false)}
+        />
+      )}      {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 flex items-center gap-4 hover:shadow-md transition-shadow">
           <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center text-blue-600 dark:text-blue-400">
@@ -350,7 +344,7 @@ const DashboardPage = () => {
           </div>
         </div>
       </div>
-    </div>
+    </PageLayout>
   );
 };
 

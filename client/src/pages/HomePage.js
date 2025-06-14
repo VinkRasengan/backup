@@ -4,8 +4,9 @@ import { Search, Shield, Users, BarChart3, BookOpen, MessageCircle } from 'lucid
 import { useAuth } from '../context/AuthContext';
 import TrendingArticles from '../components/TrendingArticles';
 import AnimatedStats from '../components/AnimatedStats';
+import StickyHeroButtons from '../components/ui/StickyHeroButtons';
 import { ActionCard, FeatureCard } from '../components/ui/StandardCard';
-import { ResponsiveContainer, Section, ContentLayout, ActionGridLayout, FeatureGridLayout } from '../components/ui/ResponsiveLayout';
+import { ResponsiveContainer, Section } from '../components/ui/ResponsiveLayout';
 import { useStaggerAnimation, useScrollTrigger } from '../hooks/useGSAP';
 import { gsap } from '../utils/gsap';
 
@@ -13,6 +14,7 @@ const HomePage = () => {
   const { user } = useAuth();
 
   // Refs for premium animations
+  const heroRef = useRef(); // For sticky buttons
   const heroTitleRef = useRef();
   const heroSubtitleRef = useRef();
   const heroButtonsRef = useRef();
@@ -126,25 +128,24 @@ const HomePage = () => {
         gsap.killTweensOf(particlesArray);
       }
     };  }, []); // Empty dependency array to run once
-
   const features = [
     {
-      icon: <Search size={24} />,
+      icon: Search,
       title: 'Kiểm Tra Link',
       description: 'Kiểm tra ngay độ tin cậy của bài viết tin tức và nguồn thông tin với hệ thống xác minh tiên tiến.'
     },
     {
-      icon: <Shield size={24} />,
+      icon: Shield,
       title: 'Nguồn Đáng Tin',
       description: 'Nhận thông tin từ các tổ chức báo chí uy tín và các tổ chức kiểm chứng sự thật để đảm bảo độ chính xác.'
     },
     {
-      icon: <BarChart3 size={24} />,
+      icon: BarChart3,
       title: 'Chấm Điểm Tin Cậy',
       description: 'Nhận điểm số độ tin cậy chi tiết và phân tích để giúp bạn đưa ra quyết định thông tin chính xác.'
     },
     {
-      icon: <Users size={24} />,
+      icon: Users,
       title: 'Cộng Đồng',
       description: 'Tham gia cộng đồng kiểm chứng sự thật và cùng nhau chống lại thông tin sai lệch.'
     }
@@ -152,9 +153,12 @@ const HomePage = () => {
 
   return (
     <>
+      {/* Sticky Hero Buttons */}
+      <StickyHeroButtons heroRef={heroRef} />
+
       {/* Premium Hero Section */}
       <section
-        ref={backgroundRef}
+        ref={heroRef}
         className="relative overflow-hidden bg-gradient-to-br from-blue-500 to-purple-600 dark:from-blue-600 dark:to-purple-700 text-white py-20 text-center min-h-[80vh] flex items-center z-10"
       >
         {/* Floating Particles Background */}
@@ -171,7 +175,8 @@ const HomePage = () => {
         {/* Gradient Overlay */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent"></div>
 
-        <div className="relative max-w-6xl mx-auto px-4 z-10">
+        {/* Container with max-width constraint */}
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 z-10">
           <div ref={heroTitleRef} className="mb-6">
             <span className="inline-block text-4xl md:text-6xl lg:text-7xl font-bold tracking-tight">
               Chống
@@ -201,11 +206,15 @@ const HomePage = () => {
           <div ref={heroButtonsRef} className="flex flex-wrap gap-6 justify-center">
             <Link
               to="/check"
-              className="group relative px-10 py-5 bg-white text-blue-600 rounded-2xl font-bold text-lg hover:bg-gray-50 transition-all duration-300 flex items-center gap-3 shadow-2xl hover:shadow-3xl transform hover:-translate-y-1 hover:scale-105"
+              className="group relative px-10 py-5 bg-white text-blue-600 rounded-2xl font-bold text-lg hover:bg-gray-50 transition-all duration-300 flex items-center gap-3 shadow-2xl hover:shadow-3xl transform hover:-translate-y-1 hover:scale-105 focus:outline-none focus:ring-4 focus:ring-blue-300/50"
+              aria-label="Kiểm tra link ngay bây giờ"
             >
               <Search size={24} className="group-hover:rotate-12 transition-transform duration-300" />
               <span>Kiểm Tra Ngay</span>
               <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-blue-600 to-purple-600 opacity-0 group-hover:opacity-10 transition-opacity duration-300"></div>
+
+              {/* Ripple effect */}
+              <div className="absolute inset-0 rounded-2xl bg-white opacity-0 group-active:opacity-20 transition-opacity duration-150"></div>
             </Link>
             {user ? (
               <Link
@@ -234,8 +243,8 @@ const HomePage = () => {
           </div>
         </div>
       </section>      {/* Trending Articles Section */}
-      <section className="py-16 bg-white dark:bg-gray-900">
-        <div className="max-w-6xl mx-auto px-4">
+      <Section className="py-16 bg-white dark:bg-gray-900">
+        <ResponsiveContainer size="lg">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Main Content */}
             <div className="lg:col-span-2">
@@ -243,69 +252,37 @@ const HomePage = () => {
                 Hoạt động cộng đồng
               </h2>
               <div ref={communityCardsRef} className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <Link
-                  to="/community"
-                  className="group relative bg-gradient-to-br from-blue-500 to-blue-600 text-white p-8 rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300"
-                >
-                  <div className="absolute inset-0 bg-gradient-to-br from-blue-400 to-blue-700 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                  <div className="relative z-10">
-                    <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 group-hover:rotate-6 transition-all duration-300">
-                      <Users className="w-8 h-8" />
-                    </div>
-                    <h3 className="text-2xl font-bold mb-3 group-hover:text-yellow-300 transition-colors duration-300">Cộng đồng kiểm tin</h3>
-                    <p className="opacity-90 text-lg leading-relaxed">Tham gia cùng cộng đồng đánh giá và xác minh thông tin</p>
-                    <div className="absolute top-4 right-4 w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-                  </div>
-                  <div className="absolute -bottom-4 -right-4 w-24 h-24 bg-white/10 rounded-full group-hover:scale-150 transition-transform duration-500"></div>
-                </Link>
+                <ActionCard
+                  icon={Users}
+                  title="Cộng đồng kiểm tin"
+                  description="Tham gia cùng cộng đồng đánh giá và xác minh thông tin"
+                  color="blue"
+                  onClick={() => window.location.href = '/community'}
+                />
+                
+                <ActionCard
+                  icon={BookOpen}
+                  title="Kiến thức nền"
+                  description="Học cách nhận biết và kiểm tra thông tin sai lệch"
+                  color="green"
+                  onClick={() => window.location.href = '/knowledge'}
+                />
 
-                <Link
-                  to="/knowledge"
-                  className="group relative bg-gradient-to-br from-green-500 to-green-600 text-white p-8 rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300"
-                >
-                  <div className="absolute inset-0 bg-gradient-to-br from-green-400 to-green-700 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                  <div className="relative z-10">
-                    <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 group-hover:rotate-6 transition-all duration-300">
-                      <BookOpen className="w-8 h-8" />
-                    </div>
-                    <h3 className="text-2xl font-bold mb-3 group-hover:text-yellow-300 transition-colors duration-300">Kiến thức nền</h3>
-                    <p className="opacity-90 text-lg leading-relaxed">Học cách nhận biết và kiểm tra thông tin sai lệch</p>
-                    <div className="absolute top-4 right-4 w-2 h-2 bg-yellow-400 rounded-full animate-pulse"></div>
-                  </div>
-                  <div className="absolute -bottom-4 -right-4 w-24 h-24 bg-white/10 rounded-full group-hover:scale-150 transition-transform duration-500"></div>
-                </Link>
+                <ActionCard
+                  icon={MessageCircle}
+                  title="Trợ lý AI"
+                  description="Hỏi đáp với AI về cách kiểm tra thông tin"
+                  color="purple"
+                  onClick={() => window.location.href = '/chat'}
+                />
 
-                <Link
-                  to="/chat"
-                  className="group relative bg-gradient-to-br from-purple-500 to-purple-600 text-white p-8 rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300"
-                >
-                  <div className="absolute inset-0 bg-gradient-to-br from-purple-400 to-purple-700 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                  <div className="relative z-10">
-                    <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 group-hover:rotate-6 transition-all duration-300">
-                      <MessageCircle className="w-8 h-8" />
-                    </div>
-                    <h3 className="text-2xl font-bold mb-3 group-hover:text-yellow-300 transition-colors duration-300">Trợ lý AI</h3>
-                    <p className="opacity-90 text-lg leading-relaxed">Hỏi đáp với AI về cách kiểm tra thông tin</p>
-                    <div className="absolute top-4 right-4 w-2 h-2 bg-purple-400 rounded-full animate-pulse"></div>
-                  </div>
-                  <div className="absolute -bottom-4 -right-4 w-24 h-24 bg-white/10 rounded-full group-hover:scale-150 transition-transform duration-500"></div>
-                </Link>
-
-                <Link
-                  to="/submit"
-                  className="group relative bg-gradient-to-br from-orange-500 to-orange-600 text-white p-8 rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300"
-                >
-                  <div className="absolute inset-0 bg-gradient-to-br from-orange-400 to-orange-700 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                  <div className="relative z-10">
-                    <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 group-hover:rotate-6 transition-all duration-300">
-                      <Search className="w-8 h-8" />
-                    </div>
-                    <h3 className="text-2xl font-bold mb-3 group-hover:text-yellow-300 transition-colors duration-300">Gửi bài viết</h3>
-                    <p className="opacity-90 text-lg leading-relaxed">Chia sẻ bài viết để cộng đồng cùng đánh giá</p>
-                    <div className="absolute top-4 right-4 w-2 h-2 bg-red-400 rounded-full animate-pulse"></div>
-                  </div>
-                  <div className="absolute -bottom-4 -right-4 w-24 h-24 bg-white/10 rounded-full group-hover:scale-150 transition-transform duration-500"></div>
-                </Link>
+                <ActionCard
+                  icon={Search}
+                  title="Gửi bài viết"
+                  description="Chia sẻ bài viết để cộng đồng cùng đánh giá"
+                  color="orange"
+                  onClick={() => window.location.href = '/submit'}
+                />
               </div>
             </div>
 
@@ -314,50 +291,33 @@ const HomePage = () => {
               <TrendingArticles />
             </div>
           </div>
-        </div>
-      </section>
+        </ResponsiveContainer>
+      </Section>
 
       {/* Animated Statistics Section */}
       <AnimatedStats />      {/* Features Section */}
-      <section className="py-16 bg-gray-50 dark:bg-gray-800">
-        <div ref={featuresRef} className="max-w-6xl mx-auto px-4">
-          <h2 className="text-center text-3xl md:text-4xl font-bold mb-12 text-gray-900 dark:text-white">
-            Tại Sao Chọn FactCheck?
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {features.map((feature, index) => (
-              <div
-                key={feature.title}
-                className="group relative bg-white dark:bg-gray-700 p-6 rounded-2xl shadow-sm hover:shadow-lg transition-all duration-300 text-center overflow-hidden"
-              >
-                {/* Background gradient overlay */}
-                <div className="absolute inset-0 bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-
-                {/* Animated background circles */}
-                <div className="absolute -top-4 -right-4 w-20 h-20 bg-gradient-to-br from-blue-400/20 to-purple-400/20 rounded-full group-hover:scale-150 transition-transform duration-500"></div>
-                <div className="absolute -bottom-4 -left-4 w-12 h-12 bg-gradient-to-br from-purple-400/20 to-pink-400/20 rounded-full group-hover:scale-125 transition-transform duration-700"></div>
-
-                <div className="relative z-10">
-                  <div className="w-16 h-16 bg-gradient-to-br from-blue-100 to-purple-100 dark:from-blue-900 dark:to-purple-900 rounded-2xl flex items-center justify-center mx-auto mb-4 text-blue-600 dark:text-blue-400 group-hover:scale-110 group-hover:rotate-6 transition-all duration-300 shadow-lg">
-                    {feature.icon}
-                  </div>
-                  <h3 className="text-xl font-bold mb-3 text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors duration-300">
-                    {feature.title}
-                  </h3>
-                  <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
-                    {feature.description}
-                  </p>
-
-                  {/* Animated progress bar */}
-                  <div className="mt-4 w-full bg-gray-200 dark:bg-gray-600 rounded-full h-1 overflow-hidden">
-                    <div className="h-full bg-gradient-to-r from-blue-500 to-purple-500 rounded-full transform -translate-x-full group-hover:translate-x-0 transition-transform duration-1000 ease-out"></div>
-                  </div>
-                </div>
-              </div>
-            ))}
+      <Section className="py-16 bg-gray-50 dark:bg-gray-800">
+        <ResponsiveContainer size="lg">
+          <div ref={featuresRef}>
+            <h2 className="text-center text-3xl md:text-4xl font-bold mb-12 text-gray-900 dark:text-white">
+              Tại Sao Chọn FactCheck?
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              {features.map((feature) => (
+                <FeatureCard
+                  key={feature.title}
+                  icon={feature.icon}
+                  title={feature.title}
+                  description={feature.description}
+                  color="blue"
+                />
+              ))}
+            </div>
           </div>
-        </div>
-      </section>
+        </ResponsiveContainer>
+      </Section>
+
+
     </>
   );
 };

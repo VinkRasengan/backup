@@ -31,7 +31,7 @@ import ChatTestPage from './pages/ChatTestPage';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import EmailVerifiedRoute from './components/auth/EmailVerifiedRoute';
 import { LoadingSpinner, ErrorBoundary } from './components/common';
-import { RedditLayout, TabSpecificLayout, WidgetManager } from './components/layout';
+import AppLayout from './components/layout/AppLayout';
 import GSAPDemo from './components/GSAPDemo';
 
 function App() {
@@ -49,9 +49,7 @@ function App() {
   return (
     <ErrorBoundary>
       <ThemeProvider>
-        <div className="App min-h-screen bg-white dark:bg-gray-900 transition-colors">
-          <RedditLayout>
-            <TabSpecificLayout>
+        <AppLayout>
           <Routes>
             {/* Public routes */}
             <Route
@@ -171,13 +169,8 @@ function App() {
           {/* Catch all route */}
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>
-
-        {/* Widget Manager - handles chat and FAB positioning */}
-        <WidgetManager />
-        </TabSpecificLayout>
-        </RedditLayout>
-      </div>
-    </ThemeProvider>
+        </AppLayout>
+      </ThemeProvider>
     </ErrorBoundary>
   );
 }

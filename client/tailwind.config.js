@@ -69,10 +69,24 @@ module.exports = {
         '24': '96px',
       },
       borderRadius: {
-        'sm': '4px',
-        DEFAULT: '12px',
+        'sm': '6px',
+        'md': '8px',
+        DEFAULT: '12px', // Standard rounding for all cards/buttons
         'lg': '16px',
         'xl': '24px',
+        '2xl': '32px',
+      },
+      fontSize: {
+        'xs': ['12px', { lineHeight: '1.4' }],
+        'sm': ['14px', { lineHeight: '1.4' }],
+        'base': ['16px', { lineHeight: '1.5' }], // Minimum base size
+        'lg': ['18px', { lineHeight: '1.5' }],
+        'xl': ['20px', { lineHeight: '1.4' }],
+        '2xl': ['24px', { lineHeight: '1.3' }], // heading-lg
+        '3xl': ['30px', { lineHeight: '1.2' }],
+        '4xl': ['32px', { lineHeight: '1.2' }], // heading-xl
+        '5xl': ['48px', { lineHeight: '1.1' }],
+        '6xl': ['64px', { lineHeight: '1.0' }],
       },
       boxShadow: {
         'sm': '0 1px 2px 0 rgba(0, 0, 0, 0.05)',

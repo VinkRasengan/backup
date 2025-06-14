@@ -63,62 +63,65 @@
 .card-md { @apply p-6 rounded-xl; }
 .card-lg { @apply p-8 rounded-2xl; }
 
-/* Widget positioning improvements */
+/* Widget positioning improvements - Fixed positioning for scroll following */
 .widget-floating {
-  position: fixed;
+  position: fixed !important;
   bottom: 1rem;
   right: 1rem;
+  z-index: var(--z-index-floating-action);
 }
 
-/* Mobile adjustments */
-@media (max-width: 768px) {
-  .widget-floating {
-    bottom: 5rem;
-    right: 1rem;
-  }
-}
-
-/* Chat widget specific positioning */
+/* Chat widget specific positioning - Always fixed and unified across all tabs */
 .chatbot-widget {
-  z-index: var(--z-index-chatbot);
-  position: fixed;
+  position: fixed !important;
   bottom: 1rem;
-  left: 1rem;
+  right: 1rem;
+  z-index: var(--z-index-chatbot);
+  width: 4rem;
+  height: 4rem;
 }
 
-/* Mobile adjustments for chatbot */
-@media (max-width: 1024px) {
-  .chatbot-widget {
-    width: 20rem;
-    max-height: 75vh;
-  }
+/* Chat widget expanded state - Larger for better visibility */
+.chatbot-widget.expanded {
+  width: 28rem;
+  height: 37.5rem;
+  max-height: 80vh;
 }
 
+/* Floating action button positioning - Always fixed and unified */
+.fab-widget {
+  position: fixed !important;
+  bottom: 1rem;
+  right: 6rem; /* Positioned to the left of chat widget */
+  z-index: var(--z-index-floating-action);
+  width: 4rem;
+  height: 4rem;
+}
+
+/* Mobile adjustments - Stack vertically and maintain fixed positioning */
 @media (max-width: 768px) {
   .chatbot-widget {
+    position: fixed !important;
+    bottom: 1rem;
+    right: 1rem;
+    z-index: var(--z-index-chatbot);
+  }
+
+  .fab-widget {
+    position: fixed !important;
+    bottom: 6rem; /* Stack above chat widget */
+    right: 1rem;
+    z-index: var(--z-index-floating-action);
+  }
+
+  .chatbot-widget.expanded {
+    position: fixed !important;
     left: 0.5rem;
     right: 0.5rem;
+    bottom: 1rem;
     width: auto;
-    max-height: 70vh;
-  }
-}
-
-/* Floating action button positioning */
-.fab-widget {
-  z-index: var(--z-index-floating-action);
-  position: fixed;
-  bottom: 1rem;
-  right: 1rem;
-}
-
-/* Adjust position when chat page is active */
-body.tab-chat .fab-widget {
-  bottom: 6rem;
-}
-
-@media (max-width: 768px) {
-  body.tab-chat .fab-widget {
-    bottom: 5rem;
+    max-height: 75vh;
+    z-index: var(--z-index-chatbot);
   }
 }
 
@@ -131,6 +134,44 @@ body.tab-chat .fab-widget {
 
 .widget-container > * {
   pointer-events: auto;
+}
+
+/* Global widget positioning - Ensures widgets appear consistently across all tabs */
+.global-widget-chat {
+  position: fixed !important;
+  bottom: 1rem !important;
+  right: 1rem !important;
+  z-index: var(--z-index-chatbot) !important;
+}
+
+.global-widget-fab {
+  position: fixed !important;
+  bottom: 1rem !important;
+  right: 6rem !important;
+  z-index: var(--z-index-floating-action) !important;
+}
+
+/* Override any tab-specific positioning */
+.tab-chat .global-widget-chat,
+.tab-community .global-widget-chat,
+.tab-dashboard .global-widget-chat,
+.tab-check .global-widget-chat,
+.tab-knowledge .global-widget-chat,
+.tab-profile .global-widget-chat {
+  position: fixed !important;
+  bottom: 1rem !important;
+  right: 1rem !important;
+}
+
+.tab-chat .global-widget-fab,
+.tab-community .global-widget-fab,
+.tab-dashboard .global-widget-fab,
+.tab-check .global-widget-fab,
+.tab-knowledge .global-widget-fab,
+.tab-profile .global-widget-fab {
+  position: fixed !important;
+  bottom: 1rem !important;
+  right: 6rem !important;
 }
 
 /* Responsive widget stacking */
@@ -186,7 +227,7 @@ body.tab-chat .fab-widget {
   @apply focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800;
 }
 
-/* Animation improvements */
+/* Enhanced Animation improvements */
 .animate-fade-in-up {
   animation: fadeInUp 0.5s ease-out;
 }
@@ -215,6 +256,65 @@ body.tab-chat .fab-widget {
     opacity: 1;
     transform: scale(1) translateZ(0);
   }
+}
+
+/* Enhanced hover effects for cards */
+.card-hover-lift {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.card-hover-lift:hover {
+  transform: translateY(-8px) scale(1.02);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+}
+
+/* Ripple effect for buttons */
+.btn-ripple {
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-ripple::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.3);
+  transform: translate(-50%, -50%);
+  transition: width 0.6s, height 0.6s;
+}
+
+.btn-ripple:active::before {
+  width: 300px;
+  height: 300px;
+}
+
+/* Magnetic hover effect */
+.magnetic-hover {
+  transition: transform 0.3s cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+/* Floating animation */
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+/* Pulse glow effect */
+@keyframes pulseGlow {
+  0%, 100% { box-shadow: 0 0 5px rgba(59, 130, 246, 0.5); }
+  50% { box-shadow: 0 0 20px rgba(59, 130, 246, 0.8), 0 0 30px rgba(59, 130, 246, 0.6); }
+}
+
+.animate-pulse-glow {
+  animation: pulseGlow 2s ease-in-out infinite;
 }
 
 /* Mobile-first responsive utilities */

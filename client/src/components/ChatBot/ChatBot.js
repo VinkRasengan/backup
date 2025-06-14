@@ -1,16 +1,18 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MessageCircle, X, Minimize2 } from 'lucide-react';
+import { MessageCircle, X, Minimize2, Plus } from 'lucide-react';
 import ChatMessage from './ChatMessage';
 import ChatInput from './ChatInput';
 import QuickReplies from './QuickReplies';
 import { chatAPI } from '../../services/api';
 
-const ChatBot = () => {
-  console.log('🔄 [INIT] ChatBot component initialized - NEW VERSION');
-  const [isOpen, setIsOpen] = useState(false);
+const ChatBot = ({ embedded = false, onClose, isFloating = false }) => {
+  console.log('🔄 [INIT] ChatBot component initialized - NEW VERSION', { embedded, isFloating });
+  const [isOpen, setIsOpen] = useState(embedded ? true : false);
   const [isMinimized, setIsMinimized] = useState(false);
   const [showQuickReplies, setShowQuickReplies] = useState(true);
+  const [currentConversationId, setCurrentConversationId] = useState(null);
+  const [conversations, setConversations] = useState([]);
   const [messages, setMessages] = useState([
     {
       id: 1,
@@ -123,8 +125,12 @@ const ChatBot = () => {
   };
 
   const toggleChat = () => {
-    setIsOpen(!isOpen);
-    setIsMinimized(false);
+    if (isFloating && onClose && isOpen) {
+      onClose();
+    } else {
+      setIsOpen(!isOpen);
+      setIsMinimized(false);
+    }
   };
 
   const minimizeChat = () => {
@@ -138,6 +144,21 @@ const ChatBot = () => {
   const handleQuickReply = (text) => {
     setShowQuickReplies(false); // Ẩn quick replies sau khi click
     handleSendMessage(text);
+  };
+
+  // Create new chat conversation
+  const handleNewChat = () => {
+    console.log('🆕 Creating new chat conversation');
+    setCurrentConversationId(null);
+    setMessages([
+      {
+        id: 1,
+        text: 'Xin chào! Tôi là trợ lý ảo của FactCheck. Tôi có thể giúp bạn hiểu về cách sử dụng nền tảng kiểm tra thông tin của chúng tôi. Bạn cần hỗ trợ gì?',
+        isBot: true,
+        timestamp: new Date()
+      }
+    ]);
+    setShowQuickReplies(true);
   };
 
   // Calculate chat window classes - Better positioning and z-index
@@ -163,6 +184,85 @@ const ChatBot = () => {
     return path === '/chat' || path.startsWith('/chat');
   };
 
+  // Embedded mode renders only the chat content
+  if (embedded) {
+    return (
+      <div className="h-full flex flex-col bg-white dark:bg-gray-800">
+        {/* Header */}
+        <div className="bg-gradient-to-r from-blue-500 to-purple-600 text-white p-3 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
+              <MessageCircle size={16} />
+            </div>
+            <div>
+              <h3 className="font-semibold text-sm">Trợ lý FactCheck</h3>
+              <div className="flex items-center gap-1">
+                <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                <p className="text-xs opacity-90">Đang hoạt động</p>
+              </div>
+            </div>
+          </div>
+
+          {/* New Chat Button for embedded mode */}
+          <button
+            onClick={handleNewChat}
+            className="p-1 hover:bg-white/20 rounded-full transition-colors"
+            title="Cuộc trò chuyện mới"
+          >
+            <Plus size={16} />
+          </button>
+        </div>
+
+        {/* Messages Area */}
+        <div className="flex-1 overflow-y-auto p-4 space-y-3 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-transparent">
+          {messages.slice(-MAX_MESSAGES).map((message) => (
+            <ChatMessage key={message.id} message={message} />
+          ))}
+
+          {isTyping && (
+            <div className="flex items-start gap-3">
+              <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center flex-shrink-0">
+                <MessageCircle size={16} className="text-white" />
+              </div>
+              <div className="bg-gray-100 dark:bg-gray-700 rounded-2xl px-4 py-3 max-w-xs">
+                <div className="flex space-x-1">
+                  <motion.div
+                    animate={{ scale: [1, 1.3, 1], opacity: [0.5, 1, 0.5] }}
+                    transition={{ repeat: Infinity, duration: 1.2, delay: 0 }}
+                    className="w-2 h-2 bg-blue-500 rounded-full"
+                  />
+                  <motion.div
+                    animate={{ scale: [1, 1.3, 1], opacity: [0.5, 1, 0.5] }}
+                    transition={{ repeat: Infinity, duration: 1.2, delay: 0.3 }}
+                    className="w-2 h-2 bg-blue-500 rounded-full"
+                  />
+                  <motion.div
+                    animate={{ scale: [1, 1.3, 1], opacity: [0.5, 1, 0.5] }}
+                    transition={{ repeat: Infinity, duration: 1.2, delay: 0.6 }}
+                    className="w-2 h-2 bg-blue-500 rounded-full"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+          <div ref={messagesEndRef} />
+        </div>
+
+        {/* Quick Replies */}
+        {showQuickReplies && (
+          <div className="px-4 py-3 border-t border-gray-200 dark:border-gray-700">
+            <QuickReplies onQuickReply={handleQuickReply} disabled={isTyping} />
+          </div>
+        )}
+
+        {/* Input Area */}
+        <div className="border-t border-gray-200 dark:border-gray-700 p-4 bg-gray-50/50 dark:bg-gray-800/50">
+          <ChatInput onSendMessage={handleSendMessage} disabled={isTyping} />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <>
       {/* Chat Button */}
@@ -178,7 +278,7 @@ const ChatBot = () => {
             className="fixed bottom-4 left-4 z-chatbot w-14 h-14 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center group"
           >
             <MessageCircle size={24} className="group-hover:scale-110 transition-transform" />
-            
+
             {/* Notification dot */}
             <motion.div
               animate={{ scale: [1, 1.2, 1] }}
@@ -232,7 +332,13 @@ const ChatBot = () => {
 
               {!isMinimized && (
                 <div className="flex items-center gap-2">
-
+                  <button
+                    onClick={handleNewChat}
+                    className="p-1 hover:bg-white/20 rounded-full transition-colors"
+                    title="Cuộc trò chuyện mới"
+                  >
+                    <Plus size={16} />
+                  </button>
                   <button
                     onClick={minimizeChat}
                     className="p-1 hover:bg-white/20 rounded-full transition-colors"

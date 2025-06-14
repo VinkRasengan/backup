@@ -65,7 +65,10 @@ const AnimatedStats = () => {
         onEnter: () => {
           // Start counter animations when visible
           setTimeout(() => {
-            stats.forEach(stat => stat.start());
+            startUsersCount();
+            startChecksCount();
+            startAccuracy();
+            startTrends();
           }, 300);
         }
       }
@@ -139,7 +142,8 @@ const AnimatedStats = () => {
           </p>
         </div>
 
-        <div ref={containerRef} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        {/* Responsive Grid: 1 col mobile, 2 col tablet, 4 col desktop */}
+        <div ref={containerRef} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {stats.map((stat) => {
             const IconComponent = stat.icon;
             return (

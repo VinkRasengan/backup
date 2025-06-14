@@ -1,0 +1,232 @@
+/* Design Tokens - FactCheck Design System */
+
+:root {
+  /* === SPACING TOKENS === */
+  --spacing-1: 4px;    /* px-1 */
+  --spacing-2: 8px;    /* px-2 */
+  --spacing-3: 12px;   /* px-3 */
+  --spacing-4: 16px;   /* px-4 */
+  --spacing-5: 20px;   /* px-5 */
+  --spacing-6: 24px;   /* px-6 */
+  --spacing-8: 32px;   /* px-8 */
+  --spacing-10: 40px;  /* px-10 */
+  --spacing-12: 48px;  /* px-12 */
+  --spacing-16: 64px;  /* px-16 */
+  --spacing-20: 80px;  /* px-20 */
+  --spacing-24: 96px;  /* px-24 */
+
+  /* === BORDER RADIUS === */
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;   /* Standard rounding for all cards/buttons */
+  --radius-xl: 16px;
+  --radius-2xl: 24px;
+  --radius-full: 9999px;
+
+  /* === TYPOGRAPHY === */
+  --font-size-xs: 12px;
+  --font-size-sm: 14px;
+  --font-size-base: 16px;    /* Minimum base size */
+  --font-size-lg: 18px;
+  --font-size-xl: 20px;
+  --font-size-2xl: 24px;     /* heading-lg */
+  --font-size-3xl: 30px;
+  --font-size-4xl: 32px;     /* heading-xl */
+  --font-size-5xl: 48px;
+  --font-size-6xl: 64px;
+
+  --line-height-tight: 1.25;
+  --line-height-normal: 1.5;
+  --line-height-relaxed: 1.75;
+
+  /* === Z-INDEX LAYERS === */
+  --z-index-base: 0;
+  --z-index-dropdown: 10;
+  --z-index-sticky: 20;
+  --z-index-fixed: 30;
+  --z-index-modal-backdrop: 40;
+  --z-index-modal: 50;
+  --z-index-popover: 60;
+  --z-index-tooltip: 70;
+  --z-index-toast: 80;
+  --z-index-floating-action: 90;
+  --z-index-chatbot: 100;
+
+  /* === BREAKPOINTS (for JS usage) === */
+  --breakpoint-sm: 640px;
+  --breakpoint-md: 768px;
+  --breakpoint-lg: 1024px;
+  --breakpoint-xl: 1280px;
+  --breakpoint-2xl: 1536px;
+
+  /* === LAYOUT DIMENSIONS === */
+  --sidebar-width: 280px;
+  --sidebar-width-collapsed: 80px;
+  --header-height: 64px;
+  --footer-height: 80px;
+
+  /* === SHADOWS === */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  --shadow-2xl: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+
+  /* === TRANSITIONS === */
+  --transition-fast: 150ms ease-in-out;
+  --transition-normal: 300ms ease-in-out;
+  --transition-slow: 500ms ease-in-out;
+
+  /* === COLORS - Light Mode === */
+  --color-primary-50: #eff6ff;
+  --color-primary-100: #dbeafe;
+  --color-primary-500: #3b82f6;
+  --color-primary-600: #2563eb;
+  --color-primary-700: #1d4ed8;
+
+  --color-gray-50: #f9fafb;
+  --color-gray-100: #f3f4f6;
+  --color-gray-200: #e5e7eb;
+  --color-gray-300: #d1d5db;
+  --color-gray-400: #9ca3af;
+  --color-gray-500: #6b7280;
+  --color-gray-600: #4b5563;
+  --color-gray-700: #374151;
+  --color-gray-800: #1f2937;
+  --color-gray-900: #111827;
+
+  --color-success-50: #f0fdf4;
+  --color-success-500: #22c55e;
+  --color-success-600: #16a34a;
+
+  --color-warning-50: #fffbeb;
+  --color-warning-500: #f59e0b;
+  --color-warning-600: #d97706;
+
+  --color-danger-50: #fef2f2;
+  --color-danger-500: #ef4444;
+  --color-danger-600: #dc2626;
+
+  /* === SEMANTIC COLORS === */
+  --color-background: var(--color-gray-50);
+  --color-surface: #ffffff;
+  --color-text-primary: var(--color-gray-900);
+  --color-text-secondary: var(--color-gray-600);
+  --color-text-muted: var(--color-gray-400);
+  --color-border: var(--color-gray-200);
+  --color-border-focus: var(--color-primary-500);
+}
+
+/* === DARK MODE OVERRIDES === */
+[data-theme="dark"] {
+  --color-background: var(--color-gray-900);
+  --color-surface: var(--color-gray-800);
+  --color-text-primary: var(--color-gray-100);
+  --color-text-secondary: var(--color-gray-300);
+  --color-text-muted: var(--color-gray-500);
+  --color-border: var(--color-gray-700);
+  --color-border-focus: var(--color-primary-400);
+}
+
+/* === UTILITY CLASSES === */
+.spacing-xs { padding: var(--spacing-xs); }
+.spacing-sm { padding: var(--spacing-sm); }
+.spacing-md { padding: var(--spacing-md); }
+.spacing-lg { padding: var(--spacing-lg); }
+.spacing-xl { padding: var(--spacing-xl); }
+
+.radius-sm { border-radius: var(--radius-sm); }
+.radius-md { border-radius: var(--radius-md); }
+.radius-lg { border-radius: var(--radius-lg); }
+.radius-xl { border-radius: var(--radius-xl); }
+
+.text-xs { font-size: var(--font-size-xs); }
+.text-sm { font-size: var(--font-size-sm); }
+.text-base { font-size: var(--font-size-base); }
+.text-lg { font-size: var(--font-size-lg); }
+
+.shadow-sm { box-shadow: var(--shadow-sm); }
+.shadow-md { box-shadow: var(--shadow-md); }
+.shadow-lg { box-shadow: var(--shadow-lg); }
+
+.transition-fast { transition: all var(--transition-fast); }
+.transition-normal { transition: all var(--transition-normal); }
+.transition-slow { transition: all var(--transition-slow); }
+
+/* === RESPONSIVE GRID SYSTEM === */
+.grid-responsive {
+  display: grid;
+  gap: var(--spacing-md);
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 640px) {
+  .grid-responsive { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (min-width: 1024px) {
+  .grid-responsive { grid-template-columns: repeat(4, 1fr); }
+}
+
+@media (min-width: 1280px) {
+  .grid-responsive { 
+    grid-template-columns: repeat(4, 1fr);
+    gap: var(--spacing-lg);
+  }
+}
+
+/* === ACCESSIBILITY === */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.focus-visible {
+  outline: 2px solid var(--color-border-focus);
+  outline-offset: 2px;
+}
+
+/* === REDUCED MOTION === */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* === HIGH CONTRAST === */
+@media (prefers-contrast: high) {
+  :root {
+    --color-border: var(--color-gray-900);
+    --color-text-secondary: var(--color-gray-900);
+  }
+  
+  [data-theme="dark"] {
+    --color-border: var(--color-gray-100);
+    --color-text-secondary: var(--color-gray-100);
+  }
+}
+
+/* === PRINT STYLES === */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  
+  * {
+    background: transparent !important;
+    color: black !important;
+    box-shadow: none !important;
+  }
+}

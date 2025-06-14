@@ -1,4 +1,5 @@
 import React from 'react';
+import PropTypes from 'prop-types';
 import { motion } from 'framer-motion';
 import { cn } from '../../utils/cn';
 
@@ -34,8 +35,7 @@ const StandardCard = React.forwardRef(({
   children,
   onClick,
   ...props 
-}, ref) => {
-  const cardClasses = cn(
+}, ref) => {  const cardClasses = cn(
     'relative overflow-hidden',
     cardVariants[variant],
     cardSizes[size],
@@ -43,6 +43,13 @@ const StandardCard = React.forwardRef(({
     onClick && 'cursor-pointer',
     className
   );
+
+  const handleKeyDown = (event) => {
+    if (onClick && (event.key === 'Enter' || event.key === ' ')) {
+      event.preventDefault();
+      onClick(event);
+    }
+  };
 
   if (animate) {
     return (
@@ -53,6 +60,9 @@ const StandardCard = React.forwardRef(({
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3 }}
         onClick={onClick}
+        onKeyDown={handleKeyDown}
+        role={onClick ? "button" : undefined}
+        tabIndex={onClick ? 0 : undefined}
         whileHover={onClick ? { scale: 1.02 } : undefined}
         whileTap={onClick ? { scale: 0.98 } : undefined}
         {...props}
@@ -63,13 +73,32 @@ const StandardCard = React.forwardRef(({
   }
 
   return (
-    <div ref={ref} className={cardClasses} onClick={onClick} {...props}>
+    <div 
+      ref={ref} 
+      className={cardClasses} 
+      onClick={onClick}
+      onKeyDown={handleKeyDown}
+      role={onClick ? "button" : undefined}
+      tabIndex={onClick ? 0 : undefined}
+      {...props}
+    >
       {children}
     </div>
   );
 });
 
 StandardCard.displayName = 'StandardCard';
+
+// PropTypes validation
+StandardCard.propTypes = {
+  className: PropTypes.string,
+  variant: PropTypes.oneOf(['default', 'elevated', 'floating', 'gradient', 'interactive']),
+  size: PropTypes.oneOf(['sm', 'md', 'lg', 'xl']),
+  rounded: PropTypes.oneOf(['sm', 'md', 'lg', 'xl']),
+  animate: PropTypes.bool,
+  children: PropTypes.node,
+  onClick: PropTypes.func
+};
 
 // Specialized card components
 const StatsCard = ({ icon: Icon, label, value, suffix, trend, color = 'blue', ...props }) => (
@@ -98,6 +127,20 @@ const StatsCard = ({ icon: Icon, label, value, suffix, trend, color = 'blue', ..
     )}
   </StandardCard>
 );
+
+// PropTypes for StatsCard
+StatsCard.propTypes = {
+  icon: PropTypes.elementType.isRequired,
+  label: PropTypes.string.isRequired,
+  value: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
+  suffix: PropTypes.string,
+  trend: PropTypes.shape({
+    direction: PropTypes.oneOf(['up', 'down']),
+    value: PropTypes.string,
+    label: PropTypes.string
+  }),
+  color: PropTypes.string
+};
 
 const FeatureCard = ({ icon: Icon, title, description, color = 'blue', ...props }) => (
   <StandardCard 
@@ -142,6 +185,14 @@ const FeatureCard = ({ icon: Icon, title, description, color = 'blue', ...props 
   </StandardCard>
 );
 
+// PropTypes for FeatureCard
+FeatureCard.propTypes = {
+  icon: PropTypes.elementType.isRequired,
+  title: PropTypes.string.isRequired,
+  description: PropTypes.string.isRequired,
+  color: PropTypes.string
+};
+
 const ActionCard = ({ icon: Icon, title, description, color = 'blue', children, ...props }) => (
   <StandardCard 
     variant="interactive"
@@ -173,6 +224,15 @@ const ActionCard = ({ icon: Icon, title, description, color = 'blue', children, 
     <div className="absolute -bottom-4 -right-4 w-24 h-24 bg-white/10 rounded-full group-hover:scale-150 transition-transform duration-500"></div>
   </StandardCard>
 );
+
+// PropTypes for ActionCard
+ActionCard.propTypes = {
+  icon: PropTypes.elementType.isRequired,
+  title: PropTypes.string.isRequired,
+  description: PropTypes.string.isRequired,
+  color: PropTypes.string,
+  children: PropTypes.node
+};
 
 export { StandardCard, StatsCard, FeatureCard, ActionCard };
 export default StandardCard;

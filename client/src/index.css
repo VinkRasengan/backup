@@ -2,6 +2,9 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Import Design Tokens */
+@import './styles/design-tokens.css';
+
 /* Import design system and utilities */
 @import './styles/design-system.css';
 @import './styles/widget-system.css';

@@ -12,6 +12,7 @@ const MessengerLayout = () => {
   const [selectedChat, setSelectedChat] = useState(null);
   const [chatHistory, setChatHistory] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
+  const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef(null);
 
   // Mock chat conversations for demonstration
@@ -39,8 +40,21 @@ const MessengerLayout = () => {
   // Load chat history when selecting a conversation
   useEffect(() => {
     if (selectedChat) {
-      // Mock loading chat history
-      const mockHistory = [
+      // Enhanced welcome message for FactCheck AI
+      const mockHistory = selectedChat.id === 'factcheck-ai' ? [
+        {
+          id: '1',
+          text: 'Xin chào! Tôi là trợ lý ảo FactCheck. Tôi có thể giúp bạn:',
+          sender: 'bot',
+          timestamp: new Date(Date.now() - 1800000)
+        },
+        {
+          id: '2',
+          text: '🔍 Kiểm tra độ tin cậy của link và website\n🛡️ Phát hiện email lừa đảo và phishing\n📰 Xác minh thông tin và tin tức\n💡 Tư vấn về an toàn mạng\n\nHãy gửi cho tôi link hoặc câu hỏi bạn muốn kiểm tra!',
+          sender: 'bot',
+          timestamp: new Date(Date.now() - 1700000)
+        }
+      ] : [
         {
           id: '1',
           text: 'Xin chào! Tôi có thể giúp bạn kiểm tra thông tin gì hôm nay?',
@@ -63,26 +77,55 @@ const MessengerLayout = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [chatHistory]);
 
-  const handleSendMessage = (message) => {
+  const handleSendMessage = async (message) => {
+    if (!message.trim()) return;
+
     const newMessage = {
       id: Date.now().toString(),
-      text: message,
+      text: message.trim(),
       sender: 'user',
       timestamp: new Date()
     };
-    
+
     setChatHistory(prev => [...prev, newMessage]);
-    
-    // Simulate bot response
-    setTimeout(() => {
-      const botResponse = {
+    setIsTyping(true);
+
+    try {
+      // Use actual chat API instead of mock response
+      const response = await fetch('/api/chat/openai', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('authToken') || localStorage.getItem('backendToken')}`
+        },
+        body: JSON.stringify({ message: message.trim() })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        const botResponse = {
+          id: (Date.now() + 1).toString(),
+          text: data.data?.response?.content || 'Xin lỗi, tôi không thể xử lý yêu cầu này lúc này.',
+          sender: 'bot',
+          timestamp: new Date()
+        };
+        setChatHistory(prev => [...prev, botResponse]);
+      } else {
+        throw new Error('API request failed');
+      }
+    } catch (error) {
+      console.error('Chat error:', error);
+      // Fallback response
+      const errorResponse = {
         id: (Date.now() + 1).toString(),
-        text: 'Tôi đang xử lý yêu cầu của bạn...',
+        text: 'Xin lỗi, có lỗi xảy ra. Vui lòng thử lại sau.',
         sender: 'bot',
         timestamp: new Date()
       };
-      setChatHistory(prev => [...prev, botResponse]);
-    }, 1000);
+      setChatHistory(prev => [...prev, errorResponse]);
+    } finally {
+      setIsTyping(false);
+    }
   };
 
   const formatTime = (date) => {
@@ -92,12 +135,19 @@ const MessengerLayout = () => {
     }).format(date);
   };
 
+  // Auto-select FactCheck AI on first load
+  useEffect(() => {
+    if (conversations.length > 0 && !selectedChat) {
+      setSelectedChat(conversations[0]); // Auto-select FactCheck AI
+    }
+  }, [conversations, selectedChat]);
+
   const filteredConversations = conversations.filter(conv =>
     conv.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   return (
-    <div className="flex h-screen bg-white dark:bg-gray-900">
+    <div className="flex h-full bg-white dark:bg-gray-900 rounded-lg overflow-hidden shadow-lg">
       {/* Sidebar - Chat List */}
       <div className={`w-80 border-r border-gray-200 dark:border-gray-700 flex flex-col ${
         selectedChat ? 'hidden lg:flex' : 'flex'
@@ -223,7 +273,7 @@ const MessengerLayout = () => {
             </div>
 
             {/* Messages Area */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50 dark:bg-gray-800">
+            <div className="flex-1 overflow-y-auto p-4 bg-gray-50 dark:bg-gray-800 space-y-4">
               <AnimatePresence>
                 {chatHistory.map((message) => (
                   <motion.div
