@@ -26,6 +26,9 @@ import EmailVerificationRequiredPage from './pages/EmailVerificationRequiredPage
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
 import ChatTestPage from './pages/ChatTestPage';
+import SettingsPage from './pages/SettingsPage';
+import NavigationTestPage from './pages/NavigationTestPage';
+import MessengerTestPage from './pages/MessengerTestPage';
 
 // Components - organized imports
 import ProtectedRoute from './components/auth/ProtectedRoute';
@@ -33,6 +36,7 @@ import EmailVerifiedRoute from './components/auth/EmailVerifiedRoute';
 import { LoadingSpinner, ErrorBoundary } from './components/common';
 import NavigationLayout from './components/navigation/NavigationLayout';
 import GSAPDemo from './components/GSAPDemo';
+import GlobalAnimationProvider from './components/animations/GlobalAnimationProvider';
 
 function App() {
   const { user, loading } = useAuth();
@@ -47,7 +51,8 @@ function App() {
   }  return (
     <ErrorBoundary>
       <ThemeProvider>
-        <NavigationLayout>
+        <GlobalAnimationProvider>
+          <NavigationLayout>
           <Routes>
             {/* Public routes */}
             <Route
@@ -150,6 +155,14 @@ function App() {
             element={<KnowledgeBasePage />}
           />
           <Route
+            path="/settings"
+            element={
+              <ProtectedRoute>
+                <SettingsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/chat-test"
             element={<ChatTest />}
           />
@@ -162,10 +175,21 @@ function App() {
           <Route
             path="/gsap-demo"
             element={<GSAPDemo />}
+          />
+
+          <Route
+            path="/nav-test"
+            element={<NavigationTestPage />}
+          />
+
+          <Route
+            path="/messenger-test"
+            element={<MessengerTestPage />}
           />          {/* Catch all route */}
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>
-        </NavigationLayout>
+          </NavigationLayout>
+        </GlobalAnimationProvider>
       </ThemeProvider>
     </ErrorBoundary>
   );

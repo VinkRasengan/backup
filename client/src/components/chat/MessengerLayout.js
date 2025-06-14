@@ -1,10 +1,25 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, MoreHorizontal, Phone, Video, Info, ArrowLeft } from 'lucide-react';
+import {
+  Search,
+  MoreHorizontal,
+  Phone,
+  Video,
+  Info,
+  ArrowLeft,
+  Menu,
+  X,
+  Settings,
+  Plus,
+  MessageCircle,
+  Minimize2,
+  Maximize2
+} from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import ChatMessage from '../ChatBot/ChatMessage';
 import ChatInput from '../ChatBot/ChatInput';
+import StickyNavigationMenu from '../navigation/StickyNavigationMenu';
 
 const MessengerLayout = () => {
   const { user } = useAuth();
@@ -13,6 +28,10 @@ const MessengerLayout = () => {
   const [chatHistory, setChatHistory] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [isTyping, setIsTyping] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [quickChatOpen, setQuickChatOpen] = useState(false);
+  const [widgetMinimized, setWidgetMinimized] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
   const messagesEndRef = useRef(null);
 
   // Mock chat conversations for demonstration
@@ -91,54 +110,58 @@ const MessengerLayout = () => {
     setIsTyping(true);
 
     try {
-      // Import chatAPI dynamically to avoid circular dependencies
-      const { chatAPI } = await import('../../services/api');
-      
-      // Try different API endpoints based on availability
-      let response;
-      try {
-        // First try the widget endpoint
-        response = await chatAPI.sendWidgetMessage({ message: message.trim() });
-      } catch (widgetError) {
-        console.log('Widget endpoint failed, trying OpenAI endpoint:', widgetError);
-        // Fallback to OpenAI endpoint
-        response = await chatAPI.sendOpenAIMessage({ message: message.trim() });
-      }
+      console.log('🤖 Sending message to Gemini AI:', message.trim());
 
-      console.log('✅ Chat Response:', response);
-      
-      // Handle different response structures
-      let responseText;
-      if (response.data?.response?.content) {
-        responseText = response.data.response.content;
-      } else if (response.data?.data?.response?.content) {
-        responseText = response.data.data.response.content;
-      } else if (response.data?.message) {
-        responseText = response.data.message;
-      } else if (response.data?.content) {
-        responseText = response.data.content;
-      } else if (response.data?.response) {
-        responseText = response.data.response;
+      // Use Gemini API via backend
+      const response = await fetch('/api/chat/openai', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('authToken') || localStorage.getItem('backendToken')}`
+        },
+        body: JSON.stringify({
+          message: message.trim(),
+          provider: 'gemini' // Specify Gemini provider
+        })
+      });
+
+      console.log('📡 API Response status:', response.status);
+
+      if (response.ok) {
+        const data = await response.json();
+        console.log('✅ Gemini Response:', data);
+
+        let responseText;
+        if (data.data?.response?.content) {
+          responseText = data.data.response.content;
+        } else if (data.data?.message) {
+          responseText = data.data.message;
+        } else if (data.message) {
+          responseText = data.message;
+        } else {
+          responseText = 'Tôi đã nhận được tin nhắn của bạn. Cảm ơn bạn đã liên hệ!';
+        }
+
+        const botResponse = {
+          id: (Date.now() + 1).toString(),
+          text: responseText,
+          sender: 'bot',
+          timestamp: new Date()
+        };
+
+        setChatHistory(prev => [...prev, botResponse]);
       } else {
-        // Fallback response
-        responseText = 'Cảm ơn bạn đã nhắn tin! Tôi đã nhận được tin nhắn của bạn và sẽ phản hồi sớm nhất có thể.';
+        const errorData = await response.json();
+        console.error('❌ API Error:', errorData);
+        throw new Error(errorData.message || 'API request failed');
       }
-
-      const botResponse = {
-        id: (Date.now() + 1).toString(),
-        text: responseText,
-        sender: 'bot',
-        timestamp: new Date()
-      };
-
-      setChatHistory(prev => [...prev, botResponse]);
     } catch (error) {
       console.error('❌ Chat Error:', error);
-      
+
       // Show user-friendly error message
       const errorResponse = {
         id: (Date.now() + 1).toString(),
-        text: 'Xin lỗi, hiện tại tôi gặp sự cố kỹ thuật. Hãy thử lại sau vài phút hoặc liên hệ với bộ phận hỗ trợ.',
+        text: 'Xin lỗi, hiện tại tôi gặp sự cố kỹ thuật. Hãy thử lại sau vài phút. Gemini AI đang được cấu hình...',
         sender: 'bot',
         timestamp: new Date()
       };
@@ -168,11 +191,73 @@ const MessengerLayout = () => {
   );
 
   return (
-    <div className="flex h-full bg-white dark:bg-gray-900 rounded-lg overflow-hidden shadow-lg">
-      {/* Sidebar - Chat List */}
-      <div className={`w-80 border-r border-gray-200 dark:border-gray-700 flex flex-col ${
-        selectedChat ? 'hidden lg:flex' : 'flex'
-      }`}>
+    <div className="relative h-full bg-gray-50 dark:bg-gray-900">
+      {/* Sticky Menu Button */}
+      <div className="fixed top-4 left-4 z-50">
+        <motion.button
+          onClick={() => setMenuOpen(!menuOpen)}
+          className="w-12 h-12 bg-blue-600 hover:bg-blue-700 text-white rounded-full shadow-lg flex items-center justify-center transition-colors"
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+        >
+          <Menu size={20} />
+        </motion.button>
+      </div>
+
+      {/* Navigation Menu */}
+      <StickyNavigationMenu
+        isOpen={menuOpen}
+        onClose={() => setMenuOpen(false)}
+      />
+
+      {/* Sticky Sidebar Toggle */}
+      <div className="fixed top-20 left-4 z-50">
+        <motion.button
+          onClick={() => setSidebarOpen(!sidebarOpen)}
+          className="w-10 h-10 bg-gray-600 hover:bg-gray-700 text-white rounded-lg shadow-lg flex items-center justify-center transition-colors"
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+        >
+          {sidebarOpen ? <X size={16} /> : <ArrowLeft size={16} />}
+        </motion.button>
+      </div>
+
+      {/* Sticky Quick Chat Widget */}
+      <div className="fixed bottom-4 right-20 z-50">
+        <motion.button
+          onClick={() => setQuickChatOpen(!quickChatOpen)}
+          className="w-14 h-14 bg-green-600 hover:bg-green-700 text-white rounded-full shadow-lg flex items-center justify-center transition-colors"
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+        >
+          <MessageCircle size={24} />
+        </motion.button>
+      </div>
+
+      {/* Sticky + Widget */}
+      <div className="fixed bottom-4 right-4 z-50">
+        <motion.button
+          onClick={() => setWidgetMinimized(!widgetMinimized)}
+          className="w-14 h-14 bg-purple-600 hover:bg-purple-700 text-white rounded-full shadow-lg flex items-center justify-center transition-colors"
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+        >
+          {widgetMinimized ? <Maximize2 size={24} /> : <Plus size={24} />}
+        </motion.button>
+      </div>
+
+      {/* Main Messenger Layout */}
+      <div className="flex h-full">
+        {/* Sidebar - Chat List */}
+        <motion.div
+          initial={false}
+          animate={{
+            width: sidebarOpen ? 320 : 0,
+            opacity: sidebarOpen ? 1 : 0
+          }}
+          transition={{ duration: 0.3, ease: "easeInOut" }}
+          className="bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col overflow-hidden"
+        >
         {/* Header */}
         <div className="p-4 border-b border-gray-200 dark:border-gray-700">
           <div className="flex items-center justify-between mb-4">
@@ -243,10 +328,10 @@ const MessengerLayout = () => {
             </motion.div>
           ))}
         </div>
-      </div>
+        </motion.div>
 
-      {/* Main Chat Area */}
-      <div className="flex-1 flex flex-col">
+        {/* Main Chat Area */}
+        <div className="flex-1 flex flex-col bg-white dark:bg-gray-900">
         {selectedChat ? (
           <>
             {/* Chat Header */}
@@ -305,9 +390,11 @@ const MessengerLayout = () => {
                     transition={{ duration: 0.3 }}
                   >
                     <ChatMessage
-                      message={message.text}
-                      isUser={message.sender === 'user'}
-                      timestamp={message.timestamp}
+                      message={{
+                        text: message.text,
+                        isBot: message.sender === 'bot',
+                        timestamp: message.timestamp
+                      }}
                     />
                   </motion.div>
                 ))}
@@ -336,6 +423,7 @@ const MessengerLayout = () => {
             </div>
           </div>
         )}
+        </div>
       </div>
     </div>
   );
