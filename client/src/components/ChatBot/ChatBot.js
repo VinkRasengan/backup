@@ -1,6 +1,7 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MessageCircle, X, Minimize2, Plus } from 'lucide-react';
+import PropTypes from 'prop-types';
 import ChatMessage from './ChatMessage';
 import ChatInput from './ChatInput';
 import QuickReplies from './QuickReplies';
@@ -8,11 +9,9 @@ import { chatAPI } from '../../services/api';
 
 const ChatBot = ({ embedded = false, onClose, isFloating = false }) => {
   console.log('🔄 [INIT] ChatBot component initialized - NEW VERSION', { embedded, isFloating });
-  const [isOpen, setIsOpen] = useState(embedded ? true : false);
+  const [isOpen, setIsOpen] = useState(embedded);
   const [isMinimized, setIsMinimized] = useState(false);
   const [showQuickReplies, setShowQuickReplies] = useState(true);
-  const [currentConversationId, setCurrentConversationId] = useState(null);
-  const [conversations, setConversations] = useState([]);
   const [messages, setMessages] = useState([
     {
       id: 1,
@@ -24,24 +23,28 @@ const ChatBot = ({ embedded = false, onClose, isFloating = false }) => {
 
   // Giới hạn số lượng messages hiển thị như Messenger (tối đa 20 tin nhắn)
   const MAX_MESSAGES = 20;
-  const displayMessages = messages.slice(-MAX_MESSAGES);
   const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef(null);
 
   // Debug: Log messages state changes
-  React.useEffect(() => {
+  useEffect(() => {
     console.log('🔄 Messages state updated:', messages);
   }, [messages]);
 
-  const scrollToBottom = () => {
+  const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
+  }, []);
 
   useEffect(() => {
     scrollToBottom();
+  }, [messages, scrollToBottom]);
+
+  // Memoized message processing
+  const displayMessages = useMemo(() => {
+    return messages.slice(-MAX_MESSAGES);
   }, [messages]);
 
-  const handleSendMessage = async (text) => {
+  const handleSendMessage = useCallback(async (text) => {
     console.log('🚀 [HANDLER] handleSendMessage called with:', text);
     if (!text.trim()) return;
 
@@ -56,7 +59,13 @@ const ChatBot = ({ embedded = false, onClose, isFloating = false }) => {
       timestamp: new Date()
     };
 
-    setMessages(prev => [...prev, userMessage]);
+    console.log('📝 Adding user message:', userMessage);
+    setMessages(prev => {
+      const newMessages = [...prev, userMessage];
+      console.log('📝 Updated messages with user message:', newMessages);
+      return newMessages;
+    });
+    
     setIsTyping(true);
 
     // Simulate typing delay
@@ -68,24 +77,22 @@ const ChatBot = ({ embedded = false, onClose, isFloating = false }) => {
       const response = await chatAPI.sendWidgetMessage({ message: text.trim() });
 
       console.log('✅ Widget Response:', response);
-      console.log('✅ Response data:', response.data);
-      console.log('✅ Response content:', response.data?.response?.content);
-      console.log('🔍 Full response structure:', JSON.stringify(response, null, 2));
-
-      // Validate response structure - axios wraps response in data
-      const responseContent = response.data?.data?.response?.content;
-      if (!responseContent) {
-        console.error('❌ Invalid response structure. Expected: response.data.data.response.content');
-        console.error('❌ Actual structure:', {
-          hasData: !!response.data,
-          hasDataData: !!response.data?.data,
-          hasResponse: !!response.data?.data?.response,
-          hasContent: !!response.data?.data?.response?.content,
-          dataKeys: response.data ? Object.keys(response.data) : 'no data',
-          dataDataKeys: response.data?.data ? Object.keys(response.data.data) : 'no data.data',
-          responseKeys: response.data?.data?.response ? Object.keys(response.data.data.response) : 'no response'
-        });
-        throw new Error(`Invalid response structure from server. Got: ${JSON.stringify(response.data)}`);
+      
+      // Handle different response structures
+      let responseContent;
+      if (response.data?.response?.content) {
+        responseContent = response.data.response.content;
+      } else if (response.data?.data?.response?.content) {
+        responseContent = response.data.data.response.content;
+      } else if (response.data?.message) {
+        responseContent = response.data.message;
+      } else if (response.data?.content) {
+        responseContent = response.data.content;
+      } else if (response.data?.response) {
+        responseContent = response.data.response;
+      } else {
+        // Fallback response
+        responseContent = 'Cảm ơn bạn đã liên hệ! Hiện tại tôi đang xử lý yêu cầu của bạn.';
       }
 
       const botMessage = {
@@ -98,58 +105,57 @@ const ChatBot = ({ embedded = false, onClose, isFloating = false }) => {
       console.log('✅ Bot message created:', botMessage);
       setMessages(prev => {
         const newMessages = [...prev, botMessage];
-        console.log('✅ Messages updated:', newMessages);
+        console.log('✅ Messages updated with bot response:', newMessages);
         return newMessages;
       });
-      setIsTyping(false);
+      
     } catch (error) {
       console.error('❌ API Error:', error);
-      console.error('❌ Error details:', {
-        message: error.message,
-        response: error.response?.data,
-        status: error.response?.status,
-        statusText: error.response?.statusText
-      });
-
-      // Show error message to user
+      
+      // Show more user-friendly error message
       const errorMessage = {
         id: Date.now() + 1,
-        text: '⚠️ Xin lỗi, hiện tại tôi không thể kết nối được với server. Vui lòng thử lại sau hoặc liên hệ quản trị viên.',
+        text: 'Xin lỗi, hiện tại tôi gặp sự cố kỹ thuật. Bạn có thể thử lại sau vài phút hoặc liên hệ với bộ phận hỗ trợ qua email support@factcheck.vn',
         isBot: true,
         timestamp: new Date()
       };
 
-      setMessages(prev => [...prev, errorMessage]);
+      console.log('❌ Adding error message:', errorMessage);
+      setMessages(prev => {
+        const newMessages = [...prev, errorMessage];
+        console.log('❌ Messages updated with error:', newMessages);
+        return newMessages;
+      });
+    } finally {
       setIsTyping(false);
     }
-  };
+  }, []);
 
-  const toggleChat = () => {
+  const toggleChat = useCallback(() => {
     if (isFloating && onClose && isOpen) {
       onClose();
     } else {
       setIsOpen(!isOpen);
       setIsMinimized(false);
     }
-  };
+  }, [isFloating, onClose, isOpen]);
 
-  const minimizeChat = () => {
+  const minimizeChat = useCallback(() => {
     setIsMinimized(true);
-  };
+  }, []);
 
-  const maximizeChat = () => {
+  const maximizeChat = useCallback(() => {
     setIsMinimized(false);
-  };
+  }, []);
 
-  const handleQuickReply = (text) => {
+  const handleQuickReply = useCallback((text) => {
     setShowQuickReplies(false); // Ẩn quick replies sau khi click
     handleSendMessage(text);
-  };
+  }, [handleSendMessage]);
 
   // Create new chat conversation
-  const handleNewChat = () => {
+  const handleNewChat = useCallback(() => {
     console.log('🆕 Creating new chat conversation');
-    setCurrentConversationId(null);
     setMessages([
       {
         id: 1,
@@ -159,10 +165,10 @@ const ChatBot = ({ embedded = false, onClose, isFloating = false }) => {
       }
     ]);
     setShowQuickReplies(true);
-  };
+  }, []);
 
   // Calculate chat window classes - Better positioning and z-index
-  const getChatWindowClasses = () => {
+  const getChatWindowClasses = useCallback(() => {
     if (isMinimized) {
       return 'bottom-4 left-4 w-64 h-14 cursor-pointer';
     }
@@ -175,21 +181,14 @@ const ChatBot = ({ embedded = false, onClose, isFloating = false }) => {
     } else { // Desktop
       return 'bottom-4 left-4 w-[380px] h-[520px] max-h-[80vh]';
     }
-  };
-
-  // Check if we're on a page where we should adjust positioning
-  const shouldAdjustPosition = () => {
-    if (typeof window === 'undefined') return false;
-    const path = window.location.pathname;
-    return path === '/chat' || path.startsWith('/chat');
-  };
+  }, [isMinimized]);
 
   // Embedded mode renders only the chat content
   if (embedded) {
     return (
-      <div className="h-full flex flex-col bg-white dark:bg-gray-800">
+      <div className="h-full flex flex-col bg-white dark:bg-gray-800 chat-container">
         {/* Header */}
-        <div className="bg-gradient-to-r from-blue-500 to-purple-600 text-white p-3 flex items-center justify-between">
+        <div className="bg-gradient-to-r from-blue-500 to-purple-600 text-white p-3 flex items-center justify-between hardware-accelerated">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
               <MessageCircle size={16} />
@@ -206,7 +205,7 @@ const ChatBot = ({ embedded = false, onClose, isFloating = false }) => {
           {/* New Chat Button for embedded mode */}
           <button
             onClick={handleNewChat}
-            className="p-1 hover:bg-white/20 rounded-full transition-colors"
+            className="p-1 hover:bg-white/20 rounded-full smooth-transition focus-optimized"
             title="Cuộc trò chuyện mới"
           >
             <Plus size={16} />
@@ -214,9 +213,11 @@ const ChatBot = ({ embedded = false, onClose, isFloating = false }) => {
         </div>
 
         {/* Messages Area */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-3 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-transparent">
-          {messages.slice(-MAX_MESSAGES).map((message) => (
-            <ChatMessage key={message.id} message={message} />
+        <div className="flex-1 overflow-y-auto p-4 space-y-3 scrollbar-optimized">
+          {displayMessages.map((message) => (
+            <div key={message.id} className="chat-message">
+              <ChatMessage message={message} />
+            </div>
           ))}
 
           {isTyping && (
@@ -275,9 +276,9 @@ const ChatBot = ({ embedded = false, onClose, isFloating = false }) => {
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.9 }}
             onClick={toggleChat}
-            className="fixed bottom-4 left-4 z-chatbot w-14 h-14 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center group"
+            className="fixed bottom-4 left-4 z-chatbot w-14 h-14 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white rounded-full shadow-lg hover:shadow-xl smooth-transition flex items-center justify-center group gpu-optimized focus-optimized"
           >
-            <MessageCircle size={24} className="group-hover:scale-110 transition-transform" />
+            <MessageCircle size={24} className="group-hover:scale-110 smooth-transform" />
 
             {/* Notification dot */}
             <motion.div
@@ -367,7 +368,7 @@ const ChatBot = ({ embedded = false, onClose, isFloating = false }) => {
                   }}
                 >
                   {/* Hiển thị tối đa 20 tin nhắn gần nhất */}
-                  {messages.slice(-MAX_MESSAGES).map((message) => (
+                  {displayMessages.map((message) => (
                     <ChatMessage key={message.id} message={message} />
                   ))}
 
@@ -452,6 +453,12 @@ const ChatBot = ({ embedded = false, onClose, isFloating = false }) => {
       </AnimatePresence>
     </>
   );
+};
+
+ChatBot.propTypes = {
+  embedded: PropTypes.bool,
+  onClose: PropTypes.func,
+  isFloating: PropTypes.bool
 };
 
 export default ChatBot;

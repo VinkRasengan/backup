@@ -91,41 +91,62 @@ const MessengerLayout = () => {
     setIsTyping(true);
 
     try {
-      // Use actual chat API instead of mock response
-      const response = await fetch('/api/chat/openai', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('authToken') || localStorage.getItem('backendToken')}`
-        },
-        body: JSON.stringify({ message: message.trim() })
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        const botResponse = {
-          id: (Date.now() + 1).toString(),
-          text: data.data?.response?.content || 'Xin lỗi, tôi không thể xử lý yêu cầu này lúc này.',
-          sender: 'bot',
-          timestamp: new Date()
-        };
-        setChatHistory(prev => [...prev, botResponse]);
-      } else {
-        throw new Error('API request failed');
+      // Import chatAPI dynamically to avoid circular dependencies
+      const { chatAPI } = await import('../../services/api');
+      
+      // Try different API endpoints based on availability
+      let response;
+      try {
+        // First try the widget endpoint
+        response = await chatAPI.sendWidgetMessage({ message: message.trim() });
+      } catch (widgetError) {
+        console.log('Widget endpoint failed, trying OpenAI endpoint:', widgetError);
+        // Fallback to OpenAI endpoint
+        response = await chatAPI.sendOpenAIMessage({ message: message.trim() });
       }
-    } catch (error) {
-      console.error('Chat error:', error);
-      // Fallback response
-      const errorResponse = {
+
+      console.log('✅ Chat Response:', response);
+      
+      // Handle different response structures
+      let responseText;
+      if (response.data?.response?.content) {
+        responseText = response.data.response.content;
+      } else if (response.data?.data?.response?.content) {
+        responseText = response.data.data.response.content;
+      } else if (response.data?.message) {
+        responseText = response.data.message;
+      } else if (response.data?.content) {
+        responseText = response.data.content;
+      } else if (response.data?.response) {
+        responseText = response.data.response;
+      } else {
+        // Fallback response
+        responseText = 'Cảm ơn bạn đã nhắn tin! Tôi đã nhận được tin nhắn của bạn và sẽ phản hồi sớm nhất có thể.';
+      }
+
+      const botResponse = {
         id: (Date.now() + 1).toString(),
-        text: 'Xin lỗi, có lỗi xảy ra. Vui lòng thử lại sau.',
+        text: responseText,
         sender: 'bot',
         timestamp: new Date()
       };
+
+      setChatHistory(prev => [...prev, botResponse]);
+    } catch (error) {
+      console.error('❌ Chat Error:', error);
+      
+      // Show user-friendly error message
+      const errorResponse = {
+        id: (Date.now() + 1).toString(),
+        text: 'Xin lỗi, hiện tại tôi gặp sự cố kỹ thuật. Hãy thử lại sau vài phút hoặc liên hệ với bộ phận hỗ trợ.',
+        sender: 'bot',
+        timestamp: new Date()
+      };
+
       setChatHistory(prev => [...prev, errorResponse]);
-    } finally {
-      setIsTyping(false);
     }
+
+    setIsTyping(false);
   };
 
   const formatTime = (date) => {

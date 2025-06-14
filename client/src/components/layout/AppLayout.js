@@ -45,8 +45,8 @@ const AppLayout = ({ children, className, ...props }) => {
     }
   }, [location.pathname]);
 
-  // Determine if we should show sidebar (hide on homepage, login, register)
-  const showSidebar = user && !['/login', '/register', '/', '/home'].includes(location.pathname);
+  // Determine if we should show sidebar (hide on login/register pages only)
+  const showSidebar = user && !['/login', '/register'].includes(location.pathname);
 
   return (
     <div 

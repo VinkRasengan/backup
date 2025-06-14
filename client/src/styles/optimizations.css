@@ -1,0 +1,131 @@
+/* Performance Optimizations */
+
+/* Enable hardware acceleration for animations */
+.hardware-accelerated {
+  will-change: transform;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  perspective: 1000px;
+}
+
+/* Optimized transitions */
+.smooth-transition {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.smooth-transform {
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Memory-efficient animations */
+@keyframes optimizedFadeIn {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 10px, 0);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes optimizedSlideIn {
+  0% {
+    transform: translate3d(-100%, 0, 0);
+  }
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+/* Chat optimizations */
+.chat-message {
+  contain: layout style paint;
+}
+
+.chat-container {
+  contain: layout style;
+  overflow-anchor: auto;
+}
+
+/* Navigation optimizations */
+.nav-sidebar {
+  contain: layout style paint;
+  will-change: transform;
+}
+
+.nav-item {
+  contain: layout paint;
+}
+
+/* Reduce repaints */
+.no-repaint {
+  contain: strict;
+}
+
+/* Optimized scrollbar */
+.scrollbar-optimized::-webkit-scrollbar {
+  width: 6px;
+}
+
+.scrollbar-optimized::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.scrollbar-optimized::-webkit-scrollbar-thumb {
+  background-color: rgba(156, 163, 175, 0.3);
+  border-radius: 3px;
+  transition: background-color 0.2s ease;
+}
+
+.scrollbar-optimized::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(156, 163, 175, 0.5);
+}
+
+/* Dark mode scrollbar */
+.dark .scrollbar-optimized::-webkit-scrollbar-thumb {
+  background-color: rgba(107, 114, 128, 0.3);
+}
+
+.dark .scrollbar-optimized::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(107, 114, 128, 0.5);
+}
+
+/* Prevent layout shifts */
+.aspect-preserve {
+  aspect-ratio: 1 / 1;
+}
+
+/* Optimized focus states */
+.focus-optimized:focus {
+  outline: 2px solid rgb(59, 130, 246);
+  outline-offset: 2px;
+}
+
+.focus-optimized:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* Performance hints for browsers */
+.gpu-optimized {
+  transform: translateZ(0);
+  will-change: transform, opacity;
+}
+
+/* Reduce motion for accessibility */
+@media (prefers-reduced-motion: reduce) {
+  .smooth-transition,
+  .smooth-transform {
+    transition: none;
+  }
+  
+  .hardware-accelerated {
+    will-change: auto;
+  }
+}
+
+/* Memory management */
+.lazy-content {
+  content-visibility: auto;
+  contain-intrinsic-size: 200px;
+}

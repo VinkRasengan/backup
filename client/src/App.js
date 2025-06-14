@@ -31,7 +31,7 @@ import ChatTestPage from './pages/ChatTestPage';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import EmailVerifiedRoute from './components/auth/EmailVerifiedRoute';
 import { LoadingSpinner, ErrorBoundary } from './components/common';
-import AppLayout from './components/layout/AppLayout';
+import NavigationLayout from './components/navigation/NavigationLayout';
 import GSAPDemo from './components/GSAPDemo';
 
 function App() {
@@ -44,12 +44,10 @@ function App() {
 
   if (loading) {
     return <LoadingSpinner />;
-  }
-
-  return (
+  }  return (
     <ErrorBoundary>
       <ThemeProvider>
-        <AppLayout>
+        <NavigationLayout>
           <Routes>
             {/* Public routes */}
             <Route
@@ -62,17 +60,17 @@ function App() {
             />
             <Route
               path="/register"
-              element={user ? <Navigate to="/dashboard" /> : <ModernRegisterPage />}
-            />
-            <Route
-              path="/test-register"
-              element={<TestRegisterPage />}
-            />
-            <Route path="/registration-success" element={<RegistrationSuccessPage />} />
-            <Route path="/verify-email" element={<VerifyEmailPage />} />
-            <Route path="/email-verification-required" element={<EmailVerificationRequiredPage />} />
-            <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-            <Route path="/reset-password" element={<ResetPasswordPage />} />
+                element={user ? <Navigate to="/dashboard" /> : <ModernRegisterPage />}
+              />
+              <Route
+                path="/test-register"
+                element={<TestRegisterPage />}
+              />
+              <Route path="/registration-success" element={<RegistrationSuccessPage />} />
+              <Route path="/verify-email" element={<VerifyEmailPage />} />
+              <Route path="/email-verification-required" element={<EmailVerificationRequiredPage />} />
+              <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+              <Route path="/reset-password" element={<ResetPasswordPage />} />
 
           {/* Protected routes */}
           <Route 
@@ -164,12 +162,10 @@ function App() {
           <Route
             path="/gsap-demo"
             element={<GSAPDemo />}
-          />
-
-          {/* Catch all route */}
+          />          {/* Catch all route */}
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>
-        </AppLayout>
+        </NavigationLayout>
       </ThemeProvider>
     </ErrorBoundary>
   );
