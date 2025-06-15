@@ -5,7 +5,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import NavigationSidebar from './NavigationSidebar';
 import HamburgerMenu from './HamburgerMenu';
-import FloatingActions from '../layout/FloatingActions';
+
 import MobileTabBar from './MobileTabBar';
 import NotificationWidget from '../widgets/NotificationWidget';
 import QuickActionWidget from '../widgets/QuickActionWidget';
@@ -80,10 +80,7 @@ const NavigationLayout = ({ children, showHamburger = true, className, ...props 
         {children}
       </div>
 
-      {/* Floating Actions */}
-      <FloatingActions />
-
-      {/* New Widgets */}
+      {/* Unified Widgets - No duplicates */}
       {!hideNavigation && (
         <>
           <NotificationWidget />

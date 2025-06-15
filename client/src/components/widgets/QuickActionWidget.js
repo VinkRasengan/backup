@@ -116,9 +116,50 @@ const QuickActionWidget = () => {
       ease: "power2.out"
     });
 
-    // Handle action logic here
-    console.log(`Executing action: ${action.id}`);
-    
+    // Handle action logic
+    switch (action.id) {
+      case 'check-link':
+        window.location.href = '/check';
+        break;
+      case 'scan-file':
+        // Implement file scanning
+        alert('Tính năng quét file đang được phát triển');
+        break;
+      case 'create-post':
+        window.location.href = '/submit';
+        break;
+      case 'start-chat':
+        window.location.href = '/chat';
+        break;
+      case 'join-discussion':
+        window.location.href = '/community';
+        break;
+      case 'quick-scan': {
+        // Quick URL scan with Gemini
+        const url = prompt('Nhập URL cần kiểm tra:');
+        if (url) {
+          handleQuickScan(url);
+        }
+        break;
+      }
+      case 'screenshot':
+        // Implement screenshot analysis
+        alert('Tính năng chụp màn hình đang được phát triển');
+        break;
+      case 'share-link':
+        // Implement link sharing
+        navigator.share ?
+          navigator.share({
+            title: 'FactCheck AI',
+            text: 'Kiểm tra thông tin với FactCheck AI',
+            url: window.location.origin
+          }) :
+          alert('Tính năng chia sẻ không được hỗ trợ trên trình duyệt này');
+        break;
+      default:
+        console.log(`Executing action: ${action.id}`);
+    }
+
     // Close widget after action
     setTimeout(() => {
       setIsOpen(false);
@@ -128,6 +169,33 @@ const QuickActionWidget = () => {
         ease: "back.out(1.7)"
       });
     }, 200);
+  };
+
+  const handleQuickScan = async (url) => {
+    try {
+      // Show loading state
+      alert('Đang phân tích URL với Gemini AI...');
+
+      const response = await fetch('/api/gemini/analyze-url', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('authToken') || localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({ url })
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        alert(`Kết quả phân tích:\n\nĐộ tin cậy: ${data.credibilityScore}/100\nMức rủi ro: ${data.riskLevel}\n\n${data.analysis}`);
+      } else {
+        alert('Không thể phân tích URL. Vui lòng thử lại sau.');
+      }
+    } catch (error) {
+      console.error('Quick scan error:', error);
+      alert('Lỗi kết nối. Vui lòng thử lại sau.');
+    }
   };
 
   return (

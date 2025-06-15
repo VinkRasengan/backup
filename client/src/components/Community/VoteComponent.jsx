@@ -82,10 +82,12 @@ const VoteComponent = ({ linkId, postData, className = '' }) => {
     try {
       setLoading(true);
 
-      // Try to load from API
-      const response = await fetch(`/api/votes/${linkId}/stats`, {
+      // Use optimized endpoint with caching
+      const token = localStorage.getItem('authToken') || localStorage.getItem('backendToken') || localStorage.getItem('token');
+      const response = await fetch(`/api/votes/${linkId}/optimized`, {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${token}`,
+          'Cache-Control': 'max-age=300' // 5 minutes cache
         }
       });
 
@@ -103,7 +105,39 @@ const VoteComponent = ({ linkId, postData, className = '' }) => {
         // Trigger counter animation
         setTimeout(() => startCounterAnimation(), 100);
       } else {
-        // Fallback to mock data
+        // Fallback to regular endpoint
+        await loadVoteDataFallback();
+      }
+    } catch (error) {
+      console.error('Load vote data error:', error);
+      // Fallback to regular endpoint
+      await loadVoteDataFallback();
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadVoteDataFallback = async () => {
+    try {
+      const token = localStorage.getItem('authToken') || localStorage.getItem('backendToken') || localStorage.getItem('token');
+      const response = await fetch(`/api/votes/${linkId}/stats`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        const newStats = {
+          safe: data.statistics?.safe || 0,
+          unsafe: data.statistics?.unsafe || 0,
+          suspicious: data.statistics?.suspicious || 0,
+          total: data.statistics?.total || 0
+        };
+        setVoteStats(newStats);
+        setUserVote(data.userVote);
+      } else {
+        // Generate mock data as last resort
         const safe = Math.floor(Math.random() * 50) + 10;
         const unsafe = Math.floor(Math.random() * 20);
         const suspicious = Math.floor(Math.random() * 10);
@@ -115,8 +149,8 @@ const VoteComponent = ({ linkId, postData, className = '' }) => {
         });
       }
     } catch (error) {
-      console.error('Load vote data error:', error);
-      // Fallback to mock data
+      console.error('Fallback vote data error:', error);
+      // Generate mock data as last resort
       const safe = Math.floor(Math.random() * 50) + 10;
       const unsafe = Math.floor(Math.random() * 20);
       const suspicious = Math.floor(Math.random() * 10);
@@ -126,8 +160,6 @@ const VoteComponent = ({ linkId, postData, className = '' }) => {
         suspicious,
         total: safe + unsafe + suspicious
       });
-    } finally {
-      setLoading(false);
     }
   };
 

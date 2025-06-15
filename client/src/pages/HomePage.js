@@ -8,7 +8,7 @@ import { ResponsiveContainer, Section } from '../components/ui/ResponsiveLayout'
 import EnhancedHeroSection from '../components/hero/EnhancedHeroSection';
 import ScrollTriggeredSection from '../components/animations/ScrollTriggeredSection';
 import PageTransition from '../components/transitions/PageTransition';
-import FloatingWidgets from '../components/widgets/FloatingWidgets';
+
 import { gsap } from '../utils/gsap';
 import { useGSAP } from '../hooks/useGSAP';
 
@@ -93,8 +93,7 @@ const HomePage = () => {
   return (
     <PageTransition>
       <div ref={containerRef}>
-        {/* Floating Widgets */}
-        <FloatingWidgets />
+
 
       {/* Enhanced Hero Section */}
       <EnhancedHeroSection />
@@ -118,39 +117,59 @@ const HomePage = () => {
               <ScrollTriggeredSection
                 animation="popIn"
                 stagger={0.15}
-                className="grid grid-cols-1 md:grid-cols-2 gap-8"
+                className="grid grid-cols-1 md:grid-cols-2 gap-8 auto-rows-fr"
               >
                 <ActionCard
                   icon={Users}
                   title="Cộng đồng kiểm tin"
-                  description="Tham gia cùng cộng đồng đánh giá và xác minh thông tin với hệ thống voting thông minh"
+                  description="Tham gia cùng cộng đồng đánh giá và xác minh thông tin với hệ thống voting thông minh. Kết nối với hàng nghìn người dùng để cùng nhau xác minh độ tin cậy của các thông tin trên mạng."
                   color="blue"
                   onClick={() => window.location.href = '/community'}
-                />
+                >
+                  <div className="flex items-center gap-2 text-sm text-white/80">
+                    <Users size={16} />
+                    <span>1,234+ thành viên</span>
+                  </div>
+                </ActionCard>
 
                 <ActionCard
                   icon={BookOpen}
                   title="Kiến thức nền"
-                  description="Học cách nhận biết và kiểm tra thông tin sai lệch qua các khóa học chuyên sâu"
+                  description="Học cách nhận biết và kiểm tra thông tin sai lệch qua các khóa học chuyên sâu. Nâng cao kỹ năng phân tích và đánh giá nguồn tin một cách khoa học."
                   color="green"
                   onClick={() => window.location.href = '/knowledge'}
-                />
+                >
+                  <div className="flex items-center gap-2 text-sm text-white/80">
+                    <BookOpen size={16} />
+                    <span>50+ bài học</span>
+                  </div>
+                </ActionCard>
 
                 <ActionCard
                   icon={MessageCircle}
                   title="Trợ lý AI"
-                  description="Hỏi đáp với AI về cách kiểm tra thông tin sử dụng công nghệ Gemini tiên tiến"
+                  description="Hỏi đáp với AI về cách kiểm tra thông tin sử dụng công nghệ Gemini tiên tiến. Nhận được phân tích chi tiết và lời khuyên từ trí tuệ nhân tạo."
                   color="purple"
                   onClick={() => window.location.href = '/chat'}
-                />
+                >
+                  <div className="flex items-center gap-2 text-sm text-white/80">
+                    <MessageCircle size={16} />
+                    <span>Powered by Gemini</span>
+                  </div>
+                </ActionCard>
 
                 <ActionCard
                   icon={Search}
                   title="Gửi bài viết"
-                  description="Chia sẻ bài viết để cộng đồng cùng đánh giá với hệ thống phân tích đa chiều"
+                  description="Chia sẻ bài viết để cộng đồng cùng đánh giá với hệ thống phân tích đa chiều. Góp phần xây dựng cơ sở dữ liệu thông tin đáng tin cậy."
                   color="orange"
                   onClick={() => window.location.href = '/submit'}
-                />
+                >
+                  <div className="flex items-center gap-2 text-sm text-white/80">
+                    <Search size={16} />
+                    <span>Kiểm tra ngay</span>
+                  </div>
+                </ActionCard>
               </ScrollTriggeredSection>
             </div>
 

@@ -30,18 +30,30 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Token refresh mechanism
+  // Enhanced token refresh mechanism with multiple storage keys
   const refreshToken = async () => {
     try {
       const currentUser = auth.currentUser;
       if (currentUser) {
         const token = await currentUser.getIdToken(true); // Force refresh
+
+        // Store token in multiple keys for compatibility
         localStorage.setItem('token', token);
+        localStorage.setItem('authToken', token);
+        localStorage.setItem('backendToken', token);
+        localStorage.setItem('firebaseToken', token);
+
         console.log('🔄 Token refreshed successfully');
         return token;
       }
     } catch (error) {
       console.error('❌ Token refresh failed:', error);
+      // Clear all token storage on failure
+      localStorage.removeItem('token');
+      localStorage.removeItem('authToken');
+      localStorage.removeItem('backendToken');
+      localStorage.removeItem('firebaseToken');
+
       // If token refresh fails, sign out user
       await signOut(auth);
       throw error;
@@ -66,7 +78,12 @@ export const AuthProvider = ({ children }) => {
         // Store Firebase ID token with refresh mechanism
         try {
           const token = await user.getIdToken();
+
+          // Store token in multiple keys for compatibility
           localStorage.setItem('token', token);
+          localStorage.setItem('authToken', token);
+          localStorage.setItem('backendToken', token);
+          localStorage.setItem('firebaseToken', token);
           localStorage.setItem('user', JSON.stringify(userData));
 
           // Set up token refresh timer (refresh every 50 minutes)
@@ -79,15 +96,18 @@ export const AuthProvider = ({ children }) => {
             }
           }, 50 * 60 * 1000); // 50 minutes
 
-          // Store interval ID for cleanup
-          localStorage.setItem('tokenRefreshInterval', refreshInterval.toString());
+          // Store interval ID for cleanup (convert to string properly)
+          localStorage.setItem('tokenRefreshInterval', String(refreshInterval));
         } catch (error) {
           console.error('Error getting ID token:', error);
         }
       } else {
-        // User is signed out
+        // User is signed out - clear all token storage
         setUser(null);
         localStorage.removeItem('token');
+        localStorage.removeItem('authToken');
+        localStorage.removeItem('backendToken');
+        localStorage.removeItem('firebaseToken');
         localStorage.removeItem('user');
 
         // Clear token refresh interval

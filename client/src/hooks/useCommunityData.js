@@ -93,14 +93,14 @@ class CommunityDataManager {
     }
   }
 
-  // Make actual API request with optimization
+  // Enhanced API request with Facebook/Reddit-style optimization
   async makeRequest(params) {
     const { sort = 'trending', filter = 'all', search = '', page = 1 } = params;
 
     const urlParams = new URLSearchParams({
       page,
       sort,
-      limit: 15, // Increased limit for better UX
+      limit: page === 1 ? 10 : 5, // Load fewer items for subsequent pages
       includeNews: 'true'
     });
 
@@ -114,10 +114,17 @@ class CommunityDataManager {
 
     console.log('🌐 API Request:', urlParams.toString());
 
+    // Enhanced token handling
+    const token = localStorage.getItem('token') ||
+                 localStorage.getItem('authToken') ||
+                 localStorage.getItem('backendToken') ||
+                 localStorage.getItem('firebaseToken');
+
     const response = await fetch(`/api/community/posts?${urlParams}`, {
       headers: {
-        'Authorization': `Bearer ${localStorage.getItem('authToken') || localStorage.getItem('backendToken')}`,
-        'Cache-Control': 'max-age=300' // 5 minutes cache
+        'Authorization': `Bearer ${token}`,
+        'Cache-Control': 'max-age=300', // 5 minutes cache
+        'X-Request-ID': `community-${Date.now()}` // Request tracking
       }
     });
 

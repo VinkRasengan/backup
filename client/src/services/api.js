@@ -26,7 +26,7 @@ const api = axios.create({
 console.log('🔗 API Base URL:', api.defaults.baseURL);
 console.log('🌍 Environment:', process.env.NODE_ENV);
 
-// Request interceptor to add Firebase ID token
+// Enhanced request interceptor to add Firebase ID token with multiple fallbacks
 api.interceptors.request.use(
   async (config) => {
     try {
@@ -37,17 +37,32 @@ api.interceptors.request.use(
       if (user) {
         const token = await user.getIdToken(true); // Force refresh
         config.headers.Authorization = `Bearer ${token}`;
+
+        // Update all token storage keys
+        localStorage.setItem('token', token);
+        localStorage.setItem('authToken', token);
+        localStorage.setItem('backendToken', token);
+        localStorage.setItem('firebaseToken', token);
       } else {
-        // Fallback to stored token
-        const token = localStorage.getItem('token');
+        // Multiple fallback token sources
+        const token = localStorage.getItem('token') ||
+                     localStorage.getItem('authToken') ||
+                     localStorage.getItem('backendToken') ||
+                     localStorage.getItem('firebaseToken');
+
         if (token) {
           config.headers.Authorization = `Bearer ${token}`;
         }
       }
     } catch (error) {
       console.error('Error getting Firebase token:', error);
-      // Fallback to stored token
-      const token = localStorage.getItem('token');
+
+      // Multiple fallback token sources on error
+      const token = localStorage.getItem('token') ||
+                   localStorage.getItem('authToken') ||
+                   localStorage.getItem('backendToken') ||
+                   localStorage.getItem('firebaseToken');
+
       if (token) {
         config.headers.Authorization = `Bearer ${token}`;
       }

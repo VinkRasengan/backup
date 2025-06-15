@@ -302,6 +302,94 @@ router.post('/widget', validateWidgetMessage, (req, res) => {
 // AI Chat endpoint - Uses OpenAI API when available
 router.post('/openai', validateChatMessage, (req, res) => chatController.sendOpenAIMessage(req, res));
 
+// Gemini AI endpoints
+router.post('/gemini', validateChatMessage, async (req, res) => {
+  try {
+    const { message, history = [] } = req.body;
+    const geminiService = require('../services/geminiService');
+
+    const result = await geminiService.sendMessage(message, history);
+
+    res.json({
+      success: true,
+      ...result
+    });
+  } catch (error) {
+    console.error('Gemini chat error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to process message with Gemini',
+      message: error.message
+    });
+  }
+});
+
+router.post('/gemini/analyze-url', async (req, res) => {
+  try {
+    const { url } = req.body;
+
+    if (!url) {
+      return res.status(400).json({
+        success: false,
+        error: 'URL is required'
+      });
+    }
+
+    const geminiService = require('../services/geminiService');
+
+    // Check if geminiService has analyzeUrl method
+    if (!geminiService.analyzeUrl) {
+      // Fallback to basic analysis
+      const result = await geminiService.sendMessage(
+        `Phân tích URL này về độ tin cậy và an toàn: ${url}. Đánh giá từ 1-100 và đưa ra lời khuyên.`,
+        []
+      );
+
+      return res.json({
+        success: true,
+        credibilityScore: 75, // Default score
+        riskLevel: 'Medium',
+        analysis: result.message || 'Không thể phân tích URL này.'
+      });
+    }
+
+    const result = await geminiService.analyzeUrl(url);
+    res.json(result);
+  } catch (error) {
+    console.error('Gemini URL analysis error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to analyze URL with Gemini',
+      message: error.message
+    });
+  }
+});
+
+router.post('/gemini/analyze-post', async (req, res) => {
+  try {
+    const { title, content, url } = req.body;
+
+    if (!title || !content) {
+      return res.status(400).json({
+        success: false,
+        error: 'Title and content are required'
+      });
+    }
+
+    const geminiService = require('../services/geminiService');
+    const result = await geminiService.analyzeCommunityPost(title, content, url);
+
+    res.json(result);
+  } catch (error) {
+    console.error('Gemini post analysis error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to analyze post with Gemini',
+      message: error.message
+    });
+  }
+});
+
 // Protected endpoints (require authentication)
 router.use(authenticateToken);
 

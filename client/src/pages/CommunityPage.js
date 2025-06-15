@@ -15,6 +15,8 @@ import {
   Clock
 } from 'lucide-react';
 import NavigationLayout from '../components/navigation/NavigationLayout';
+import LazyPostLoader from '../components/Community/LazyPostLoader';
+import PostSkeleton, { PostSkeletonGrid } from '../components/Community/PostSkeleton';
 import { gsap } from '../utils/gsap';
 import { useGSAP } from '../hooks/useGSAP';
 import firestoreService from '../services/firestoreService';
@@ -378,10 +380,8 @@ const CommunityPage = () => {
 
             {/* Posts */}
             <div className="lg:col-span-3">
-              {loading ? (
-                <div className="flex justify-center items-center h-64">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
-                </div>
+              {loading && posts.length === 0 ? (
+                <PostSkeletonGrid count={3} />
               ) : (
                 <div ref={postsRef} className="space-y-4">
                   <AnimatePresence>
@@ -535,6 +535,15 @@ const CommunityPage = () => {
                       </motion.div>
                     ))}
                   </AnimatePresence>
+
+                  {/* Lazy Loading Component */}
+                  <LazyPostLoader
+                    onLoadMore={() => fetchPosts(false)}
+                    hasMore={hasMore}
+                    loading={loading && posts.length > 0}
+                    error={error}
+                    className="mt-6"
+                  />
                 </div>
               )}
             </div>

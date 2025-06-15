@@ -105,12 +105,17 @@ const MessengerLayout = () => {
     try {
       console.log('🤖 Sending message to Gemini AI:', message.trim());
 
-      // Use Gemini API directly via backend
+      // Use Gemini API directly via backend with enhanced token handling
+      const token = localStorage.getItem('token') ||
+                   localStorage.getItem('authToken') ||
+                   localStorage.getItem('backendToken') ||
+                   localStorage.getItem('firebaseToken');
+
       const response = await fetch('/api/chat/gemini', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('authToken') || localStorage.getItem('backendToken')}`
+          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
           message: message.trim()
