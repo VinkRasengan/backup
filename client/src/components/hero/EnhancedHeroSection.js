@@ -205,7 +205,7 @@ const EnhancedHeroSection = () => {
   return (
     <section
       ref={heroRef}
-      className="relative overflow-hidden min-h-screen flex items-center justify-center"
+      className="relative overflow-hidden h-[70vh] min-h-[600px] max-h-[800px] flex items-center justify-center"
     >
       {/* Animated Background */}
       <div
@@ -250,73 +250,73 @@ const EnhancedHeroSection = () => {
       {/* Content */}
       <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-white">
         {/* Title */}
-        <div ref={titleRef} className="mb-8">
-          <div className="text-5xl md:text-7xl lg:text-8xl font-bold tracking-tight leading-tight">
+        <div ref={titleRef} className="mb-6">
+          <div className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight leading-tight">
             <span className="inline-block">Chống</span>
           </div>
-          <div className="text-5xl md:text-7xl lg:text-8xl font-bold tracking-tight leading-tight">
+          <div className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight leading-tight">
             <span className="inline-block bg-gradient-to-r from-yellow-300 via-orange-300 to-pink-300 bg-clip-text text-transparent">
               Thông Tin
             </span>
           </div>
-          <div className="text-5xl md:text-7xl lg:text-8xl font-bold tracking-tight leading-tight">
+          <div className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight leading-tight">
             <span className="inline-block">Sai Lệch</span>
           </div>
-          <div className="mt-4 text-3xl md:text-5xl lg:text-6xl font-light tracking-wider opacity-90">
+          <div className="mt-3 text-2xl md:text-3xl lg:text-4xl font-light tracking-wider opacity-90">
             <span className="inline-block">với FactCheck</span>
           </div>
         </div>
 
         {/* Subtitle */}
-        <div ref={subtitleRef} className="mb-12 max-w-4xl mx-auto">
-          <p className="text-xl md:text-3xl lg:text-4xl mb-6 opacity-90 font-light leading-relaxed">
+        <div ref={subtitleRef} className="mb-8 max-w-3xl mx-auto">
+          <p className="text-lg md:text-xl lg:text-2xl mb-4 opacity-90 font-light leading-relaxed">
             Xác minh độ tin cậy của tin tức và nguồn thông tin ngay lập tức
           </p>
-          <p className="text-lg md:text-xl lg:text-2xl opacity-75 leading-relaxed">
+          <p className="text-base md:text-lg lg:text-xl opacity-75 leading-relaxed">
             Tham gia cuộc chiến chống tin giả với công nghệ AI tiên tiến
           </p>
         </div>
 
         {/* Action Buttons */}
-        <div ref={buttonsRef} className="flex flex-col sm:flex-row gap-6 justify-center items-center">
+        <div ref={buttonsRef} className="flex flex-col sm:flex-row gap-4 justify-center items-center">
           <Link
             to="/check"
-            className="group relative px-12 py-6 bg-white text-blue-600 rounded-2xl font-bold text-xl hover:bg-gray-50 transition-all duration-300 flex items-center gap-4 shadow-2xl hover:shadow-3xl focus:outline-none focus:ring-4 focus:ring-blue-300/50 min-w-[250px] justify-center"
+            className="group relative px-8 py-4 bg-white text-blue-600 rounded-xl font-bold text-lg hover:bg-gray-50 transition-all duration-300 flex items-center gap-3 shadow-xl hover:shadow-2xl focus:outline-none focus:ring-4 focus:ring-blue-300/50 min-w-[200px] justify-center"
             data-animate="cta"
           >
-            <Search size={28} className="group-hover:rotate-12 transition-transform duration-300" />
+            <Search size={24} className="group-hover:rotate-12 transition-transform duration-300" />
             <span>Kiểm Tra Ngay</span>
-            <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-blue-600 to-purple-600 opacity-0 group-hover:opacity-10 transition-opacity duration-300" />
+            <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 opacity-0 group-hover:opacity-10 transition-opacity duration-300" />
           </Link>
 
           {user ? (
             <Link
               to="/dashboard"
-              className="group relative px-12 py-6 bg-transparent border-3 border-white text-white rounded-2xl font-bold text-xl hover:bg-white hover:text-blue-600 transition-all duration-300 shadow-lg hover:shadow-2xl min-w-[250px] justify-center flex items-center gap-4"
+              className="group relative px-8 py-4 bg-transparent border-2 border-white text-white rounded-xl font-bold text-lg hover:bg-white hover:text-blue-600 transition-all duration-300 shadow-lg hover:shadow-xl min-w-[200px] justify-center flex items-center gap-3"
               data-animate="cta"
             >
-              <Shield size={28} />
+              <Shield size={24} />
               <span>Xem Dashboard</span>
-              <div className="absolute inset-0 rounded-2xl bg-white opacity-0 group-hover:opacity-100 transition-opacity duration-300 -z-10" />
+              <div className="absolute inset-0 rounded-xl bg-white opacity-0 group-hover:opacity-100 transition-opacity duration-300 -z-10" />
             </Link>
           ) : (
             <Link
               to="/register"
-              className="group relative px-12 py-6 bg-transparent border-3 border-white text-white rounded-2xl font-bold text-xl hover:bg-white hover:text-blue-600 transition-all duration-300 shadow-lg hover:shadow-2xl min-w-[250px] justify-center flex items-center gap-4"
+              className="group relative px-8 py-4 bg-transparent border-2 border-white text-white rounded-xl font-bold text-lg hover:bg-white hover:text-blue-600 transition-all duration-300 shadow-lg hover:shadow-xl min-w-[200px] justify-center flex items-center gap-3"
               data-animate="cta"
             >
-              <Sparkles size={28} />
+              <Sparkles size={24} />
               <span>Đăng Ký Miễn Phí</span>
-              <div className="absolute inset-0 rounded-2xl bg-white opacity-0 group-hover:opacity-100 transition-opacity duration-300 -z-10" />
+              <div className="absolute inset-0 rounded-xl bg-white opacity-0 group-hover:opacity-100 transition-opacity duration-300 -z-10" />
             </Link>
           )}
         </div>
 
         {/* Scroll Indicator */}
-        <div className="scroll-indicator absolute bottom-8 left-1/2 transform -translate-x-1/2">
-          <div className="w-8 h-12 border-2 border-white/50 rounded-full flex justify-center relative">
-            <div className="w-1 h-4 bg-white/70 rounded-full mt-3 animate-pulse" />
-            <div className="absolute -bottom-8 text-white/70 text-sm font-medium">
+        <div className="scroll-indicator absolute bottom-6 left-1/2 transform -translate-x-1/2">
+          <div className="w-6 h-10 border-2 border-white/50 rounded-full flex justify-center relative">
+            <div className="w-1 h-3 bg-white/70 rounded-full mt-2 animate-pulse" />
+            <div className="absolute -bottom-6 text-white/70 text-xs font-medium">
               Cuộn xuống
             </div>
           </div>

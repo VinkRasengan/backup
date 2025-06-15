@@ -1,6 +1,7 @@
 import axios from 'axios';
 import Cookies from 'js-cookie';
 import mockAPI from './mockAPI';
+import geminiConfig from '../config/gemini';
 
 // Create axios instance for Render deployment
 const getApiBaseUrl = () => {
@@ -196,18 +197,50 @@ const apiWithFallback = async (apiCall, mockCall) => {
   }
 };
 
-// Chat API endpoints - Simplified to use backend only
+// Chat API endpoints
 export const chatAPI = {
-  // Send message to authenticated chat (requires login) - Uses OpenAI API
+  // Send message to authenticated chat (requires login)
   sendMessage: async (data) => {
     console.log('🚀 Sending authenticated message to backend');
     return await api.post('/chat/message', data);
   },
 
-  // Send message to AI chat endpoint (uses OpenAI API when available)
-  sendOpenAIMessage: async (data) => {
-    console.log('🤖 Sending public message to OpenAI via backend');
-    return await api.post('/chat/openai', { message: data.message });
+  // Send message to AI chat endpoint (uses Gemini API)
+  sendGeminiMessage: async (message) => {
+    try {
+      console.log('Sending message to Gemini API:', message);
+      const response = await fetch('http://localhost:5000/api/chat/gemini', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({ message })
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log('Received response from Gemini API:', data);
+      return data;
+    } catch (error) {
+      console.error('Error sending message to Gemini API:', error);
+      throw error;
+    }
+  },
+
+  // Test Gemini API configuration
+  testGeminiConfig: async () => {
+    console.log('🔧 Testing Gemini API configuration');
+    return await api.get(geminiConfig.endpoints.test);
+  },
+
+  // Get conversation starters
+  getStarters: async () => {
+    console.log('💭 Getting conversation starters');
+    return await api.get('/chat/starters');
   },
 
   // Send message to widget chat (automatic responses only)
@@ -222,7 +255,6 @@ export const chatAPI = {
   deleteConversation: (id) => api.delete(`/chat/conversations/${id}`),
 
   // Public endpoints
-  getConversationStarters: () => api.get('/chat/starters'),
   getSecurityTips: (params) => api.get('/chat/tips', { params })
 };
 

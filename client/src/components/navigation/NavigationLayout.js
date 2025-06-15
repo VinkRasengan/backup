@@ -7,6 +7,10 @@ import NavigationSidebar from './NavigationSidebar';
 import HamburgerMenu from './HamburgerMenu';
 import FloatingActions from '../layout/FloatingActions';
 import MobileTabBar from './MobileTabBar';
+import NotificationWidget from '../widgets/NotificationWidget';
+import QuickActionWidget from '../widgets/QuickActionWidget';
+import PerformanceMonitor from '../testing/PerformanceMonitor';
+import TestingDashboard from '../testing/TestingDashboard';
 import { cn } from '../../utils/cn';
 
 const NavigationLayout = ({ children, showHamburger = true, className, ...props }) => {
@@ -14,10 +18,29 @@ const NavigationLayout = ({ children, showHamburger = true, className, ...props 
   const { isDarkMode } = useTheme();
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [performanceMonitorOpen, setPerformanceMonitorOpen] = useState(false);
+  const [testingDashboardOpen, setTestingDashboardOpen] = useState(false);
 
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
   };
+
+  // Toggle performance monitor and testing dashboard with keyboard shortcuts
+  useEffect(() => {
+    const handleKeyPress = (e) => {
+      if (e.ctrlKey && e.shiftKey && e.key === 'P') {
+        e.preventDefault();
+        setPerformanceMonitorOpen(!performanceMonitorOpen);
+      }
+      if (e.ctrlKey && e.shiftKey && e.key === 'T') {
+        e.preventDefault();
+        setTestingDashboardOpen(!testingDashboardOpen);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyPress);
+    return () => window.removeEventListener('keydown', handleKeyPress);
+  }, [performanceMonitorOpen, testingDashboardOpen]);
 
   // Close sidebar on route change (mobile)
   useEffect(() => {
@@ -59,6 +82,26 @@ const NavigationLayout = ({ children, showHamburger = true, className, ...props 
 
       {/* Floating Actions */}
       <FloatingActions />
+
+      {/* New Widgets */}
+      {!hideNavigation && (
+        <>
+          <NotificationWidget />
+          <QuickActionWidget />
+        </>
+      )}
+
+      {/* Performance Monitor */}
+      <PerformanceMonitor
+        isOpen={performanceMonitorOpen}
+        onClose={() => setPerformanceMonitorOpen(false)}
+      />
+
+      {/* Testing Dashboard */}
+      <TestingDashboard
+        isOpen={testingDashboardOpen}
+        onClose={() => setTestingDashboardOpen(false)}
+      />
 
       {/* Mobile Navigation Bar */}
       <MobileTabBar />

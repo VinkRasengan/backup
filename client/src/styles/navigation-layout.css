@@ -38,7 +38,13 @@
 
 /* Prevent sidebar from covering hamburger menu */
 .hamburger-menu {
+  position: fixed !important;
+  top: 1rem !important;
+  left: 1rem !important;
   z-index: 51 !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  display: block !important;
 }
 
 .nav-sidebar {

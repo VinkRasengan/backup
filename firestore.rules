@@ -30,13 +30,18 @@ service cloud.firestore {
                        request.resource.data.email == request.auth.token.email;
     }
 
-    // Links collection - users can only access their own links and must have verified email
+    // Links collection - public read, authenticated write
     match /links/{linkId} {
-      allow read, write: if isVerifiedUser() &&
-                            resource.data.userId == request.auth.uid;
-      allow create: if isVerifiedUser() &&
-                       request.resource.data.userId == request.auth.uid &&
-                       request.resource.data.keys().hasAll(['url', 'userId']);
+      // Allow read for everyone (public community)
+      allow read: if true;
+
+      // Allow create for authenticated users
+      allow create: if isAuthenticated() &&
+                       request.resource.data.userId == request.auth.uid;
+
+      // Allow update/delete only by owner
+      allow update, delete: if isAuthenticated() &&
+                               resource.data.userId == request.auth.uid;
     }
 
     // Verification tokens - only server can access
@@ -52,20 +57,18 @@ service cloud.firestore {
     // Votes collection - users can vote and read vote statistics
     match /votes/{voteId} {
       allow read: if true; // Anyone can read vote statistics
-      allow create: if isVerifiedUser() &&
-                       request.resource.data.userId == request.auth.uid &&
-                       request.resource.data.keys().hasAll(['linkId', 'userId', 'voteType']);
-      allow update, delete: if isVerifiedUser() &&
+      allow create: if isAuthenticated() &&
+                       request.resource.data.userId == request.auth.uid;
+      allow update, delete: if isAuthenticated() &&
                                resource.data.userId == request.auth.uid;
     }
 
     // Comments collection - users can comment and read comments
     match /comments/{commentId} {
       allow read: if true; // Anyone can read comments
-      allow create: if isVerifiedUser() &&
-                       request.resource.data.userId == request.auth.uid &&
-                       request.resource.data.keys().hasAll(['linkId', 'userId', 'content']);
-      allow update, delete: if isVerifiedUser() &&
+      allow create: if isAuthenticated() &&
+                       request.resource.data.userId == request.auth.uid;
+      allow update, delete: if isAuthenticated() &&
                                resource.data.userId == request.auth.uid;
     }
 
@@ -85,6 +88,11 @@ service cloud.firestore {
     match /admin_notifications/{notificationId} {
       allow read, write: if isVerifiedUser() &&
                             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    // Test collection - for testing Firestore connection
+    match /test/{testId} {
+      allow read, write: if isAuthenticated();
     }
 
     // Admin collection (if needed for future features)

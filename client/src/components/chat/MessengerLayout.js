@@ -7,19 +7,14 @@ import {
   Video,
   Info,
   ArrowLeft,
-  Menu,
-  X,
-  Settings,
-  Plus,
-  MessageCircle,
-  Minimize2,
-  Maximize2
+  ChevronLeft,
+  ChevronRight,
+  Menu
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import ChatMessage from '../ChatBot/ChatMessage';
 import ChatInput from '../ChatBot/ChatInput';
-import StickyNavigationMenu from '../navigation/StickyNavigationMenu';
 
 const MessengerLayout = () => {
   const { user } = useAuth();
@@ -29,9 +24,7 @@ const MessengerLayout = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [quickChatOpen, setQuickChatOpen] = useState(false);
-  const [widgetMinimized, setWidgetMinimized] = useState(false);
-  const [menuOpen, setMenuOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const messagesEndRef = useRef(null);
 
   // Mock chat conversations for demonstration
@@ -112,16 +105,15 @@ const MessengerLayout = () => {
     try {
       console.log('🤖 Sending message to Gemini AI:', message.trim());
 
-      // Use Gemini API via backend
-      const response = await fetch('/api/chat/openai', {
+      // Use Gemini API directly via backend
+      const response = await fetch('/api/chat/gemini', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${localStorage.getItem('authToken') || localStorage.getItem('backendToken')}`
         },
         body: JSON.stringify({
-          message: message.trim(),
-          provider: 'gemini' // Specify Gemini provider
+          message: message.trim()
         })
       });
 
@@ -191,95 +183,63 @@ const MessengerLayout = () => {
   );
 
   return (
-    <div className="relative h-full bg-gray-50 dark:bg-gray-900">
-      {/* Sticky Menu Button */}
-      <div className="fixed top-4 left-4 z-50">
-        <motion.button
-          onClick={() => setMenuOpen(!menuOpen)}
-          className="w-12 h-12 bg-blue-600 hover:bg-blue-700 text-white rounded-full shadow-lg flex items-center justify-center transition-colors"
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-        >
-          <Menu size={20} />
-        </motion.button>
-      </div>
+    <div className="h-full bg-white dark:bg-gray-900 flex overflow-hidden relative">
+      {/* Sidebar Toggle Button */}
+      <button
+        onClick={() => setSidebarOpen(!sidebarOpen)}
+        className="fixed top-2 left-2 z-50 w-8 h-8 bg-blue-600 hover:bg-blue-700 text-white rounded-lg shadow-lg flex items-center justify-center transition-colors"
+        title={sidebarOpen ? "Ẩn sidebar" : "Hiện sidebar"}
+      >
+        <Menu size={16} />
+      </button>
 
-      {/* Navigation Menu */}
-      <StickyNavigationMenu
-        isOpen={menuOpen}
-        onClose={() => setMenuOpen(false)}
-      />
-
-      {/* Sticky Sidebar Toggle */}
-      <div className="fixed top-20 left-4 z-50">
-        <motion.button
-          onClick={() => setSidebarOpen(!sidebarOpen)}
-          className="w-10 h-10 bg-gray-600 hover:bg-gray-700 text-white rounded-lg shadow-lg flex items-center justify-center transition-colors"
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-        >
-          {sidebarOpen ? <X size={16} /> : <ArrowLeft size={16} />}
-        </motion.button>
-      </div>
-
-      {/* Sticky Quick Chat Widget */}
-      <div className="fixed bottom-4 right-20 z-50">
-        <motion.button
-          onClick={() => setQuickChatOpen(!quickChatOpen)}
-          className="w-14 h-14 bg-green-600 hover:bg-green-700 text-white rounded-full shadow-lg flex items-center justify-center transition-colors"
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-        >
-          <MessageCircle size={24} />
-        </motion.button>
-      </div>
-
-      {/* Sticky + Widget */}
-      <div className="fixed bottom-4 right-4 z-50">
-        <motion.button
-          onClick={() => setWidgetMinimized(!widgetMinimized)}
-          className="w-14 h-14 bg-purple-600 hover:bg-purple-700 text-white rounded-full shadow-lg flex items-center justify-center transition-colors"
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-        >
-          {widgetMinimized ? <Maximize2 size={24} /> : <Plus size={24} />}
-        </motion.button>
-      </div>
-
-      {/* Main Messenger Layout */}
-      <div className="flex h-full">
-        {/* Sidebar - Chat List */}
-        <motion.div
-          initial={false}
-          animate={{
-            width: sidebarOpen ? 320 : 0,
-            opacity: sidebarOpen ? 1 : 0
-          }}
-          transition={{ duration: 0.3, ease: "easeInOut" }}
-          className="bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col overflow-hidden"
-        >
-        {/* Header */}
-        <div className="p-4 border-b border-gray-200 dark:border-gray-700">
-          <div className="flex items-center justify-between mb-4">
-            <h1 className="text-xl font-semibold text-gray-900 dark:text-white">
-              Đoạn chat
-            </h1>
-            <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors">
-              <MoreHorizontal size={20} className="text-gray-600 dark:text-gray-400" />
-            </button>
+      {/* Messenger Sidebar - Chat List */}
+      <motion.div
+        initial={false}
+        animate={{
+          width: sidebarOpen ? (sidebarCollapsed ? 60 : 320) : 0,
+          opacity: sidebarOpen ? 1 : 0
+        }}
+        transition={{ duration: 0.3, ease: "easeInOut" }}
+        className="bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col overflow-hidden"
+      >
+        {/* Sidebar Header */}
+        <div className="p-3 border-b border-gray-200 dark:border-gray-700">
+          <div className="flex items-center justify-between mb-2">
+            {!sidebarCollapsed && (
+              <h1 className="text-lg font-semibold text-gray-900 dark:text-white">
+                Đoạn chat
+              </h1>
+            )}
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
+                title={sidebarCollapsed ? "Mở rộng" : "Thu gọn"}
+              >
+                {sidebarCollapsed ? <ChevronRight size={20} /> : <ChevronLeft size={20} />}
+              </button>
+              {!sidebarCollapsed && (
+                <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors">
+                  <MoreHorizontal size={20} className="text-gray-600 dark:text-gray-400" />
+                </button>
+              )}
+            </div>
           </div>
-          
-          {/* Search */}
-          <div className="relative">
-            <Search size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Tìm kiếm đoạn chat..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 bg-gray-100 dark:bg-gray-800 border-0 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
+
+          {/* Search - only show when not collapsed */}
+          {!sidebarCollapsed && (
+            <div className="relative">
+              <Search size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Tìm kiếm đoạn chat..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 bg-gray-100 dark:bg-gray-700 border-0 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:text-white"
+              />
+            </div>
+          )}
         </div>
 
         {/* Chat List */}
@@ -288,98 +248,119 @@ const MessengerLayout = () => {
             <motion.div
               key={conversation.id}
               onClick={() => setSelectedChat(conversation)}
-              className={`p-4 cursor-pointer border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors ${
+              className={`${sidebarCollapsed ? 'p-2' : 'p-3'} cursor-pointer border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors ${
                 selectedChat?.id === conversation.id ? 'bg-blue-50 dark:bg-blue-900/20' : ''
               }`}
-              whileHover={{ x: 4 }}
+              whileHover={{ x: sidebarCollapsed ? 0 : 4 }}
               transition={{ duration: 0.2 }}
+              title={sidebarCollapsed ? conversation.name : ''}
             >
-              <div className="flex items-center space-x-3">
-                <div className="relative">
-                  <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white text-lg">
-                    {conversation.avatar}
-                  </div>
-                  {conversation.online && (
-                    <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 border-2 border-white dark:border-gray-900 rounded-full"></div>
-                  )}
-                </div>
-                
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between">
-                    <h3 className="font-medium text-gray-900 dark:text-white truncate">
-                      {conversation.name}
-                    </h3>
-                    <span className="text-xs text-gray-500 dark:text-gray-400">
-                      {formatTime(conversation.timestamp)}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between mt-1">
-                    <p className="text-sm text-gray-600 dark:text-gray-400 truncate">
-                      {conversation.lastMessage}
-                    </p>
+              {sidebarCollapsed ? (
+                /* Collapsed view - only avatar */
+                <div className="flex justify-center">
+                  <div className="relative">
+                    <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white text-lg">
+                      {conversation.avatar}
+                    </div>
+                    {conversation.online && (
+                      <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 border-2 border-white dark:border-gray-900 rounded-full"></div>
+                    )}
                     {conversation.unread > 0 && (
-                      <span className="ml-2 px-2 py-1 bg-blue-500 text-white text-xs rounded-full min-w-[20px] text-center">
+                      <div className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
                         {conversation.unread}
-                      </span>
+                      </div>
                     )}
                   </div>
                 </div>
-              </div>
+              ) : (
+                /* Expanded view - full info */
+                <div className="flex items-center space-x-2.5">
+                  <div className="relative">
+                    <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white text-sm">
+                      {conversation.avatar}
+                    </div>
+                    {conversation.online && (
+                      <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 border-2 border-white dark:border-gray-900 rounded-full"></div>
+                    )}
+                  </div>
+
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between">
+                      <h3 className="font-medium text-sm text-gray-900 dark:text-white truncate">
+                        {conversation.name}
+                      </h3>
+                      <span className="text-xs text-gray-500 dark:text-gray-400">
+                        {formatTime(conversation.timestamp)}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between mt-0.5">
+                      <p className="text-xs text-gray-600 dark:text-gray-400 truncate">
+                        {conversation.lastMessage}
+                      </p>
+                      {conversation.unread > 0 && (
+                        <span className="ml-2 px-1.5 py-0.5 bg-blue-500 text-white text-xs rounded-full min-w-[18px] text-center">
+                          {conversation.unread}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
             </motion.div>
           ))}
         </div>
-        </motion.div>
+      </motion.div>
 
         {/* Main Chat Area */}
         <div className="flex-1 flex flex-col bg-white dark:bg-gray-900">
         {selectedChat ? (
           <>
             {/* Chat Header */}
-            <div className="p-4 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
+            <div className="p-3 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
               <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
+                <div className="flex items-center space-x-2.5">
                   <button
                     onClick={() => setSelectedChat(null)}
-                    className="lg:hidden p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors"
+                    className="lg:hidden p-1.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors"
                   >
-                    <ArrowLeft size={20} className="text-gray-600 dark:text-gray-400" />
+                    <ArrowLeft size={18} className="text-gray-600 dark:text-gray-400" />
                   </button>
-                  
+
                   <div className="relative">
-                    <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white">
+                    <div className="w-9 h-9 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white text-sm">
                       {selectedChat.avatar}
                     </div>
                     {selectedChat.online && (
-                      <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-500 border-2 border-white dark:border-gray-900 rounded-full"></div>
+                      <div className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-green-500 border-2 border-white dark:border-gray-900 rounded-full"></div>
                     )}
                   </div>
-                  
+
                   <div>
-                    <h2 className="font-semibold text-gray-900 dark:text-white">
+                    <h2 className="font-semibold text-sm text-gray-900 dark:text-white">
                       {selectedChat.name}
                     </h2>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
                       {selectedChat.online ? 'Đang hoạt động' : 'Không hoạt động'}
                     </p>
                   </div>
                 </div>
-                
-                <div className="flex items-center space-x-2">
-                  <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors">
-                    <Phone size={20} className="text-gray-600 dark:text-gray-400" />
+
+                <div className="flex items-center space-x-1">
+                  <button className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors">
+                    <Phone size={16} className="text-gray-600 dark:text-gray-400" />
                   </button>
-                  <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors">
-                    <Video size={20} className="text-gray-600 dark:text-gray-400" />
+                  <button className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors">
+                    <Video size={16} className="text-gray-600 dark:text-gray-400" />
                   </button>
-                  <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors">
-                    <Info size={20} className="text-gray-600 dark:text-gray-400" />
+                  <button className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors">
+                    <Info size={16} className="text-gray-600 dark:text-gray-400" />
                   </button>
                 </div>
               </div>
             </div>
 
             {/* Messages Area */}
-            <div className="flex-1 overflow-y-auto p-4 bg-gray-50 dark:bg-gray-800 space-y-4">
+            <div className="flex-1 overflow-y-auto p-3 bg-gray-50 dark:bg-gray-800 space-y-2">
               <AnimatePresence>
                 {chatHistory.map((message) => (
                   <motion.div
@@ -403,7 +384,7 @@ const MessengerLayout = () => {
             </div>
 
             {/* Chat Input */}
-            <div className="p-4 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700">
+            <div className="p-3 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700">
               <ChatInput onSendMessage={handleSendMessage} />
             </div>
           </>
@@ -424,7 +405,6 @@ const MessengerLayout = () => {
           </div>
         )}
         </div>
-      </div>
     </div>
   );
 };

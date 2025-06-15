@@ -16,10 +16,10 @@
 - **Status Indicators**: Live/Fallback badges with detailed metadata
 
 ### 🤖 **AI Security Assistant**
-- **OpenAI GPT-3.5-turbo**: Real AI-powered security advice
+- **Gemini 1.5**: Real AI-powered security advice
 - **Contextual Responses**: Personalized recommendations based on user queries
 - **Quick Replies**: 6 pre-configured security questions
-- **Dual Chat System**: Widget (automated) + AI (OpenAI powered)
+- **Dual Chat System**: Widget (automated) + AI (Gemini powered)
 - **Conversation History**: Persistent chat sessions for authenticated users
 
 ### 🔍 **Multi-Source Security Analysis**
@@ -69,7 +69,7 @@
 - **API Integration**: All external services tested
 - **Authentication Flow**: Complete user journey validation
 - **Screenshot Generation**: Multiple URL configurations tested
-- **AI Responses**: OpenAI integration verified
+- **AI Responses**: Gemini integration verified
 - **Error Scenarios**: Fallback systems validated
 
 ### 📊 **Performance Metrics**
@@ -94,12 +94,12 @@
 - **Frontend**: Firebase Hosting (CDN, SSL, Global distribution)
 - **Backend**: Render (Auto-scaling, Health monitoring)
 - **Database**: Firestore (NoSQL, Real-time, Scalable)
-- **APIs**: External services (VirusTotal, ScamAdviser, ScreenshotLayer, OpenAI)
+- **APIs**: External services (VirusTotal, ScamAdviser, ScreenshotLayer, Gemini)
 
 ### 📋 **Environment Configuration**
 ```env
 # Production Environment Variables
-OPENAI_API_KEY=configured ✅
+GEMINI_API_KEY=configured ✅
 VIRUSTOTAL_API_KEY=configured ✅
 SCAMADVISER_API_KEY=configured ✅
 SCREENSHOTLAYER_API_KEY=configured ✅
@@ -172,7 +172,7 @@ Special thanks to:
 - **VirusTotal**: Comprehensive malware detection
 - **ScamAdviser**: Advanced scam identification
 - **ScreenshotLayer**: Reliable website capture
-- **OpenAI**: Intelligent AI assistance
+- **Gemini**: Intelligent AI assistance
 - **Firebase**: Robust authentication and database
 - **Community**: Beta testers and early adopters
 

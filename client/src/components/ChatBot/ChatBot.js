@@ -72,11 +72,11 @@ const ChatBot = ({ embedded = false, onClose, isFloating = false }) => {
     await new Promise(resolve => setTimeout(resolve, 1000));
 
     try {
-      // Send message to widget endpoint using chatAPI
-      console.log('📤 Sending to widget chat:', text.trim());
-      const response = await chatAPI.sendWidgetMessage({ message: text.trim() });
+      // Send message to Gemini API using chatAPI
+      console.log('📤 Sending to Gemini chat:', text.trim());
+      const response = await chatAPI.sendGeminiMessage(text.trim());
 
-      console.log('✅ Widget Response:', response);
+      console.log('✅ Gemini Response:', response);
       
       // Handle different response structures
       let responseContent;

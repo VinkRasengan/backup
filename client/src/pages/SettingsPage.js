@@ -1,23 +1,25 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { 
-  User, 
-  Bell, 
-  Shield, 
-  Moon, 
-  Sun, 
-  Globe, 
+import {
+  User,
+  Bell,
+  Shield,
+  Moon,
+  Sun,
+  Globe,
   Key,
   Database,
   Download,
   Trash2,
   Save,
   Eye,
-  EyeOff
+  EyeOff,
+  Navigation
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import TabNavigation from '../components/navigation/TabNavigation';
+import NavigationTest from '../components/testing/NavigationTest';
 
 const SettingsPage = () => {
   const { user, updateProfile } = useAuth();
@@ -307,6 +309,11 @@ const SettingsPage = () => {
               description="Cho phép người khác xem hoạt động của bạn"
             />
           </div>
+        </SettingSection>
+
+        {/* Navigation Test */}
+        <SettingSection title="Navigation Test" icon={Database}>
+          <NavigationTest />
         </SettingSection>
 
         {/* Data Management */}

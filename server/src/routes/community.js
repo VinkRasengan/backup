@@ -138,7 +138,14 @@ router.get('/trending', authenticateToken, injectCommunityController, async (req
  */
 router.get('/my-posts', authenticateToken, async (req, res) => {
     try {
-        const userId = req.user.userId;
+        const userId = req.user?.userId || req.user?.uid;
+        
+        if (!userId) {
+            return res.status(401).json({
+                success: false,
+                error: 'User ID not found in request'
+            });
+        }
 
         // This would normally query the database for user's posts
         // For now, return empty array as this needs proper implementation

@@ -9,14 +9,13 @@ import { initAccessibility } from './utils/accessibility';
 import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
 import ModernRegisterPage from './pages/ModernRegisterPage';
-import TestRegisterPage from './pages/TestRegisterPage';
 import RegistrationSuccessPage from './pages/RegistrationSuccessPage';
 import DashboardPage from './pages/DashboardPage';
 import ProfilePage from './pages/ProfilePage';
 import CheckLinkPage from './pages/CheckLinkPage';
 import ChatPage from './pages/ChatPage';
-import ChatTest from './pages/ChatTest';
 import AdminDashboard from './pages/AdminDashboard';
+import CommunityPage from './pages/CommunityPage';
 import CommunityFeedPage from './pages/CommunityFeedPage';
 import SubmitArticlePage from './pages/SubmitArticlePage';
 import KnowledgeBasePage from './pages/KnowledgeBasePage';
@@ -25,17 +24,21 @@ import VerifyEmailPage from './pages/VerifyEmailPage';
 import EmailVerificationRequiredPage from './pages/EmailVerificationRequiredPage';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
-import ChatTestPage from './pages/ChatTestPage';
 import SettingsPage from './pages/SettingsPage';
-import NavigationTestPage from './pages/NavigationTestPage';
-import MessengerTestPage from './pages/MessengerTestPage';
+import SecurityPage from './pages/SecurityPage';
+import AnalyticsPage from './pages/AnalyticsPage';
+import PremiumPage from './pages/PremiumPage';
+import NotificationsPage from './pages/NotificationsPage';
+import FavoritesPage from './pages/FavoritesPage';
+import AchievementsPage from './pages/AchievementsPage';
+import HelpPage from './pages/HelpPage';
+import FirestoreTestPanel from './components/admin/FirestoreTestPanel';
 
 // Components - organized imports
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import EmailVerifiedRoute from './components/auth/EmailVerifiedRoute';
 import { LoadingSpinner, ErrorBoundary } from './components/common';
 import NavigationLayout from './components/navigation/NavigationLayout';
-import GSAPDemo from './components/GSAPDemo';
 import GlobalAnimationProvider from './components/animations/GlobalAnimationProvider';
 
 function App() {
@@ -67,10 +70,7 @@ function App() {
               path="/register"
                 element={user ? <Navigate to="/dashboard" /> : <ModernRegisterPage />}
               />
-              <Route
-                path="/test-register"
-                element={<TestRegisterPage />}
-              />
+
               <Route path="/registration-success" element={<RegistrationSuccessPage />} />
               <Route path="/verify-email" element={<VerifyEmailPage />} />
               <Route path="/email-verification-required" element={<EmailVerificationRequiredPage />} />
@@ -119,14 +119,19 @@ function App() {
                 <AdminDashboard />
               </ProtectedRoute>
             }
-          />
-          <Route
+          />          <Route
             path="/community"
             element={
               <ProtectedRoute>
-                <EmailVerifiedRoute>
-                  <CommunityFeedPage />
-                </EmailVerifiedRoute>
+                <CommunityPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/community/feed"
+            element={
+              <ProtectedRoute>
+                <CommunityFeedPage />
               </ProtectedRoute>
             }
           />
@@ -162,30 +167,47 @@ function App() {
               </ProtectedRoute>
             }
           />
-          <Route
-            path="/chat-test"
-            element={<ChatTest />}
-          />
 
+          {/* New feature pages */}
+          <Route path="/security" element={<SecurityPage />} />
+          <Route path="/analytics" element={<AnalyticsPage />} />
+          <Route path="/premium" element={<PremiumPage />} />
           <Route
-            path="/chat-widget-test"
-            element={<ChatTestPage />}
+            path="/notifications"
+            element={
+              <ProtectedRoute>
+                <NotificationsPage />
+              </ProtectedRoute>
+            }
           />
-
           <Route
-            path="/gsap-demo"
-            element={<GSAPDemo />}
+            path="/favorites"
+            element={
+              <ProtectedRoute>
+                <FavoritesPage />
+              </ProtectedRoute>
+            }
           />
-
           <Route
-            path="/nav-test"
-            element={<NavigationTestPage />}
+            path="/achievements"
+            element={
+              <ProtectedRoute>
+                <AchievementsPage />
+              </ProtectedRoute>
+            }
           />
+          <Route path="/help" element={<HelpPage />} />
 
+          {/* Admin/Test Routes */}
           <Route
-            path="/messenger-test"
-            element={<MessengerTestPage />}
-          />          {/* Catch all route */}
+            path="/admin/firestore-test"
+            element={
+              <ProtectedRoute>
+                <FirestoreTestPanel />
+              </ProtectedRoute>
+            }
+          />
+          {/* Catch all route */}
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>
           </NavigationLayout>

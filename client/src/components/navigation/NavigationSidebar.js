@@ -2,26 +2,39 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import PropTypes from 'prop-types';
-import { 
-  X, 
-  Home, 
-  Search, 
-  Users, 
-  MessageCircle, 
+import {
+  X,
+  Home,
+  Search,
+  Users,
+  MessageCircle,
   BookOpen,
   TrendingUp,
   Settings,
   ChevronRight,
   User,
-  LogOut
+  LogOut,
+  Bell,
+  Shield,
+  Star,
+  HelpCircle,
+  BarChart3,
+  Zap,
+  Heart,
+  Award
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { useFirestoreStats, useRealtimeNotifications } from '../../hooks/useFirestoreStats';
 
 const NavigationSidebar = ({ isOpen, onToggle }) => {
   const { user, logout } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const [expandedSections, setExpandedSections] = useState({});
+
+  // Get real-time data from Firestore
+  const firestoreStats = useFirestoreStats();
+  const notifications = useRealtimeNotifications();
 
   // Memoized navigation items structure
   const navigationItems = useMemo(() => [
@@ -37,12 +50,7 @@ const NavigationSidebar = ({ isOpen, onToggle }) => {
       label: 'Kiểm tra Link',
       icon: Search,
       path: '/check',
-      color: 'green',
-      submenu: [
-        { label: 'Kiểm tra nhanh', path: '/check/quick' },
-        { label: 'Kiểm tra chi tiết', path: '/check/detailed' },
-        { label: 'Lịch sử kiểm tra', path: '/check/history' }
-      ]
+      color: 'green'
     },
     {
       id: 'community',
@@ -51,9 +59,9 @@ const NavigationSidebar = ({ isOpen, onToggle }) => {
       path: '/community',
       color: 'purple',
       submenu: [
-        { label: 'Thảo luận', path: '/community/discussions' },
-        { label: 'Đóng góp', path: '/community/contribute' },
-        { label: 'Báo cáo', path: '/community/reports' }
+        { label: 'Thảo luận', path: '/community' },
+        { label: 'Bảng tin', path: '/community/feed' },
+        { label: 'Đóng góp', path: '/submit' }
       ]
     },
     {
@@ -69,6 +77,28 @@ const NavigationSidebar = ({ isOpen, onToggle }) => {
       icon: BookOpen,
       path: '/knowledge',
       color: 'amber'
+    },
+    {
+      id: 'security',
+      label: 'Bảo mật',
+      icon: Shield,
+      path: '/security',
+      color: 'red'
+    },
+    {
+      id: 'analytics',
+      label: 'Thống kê',
+      icon: BarChart3,
+      path: '/analytics',
+      color: 'blue'
+    },
+    {
+      id: 'premium',
+      label: 'Premium',
+      icon: Star,
+      path: '/premium',
+      color: 'yellow',
+      badge: 'PRO'
     }
   ], []);
 
@@ -89,13 +119,49 @@ const NavigationSidebar = ({ isOpen, onToggle }) => {
       color: 'pink'
     },
     {
+      id: 'notifications',
+      label: 'Thông báo',
+      icon: Bell,
+      path: '/notifications',
+      color: 'blue',
+      badge: notifications.count > 0 ? notifications.count.toString() : null
+    },
+    {
+      id: 'favorites',
+      label: 'Yêu thích',
+      icon: Heart,
+      path: '/favorites',
+      color: 'pink'
+    },
+    {
+      id: 'achievements',
+      label: 'Thành tích',
+      icon: Award,
+      path: '/achievements',
+      color: 'green'
+    },
+    {
+      id: 'help',
+      label: 'Trợ giúp',
+      icon: HelpCircle,
+      path: '/help',
+      color: 'indigo'
+    },
+    {
       id: 'settings',
       label: 'Cài đặt',
       icon: Settings,
       path: '/settings',
-      color: 'gray'
+      color: 'gray',
+      submenu: [
+        { label: 'Tài khoản', path: '/settings/account' },
+        { label: 'Bảo mật', path: '/settings/security' },
+        { label: 'Thông báo', path: '/settings/notifications' },
+        { label: 'Giao diện', path: '/settings/appearance' },
+        { label: 'Firestore Test', path: '/admin/firestore-test' }
+      ]
     }
-  ] : [], [user]);
+  ] : [], [user, notifications.count]);
 
   // Optimized toggle function
   const toggleSection = useCallback((sectionId) => {
@@ -202,7 +268,7 @@ const NavigationSidebar = ({ isOpen, onToggle }) => {
         initial={{ x: -320 }}
         animate={{ x: isOpen ? 0 : -320 }}
         transition={{ duration: 0.3, type: "tween" }}
-        className={`fixed left-0 top-0 h-full w-80 bg-white dark:bg-gray-800 shadow-xl z-40 overflow-y-auto nav-sidebar hardware-accelerated scrollbar-optimized ${isOpen ? 'open' : 'closed'}`}
+        className={`fixed left-0 top-0 h-screen w-80 bg-white dark:bg-gray-800 shadow-xl z-40 overflow-y-auto nav-sidebar hardware-accelerated scrollbar-optimized ${isOpen ? 'open' : 'closed'}`}
       >
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
@@ -226,16 +292,73 @@ const NavigationSidebar = ({ isOpen, onToggle }) => {
         {user && (
           <div className="p-4 border-b border-gray-200 dark:border-gray-700">
             <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-semibold">
-                {user.email?.charAt(0).toUpperCase() || 'U'}
+              <div className="relative">
+                <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-semibold">
+                  {user.email?.charAt(0).toUpperCase() || 'U'}
+                </div>
+                {/* Online status indicator */}
+                <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-500 border-2 border-white dark:border-gray-800 rounded-full"></div>
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
-                  {user.displayName || user.email || 'Người dùng'}
-                </p>
+                <div className="flex items-center space-x-2">
+                  <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                    {user.displayName || user.email || 'Người dùng'}
+                  </p>
+                  {user.emailVerified && (
+                    <div className="w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center">
+                      <span className="text-white text-xs">✓</span>
+                    </div>
+                  )}
+                </div>
                 <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
                   {user.email}
                 </p>
+                {/* User level/points */}
+                <div className="flex items-center space-x-2 mt-1">
+                  <div className="flex items-center space-x-1">
+                    <Star size={12} className="text-yellow-500" />
+                    <span className="text-xs text-gray-600 dark:text-gray-400">Level 5</span>
+                  </div>
+                  <div className="flex items-center space-x-1">
+                    <Zap size={12} className="text-blue-500" />
+                    <span className="text-xs text-gray-600 dark:text-gray-400">1,250 pts</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Quick Stats */}
+        {user && (
+          <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+            <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">
+              Thống kê nhanh
+            </h3>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="text-center p-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                <div className="text-lg font-bold text-blue-600 dark:text-blue-400">
+                  {firestoreStats.loading ? '...' : firestoreStats.userPosts}
+                </div>
+                <div className="text-xs text-gray-600 dark:text-gray-400">Links kiểm tra</div>
+              </div>
+              <div className="text-center p-2 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                <div className="text-lg font-bold text-green-600 dark:text-green-400">
+                  {firestoreStats.loading ? '...' : firestoreStats.totalPosts}
+                </div>
+                <div className="text-xs text-gray-600 dark:text-gray-400">Tổng bài viết</div>
+              </div>
+              <div className="text-center p-2 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
+                <div className="text-lg font-bold text-purple-600 dark:text-purple-400">
+                  {firestoreStats.loading ? '...' : firestoreStats.userComments}
+                </div>
+                <div className="text-xs text-gray-600 dark:text-gray-400">Bình luận của tôi</div>
+              </div>
+              <div className="text-center p-2 bg-orange-50 dark:bg-orange-900/20 rounded-lg">
+                <div className="text-lg font-bold text-orange-600 dark:text-orange-400">
+                  {firestoreStats.loading ? '...' : firestoreStats.userVotes}
+                </div>
+                <div className="text-xs text-gray-600 dark:text-gray-400">Votes của tôi</div>
               </div>
             </div>
           </div>
@@ -263,6 +386,15 @@ const NavigationSidebar = ({ isOpen, onToggle }) => {
                   <div className="flex items-center space-x-3">
                     <Icon size={20} />
                     <span className="font-medium">{item.label}</span>
+                    {item.badge && (
+                      <span className={`px-2 py-1 text-xs font-bold rounded-full ${
+                        item.badge === 'PRO'
+                          ? 'bg-gradient-to-r from-yellow-400 to-orange-500 text-white'
+                          : 'bg-red-500 text-white'
+                      }`}>
+                        {item.badge}
+                      </span>
+                    )}
                   </div>
                   
                   {hasSubmenu && (

@@ -66,12 +66,9 @@ const isProduction = process.env.NODE_ENV === 'production'; // Changed from 5000
 // Security middleware
 app.use(helmet());
 app.use(cors({
-  origin: [
-    'http://localhost:3000',
-    'http://localhost:3001',
-    'https://factcheck-frontend.onrender.com',
-    process.env.FRONTEND_URL
-  ].filter(Boolean),
+  origin: ['http://localhost:3000', 'http://127.0.0.1:3000'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true
 }));
 
@@ -196,35 +193,14 @@ app.get('/api/chat/test', (req, res) => {
   });
 });
 
-// Test OpenAI configuration
-app.get('/api/chat/test-openai', async (req, res) => {
+// Test Gemini configuration
+app.get('/api/chat/test-gemini', async (req, res) => {
   try {
-    const openaiService = require('./services/openaiService');
-    const isConfigured = openaiService.isConfigured();
-
-    if (!isConfigured) {
-      return res.json({
-        status: 'NOT_CONFIGURED',
-        message: 'OpenAI API key not configured',
-        configured: false
-      });
-    }
-
-    // Test a simple message
-    const testResponse = await openaiService.sendMessage('Hello, this is a test message');
-
-    res.json({
-      status: 'OK',
-      message: 'OpenAI API working!',
-      configured: true,
-      testResponse: testResponse.success ? 'Success' : testResponse.error
-    });
+    const geminiService = require('./services/geminiService');
+    const testResponse = await geminiService.sendMessage('Hello, this is a test message');
+    res.json({ success: true, response: testResponse });
   } catch (error) {
-    res.json({
-      status: 'ERROR',
-      message: 'OpenAI test failed',
-      error: error.message
-    });
+    res.status(500).json({ success: false, error: error.message });
   }
 });
 

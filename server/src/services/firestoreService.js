@@ -54,6 +54,11 @@ class FirestoreService {
 
   // Vote operations
   async createVote(voteData) {
+    // Validate required fields to prevent Firestore errors
+    if (!voteData.userId || !voteData.linkId) {
+      throw new Error('Missing required fields: userId and linkId are required');
+    }
+
     if (this.db.dbType === 'firestore') {
       // Check if vote already exists
       const existingVotes = await this.db.firestoreDb.getDb()
@@ -141,7 +146,7 @@ class FirestoreService {
   }
 
   async findUserByEmailFallback(email) {
-    for (const [id, user] of global.inMemoryDB.users) {
+    for (const [, user] of global.inMemoryDB.users) {
       if (user.email === email) return user;
     }
     return null;
