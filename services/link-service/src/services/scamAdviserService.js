@@ -1,6 +1,6 @@
 const axios = require('axios');
 const crypto = require('crypto');
-const Logger = require('../../../shared/utils/logger');
+const Logger = require('/app/shared/utils/logger');
 
 const logger = new Logger('link-service');
 

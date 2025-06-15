@@ -2,7 +2,7 @@
  * Error handling middleware for Link Service
  */
 
-const Logger = require('../../../shared/utils/logger');
+const Logger = require('/app/shared/utils/logger');
 const logger = new Logger('link-service');
 
 const errorHandler = (error, req, res, next) => {

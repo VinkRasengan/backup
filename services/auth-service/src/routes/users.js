@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const userController = require('../controllers/userController');
-const AuthMiddleware = require('../../../shared/middleware/auth');
+const AuthMiddleware = require('/app/shared/middleware/auth');
 const { validateRequest, schemas } = require('../middleware/validation');
 
 // Initialize auth middleware
