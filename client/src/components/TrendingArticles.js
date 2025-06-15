@@ -22,100 +22,86 @@ const TrendingArticles = () => {
   }, []);
 
   const loadTrendingArticles = async () => {
+    // Load mock data immediately for better UX
+    console.log('🚀 Loading trending articles immediately...');
+
+    // Set mock data first for instant display
+    const mockData = [
+      {
+        id: 1,
+        title: 'Phát hiện tin giả về vaccine COVID-19 lan truyền trên mạng xã hội',
+        url: 'https://example.com/covid-vaccine-fake-news',
+        credibilityScore: 25,
+        voteCount: 45,
+        commentCount: 23,
+        engagementScore: 91,
+        createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+        author: { firstName: 'Nguyễn', lastName: 'Văn A' }
+      },
+      {
+        id: 2,
+        title: 'Cách nhận biết website lừa đảo trong mùa mua sắm online',
+        url: 'https://example.com/online-shopping-scam',
+        credibilityScore: 85,
+        voteCount: 38,
+        commentCount: 15,
+        engagementScore: 68,
+        createdAt: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(),
+        author: { firstName: 'Trần', lastName: 'Thị B' }
+      },
+      {
+        id: 3,
+        title: 'Thông tin sai lệch về biến đổi khí hậu được chia sẻ rộng rãi',
+        url: 'https://example.com/climate-change-misinformation',
+        credibilityScore: 15,
+        voteCount: 52,
+        commentCount: 31,
+        engagementScore: 114,
+        createdAt: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString(),
+        author: { firstName: 'Lê', lastName: 'Văn C' }
+      },
+      {
+        id: 4,
+        title: 'Cảnh báo: Trang web giả mạo Shopee đang lừa đảo người dùng',
+        url: 'https://fake-shopee.com',
+        credibilityScore: 12,
+        voteCount: 67,
+        commentCount: 28,
+        engagementScore: 156,
+        createdAt: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(),
+        author: { firstName: 'Phạm', lastName: 'Thị D' }
+      },
+      {
+        id: 5,
+        title: 'Hướng dẫn kiểm tra độ tin cậy của nguồn tin trực tuyến',
+        url: 'https://factcheck-guide.com',
+        credibilityScore: 92,
+        voteCount: 89,
+        commentCount: 45,
+        engagementScore: 203,
+        createdAt: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
+        author: { firstName: 'Hoàng', lastName: 'Văn E' }
+      }
+    ];
+
+    setTrendingArticles(mockData);
+    setLoading(false);
+
+    // Try to fetch real data in background (optional)
     try {
-      setLoading(true);
-      console.log('🚀 Loading trending articles with optimization...');
+      const response = await fetch('/api/community/trending-posts?limit=5', {
+        headers: { 'Cache-Control': 'max-age=60' }
+      });
 
-      // Use AbortController for request timeout
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
-
-      try {
-        // Try optimized endpoint first with timeout
-        let response = await fetch('/api/community/trending-posts?limit=5', {
-          signal: controller.signal,
-          headers: {
-            'Cache-Control': 'max-age=60' // Cache for 1 minute
-          }
-        });
-
-        clearTimeout(timeoutId);
-
-        if (response.ok) {
-          const data = await response.json();
-          if (data.success && data.data.posts && data.data.posts.length > 0) {
-            console.log('✅ Loaded trending articles from optimized endpoint');
-            setTrendingArticles(data.data.posts);
-            return;
-          }
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.data.posts && data.data.posts.length > 0) {
+          console.log('✅ Updated with real trending articles');
+          setTrendingArticles(data.data.posts);
         }
-
-        // Fallback to regular endpoint
-        console.log('⚠️ Falling back to regular endpoint...');
-        response = await fetch('/api/community/posts?sort=trending&limit=5', {
-          headers: {
-            'Cache-Control': 'max-age=60'
-          }
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          if (data.success && data.data.posts && data.data.posts.length > 0) {
-            console.log('✅ Loaded trending articles from regular endpoint');
-            setTrendingArticles(data.data.posts);
-            return;
-          }
-        }
-
-        throw new Error('Failed to load trending articles from both endpoints');
-      } catch (fetchError) {
-        if (fetchError.name === 'AbortError') {
-          console.warn('⏰ Request timed out, using fallback data');
-        } else {
-          console.error('❌ Error loading trending articles:', fetchError);
-        }
-        throw fetchError;
       }
     } catch (error) {
-      console.error('Error loading trending articles:', error);
-      // Fallback to mock data
-      setTrendingArticles([
-        {
-          id: 1,
-          title: 'Phát hiện tin giả về vaccine COVID-19 lan truyền trên mạng xã hội',
-          url: 'https://example.com/covid-vaccine-fake-news',
-          credibilityScore: 25,
-          voteCount: 45,
-          commentCount: 23,
-          engagementScore: 91,
-          createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-          author: { firstName: 'Nguyễn', lastName: 'Văn A' }
-        },
-        {
-          id: 2,
-          title: 'Cách nhận biết website lừa đảo trong mùa mua sắm online',
-          url: 'https://example.com/online-shopping-scam',
-          credibilityScore: 85,
-          voteCount: 38,
-          commentCount: 15,
-          engagementScore: 68,
-          createdAt: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(),
-          author: { firstName: 'Trần', lastName: 'Thị B' }
-        },
-        {
-          id: 3,
-          title: 'Thông tin sai lệch về biến đổi khí hậu được chia sẻ rộng rãi',
-          url: 'https://example.com/climate-change-misinformation',
-          credibilityScore: 15,
-          voteCount: 52,
-          commentCount: 31,
-          engagementScore: 114,
-          createdAt: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString(),
-          author: { firstName: 'Lê', lastName: 'Văn C' }
-        }
-      ]);
-    } finally {
-      setLoading(false);
+      console.log('ℹ️ Using mock data (API not available)');
     }
   };
 

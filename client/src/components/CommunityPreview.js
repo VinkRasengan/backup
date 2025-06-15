@@ -17,80 +17,75 @@ const CommunityPreview = () => {
 
   useEffect(() => {
     const fetchRecentPosts = async () => {
+      // Load mock data immediately for instant display
+      console.log('🚀 Loading community posts immediately...');
+
+      const mockData = [
+        {
+          id: 'mock-1',
+          title: 'Phát hiện trang web lừa đảo mạo danh ngân hàng',
+          content: 'Cộng đồng đã phát hiện và báo cáo nhiều trang web lừa đảo có giao diện giống hệt các ngân hàng lớn. Hãy cẩn thận khi nhập thông tin cá nhân.',
+          author: { name: 'SecurityExpert' },
+          createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+          votes: { safe: 15, unsafe: 2, suspicious: 1 },
+          commentsCount: 8,
+          type: 'community'
+        },
+        {
+          id: 'mock-2',
+          title: 'Cảnh báo: Email giả mạo từ "Shopee"',
+          content: 'Nhiều người dùng nhận được email lừa đảo có logo Shopee yêu cầu cập nhật thông tin tài khoản. Đây là chiêu trò phishing phổ biến.',
+          author: { name: 'SafetyFirst' },
+          createdAt: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(),
+          votes: { safe: 23, unsafe: 0, suspicious: 0 },
+          commentsCount: 12,
+          type: 'security'
+        },
+        {
+          id: 'mock-3',
+          title: 'Hướng dẫn kiểm tra tin tức trên Facebook',
+          content: 'Chia sẻ kinh nghiệm và mẹo hay để nhận biết tin giả trên mạng xã hội. Cách kiểm tra nguồn gốc và độ tin cậy của thông tin.',
+          author: { name: 'FactChecker' },
+          createdAt: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString(),
+          votes: { safe: 31, unsafe: 1, suspicious: 0 },
+          commentsCount: 15,
+          type: 'guide'
+        },
+        {
+          id: 'mock-4',
+          title: 'Thảo luận: Vai trò AI trong kiểm chứng thông tin',
+          content: 'Cùng thảo luận về ưu nhược điểm của việc sử dụng AI để kiểm tra thông tin. Công nghệ có thể giúp gì và hạn chế ra sao?',
+          author: { name: 'TechExpert' },
+          createdAt: new Date(Date.now() - 8 * 60 * 60 * 1000).toISOString(),
+          votes: { safe: 18, unsafe: 3, suspicious: 2 },
+          commentsCount: 22,
+          type: 'discussion'
+        }
+      ];
+
+      setPosts(mockData);
+      setLoading(false);
+
+      // Try to fetch real data in background (optional)
       try {
-        setLoading(true);
-        
-        // Try to get token for authenticated requests
-        const token = localStorage.getItem('token') || 
-                     localStorage.getItem('authToken') || 
+        const token = localStorage.getItem('token') ||
+                     localStorage.getItem('authToken') ||
                      localStorage.getItem('backendToken');
 
-        const headers = {
-          'Content-Type': 'application/json'
-        };
+        const headers = { 'Content-Type': 'application/json' };
+        if (token) headers['Authorization'] = `Bearer ${token}`;
 
-        if (token) {
-          headers['Authorization'] = `Bearer ${token}`;
-        }
-
-        const response = await fetch('/api/community/posts?limit=4&sort=trending', {
-          headers
-        });
+        const response = await fetch('/api/community/posts?limit=4&sort=trending', { headers });
 
         if (response.ok) {
           const data = await response.json();
-          setPosts(data.data?.posts?.slice(0, 4) || []);
-        } else {
-          // Fallback to mock data if API fails
-          setPosts([
-            {
-              id: 'mock-1',
-              title: 'Phát hiện trang web lừa đảo mạo danh ngân hàng',
-              content: 'Cộng đồng đã phát hiện và báo cáo nhiều trang web lừa đảo...',
-              author: { name: 'User123' },
-              createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-              votes: { safe: 15, unsafe: 2, suspicious: 1 },
-              commentsCount: 8,
-              type: 'community'
-            },
-            {
-              id: 'mock-2', 
-              title: 'Cảnh báo: Email giả mạo từ "Shopee"',
-              content: 'Nhiều người dùng nhận được email lừa đảo có logo Shopee...',
-              author: { name: 'SafetyFirst' },
-              createdAt: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(),
-              votes: { safe: 23, unsafe: 0, suspicious: 0 },
-              commentsCount: 12,
-              type: 'security'
-            },
-            {
-              id: 'mock-3',
-              title: 'Hướng dẫn kiểm tra tin tức trên Facebook',
-              content: 'Chia sẻ kinh nghiệm và mẹo hay để nhận biết tin giả...',
-              author: { name: 'FactChecker' },
-              createdAt: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString(),
-              votes: { safe: 31, unsafe: 1, suspicious: 0 },
-              commentsCount: 15,
-              type: 'guide'
-            },
-            {
-              id: 'mock-4',
-              title: 'Thảo luận: Vai trò AI trong kiểm chứng thông tin',
-              content: 'Cùng thảo luận về ưu nhược điểm của việc sử dụng AI...',
-              author: { name: 'TechExpert' },
-              createdAt: new Date(Date.now() - 8 * 60 * 60 * 1000).toISOString(),
-              votes: { safe: 18, unsafe: 3, suspicious: 2 },
-              commentsCount: 22,
-              type: 'discussion'
-            }
-          ]);
+          if (data.data?.posts?.length > 0) {
+            console.log('✅ Updated with real community posts');
+            setPosts(data.data.posts.slice(0, 4));
+          }
         }
       } catch (error) {
-        console.error('Error fetching community posts:', error);
-        // Set mock data on error
-        setPosts([]);
-      } finally {
-        setLoading(false);
+        console.log('ℹ️ Using mock data (API not available)');
       }
     };
 

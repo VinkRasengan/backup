@@ -18,75 +18,69 @@ const LatestNews = () => {
 
   useEffect(() => {
     const fetchLatestNews = async () => {
-      try {
-        setLoading(true);
-        setError(null);
+      // Load mock data immediately for instant display
+      console.log('🚀 Loading latest news immediately...');
 
-        // Try to get token for authenticated requests
-        const token = localStorage.getItem('token') || 
-                     localStorage.getItem('authToken') || 
+      const mockData = [
+        {
+          title: 'Công nghệ AI mới giúp phát hiện deepfake chính xác hơn 95%',
+          description: 'Các nhà nghiên cứu đã phát triển một hệ thống AI có thể phát hiện video deepfake với độ chính xác cao, giúp chống lại thông tin sai lệch trên mạng.',
+          url: 'https://example.com/ai-deepfake-detection',
+          urlToImage: 'https://images.unsplash.com/photo-1677442136019-21780ecad995?w=400',
+          publishedAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+          source: { name: 'TechCrunch' }
+        },
+        {
+          title: 'Cảnh báo về chiến dịch lừa đảo qua email mới nhắm vào người dùng Việt Nam',
+          description: 'Các chuyên gia bảo mật đã phát hiện một chiến dịch lừa đảo tinh vi targeting người dùng tại Việt Nam thông qua email giả mạo các tổ chức tài chính.',
+          url: 'https://example.com/vietnam-email-scam',
+          urlToImage: 'https://images.unsplash.com/photo-1563986768609-322da13575f3?w=400',
+          publishedAt: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(),
+          source: { name: 'CyberNews' }
+        },
+        {
+          title: 'Facebook ra mắt công cụ kiểm chứng thông tin mới cho thị trường Đông Nam Á',
+          description: 'Meta đã công bố sẽ triển khai công cụ fact-checking mới nhằm chống lại thông tin sai lệch và tin giả trên các nền tảng mạng xã hội.',
+          url: 'https://example.com/facebook-fact-check-sea',
+          urlToImage: 'https://images.unsplash.com/photo-1611262588024-d12430b98920?w=400',
+          publishedAt: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString(),
+          source: { name: 'Reuters' }
+        },
+        {
+          title: 'Nghiên cứu mới: 73% người dùng mạng xã hội không kiểm tra nguồn tin trước khi chia sẻ',
+          description: 'Một nghiên cứu gần đây cho thấy phần lớn người dùng mạng xã hội có thói quen chia sẻ thông tin mà không kiểm chứng độ tin cậy của nguồn.',
+          url: 'https://example.com/social-media-misinformation-study',
+          urlToImage: 'https://images.unsplash.com/photo-1611605698335-8b1569810432?w=400',
+          publishedAt: new Date(Date.now() - 8 * 60 * 60 * 1000).toISOString(),
+          source: { name: 'BBC' }
+        }
+      ];
+
+      setNews(mockData);
+      setLoading(false);
+      setError(null);
+
+      // Try to fetch real data in background (optional)
+      try {
+        const token = localStorage.getItem('token') ||
+                     localStorage.getItem('authToken') ||
                      localStorage.getItem('backendToken');
 
-        const headers = {
-          'Content-Type': 'application/json'
-        };
+        const headers = { 'Content-Type': 'application/json' };
+        if (token) headers['Authorization'] = `Bearer ${token}`;
 
-        if (token) {
-          headers['Authorization'] = `Bearer ${token}`;
-        }
-
-        const response = await fetch('/api/news/latest?source=newsapi&pageSize=5', {
-          headers
-        });
+        const response = await fetch('/api/news/latest?source=newsapi&pageSize=5', { headers });
 
         if (response.ok) {
           const data = await response.json();
           const articles = data.data?.newsapi?.articles || data.data?.articles || [];
-          setNews(articles.slice(0, 4));
-        } else {
-          // Fallback to mock data if API fails
-          setNews([
-            {
-              title: 'Công nghệ AI mới giúp phát hiện deepfake chính xác hơn 95%',
-              description: 'Các nhà nghiên cứu đã phát triển một hệ thống AI có thể phát hiện video deepfake với độ chính xác cao...',
-              url: 'https://example.com/ai-deepfake-detection',
-              urlToImage: 'https://images.unsplash.com/photo-1677442136019-21780ecad995?w=400',
-              publishedAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-              source: { name: 'TechCrunch' }
-            },
-            {
-              title: 'Cảnh báo về chiến dịch lừa đảo qua email mới nhắm vào người dùng Việt Nam',
-              description: 'Các chuyên gia bảo mật đã phát hiện một chiến dịch lừa đảo tinh vi targeting người dùng tại Việt Nam...',
-              url: 'https://example.com/vietnam-email-scam',
-              urlToImage: 'https://images.unsplash.com/photo-1563986768609-322da13575f3?w=400',
-              publishedAt: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(),
-              source: { name: 'CyberNews' }
-            },
-            {
-              title: 'Facebook ra mắt công cụ kiểm chứng thông tin mới cho thị trường Đông Nam Á',
-              description: 'Meta đã công bố sẽ triển khai công cụ fact-checking mới nhằm chống lại thông tin sai lệch...',
-              url: 'https://example.com/facebook-fact-check-sea',
-              urlToImage: 'https://images.unsplash.com/photo-1611262588024-d12430b98920?w=400',
-              publishedAt: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString(),
-              source: { name: 'Reuters' }
-            },
-            {
-              title: 'Nghiên cứu mới: 73% người dùng mạng xã hội không kiểm tra nguồn tin trước khi chia sẻ',
-              description: 'Một nghiên cứu gần đây cho thấy phần lớn người dùng mạng xã hội có thói quen chia sẻ thông tin mà không kiểm chứng...',
-              url: 'https://example.com/social-media-misinformation-study',
-              urlToImage: 'https://images.unsplash.com/photo-1611605698335-8b1569810432?w=400',
-              publishedAt: new Date(Date.now() - 8 * 60 * 60 * 1000).toISOString(),
-              source: { name: 'BBC' }
-            }
-          ]);
+          if (articles.length > 0) {
+            console.log('✅ Updated with real news articles');
+            setNews(articles.slice(0, 4));
+          }
         }
       } catch (error) {
-        console.error('Error fetching news:', error);
-        setError('Không thể tải tin tức');
-        // Set mock data on error
-        setNews([]);
-      } finally {
-        setLoading(false);
+        console.log('ℹ️ Using mock data (API not available)');
       }
     };
 
