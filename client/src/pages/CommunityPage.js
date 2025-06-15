@@ -80,32 +80,67 @@ const CommunityPage = () => {
       }
     );
   }, [posts, loading]);
-  // Fetch posts from Firestore with caching
+  // Fetch posts from API backend
   const fetchPosts = async (refresh = false) => {
     try {
       setLoading(true);
 
       const sortBy = activeTab === 'trending' ? 'trending' : 'newest';
+      const page = refresh ? 1 : Math.floor(posts.length / 10) + 1;
 
-      const options = {
-        sortBy,
-        limitCount: 10,
-        lastDoc: refresh ? null : lastDoc,
-        refresh
-      };
+      console.log('🔄 Fetching community posts from API...', { sortBy, page, refresh });
 
-      // Use cached data for better performance
-      const result = await communityCache.getCachedPosts(firestoreService, options);
+      // Get auth token if available
+      const token = localStorage.getItem('token') ||
+                   localStorage.getItem('authToken') ||
+                   localStorage.getItem('backendToken');
 
-      if (refresh) {
-        setPosts(result.posts);
-      } else {
-        setPosts(prev => [...prev, ...result.posts]);
+      const headers = { 'Content-Type': 'application/json' };
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+
+      const response = await fetch(`http://localhost:5000/api/community/posts?sort=${sortBy}&page=${page}&limit=10`, {
+        headers
+      });
+
+      console.log('📡 Community API Response status:', response.status);
+
+      if (response.ok) {
+        const data = await response.json();
+        console.log('📊 Community API Response data:', data);
+
+        if (data.success && data.data?.posts) {
+          const newPosts = data.data.posts.map(post => ({
+            id: post.id,
+            title: post.title,
+            description: post.content || post.description || 'No description available',
+            url: post.url,
+            userId: post.author?.id || 'unknown',
+            userEmail: post.author?.email || 'unknown@example.com',
+            createdAt: new Date(post.createdAt),
+            voteCount: post.voteStats?.total || 0,
+            commentCount: post.commentsCount || 0,
+            status: 'active',
+            tags: post.tags || [],
+            userVoted: post.userVote,
+            saved: false
+          }));
+
+          if (refresh) {
+            setPosts(newPosts);
+          } else {
+            setPosts(prev => [...prev, ...newPosts]);
+          }
+
+          setHasMore(data.data.pagination?.hasNext || false);
+          setLoading(false);
+          return;
+        }
       }
 
-      setLastDoc(result.lastDoc);
-      setHasMore(result.hasMore);
-      setLoading(false);
+      // If API fails, fall back to mock data
+      console.log('⚠️ API failed, using fallback data');
+      throw new Error('API request failed');
+
     } catch (err) {
       console.error('Error fetching posts:', err);
       setLoading(false);
@@ -198,7 +233,29 @@ const CommunityPage = () => {
       }
 
       const voteType = type === 'up' ? 'safe' : 'unsafe';
-      await communityCache.submitVoteWithCache(firestoreService, postId, voteType, userId, user.email);
+
+      // Call API to submit vote
+      const token = localStorage.getItem('token') ||
+                   localStorage.getItem('authToken') ||
+                   localStorage.getItem('backendToken');
+
+      const headers = { 'Content-Type': 'application/json' };
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+
+      const response = await fetch(`http://localhost:5000/api/votes`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          linkId: postId,
+          voteType: voteType,
+          userId: userId,
+          userEmail: user.email
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Vote submission failed');
+      }
 
       // Update local state optimistically
       setPosts(posts.map(post => {

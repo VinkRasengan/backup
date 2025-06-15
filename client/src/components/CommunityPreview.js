@@ -68,8 +68,9 @@ const CommunityPreview = () => {
       setPosts(mockData);
       setLoading(false);
 
-      // Try to fetch real data in background (optional)
+      // Try to fetch real data in background
       try {
+        console.log('🔄 Fetching real community data from API...');
         const token = localStorage.getItem('token') ||
                      localStorage.getItem('authToken') ||
                      localStorage.getItem('backendToken');
@@ -77,17 +78,42 @@ const CommunityPreview = () => {
         const headers = { 'Content-Type': 'application/json' };
         if (token) headers['Authorization'] = `Bearer ${token}`;
 
-        const response = await fetch('/api/community/posts?limit=4&sort=trending', { headers });
+        const response = await fetch('http://localhost:5000/api/community/posts?limit=4&sort=trending', { headers });
+
+        console.log('📡 Community API Response status:', response.status);
 
         if (response.ok) {
           const data = await response.json();
-          if (data.data?.posts?.length > 0) {
-            console.log('✅ Updated with real community posts');
-            setPosts(data.data.posts.slice(0, 4));
+          console.log('📊 Community API Response data:', data);
+
+          if (data.success && data.data?.posts?.length > 0) {
+            console.log('✅ Updated with real community posts:', data.data.posts.length);
+
+            // Transform API data to match our format
+            const transformedPosts = data.data.posts.slice(0, 4).map(post => ({
+              id: post.id,
+              title: post.title,
+              content: post.content || post.description || 'No description available',
+              author: { name: post.author?.name || post.author?.displayName || 'Unknown User' },
+              createdAt: post.createdAt,
+              votes: {
+                safe: post.voteStats?.safe || 0,
+                unsafe: post.voteStats?.unsafe || 0,
+                suspicious: post.voteStats?.suspicious || 0
+              },
+              commentsCount: post.commentsCount || 0,
+              type: post.category || 'community'
+            }));
+
+            setPosts(transformedPosts);
+          } else {
+            console.log('⚠️ Community API returned no posts, keeping mock data');
           }
+        } else {
+          console.log('⚠️ Community API request failed:', response.status, response.statusText);
         }
       } catch (error) {
-        console.log('ℹ️ Using mock data (API not available)');
+        console.log('ℹ️ Community API not available, using mock data:', error.message);
       }
     };
 

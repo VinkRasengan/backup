@@ -131,21 +131,47 @@ const TrendingArticles = () => {
     setTrendingArticles(mockData);
     setLoading(false);
 
-    // Try to fetch real data in background (optional)
+    // Try to fetch real data in background
     try {
-      const response = await fetch('/api/community/trending-posts?limit=5', {
-        headers: { 'Cache-Control': 'max-age=60' }
+      console.log('🔄 Fetching real trending data from API...');
+      const response = await fetch('http://localhost:5000/api/community/posts?sort=trending&limit=5', {
+        headers: {
+          'Cache-Control': 'max-age=60',
+          'Content-Type': 'application/json'
+        }
       });
+
+      console.log('📡 API Response status:', response.status);
 
       if (response.ok) {
         const data = await response.json();
-        if (data.success && data.data.posts && data.data.posts.length > 0) {
-          console.log('✅ Updated with real trending articles');
-          setTrendingArticles(data.data.posts);
+        console.log('📊 API Response data:', data);
+
+        if (data.success && data.data && data.data.posts && data.data.posts.length > 0) {
+          console.log('✅ Updated with real trending articles:', data.data.posts.length);
+
+          // Transform API data to match our format
+          const transformedPosts = data.data.posts.map(post => ({
+            id: post.id,
+            title: post.title,
+            url: post.url,
+            credibilityScore: post.trustScore || 50,
+            voteCount: post.voteStats?.total || 0,
+            commentCount: post.commentsCount || 0,
+            engagementScore: (post.voteStats?.total || 0) * (post.trustScore || 50) / 10,
+            createdAt: post.createdAt,
+            author: post.author || { firstName: 'Unknown', lastName: 'User' }
+          }));
+
+          setTrendingArticles(transformedPosts);
+        } else {
+          console.log('⚠️ API returned no posts, keeping mock data');
         }
+      } else {
+        console.log('⚠️ API request failed:', response.status, response.statusText);
       }
     } catch (error) {
-      console.log('ℹ️ Using mock data (API not available)');
+      console.log('ℹ️ API not available, using mock data:', error.message);
     }
   };
 
