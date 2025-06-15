@@ -2,30 +2,24 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Search,
-  MoreHorizontal,
   Phone,
   Video,
   Info,
   ArrowLeft,
   ChevronLeft,
   ChevronRight,
-  Menu,
   Smile,
   Paperclip,
   Send,
   Image,
   Mic,
-  X,
   Settings,
-  UserPlus,
-  Archive
+  UserPlus
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
-import { useTheme } from '../../context/ThemeContext';
 
 const ModernMessengerLayout = () => {
   const { user } = useAuth();
-  const { isDarkMode } = useTheme();
   const [selectedChat, setSelectedChat] = useState(null);
   const [chatHistory, setChatHistory] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -231,13 +225,7 @@ const ModernMessengerLayout = () => {
 
   return (
     <div className="h-full bg-white dark:bg-gray-900 flex overflow-hidden relative">
-      {/* Mobile Sidebar Toggle */}
-      <button
-        onClick={() => setSidebarOpen(!sidebarOpen)}
-        className="lg:hidden fixed top-20 left-4 z-50 w-10 h-10 bg-blue-600 hover:bg-blue-700 text-white rounded-full shadow-lg flex items-center justify-center transition-colors"
-      >
-        <Menu size={18} />
-      </button>
+      {/* Removed duplicate hamburger menu - using NavigationLayout's menu instead */}
 
       {/* Sidebar - Conversations List */}
       <motion.div

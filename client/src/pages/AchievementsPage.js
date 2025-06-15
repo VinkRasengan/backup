@@ -1,24 +1,22 @@
-import React, { useState, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useState, useRef, useEffect } from 'react';
+import { motion } from 'framer-motion';
 import {
   Trophy,
   Star,
   Shield,
   Users,
-  Zap,
   Target,
-  Award,
   Crown,
   Medal,
   Gem,
   Lock,
-  CheckCircle,
-  TrendingUp
+  CheckCircle
 } from 'lucide-react';
 import NavigationLayout from '../components/navigation/NavigationLayout';
 import { useAuth } from '../context/AuthContext';
 import { useGSAP } from '../hooks/useGSAP';
 import { gsap } from '../utils/gsap';
+import achievementService from '../services/achievementService';
 
 const AchievementsPage = () => {
   const { user } = useAuth();

@@ -34,9 +34,7 @@ const NavigationSidebar = ({ isOpen, onToggle }) => {
 
   // Get real-time data from Firestore
   const firestoreStats = useFirestoreStats();
-  const notifications = useRealtimeNotifications();
-
-  // Memoized navigation items structure
+  const notifications = useRealtimeNotifications();  // Memoized navigation items structure
   const navigationItems = useMemo(() => [
     {
       id: 'home',
@@ -92,15 +90,16 @@ const NavigationSidebar = ({ isOpen, onToggle }) => {
       path: '/analytics',
       color: 'blue'
     },
-    {
+    // Add Premium for non-logged-in users
+    ...(!user ? [{
       id: 'premium',
       label: 'Premium',
       icon: Star,
       path: '/premium',
       color: 'yellow',
       badge: 'PRO'
-    }
-  ], []);
+    }] : [])
+  ], [user]);
 
   // User-specific items with memoization
   const userItems = useMemo(() => user ? [
@@ -132,6 +131,14 @@ const NavigationSidebar = ({ isOpen, onToggle }) => {
       icon: Heart,
       path: '/favorites',
       color: 'pink'
+    },
+    {
+      id: 'premium',
+      label: 'Premium',
+      icon: Zap,
+      path: '/premium',
+      color: 'amber',
+      badge: 'PRO'
     },
     {
       id: 'achievements',
@@ -217,7 +224,6 @@ const NavigationSidebar = ({ isOpen, onToggle }) => {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isOpen, onToggle]);
-
   const getColorClasses = (color, active = false) => {
     const colors = {
       blue: active 
@@ -235,12 +241,18 @@ const NavigationSidebar = ({ isOpen, onToggle }) => {
       amber: active 
         ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300' 
         : 'text-gray-700 dark:text-gray-300 hover:bg-amber-50 dark:hover:bg-amber-900/20',
+      yellow: active 
+        ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300' 
+        : 'text-gray-700 dark:text-gray-300 hover:bg-yellow-50 dark:hover:bg-yellow-900/20',
       orange: active 
         ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300' 
         : 'text-gray-700 dark:text-gray-300 hover:bg-orange-50 dark:hover:bg-orange-900/20',
       pink: active 
         ? 'bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-300' 
         : 'text-gray-700 dark:text-gray-300 hover:bg-pink-50 dark:hover:bg-pink-900/20',
+      red: active 
+        ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300' 
+        : 'text-gray-700 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-red-900/20',
       gray: active 
         ? 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300' 
         : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'

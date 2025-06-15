@@ -48,15 +48,20 @@ const PerformanceMonitor = ({ isOpen, onClose }) => {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // Performance monitoring
+  // Performance monitoring with throttling
   useEffect(() => {
     if (!isMonitoring) return;
+
+    let animationId;
+    let lastUpdate = 0;
+    const UPDATE_INTERVAL = 2000; // Update every 2 seconds instead of every second
 
     const measureFPS = () => {
       frameCountRef.current++;
       const now = performance.now();
       
-      if (now - lastTimeRef.current >= 1000) {
+      // Throttle updates to reduce re-renders
+      if (now - lastUpdate >= UPDATE_INTERVAL) {
         const fps = Math.round((frameCountRef.current * 1000) / (now - lastTimeRef.current));
         
         setMetrics(prev => ({
@@ -68,14 +73,22 @@ const PerformanceMonitor = ({ isOpen, onClose }) => {
 
         frameCountRef.current = 0;
         lastTimeRef.current = now;
+        lastUpdate = now;
       }
 
       if (isMonitoring) {
-        requestAnimationFrame(measureFPS);
+        animationId = requestAnimationFrame(measureFPS);
       }
     };
 
     measureFPS();
+
+    // Cleanup function
+    return () => {
+      if (animationId) {
+        cancelAnimationFrame(animationId);
+      }
+    };
   }, [isMonitoring]);
 
   // Calculate performance score
@@ -133,6 +146,9 @@ const PerformanceMonitor = ({ isOpen, onClose }) => {
   };
 
   const runPerformanceTest = () => {
+    // Kill existing animations first
+    gsap.killTweensOf(".performance-test-element");
+    
     // Create test animations
     const testElements = document.querySelectorAll('.performance-test-element');
     
@@ -299,9 +315,11 @@ const PerformanceMonitor = ({ isOpen, onClose }) => {
 
               {/* Test Elements (hidden) */}
               <div className="hidden">
-                {[...Array(5)].map((_, i) => (
-                  <div key={i} className="performance-test-element w-4 h-4 bg-blue-500"></div>
-                ))}
+                <div className="performance-test-element w-4 h-4 bg-blue-500"></div>
+                <div className="performance-test-element w-4 h-4 bg-blue-500"></div>
+                <div className="performance-test-element w-4 h-4 bg-blue-500"></div>
+                <div className="performance-test-element w-4 h-4 bg-blue-500"></div>
+                <div className="performance-test-element w-4 h-4 bg-blue-500"></div>
               </div>
             </div>
           </motion.div>

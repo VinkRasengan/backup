@@ -18,7 +18,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
-import TabNavigation from '../components/navigation/TabNavigation';
+import NavigationLayout from '../components/navigation/NavigationLayout';
 import NavigationTest from '../components/testing/NavigationTest';
 
 const SettingsPage = () => {
@@ -126,10 +126,8 @@ const SettingsPage = () => {
   );
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <TabNavigation />
-      
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+    <NavigationLayout>
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6 pb-20">
         <div className="mb-6">
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Cài đặt</h1>
           <p className="mt-2 text-gray-600 dark:text-gray-400">
@@ -330,7 +328,7 @@ const SettingsPage = () => {
           </div>
         </SettingSection>
       </div>
-    </div>
+    </NavigationLayout>
   );
 };
 

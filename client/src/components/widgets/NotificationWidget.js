@@ -1,53 +1,47 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Bell, X, Check, AlertTriangle, Info, Star } from 'lucide-react';
+import { Bell, X, Check, AlertTriangle, Info, Star, Shield, MessageCircle } from 'lucide-react';
 import { gsap } from '../../utils/gsap';
+import { useAuth } from '../../context/AuthContext';
+import notificationService from '../../services/notificationService';
 
 const NotificationWidget = () => {
+  const { user } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [loading, setLoading] = useState(true);
 
-  // Mock notifications data
+  // Subscribe to real-time notifications
   useEffect(() => {
-    const mockNotifications = [
-      {
-        id: 1,
-        type: 'success',
-        title: 'Link đã được kiểm tra',
-        message: 'Link bạn gửi đã được phân tích và an toàn',
-        time: '2 phút trước',
-        read: false
-      },
-      {
-        id: 2,
-        type: 'warning',
-        title: 'Phát hiện link nghi ngờ',
-        message: 'Có 3 báo cáo về link lừa đảo mới',
-        time: '15 phút trước',
-        read: false
-      },
-      {
-        id: 3,
-        type: 'info',
-        title: 'Cập nhật hệ thống',
-        message: 'Hệ thống đã được cập nhật với tính năng mới',
-        time: '1 giờ trước',
-        read: true
-      },
-      {
-        id: 4,
-        type: 'achievement',
-        title: 'Thành tích mới!',
-        message: 'Bạn đã đạt được huy hiệu "Người bảo vệ"',
-        time: '2 giờ trước',
-        read: false
-      }
-    ];
+    if (!user?.uid) {
+      setLoading(false);
+      return;
+    }
 
-    setNotifications(mockNotifications);
-    setUnreadCount(mockNotifications.filter(n => !n.read).length);
-  }, []);
+    // Subscribe to notifications
+    const unsubscribeNotifications = notificationService.subscribeToNotifications(
+      user.uid,
+      (newNotifications) => {
+        setNotifications(newNotifications);
+        setLoading(false);
+      },
+      { limitCount: 10 }
+    );
+
+    // Subscribe to unread count
+    const unsubscribeUnreadCount = notificationService.subscribeToUnreadCount(
+      user.uid,
+      (count) => {
+        setUnreadCount(count);
+      }
+    );
+
+    return () => {
+      unsubscribeNotifications();
+      unsubscribeUnreadCount();
+    };
+  }, [user?.uid]);
 
   const toggleWidget = () => {
     setIsOpen(!isOpen);
@@ -64,44 +58,71 @@ const NotificationWidget = () => {
     }
   };
 
-  const markAsRead = (id) => {
-    setNotifications(prev => 
-      prev.map(notif => 
-        notif.id === id ? { ...notif, read: true } : notif
-      )
-    );
-    setUnreadCount(prev => Math.max(0, prev - 1));
+  const markAsRead = async (id) => {
+    try {
+      await notificationService.markAsRead(id);
+      // Real-time listener will update the state automatically
+    } catch (error) {
+      console.error('Error marking notification as read:', error);
+    }
   };
 
-  const markAllAsRead = () => {
-    setNotifications(prev => prev.map(notif => ({ ...notif, read: true })));
-    setUnreadCount(0);
+  const markAllAsRead = async () => {
+    if (!user?.uid) return;
+
+    try {
+      await notificationService.markAllAsRead(user.uid);
+      // Real-time listener will update the state automatically
+    } catch (error) {
+      console.error('Error marking all notifications as read:', error);
+    }
   };
 
   const getNotificationIcon = (type) => {
     switch (type) {
-      case 'success':
+      case 'vote':
         return <Check className="w-4 h-4 text-green-500" />;
-      case 'warning':
-        return <AlertTriangle className="w-4 h-4 text-yellow-500" />;
+      case 'comment':
+        return <MessageCircle className="w-4 h-4 text-blue-500" />;
+      case 'security_alert':
+        return <Shield className="w-4 h-4 text-red-500" />;
       case 'achievement':
         return <Star className="w-4 h-4 text-purple-500" />;
-      default:
+      case 'system':
         return <Info className="w-4 h-4 text-blue-500" />;
+      case 'warning':
+        return <AlertTriangle className="w-4 h-4 text-yellow-500" />;
+      default:
+        return <Bell className="w-4 h-4 text-gray-500" />;
     }
   };
 
   const getNotificationBg = (type) => {
     switch (type) {
-      case 'success':
+      case 'vote':
         return 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800';
-      case 'warning':
-        return 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800';
+      case 'comment':
+        return 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800';
+      case 'security_alert':
+        return 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800';
       case 'achievement':
         return 'bg-purple-50 dark:bg-purple-900/20 border-purple-200 dark:border-purple-800';
+      case 'warning':
+        return 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800';
       default:
         return 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800';
     }
+  };
+
+  const formatTime = (date) => {
+    const now = new Date();
+    const diff = now - date;
+    const hours = Math.floor(diff / (1000 * 60 * 60));
+    const days = Math.floor(hours / 24);
+
+    if (days > 0) return `${days} ngày trước`;
+    if (hours > 0) return `${hours} giờ trước`;
+    return 'Vừa xong';
   };
 
   return (
@@ -217,7 +238,7 @@ const NotificationWidget = () => {
                               {notification.message}
                             </p>
                             <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
-                              {notification.time}
+                              {notification.createdAt ? formatTime(notification.createdAt) : 'Vừa xong'}
                             </p>
                           </div>
                         </div>

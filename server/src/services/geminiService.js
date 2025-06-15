@@ -361,6 +361,59 @@ YÊU CẦU:
       };
     }
   }
+
+  // Validate message input
+  validateMessage(message) {
+    if (!message || typeof message !== 'string') {
+      return {
+        valid: false,
+        error: 'Tin nhắn không hợp lệ'
+      };
+    }
+
+    const trimmedMessage = message.trim();
+    if (trimmedMessage.length === 0) {
+      return {
+        valid: false,
+        error: 'Tin nhắn không được để trống'
+      };
+    }
+
+    if (trimmedMessage.length > 2000) {
+      return {
+        valid: false,
+        error: 'Tin nhắn quá dài (tối đa 2000 ký tự)'
+      };
+    }
+
+    return {
+      valid: true,
+      message: trimmedMessage
+    };
+  }
+
+  // Wrapper function for compatibility with chat routes
+  async sendGeminiMessage(message, history = []) {
+    try {
+      const result = await this.sendMessage(message, history);
+      return {
+        success: result.success,
+        response: result.message,
+        model: result.model,
+        timestamp: result.timestamp
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.message,
+        response: null
+      };
+    }
+  }
 }
 
-module.exports = new GeminiService();
+const geminiServiceInstance = new GeminiService();
+
+// Export both the instance and the sendGeminiMessage function for compatibility
+module.exports = geminiServiceInstance;
+module.exports.sendGeminiMessage = geminiServiceInstance.sendGeminiMessage.bind(geminiServiceInstance);

@@ -85,9 +85,7 @@
 /* Ensure content doesn't jump and fix scroll issues */
 .nav-content {
   min-height: 100vh;
-  max-height: 100vh;
   width: 100%;
-  overflow-y: auto;
   overflow-x: hidden;
   position: relative;
 }

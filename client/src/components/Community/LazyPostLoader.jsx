@@ -21,34 +21,46 @@ const LazyPostLoader = ({
   const loaderRef = useRef(null);
   const timeoutRef = useRef(null);
 
-  // Debounced load more function
+  // Debounced load more function with longer delay
   const debouncedLoadMore = useCallback(() => {
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
     }
-    
+
     timeoutRef.current = setTimeout(() => {
       if (hasMore && !loading && !error) {
         console.log('🔄 Loading more posts...');
         onLoadMore();
       }
-    }, 300); // 300ms debounce
+    }, 1000); // Increased to 1000ms debounce to reduce triggers
   }, [hasMore, loading, error, onLoadMore]);
 
-  // Intersection Observer for infinite scroll
+  // Intersection Observer for infinite scroll with throttling
   useEffect(() => {
+    let lastTriggerTime = 0;
+    const throttleDelay = 2000; // 2 seconds minimum between triggers
+
     const observer = new IntersectionObserver(
       (entries) => {
         const [entry] = entries;
+        const now = Date.now();
+
         setIsVisible(entry.isIntersecting);
-        
+
+        // Throttle intersection triggers to prevent spam
         if (entry.isIntersecting && hasMore && !loading && !error) {
-          debouncedLoadMore();
+          if (now - lastTriggerTime > throttleDelay) {
+            lastTriggerTime = now;
+            console.log('👁️ Intersection triggered, loading more...');
+            debouncedLoadMore();
+          } else {
+            console.log('⏳ Intersection throttled, waiting...');
+          }
         }
       },
       {
         threshold,
-        rootMargin
+        rootMargin: '200px' // Increased root margin to trigger earlier but less frequently
       }
     );
 
@@ -65,7 +77,7 @@ const LazyPostLoader = ({
         clearTimeout(timeoutRef.current);
       }
     };
-  }, [debouncedLoadMore, hasMore, loading, error, threshold, rootMargin]);
+  }, [debouncedLoadMore, hasMore, loading, error, threshold]);
 
   // Retry function for error handling
   const handleRetry = () => {

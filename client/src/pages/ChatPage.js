@@ -1,6 +1,6 @@
 import React from 'react';
-import ModernMessengerLayout from '../components/chat/ModernMessengerLayout';
 import NavigationLayout from '../components/navigation/NavigationLayout';
+import ModernMessengerLayout from '../components/chat/ModernMessengerLayout';
 
 const ChatPage = () => {
   return (

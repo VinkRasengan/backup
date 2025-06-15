@@ -4,6 +4,7 @@ import './styles/tab-specific.css';
 import { useAuth } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { initAccessibility } from './utils/accessibility';
+import { globalCleanup } from './utils/requestOptimizer';
 
 // Pages
 import HomePage from './pages/HomePage';
@@ -44,9 +45,14 @@ import GlobalAnimationProvider from './components/animations/GlobalAnimationProv
 function App() {
   const { user, loading } = useAuth();
 
-  // Initialize accessibility features
+  // Initialize accessibility features and cleanup
   useEffect(() => {
     initAccessibility();
+    
+    // Cleanup function to prevent request overload
+    return () => {
+      globalCleanup();
+    };
   }, []);
 
   if (loading) {

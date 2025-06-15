@@ -2,24 +2,19 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Users,
-  MessageCircle,
   TrendingUp,
   Plus,
   Search,
-  Share,
-  Bookmark,
-  MoreHorizontal,
-  ChevronUp,
-  ChevronDown,
-  Eye,
-  Clock
+  Clock,
+  MessageCircle
 } from 'lucide-react';
 import NavigationLayout from '../components/navigation/NavigationLayout';
-import LazyPostLoader from '../components/Community/LazyPostLoader';
-import PostSkeleton, { PostSkeletonGrid } from '../components/Community/PostSkeleton';
+import LazyPostCard from '../components/Community/LazyPostCard';
+import { PostSkeletonGrid } from '../components/Community/PostSkeleton';
 import { gsap } from '../utils/gsap';
 import { useGSAP } from '../hooks/useGSAP';
 import firestoreService from '../services/firestoreService';
+import communityCache from '../services/communityCache';
 import { useAuth } from '../context/AuthContext';
 import { useCommunityStats } from '../hooks/useFirestoreStats';
 
@@ -29,9 +24,9 @@ const CommunityPage = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
   const [hasMore, setHasMore] = useState(true);
   const [lastDoc, setLastDoc] = useState(null);
+  const [showComments, setShowComments] = useState({});
 
   // Get community stats
   const communityStats = useCommunityStats();
@@ -85,22 +80,22 @@ const CommunityPage = () => {
       }
     );
   }, [posts, loading]);
-  // Fetch posts from Firestore
+  // Fetch posts from Firestore with caching
   const fetchPosts = async (refresh = false) => {
     try {
       setLoading(true);
-      setError(null);
 
-      const sortBy = activeTab === 'trending' ? 'trending' :
-                    activeTab === 'latest' ? 'newest' : 'newest';
+      const sortBy = activeTab === 'trending' ? 'trending' : 'newest';
 
       const options = {
         sortBy,
         limitCount: 10,
-        lastDoc: refresh ? null : lastDoc
+        lastDoc: refresh ? null : lastDoc,
+        refresh
       };
 
-      const result = await firestoreService.getCommunityPosts(options);
+      // Use cached data for better performance
+      const result = await communityCache.getCachedPosts(firestoreService, options);
 
       if (refresh) {
         setPosts(result.posts);
@@ -113,7 +108,6 @@ const CommunityPage = () => {
       setLoading(false);
     } catch (err) {
       console.error('Error fetching posts:', err);
-      setError('Không thể tải bài viết. Vui lòng thử lại.');
       setLoading(false);
 
       // Fallback to mock data if Firestore fails
@@ -148,7 +142,12 @@ const CommunityPage = () => {
   };
 
   useEffect(() => {
-    fetchPosts(true);
+    // Debounce tab changes to prevent rapid API calls
+    const timeoutId = setTimeout(() => {
+      fetchPosts(true);
+    }, 300);
+
+    return () => clearTimeout(timeoutId);
   }, [activeTab]); // eslint-disable-line react-hooks/exhaustive-deps
   const handleVote = async (postId, type) => {
     if (!user) {
@@ -178,7 +177,7 @@ const CommunityPage = () => {
       }
 
       const voteType = type === 'up' ? 'safe' : 'unsafe';
-      await firestoreService.submitVote(postId, voteType, userId, user.email);
+      await communityCache.submitVoteWithCache(firestoreService, postId, voteType, userId, user.email);
 
       // Update local state optimistically
       setPosts(posts.map(post => {
@@ -215,6 +214,13 @@ const CommunityPage = () => {
     ));
   };
 
+  const toggleComments = (postId) => {
+    setShowComments(prev => ({
+      ...prev,
+      [postId]: !prev[postId]
+    }));
+  };
+
   // Enhanced tab switching with GSAP
   const handleTabChange = (tabId) => {
     if (tabId === activeTab) return;
@@ -239,16 +245,7 @@ const CommunityPage = () => {
     });
   };
 
-  const formatTime = (date) => {
-    const now = new Date();
-    const diff = now - date;
-    const hours = Math.floor(diff / (1000 * 60 * 60));
-    const days = Math.floor(hours / 24);
-    
-    if (days > 0) return `${days} ngày trước`;
-    if (hours > 0) return `${hours} giờ trước`;
-    return 'Vừa xong';
-  };
+
 
   const tabs = [
     { id: 'trending', label: 'Thịnh hành', icon: TrendingUp },
@@ -261,7 +258,7 @@ const CommunityPage = () => {
       <div ref={containerRef} className="min-h-screen bg-gray-50 dark:bg-gray-900">
         {/* Header */}
         <div ref={headerRef} className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-10">
-          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="w-full px-4 sm:px-6 lg:px-8">
             <div className="flex items-center justify-between h-16">
               <div className="flex items-center space-x-4">
                 <div className="flex items-center space-x-2">
@@ -326,224 +323,135 @@ const CommunityPage = () => {
         </div>
 
         {/* Content */}
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        <div className="w-full px-4 sm:px-6 lg:px-8 py-6">
+          <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
             {/* Sidebar */}
-            <div ref={sidebarRef} className="lg:col-span-1">
+            <div ref={sidebarRef} className="lg:col-span-1 space-y-6">
+              {/* Community Stats Card */}
               <motion.div
-                className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4"
+                className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6"
                 whileHover={{ y: -5, shadow: "0 10px 25px rgba(0,0,0,0.1)" }}
                 transition={{ type: "spring", stiffness: 300, damping: 20 }}
               >
-                <h3 className="font-semibold text-gray-900 dark:text-white mb-4">
+                <h3 className="font-semibold text-gray-900 dark:text-white mb-6 flex items-center">
+                  <Users className="w-5 h-5 mr-2 text-purple-600" />
                   Thống kê cộng đồng
                 </h3>
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center">
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
                     <span className="text-sm text-gray-600 dark:text-gray-400">Thành viên</span>
-                    <span className="font-semibold text-gray-900 dark:text-white">
+                    <span className="font-bold text-lg text-gray-900 dark:text-white">
                       {communityStats.loading ? '...' : communityStats.totalMembers.toLocaleString()}
                     </span>
                   </div>
-                  <div className="flex justify-between items-center">
+                  <div className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
                     <span className="text-sm text-gray-600 dark:text-gray-400">Bài viết</span>
-                    <span className="font-semibold text-gray-900 dark:text-white">
+                    <span className="font-bold text-lg text-gray-900 dark:text-white">
                       {communityStats.loading ? '...' : communityStats.totalPosts.toLocaleString()}
                     </span>
                   </div>
-                  <div className="flex justify-between items-center">
+                  <div className="flex justify-between items-center p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
                     <span className="text-sm text-gray-600 dark:text-gray-400">Đang online</span>
-                    <span className="font-semibold text-green-600">
+                    <span className="font-bold text-lg text-green-600 dark:text-green-400">
                       {communityStats.loading ? '...' : communityStats.onlineMembers}
                     </span>
                   </div>
                 </div>
               </motion.div>
 
-              {/* Popular Tags */}
-              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 mt-4">
-                <h3 className="font-semibold text-gray-900 dark:text-white mb-4">
+              {/* Popular Tags Card */}
+              <motion.div
+                className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6"
+                whileHover={{ y: -5, shadow: "0 10px 25px rgba(0,0,0,0.1)" }}
+                transition={{ type: "spring", stiffness: 300, damping: 20 }}
+              >
+                <h3 className="font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
+                  <TrendingUp className="w-5 h-5 mr-2 text-orange-600" />
                   Thẻ phổ biến
                 </h3>
                 <div className="flex flex-wrap gap-2">
-                  {['lừa đảo', 'phishing', 'bảo mật', 'ngân hàng', 'email'].map((tag) => (
-                    <span
+                  {['lừa đảo', 'phishing', 'bảo mật', 'ngân hàng', 'email', 'scam', 'virus', 'malware'].map((tag) => (
+                    <motion.span
                       key={tag}
-                      className="px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-xs rounded-full cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                      className="px-3 py-1.5 bg-gradient-to-r from-purple-100 to-pink-100 dark:from-purple-900/30 dark:to-pink-900/30 text-purple-700 dark:text-purple-300 text-xs font-medium rounded-full cursor-pointer hover:from-purple-200 hover:to-pink-200 dark:hover:from-purple-800/40 dark:hover:to-pink-800/40 transition-all duration-200"
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
                     >
                       #{tag}
-                    </span>
+                    </motion.span>
                   ))}
                 </div>
-              </div>
+              </motion.div>
+
+              {/* Quick Actions Card */}
+              <motion.div
+                className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6"
+                whileHover={{ y: -5, shadow: "0 10px 25px rgba(0,0,0,0.1)" }}
+                transition={{ type: "spring", stiffness: 300, damping: 20 }}
+              >
+                <h3 className="font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
+                  <Plus className="w-5 h-5 mr-2 text-blue-600" />
+                  Hành động nhanh
+                </h3>
+                <div className="space-y-3">
+                  <motion.button
+                    className="w-full p-3 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 rounded-lg text-sm font-medium hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors"
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    Tạo bài viết mới
+                  </motion.button>
+                  <motion.button
+                    className="w-full p-3 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 rounded-lg text-sm font-medium hover:bg-green-100 dark:hover:bg-green-900/30 transition-colors"
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    Báo cáo link lừa đảo
+                  </motion.button>
+                  <motion.button
+                    className="w-full p-3 bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-300 rounded-lg text-sm font-medium hover:bg-purple-100 dark:hover:bg-purple-900/30 transition-colors"
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    Tham gia thảo luận
+                  </motion.button>
+                </div>
+              </motion.div>
             </div>
 
             {/* Posts */}
-            <div className="lg:col-span-3">
+            <div className="lg:col-span-4">
               {loading && posts.length === 0 ? (
                 <PostSkeletonGrid count={3} />
               ) : (
-                <div ref={postsRef} className="space-y-4">
+                <div ref={postsRef} className="space-y-6">
                   <AnimatePresence>
                     {posts.map((post) => (
-                      <motion.div
+                      <LazyPostCard
                         key={post.id}
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -20 }}
-                        className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6"
-                      >
-                        {/* Post Header */}
-                        <div className="flex items-center justify-between mb-4">
-                          <div className="flex items-center space-x-3">
-                            <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-600 rounded-full flex items-center justify-center text-white">
-                              {post.userEmail ? post.userEmail.charAt(0).toUpperCase() : '?'}
-                            </div>
-                            <div>
-                              <div className="flex items-center space-x-2">
-                                <h4 className="font-semibold text-gray-900 dark:text-white">
-                                  {post.userEmail || 'Người dùng ẩn danh'}
-                                </h4>
-                                {post.verified && (
-                                  <div className="w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center">
-                                    <span className="text-white text-xs">✓</span>
-                                  </div>
-                                )}
-                              </div>
-                              <div className="flex items-center space-x-2 text-xs text-gray-500 dark:text-gray-400">
-                                <span>{formatTime(post.createdAt)}</span>
-                                {post.url && (
-                                  <>
-                                    <span>•</span>
-                                    <a
-                                      href={post.url}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      className="text-blue-500 hover:text-blue-600 truncate max-w-32"
-                                    >
-                                      {new URL(post.url).hostname}
-                                    </a>
-                                  </>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                          <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors">
-                            <MoreHorizontal size={16} className="text-gray-500 dark:text-gray-400" />
-                          </button>
-                        </div>
-
-                        {/* Post Content */}
-                        <div className="mb-4">
-                          <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-                            {post.title}
-                          </h2>
-                          <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
-                            {post.description || post.content}
-                          </p>
-                        </div>
-
-                        {/* Tags */}
-                        <div className="flex flex-wrap gap-2 mb-4">
-                          {post.tags && post.tags.map((tag) => (
-                            <span
-                              key={tag}
-                              className="px-2 py-1 bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300 text-xs rounded-full"
-                            >
-                              #{tag}
-                            </span>
-                          ))}
-                          {post.status && (
-                            <span className={`px-2 py-1 text-xs rounded-full ${
-                              post.status === 'active'
-                                ? 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300'
-                                : 'bg-gray-100 text-gray-700 dark:bg-gray-900 dark:text-gray-300'
-                            }`}>
-                              {post.status === 'active' ? 'Đang hoạt động' : post.status}
-                            </span>
-                          )}
-                        </div>
-
-                        {/* Post Actions */}
-                        <div className="flex items-center justify-between pt-4 border-t border-gray-200 dark:border-gray-700">
-                          <div className="flex items-center space-x-4">
-                            {/* Vote */}
-                            <div className="flex items-center space-x-2">
-                              <motion.button
-                                data-vote-up={post.id}
-                                onClick={() => handleVote(post.id, 'up')}
-                                className={`p-2 rounded-full transition-colors ${
-                                  post.upvoted
-                                    ? 'bg-green-100 text-green-600 dark:bg-green-900 dark:text-green-400'
-                                    : 'hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400'
-                                }`}
-                                whileHover={{ scale: 1.1 }}
-                                whileTap={{ scale: 0.9 }}
-                              >
-                                <ChevronUp size={16} />
-                              </motion.button>
-                              <span className="text-sm font-medium text-gray-900 dark:text-white">
-                                {post.voteCount || 0}
-                              </span>
-                              <motion.button
-                                data-vote-down={post.id}
-                                onClick={() => handleVote(post.id, 'down')}
-                                className={`p-2 rounded-full transition-colors ${
-                                  post.downvoted
-                                    ? 'bg-red-100 text-red-600 dark:bg-red-900 dark:text-red-400'
-                                    : 'hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400'
-                                }`}
-                                whileHover={{ scale: 1.1 }}
-                                whileTap={{ scale: 0.9 }}
-                              >
-                                <ChevronDown size={16} />
-                              </motion.button>
-                            </div>
-
-                            {/* Comments */}
-                            <button className="flex items-center space-x-2 px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors text-gray-600 dark:text-gray-400">
-                              <MessageCircle size={16} />
-                              <span className="text-sm">{post.commentCount || 0}</span>
-                            </button>
-
-                            {/* Views */}
-                            <div className="flex items-center space-x-2 text-gray-500 dark:text-gray-400">
-                              <Eye size={16} />
-                              <span className="text-sm">{post.views || 0}</span>
-                            </div>
-                          </div>
-
-                          <div className="flex items-center space-x-2">
-                            <motion.button
-                              data-save={post.id}
-                              onClick={() => handleSave(post.id)}
-                              className={`p-2 rounded-full transition-colors ${
-                                post.saved
-                                  ? 'bg-yellow-100 text-yellow-600 dark:bg-yellow-900 dark:text-yellow-400'
-                                  : 'hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400'
-                              }`}
-                              whileHover={{ scale: 1.1, rotate: 5 }}
-                              whileTap={{ scale: 0.9 }}
-                            >
-                              <Bookmark size={16} />
-                            </motion.button>
-                            <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors text-gray-500 dark:text-gray-400">
-                              <Share size={16} />
-                            </button>
-                          </div>
-                        </div>
-                      </motion.div>
+                        post={post}
+                        onVote={handleVote}
+                        onSave={handleSave}
+                        showComments={showComments[post.id]}
+                        onToggleComments={toggleComments}
+                      />
                     ))}
                   </AnimatePresence>
 
-                  {/* Lazy Loading Component */}
-                  <LazyPostLoader
-                    onLoadMore={() => fetchPosts(false)}
-                    hasMore={hasMore}
-                    loading={loading && posts.length > 0}
-                    error={error}
-                    className="mt-6"
-                  />
+                  {/* Load More Button */}
+                  {hasMore && (
+                    <div className="flex justify-center mt-8">
+                      <motion.button
+                        onClick={() => fetchPosts(false)}
+                        disabled={loading}
+                        className="px-6 py-3 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-400 text-white rounded-lg font-medium transition-colors"
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                      >
+                        {loading ? 'Đang tải...' : 'Tải thêm bài viết'}
+                      </motion.button>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
