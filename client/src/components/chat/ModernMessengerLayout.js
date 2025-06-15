@@ -14,12 +14,16 @@ import {
   Image,
   Mic,
   Settings,
-  UserPlus
+  UserPlus,
+  Menu,
+  Home
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { useNavigate } from 'react-router-dom';
 
 const ModernMessengerLayout = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [selectedChat, setSelectedChat] = useState(null);
   const [chatHistory, setChatHistory] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -224,8 +228,40 @@ const ModernMessengerLayout = () => {
   );
 
   return (
-    <div className="h-full bg-white dark:bg-gray-900 flex overflow-hidden relative">
-      {/* Removed duplicate hamburger menu - using NavigationLayout's menu instead */}
+    <div className="h-full bg-white dark:bg-gray-900 flex flex-col overflow-hidden relative">
+      {/* Chat Navigation Header */}
+      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 py-3 flex items-center justify-between">
+        <div className="flex items-center space-x-3">
+          <button
+            onClick={() => navigate('/')}
+            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
+            title="Về trang chủ"
+          >
+            <Home size={20} className="text-gray-600 dark:text-gray-400" />
+          </button>
+          <button
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors lg:hidden"
+            title="Menu"
+          >
+            <Menu size={20} className="text-gray-600 dark:text-gray-400" />
+          </button>
+          <h1 className="text-lg font-semibold text-gray-900 dark:text-white">
+            FactCheck Chat
+          </h1>
+        </div>
+        <div className="flex items-center space-x-2">
+          <div className="text-sm text-gray-600 dark:text-gray-400">
+            {user?.displayName || user?.email || 'Người dùng'}
+          </div>
+          <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-pink-600 rounded-full flex items-center justify-center text-white font-semibold text-sm">
+            {user?.displayName?.charAt(0) || user?.email?.charAt(0) || '?'}
+          </div>
+        </div>
+      </div>
+
+      {/* Main Chat Container */}
+      <div className="flex-1 flex overflow-hidden">{/* Removed duplicate hamburger menu - using chat navigation header instead */}
 
       {/* Sidebar - Conversations List */}
       <motion.div
@@ -560,6 +596,7 @@ const ModernMessengerLayout = () => {
             </div>
           </div>
         )}
+      </div>
       </div>
     </div>
   );
