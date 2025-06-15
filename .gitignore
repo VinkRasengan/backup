@@ -126,6 +126,8 @@ temp/
 test-*.js
 test-*.html
 deploy-*.sh
+!scripts/deploy-microservices.sh
+!scripts/deploy-firebase-rules.js
 deploy-*.bat
 setup-*.sh
 setup-*.bat
