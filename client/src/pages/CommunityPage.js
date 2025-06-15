@@ -122,7 +122,8 @@ const CommunityPage = () => {
           createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000),
           voteCount: 23,
           commentCount: 8,
-          status: 'active'
+          status: 'active',
+          tags: ['lừa đảo', 'ngân hàng']
         },
         {
           id: 'mock-2',
@@ -134,10 +135,25 @@ const CommunityPage = () => {
           createdAt: new Date(Date.now() - 5 * 60 * 60 * 1000),
           voteCount: 41,
           commentCount: 15,
-          status: 'active'
+          status: 'active',
+          tags: ['phishing', 'email', 'bảo mật']
+        },
+        {
+          id: 'mock-3',
+          title: 'Trang web giả mạo Shopee đang lừa đảo người dùng',
+          description: 'Phát hiện trang web có giao diện giống hệt Shopee nhưng domain khác. Đã có nhiều người bị lừa mất tiền.',
+          url: 'https://fake-shopee.com',
+          userId: 'mock-user-3',
+          userEmail: 'user3@example.com',
+          createdAt: new Date(Date.now() - 1 * 60 * 60 * 1000),
+          voteCount: 67,
+          commentCount: 23,
+          status: 'active',
+          tags: ['shopee', 'lừa đảo', 'thương mại điện tử']
         }
       ];
       setPosts(mockPostsData);
+      setHasMore(false);
     }
   };
 
@@ -149,6 +165,11 @@ const CommunityPage = () => {
 
     return () => clearTimeout(timeoutId);
   }, [activeTab]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Initialize posts on component mount
+  useEffect(() => {
+    fetchPosts(true);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const handleVote = async (postId, type) => {
     if (!user) {
       alert('Vui lòng đăng nhập để vote');
