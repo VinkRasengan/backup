@@ -1,11 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Plus, MessageCircle, X, ChevronUp, Search } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../../context/AuthContext';
-import { useTheme } from '../../context/ThemeContext';
 import { cn } from '../../utils/cn';
 import ChatBot from '../ChatBot/ChatBot';
+import { gsap, ScrollTrigger } from '../../utils/gsap';
+import { useGSAP } from '../../hooks/useGSAP';
 
 /**
  * FloatingActions - Fixed bottom-right floating action buttons
@@ -13,18 +14,91 @@ import ChatBot from '../ChatBot/ChatBot';
  */
 const FloatingActions = () => {
   const { user } = useAuth();
-  const { isDarkMode } = useTheme();
   const location = useLocation();
-  
+
   // Widget states
   const [chatOpen, setChatOpen] = useState(false);
   const [addMenuOpen, setAddMenuOpen] = useState(false);
   const [showScrollTop, setShowScrollTop] = useState(false);
 
+  // Refs for GSAP animations
+  const containerRef = useRef(null);
+  const chatButtonRef = useRef(null);
+  const addButtonRef = useRef(null);
+  const scrollTopRef = useRef(null);
+
+  // GSAP scroll-triggered animations
+  useGSAP(() => {
+    if (!containerRef.current) return;
+
+    // Initial entrance animation
+    gsap.fromTo(containerRef.current,
+      { opacity: 0, scale: 0.8, y: 50 },
+      { opacity: 1, scale: 1, y: 0, duration: 0.8, ease: "back.out(1.7)", delay: 1 }
+    );
+
+    // Floating animation for buttons
+    gsap.to(chatButtonRef.current, {
+      y: -3,
+      duration: 2,
+      ease: "power2.inOut",
+      yoyo: true,
+      repeat: -1
+    });
+
+    gsap.to(addButtonRef.current, {
+      y: -3,
+      duration: 2.5,
+      ease: "power2.inOut",
+      yoyo: true,
+      repeat: -1,
+      delay: 0.5
+    });
+
+    // Scroll-triggered hide/show behavior
+    ScrollTrigger.create({
+      trigger: "body",
+      start: "top top",
+      end: "bottom bottom",
+      onUpdate: (self) => {
+        const velocity = self.getVelocity();
+        if (velocity < -300) {
+          // Scrolling down fast - hide widgets
+          gsap.to(containerRef.current, {
+            x: 100,
+            opacity: 0.7,
+            duration: 0.3,
+            ease: "power2.out"
+          });
+        } else if (velocity > 300) {
+          // Scrolling up fast - show widgets
+          gsap.to(containerRef.current, {
+            x: 0,
+            opacity: 1,
+            duration: 0.3,
+            ease: "power2.out"
+          });
+        }
+      }
+    });
+
+  }, []);
+
   // Handle scroll to show/hide scroll-to-top button
   useEffect(() => {
     const handleScroll = () => {
-      setShowScrollTop(window.scrollY > 400);
+      const shouldShow = window.scrollY > 400;
+      setShowScrollTop(shouldShow);
+
+      // GSAP animation for scroll top button
+      if (scrollTopRef.current) {
+        gsap.to(scrollTopRef.current, {
+          scale: shouldShow ? 1 : 0,
+          opacity: shouldShow ? 1 : 0,
+          duration: 0.3,
+          ease: "back.out(1.7)"
+        });
+      }
     };
 
     window.addEventListener('scroll', handleScroll);
@@ -47,13 +121,35 @@ const FloatingActions = () => {
   };
 
   const toggleChat = () => {
-    setChatOpen(!chatOpen);
+    const newState = !chatOpen;
+    setChatOpen(newState);
     if (addMenuOpen) setAddMenuOpen(false);
+
+    // GSAP animation for chat button
+    if (chatButtonRef.current) {
+      gsap.to(chatButtonRef.current, {
+        scale: newState ? 1.1 : 1,
+        rotation: newState ? 360 : 0,
+        duration: 0.4,
+        ease: "back.out(1.7)"
+      });
+    }
   };
 
   const toggleAddMenu = () => {
-    setAddMenuOpen(!addMenuOpen);
+    const newState = !addMenuOpen;
+    setAddMenuOpen(newState);
     if (chatOpen) setChatOpen(false);
+
+    // GSAP animation for add button
+    if (addButtonRef.current) {
+      gsap.to(addButtonRef.current, {
+        rotation: newState ? 45 : 0,
+        scale: newState ? 1.1 : 1,
+        duration: 0.3,
+        ease: "back.out(1.7)"
+      });
+    }
   };
 
   // Animation variants
@@ -77,7 +173,8 @@ const FloatingActions = () => {
   return (
     <>
       {/* Fixed Container - Bottom Right with 24px margin */}
-      <div 
+      <div
+        ref={containerRef}
         className="fixed bottom-6 right-6 z-50 flex flex-col items-end space-y-4"
         style={{ margin: '24px' }}
       >
@@ -86,6 +183,7 @@ const FloatingActions = () => {
         <AnimatePresence>
           {showScrollTop && (
             <motion.button
+              ref={scrollTopRef}
               initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.8 }}
@@ -156,12 +254,13 @@ const FloatingActions = () => {
         <div className="flex flex-col space-y-3">
           {/* Add Button - Mobile: Only icon, Desktop: Full button */}
           <button
+            ref={addButtonRef}
             onClick={toggleAddMenu}
             className={cn(
               'w-14 h-14 rounded-full shadow-xl transition-all duration-300 group',
               'bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700',
               'text-white transform hover:scale-110 focus:outline-none focus:ring-4 focus:ring-blue-300/50',
-              addMenuOpen && 'rotate-45 ring-4 ring-blue-300/50'
+              addMenuOpen && 'ring-4 ring-blue-300/50'
             )}
             aria-label={addMenuOpen ? 'Close add menu' : 'Open add menu'}
             aria-expanded={addMenuOpen}
@@ -176,6 +275,7 @@ const FloatingActions = () => {
 
           {/* Chat Button */}
           <button
+            ref={chatButtonRef}
             onClick={toggleChat}
             className={cn(
               'w-14 h-14 rounded-full shadow-xl transition-all duration-300 group relative',

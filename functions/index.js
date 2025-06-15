@@ -11,7 +11,7 @@ const {onSchedule} = require("firebase-functions/v2/scheduler");
 const logger = require("firebase-functions/logger");
 const admin = require("firebase-admin");
 const express = require("express");
-const openaiService = require("./services/openaiService");
+const geminiService = require("./services/geminiService");
 
 // Initialize Firebase Admin
 admin.initializeApp();
@@ -302,7 +302,7 @@ app.get("/users/dashboard", authenticateToken, async (req, res) => {
 // Chat routes
 app.get("/chat/starters", (req, res) => {
   try {
-    const starters = openaiService.getConversationStarters();
+    const starters = geminiService.getConversationStarters();
     res.json({ starters });
   } catch (error) {
     logger.error("Get starters error:", error);
@@ -351,8 +351,8 @@ app.post("/chat/message", authenticateToken, async (req, res) => {
       messageLength: message?.length || 0
     });
 
-    // Validate message using OpenAI service
-    const validation = openaiService.validateMessage(message);
+    // Validate message using Gemini service
+    const validation = geminiService.validateMessage(message);
     if (!validation.valid) {
       return res.status(400).json({
         error: validation.error,
@@ -360,13 +360,13 @@ app.post("/chat/message", authenticateToken, async (req, res) => {
       });
     }
 
-    // Send message directly to OpenAI (simplified version)
-    logger.info('Sending message to OpenAI service', {
+    // Send message to Gemini
+    logger.info('Sending message to Gemini service', {
       userId,
       messageLength: validation.message.length
     });
 
-    const aiResponse = await openaiService.sendMessage(validation.message, []);
+    const aiResponse = await geminiService.sendMessage(validation.message, []);
 
     if (!aiResponse.success) {
       return res.status(500).json({
@@ -395,8 +395,6 @@ app.post("/chat/message", authenticateToken, async (req, res) => {
     res.status(500).json({ error: "Không thể gửi tin nhắn" });
   }
 });
-
-
 
 // Health check endpoint
 app.get("/health", (req, res) => {

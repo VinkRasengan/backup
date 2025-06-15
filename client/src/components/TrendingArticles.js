@@ -119,6 +119,13 @@ const TrendingArticles = () => {
     }
   };
 
+  const getRankBadgeStyle = (index) => {
+    if (index === 0) return 'bg-yellow-500 text-white';
+    if (index === 1) return 'bg-gray-400 text-white';
+    if (index === 2) return 'bg-orange-600 text-white';
+    return 'bg-gray-300 text-gray-700';
+  };
+
   const getCredibilityColor = (score) => {
     if (score >= 80) return 'text-green-600 bg-green-100 dark:bg-green-900/30 dark:text-green-300';
     if (score >= 60) return 'text-yellow-600 bg-yellow-100 dark:bg-yellow-900/30 dark:text-yellow-300';
@@ -171,16 +178,15 @@ const TrendingArticles = () => {
       </Card>
     );
   }
-
   return (
-    <Card className={`${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
-      <CardHeader>
-        <CardTitle className={`flex items-center ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-          <Flame className="w-5 h-5 mr-2 text-orange-500" />
+    <Card className={`${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} shadow-lg`}>
+      <CardHeader className="pb-4">
+        <CardTitle className={`flex items-center text-lg font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+          <Flame className="w-6 h-6 mr-3 text-orange-500" />
           Bài viết thịnh hành
         </CardTitle>
       </CardHeader>
-      <CardContent>
+      <CardContent className="pt-0">
         {trendingArticles.length === 0 ? (
           <div className="text-center py-8">
             <TrendingUp className={`w-12 h-12 mx-auto mb-4 ${isDarkMode ? 'text-gray-600' : 'text-gray-400'}`} />
@@ -189,90 +195,79 @@ const TrendingArticles = () => {
             </p>
           </div>
         ) : (
-          <div className="space-y-4">                {trendingArticles.map((article, index) => (
+          <div className="space-y-5">
+            {trendingArticles.map((article, index) => (
                   <motion.div
                     key={article.id}
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: index * 0.1 }}
-                    className={`p-4 rounded-lg border hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors cursor-pointer group ${
-                      isDarkMode ? 'border-gray-700' : 'border-gray-200'
-                    }`}
+                    transition={{ delay: index * 0.1 }}                className={`p-5 rounded-xl border hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-all duration-200 cursor-pointer group hover:shadow-md ${
+                  isDarkMode ? 'border-gray-700' : 'border-gray-200'
+                }`}
                     onClick={() => window.open(article.url, '_blank')}
-                  >
-                    {/* Ranking Badge */}
-                    <div className="flex items-start space-x-3">
-                      <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${
-                        index === 0 ? 'bg-yellow-500 text-white' :
-                        index === 1 ? 'bg-gray-400 text-white' :
-                        index === 2 ? 'bg-orange-600 text-white' :
-                        'bg-gray-300 text-gray-700'
-                      }`}>
-                        {index + 1}
-                      </div>
-                      
-                      <div className="flex-1 min-w-0">
-                        {/* Title */}
-                        <h4 className={`font-medium text-sm leading-5 mb-2 group-hover:text-blue-600 transition-colors line-clamp-2 ${
-                          isDarkMode ? 'text-gray-200' : 'text-gray-900'
-                        }`}>
-                          {article.title}
-                        </h4>
-                        
-                        {/* Credibility Score */}
-                        <div className="flex items-center space-x-2 mb-2">
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${getCredibilityColor(article.credibilityScore)}`}>
-                            {article.credibilityScore}% - {getCredibilityLabel(article.credibilityScore)}
-                          </span>
+                  >                      <div className="flex items-start space-x-4">                        <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 ${getRankBadgeStyle(index)}`}>
+                          {index + 1}
                         </div>
                         
-                        {/* Stats */}
-                        <div className="flex items-center space-x-3 text-xs text-gray-500">
-                          <div className="flex items-center space-x-1">
-                            <ThumbsUp size={12} />
-                            <span>{article.voteCount}</span>
+                        <div className="flex-1 min-w-0">
+                          {/* Title */}
+                          <h4 className={`font-semibold text-base leading-6 mb-3 group-hover:text-blue-600 transition-colors line-clamp-2 ${
+                            isDarkMode ? 'text-gray-200' : 'text-gray-900'
+                          }`}>
+                            {article.title}
+                          </h4>                          
+                          {/* Credibility Score */}
+                          <div className="flex items-center space-x-2 mb-3">
+                            <span className={`px-3 py-1.5 rounded-full text-sm font-medium ${getCredibilityColor(article.credibilityScore)}`}>
+                              {article.credibilityScore}% - {getCredibilityLabel(article.credibilityScore)}
+                            </span>
                           </div>
-                          <div className="flex items-center space-x-1">
-                            <MessageCircle size={12} />
-                            <span>{article.commentCount}</span>
-                          </div>
-                          <div className="flex items-center space-x-1">
-                            <TrendingUp size={12} />
-                            <span>{Math.round(article.engagementScore)}</span>
-                          </div>
-                          <div className="flex items-center space-x-1">
-                            <Clock size={12} />
-                            <span>{formatTimeAgo(article.createdAt)}</span>
-                          </div>
+                          
+                          {/* Stats */}
+                          <div className="flex items-center space-x-4 text-sm text-gray-500">
+                            <div className="flex items-center space-x-1">
+                              <ThumbsUp size={14} />
+                              <span>{article.voteCount}</span>
+                            </div>
+                            <div className="flex items-center space-x-1">
+                              <MessageCircle size={14} />
+                              <span>{article.commentCount}</span>
+                            </div>
+                            <div className="flex items-center space-x-1">
+                              <TrendingUp size={14} />
+                              <span>{Math.round(article.engagementScore)}</span>
+                            </div>
+                            <div className="flex items-center space-x-1">
+                              <Clock size={14} />
+                              <span>{formatTimeAgo(article.createdAt)}</span>
+                            </div>
+                          </div>                          
+                          {/* Author */}
+                          {article.author && (
+                            <div className="mt-3 text-sm text-gray-400">
+                              Bởi {article.author.firstName} {article.author.lastName}
+                            </div>
+                          )}
                         </div>
                         
-                        {/* Author */}
-                        {article.author && (
-                          <div className="mt-2 text-xs text-gray-400">
-                            Bởi {article.author.firstName} {article.author.lastName}
-                          </div>
-                        )}
-                      </div>
-                      
-                      {/* External Link Icon */}
-                      <div className="flex-shrink-0">
-                        <ExternalLink size={16} className="text-gray-400 group-hover:text-blue-500 transition-colors" />
-                      </div>
+                        {/* External Link Icon */}
+                        <div className="flex-shrink-0">
+                          <ExternalLink size={18} className="text-gray-400 group-hover:text-blue-500 transition-colors" />
+                        </div>
                     </div>
                   </motion.div>
                 ))}
           </div>
         )}
-        
-        {/* View All Link */}
+          {/* View All Link */}
         {trendingArticles.length > 0 && (
-          <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
+          <div className="mt-8 pt-6 border-t border-gray-200 dark:border-gray-700">
             <button
               onClick={() => window.location.href = '/community?sort=trending'}
-              className={`w-full text-center text-sm font-medium py-2 px-4 rounded-lg transition-colors ${
+              className={`w-full text-center text-base font-semibold py-3 px-6 rounded-xl transition-all duration-200 hover:scale-105 ${
                 isDarkMode 
-                  ? 'text-blue-400 hover:bg-blue-900/20' 
-                  : 'text-blue-600 hover:bg-blue-50'
+                  ? 'text-blue-400 hover:bg-blue-900/20 border border-blue-400/20 hover:border-blue-400/40' 
+                  : 'text-blue-600 hover:bg-blue-50 border border-blue-200 hover:border-blue-300'
               }`}
             >
               Xem tất cả bài viết thịnh hành →

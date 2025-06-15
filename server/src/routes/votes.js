@@ -38,6 +38,31 @@ router.get('/:linkId/stats', voteController.getVoteStats);
 // @access  Private
 router.get('/:linkId/user', voteController.getUserVote);
 
+// @route   GET /api/votes/:linkId/optimized
+// @desc    Get optimized vote statistics with caching
+// @access  Public
+router.get('/:linkId/optimized', async (req, res) => {
+  try {
+    const { linkId } = req.params;
+    const userId = req.user?.userId || req.user?.uid;
+
+    const voteOptimizationService = require('../services/voteOptimizationService');
+    const result = await voteOptimizationService.getVoteStats(linkId, { userId });
+
+    res.json({
+      success: true,
+      ...result
+    });
+  } catch (error) {
+    console.error('Optimized vote stats error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch vote statistics',
+      message: error.message
+    });
+  }
+});
+
 // @route   DELETE /api/votes/:linkId
 // @desc    Delete user's vote for a link
 // @access  Private

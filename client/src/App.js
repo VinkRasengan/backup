@@ -4,19 +4,19 @@ import './styles/tab-specific.css';
 import { useAuth } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { initAccessibility } from './utils/accessibility';
+import { globalCleanup } from './utils/requestOptimizer';
 
 // Pages
 import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
 import ModernRegisterPage from './pages/ModernRegisterPage';
-import TestRegisterPage from './pages/TestRegisterPage';
 import RegistrationSuccessPage from './pages/RegistrationSuccessPage';
 import DashboardPage from './pages/DashboardPage';
 import ProfilePage from './pages/ProfilePage';
 import CheckLinkPage from './pages/CheckLinkPage';
 import ChatPage from './pages/ChatPage';
-import ChatTest from './pages/ChatTest';
 import AdminDashboard from './pages/AdminDashboard';
+import CommunityPage from './pages/CommunityPage';
 import CommunityFeedPage from './pages/CommunityFeedPage';
 import SubmitArticlePage from './pages/SubmitArticlePage';
 import KnowledgeBasePage from './pages/KnowledgeBasePage';
@@ -25,31 +25,43 @@ import VerifyEmailPage from './pages/VerifyEmailPage';
 import EmailVerificationRequiredPage from './pages/EmailVerificationRequiredPage';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
-import ChatTestPage from './pages/ChatTestPage';
+import SettingsPage from './pages/SettingsPage';
+import SecurityPage from './pages/SecurityPage';
+import AnalyticsPage from './pages/AnalyticsPage';
+import PremiumPage from './pages/PremiumPage';
+import NotificationsPage from './pages/NotificationsPage';
+import FavoritesPage from './pages/FavoritesPage';
+import AchievementsPage from './pages/AchievementsPage';
+import HelpPage from './pages/HelpPage';
+import FirestoreTestPanel from './components/admin/FirestoreTestPanel';
 
 // Components - organized imports
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import EmailVerifiedRoute from './components/auth/EmailVerifiedRoute';
 import { LoadingSpinner, ErrorBoundary } from './components/common';
-import AppLayout from './components/layout/AppLayout';
-import GSAPDemo from './components/GSAPDemo';
+import NavigationLayout from './components/navigation/NavigationLayout';
+import GlobalAnimationProvider from './components/animations/GlobalAnimationProvider';
 
 function App() {
   const { user, loading } = useAuth();
 
-  // Initialize accessibility features
+  // Initialize accessibility features and cleanup
   useEffect(() => {
     initAccessibility();
+    
+    // Cleanup function to prevent request overload
+    return () => {
+      globalCleanup();
+    };
   }, []);
 
   if (loading) {
     return <LoadingSpinner />;
-  }
-
-  return (
+  }  return (
     <ErrorBoundary>
       <ThemeProvider>
-        <AppLayout>
+        <GlobalAnimationProvider>
+          <NavigationLayout>
           <Routes>
             {/* Public routes */}
             <Route
@@ -62,17 +74,14 @@ function App() {
             />
             <Route
               path="/register"
-              element={user ? <Navigate to="/dashboard" /> : <ModernRegisterPage />}
-            />
-            <Route
-              path="/test-register"
-              element={<TestRegisterPage />}
-            />
-            <Route path="/registration-success" element={<RegistrationSuccessPage />} />
-            <Route path="/verify-email" element={<VerifyEmailPage />} />
-            <Route path="/email-verification-required" element={<EmailVerificationRequiredPage />} />
-            <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-            <Route path="/reset-password" element={<ResetPasswordPage />} />
+                element={user ? <Navigate to="/dashboard" /> : <ModernRegisterPage />}
+              />
+
+              <Route path="/registration-success" element={<RegistrationSuccessPage />} />
+              <Route path="/verify-email" element={<VerifyEmailPage />} />
+              <Route path="/email-verification-required" element={<EmailVerificationRequiredPage />} />
+              <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+              <Route path="/reset-password" element={<ResetPasswordPage />} />
 
           {/* Protected routes */}
           <Route 
@@ -116,14 +125,19 @@ function App() {
                 <AdminDashboard />
               </ProtectedRoute>
             }
-          />
-          <Route
+          />          <Route
             path="/community"
             element={
               <ProtectedRoute>
-                <EmailVerifiedRoute>
-                  <CommunityFeedPage />
-                </EmailVerifiedRoute>
+                <CommunityPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/community/feed"
+            element={
+              <ProtectedRoute>
+                <CommunityFeedPage />
               </ProtectedRoute>
             }
           />
@@ -152,24 +166,58 @@ function App() {
             element={<KnowledgeBasePage />}
           />
           <Route
-            path="/chat-test"
-            element={<ChatTest />}
+            path="/settings"
+            element={
+              <ProtectedRoute>
+                <SettingsPage />
+              </ProtectedRoute>
+            }
           />
 
+          {/* New feature pages */}
+          <Route path="/security" element={<SecurityPage />} />
+          <Route path="/analytics" element={<AnalyticsPage />} />
+          <Route path="/premium" element={<PremiumPage />} />
           <Route
-            path="/chat-widget-test"
-            element={<ChatTestPage />}
+            path="/notifications"
+            element={
+              <ProtectedRoute>
+                <NotificationsPage />
+              </ProtectedRoute>
+            }
           />
-
           <Route
-            path="/gsap-demo"
-            element={<GSAPDemo />}
+            path="/favorites"
+            element={
+              <ProtectedRoute>
+                <FavoritesPage />
+              </ProtectedRoute>
+            }
           />
+          <Route
+            path="/achievements"
+            element={
+              <ProtectedRoute>
+                <AchievementsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route path="/help" element={<HelpPage />} />
 
+          {/* Admin/Test Routes */}
+          <Route
+            path="/admin/firestore-test"
+            element={
+              <ProtectedRoute>
+                <FirestoreTestPanel />
+              </ProtectedRoute>
+            }
+          />
           {/* Catch all route */}
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>
-        </AppLayout>
+          </NavigationLayout>
+        </GlobalAnimationProvider>
       </ThemeProvider>
     </ErrorBoundary>
   );

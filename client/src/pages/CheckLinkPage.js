@@ -14,6 +14,8 @@ import CommentsSection from '../components/Community/CommentsSection';
 import ReportModal from '../components/Community/ReportModal';
 import toast from 'react-hot-toast';
 import { useFadeIn, useCounterAnimation, useLoadingAnimation } from '../hooks/useGSAP';
+import firestoreService from '../services/firestoreService';
+import { useAuth } from '../context/AuthContext';
 
 // Custom URL validation that auto-adds protocol
 const normalizeUrl = (url) => {
@@ -55,6 +57,7 @@ const schema = yup.object({
 
 
 const CheckLinkPage = () => {
+  const { user } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [result, setResult] = useState(null);
   const [showReportModal, setShowReportModal] = useState(false);
@@ -242,6 +245,39 @@ const CheckLinkPage = () => {
           summary: `Kết quả phân tích cho ${domain}. Điểm tin cậy: ${credibilityScore}/100, Điểm bảo mật tổng hợp: ${combinedSecurityScore}/100 (VirusTotal: ${vtSecurityScore}, ScamAdviser: ${saScore}). ${status === 'safe' ? 'Trang web này được đánh giá là an toàn.' : status === 'warning' ? 'Trang web này có một số dấu hiệu đáng ngờ.' : 'Trang web này có thể không an toàn.'} ${vtSecurityScore < 30 ? '⚠️ CẢNH BÁO BẢO MẬT: VirusTotal phát hiện mối đe dọa!' : vtSecurityScore < 60 ? '⚠️ VirusTotal phát hiện dấu hiệu đáng ngờ.' : '✅ VirusTotal xác nhận an toàn.'} ${riskLevel === 'very_high' ? '🚨 ScamAdviser cảnh báo nguy cơ lừa đảo rất cao!' : riskLevel === 'high' ? '⚠️ ScamAdviser cảnh báo nguy cơ lừa đảo cao.' : riskLevel === 'medium' ? '⚠️ ScamAdviser đánh giá có rủi ro trung bình.' : '✅ ScamAdviser đánh giá an toàn.'}`
         };
         setResult(resultData);
+      }
+
+      // Save to Firestore if user is logged in
+      if (user && resultData) {
+        try {
+          // Clean and validate data before saving
+          const postData = {
+            title: resultData.metadata?.title || `Kiểm tra: ${resultData.metadata?.domain || normalizedUrl}`,
+            description: resultData.summary || `Kết quả kiểm tra cho ${normalizedUrl}`,
+            url: normalizedUrl,
+            status: resultData.status || 'unknown',
+            finalScore: typeof resultData.finalScore === 'number' ? resultData.finalScore : 0,
+            credibilityScore: typeof resultData.credibilityScore === 'number' ? resultData.credibilityScore : 0,
+            securityScore: typeof resultData.securityScore === 'number' ? resultData.securityScore : 0,
+            // Only include non-null objects
+            ...(resultData.metadata && typeof resultData.metadata === 'object' && { metadata: resultData.metadata }),
+            ...(resultData.security && typeof resultData.security === 'object' && { security: resultData.security }),
+            ...(resultData.thirdPartyResults && Array.isArray(resultData.thirdPartyResults) && { thirdPartyResults: resultData.thirdPartyResults }),
+            ...(resultData.screenshot && typeof resultData.screenshot === 'string' && { screenshot: resultData.screenshot })
+          };
+
+          const postId = await firestoreService.createPost(postData, user.uid);
+          console.log('Saved check result to Firestore with ID:', postId);
+
+          // Update result with the new post ID for voting/commenting
+          setResult({
+            ...resultData,
+            id: postId
+          });
+        } catch (error) {
+          console.error('Error saving to Firestore:', error);
+          // Don't show error to user, just log it
+        }
       }
 
       toast.success('Kiểm tra link thành công!');

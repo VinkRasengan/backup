@@ -8,6 +8,8 @@
 /* Import design system and utilities */
 @import './styles/design-system.css';
 @import './styles/widget-system.css';
+@import './styles/optimizations.css';
+@import './styles/navigation-layout.css';
 @import './styles/vietnamese-design-system.css';
 
 @layer base {
@@ -64,9 +66,17 @@
     padding: 0;
     box-sizing: border-box;
   }
-  body {
+
+  html, body {
     @apply bg-background text-foreground;
     font-feature-settings: "rlig" 1, "calt" 1;
+    overflow-x: hidden; /* Prevent horizontal scroll */
+    height: 100%;
+  }
+
+  #root {
+    min-height: 100vh;
+    overflow-x: hidden;
   }
 }
 

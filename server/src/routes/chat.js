@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const { sendGeminiMessage } = require('../services/geminiService');
 
 // Test endpoint (public - no auth required)
 router.get('/test', (req, res) => {
@@ -72,13 +73,46 @@ try {
       },
       sendOpenAIMessage: async (req, res) => {
         try {
-          const { message } = req.body;
+          const { message, provider } = req.body;
 
           if (!message) {
             return res.status(400).json({ error: 'Message is required' });
           }
 
-          // Try OpenAI service directly if available
+          // Prioritize Gemini API if specified or as default
+          if (!provider || provider === 'gemini') {
+            try {
+              console.log('🤖 Using Gemini API for chat message');
+              const geminiResponse = await sendGeminiMessage(message);
+
+              if (geminiResponse.success) {
+                // Increment user chat stats if user is authenticated
+                if (req.user && req.user.userId) {
+                  try {
+                    const firebaseBackendController = require('../controllers/firebaseBackendController');
+                    await firebaseBackendController.incrementUserStats(req.user.userId, 'chatMessages');
+                  } catch (statsError) {
+                    console.warn('⚠️ Failed to increment chat stats:', statsError.message);
+                  }
+                }
+
+                return res.json({
+                  data: {
+                    message: 'Phản hồi từ FactCheck AI',
+                    response: {
+                      content: geminiResponse.response,
+                      createdAt: new Date().toISOString(),
+                      source: 'gemini'
+                    }
+                  }
+                });
+              }
+            } catch (geminiError) {
+              console.warn('⚠️ Gemini API failed, trying OpenAI fallback:', geminiError.message);
+            }
+          }
+
+          // Fallback to OpenAI if Gemini fails or is specifically requested
           if (openaiService && openaiService.isConfigured()) {
             const response = await openaiService.sendMessage(message, []);
 
@@ -106,18 +140,18 @@ try {
             }
           }
 
-          // Return error instead of fallback
+          // Return error if all services fail
           res.status(503).json({
-            error: 'OpenAI service không khả dụng',
-            code: 'OPENAI_SERVICE_ERROR',
-            message: 'Dịch vụ AI tạm thời không khả dụng. Vui lòng thử lại sau hoặc sử dụng chat widget để được hỗ trợ cơ bản.'
+            error: 'AI service không khả dụng',
+            code: 'AI_SERVICE_ERROR',
+            message: 'Dịch vụ AI tạm thời không khả dụng. Vui lòng thử lại sau.'
           });
         } catch (error) {
-          console.error('OpenAI endpoint error:', error);
+          console.error('Chat endpoint error:', error);
           res.status(500).json({
             error: 'Có lỗi xảy ra khi xử lý yêu cầu',
             code: 'INTERNAL_ERROR',
-            message: 'Xin lỗi, có lỗi xảy ra. Vui lòng thử lại sau hoặc sử dụng chat widget.'
+            message: 'Xin lỗi, có lỗi xảy ra. Vui lòng thử lại sau.'
           });
         }
       },
@@ -268,6 +302,94 @@ router.post('/widget', validateWidgetMessage, (req, res) => {
 // AI Chat endpoint - Uses OpenAI API when available
 router.post('/openai', validateChatMessage, (req, res) => chatController.sendOpenAIMessage(req, res));
 
+// Gemini AI endpoints
+router.post('/gemini', validateChatMessage, async (req, res) => {
+  try {
+    const { message, history = [] } = req.body;
+    const geminiService = require('../services/geminiService');
+
+    const result = await geminiService.sendMessage(message, history);
+
+    res.json({
+      success: true,
+      ...result
+    });
+  } catch (error) {
+    console.error('Gemini chat error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to process message with Gemini',
+      message: error.message
+    });
+  }
+});
+
+router.post('/gemini/analyze-url', async (req, res) => {
+  try {
+    const { url } = req.body;
+
+    if (!url) {
+      return res.status(400).json({
+        success: false,
+        error: 'URL is required'
+      });
+    }
+
+    const geminiService = require('../services/geminiService');
+
+    // Check if geminiService has analyzeUrl method
+    if (!geminiService.analyzeUrl) {
+      // Fallback to basic analysis
+      const result = await geminiService.sendMessage(
+        `Phân tích URL này về độ tin cậy và an toàn: ${url}. Đánh giá từ 1-100 và đưa ra lời khuyên.`,
+        []
+      );
+
+      return res.json({
+        success: true,
+        credibilityScore: 75, // Default score
+        riskLevel: 'Medium',
+        analysis: result.message || 'Không thể phân tích URL này.'
+      });
+    }
+
+    const result = await geminiService.analyzeUrl(url);
+    res.json(result);
+  } catch (error) {
+    console.error('Gemini URL analysis error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to analyze URL with Gemini',
+      message: error.message
+    });
+  }
+});
+
+router.post('/gemini/analyze-post', async (req, res) => {
+  try {
+    const { title, content, url } = req.body;
+
+    if (!title || !content) {
+      return res.status(400).json({
+        success: false,
+        error: 'Title and content are required'
+      });
+    }
+
+    const geminiService = require('../services/geminiService');
+    const result = await geminiService.analyzeCommunityPost(title, content, url);
+
+    res.json(result);
+  } catch (error) {
+    console.error('Gemini post analysis error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to analyze post with Gemini',
+      message: error.message
+    });
+  }
+});
+
 // Protected endpoints (require authentication)
 router.use(authenticateToken);
 
@@ -282,5 +404,28 @@ router.get('/conversations', validatePagination, (req, res, next) => chatControl
 
 // Delete conversation
 router.delete('/conversations/:conversationId', (req, res, next) => chatController.deleteConversation(req, res, next));
+
+// Gemini chat endpoint
+router.post('/gemini', async (req, res) => {
+  try {
+    console.log('Received Gemini chat request:', req.body);
+    const { message } = req.body;
+    
+    if (!message) {
+      return res.status(400).json({ error: 'Message is required' });
+    }
+
+    const response = await sendGeminiMessage(message);
+    console.log('Gemini response:', response);
+    
+    res.json(response);
+  } catch (error) {
+    console.error('Error in Gemini chat endpoint:', error);
+    res.status(500).json({ 
+      error: 'Internal server error',
+      message: error.message 
+    });
+  }
+});
 
 module.exports = router;

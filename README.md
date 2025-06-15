@@ -17,7 +17,7 @@ A comprehensive anti-fraud platform that helps users verify the safety and credi
 - **Fallback system**: Placeholder images when screenshots unavailable
 
 ### 🤖 **AI Security Assistant**
-- **OpenAI integration**: GPT-powered security advice
+- **Gemini integration**: AI-powered security advice
 - **Contextual help**: Personalized security recommendations
 - **Quick replies**: Pre-configured security questions
 - **Real-time chat**: Interactive security consultation
@@ -30,9 +30,24 @@ A comprehensive anti-fraud platform that helps users verify the safety and credi
 
 ### 🔐 **Authentication & Security**
 - **Firebase Authentication**: Complete user management
-- **Email verification**: Mandatory email confirmation  
+- **Email verification**: Mandatory email confirmation
 - **Firebase ID Tokens**: Secure API access
 - **Rate limiting**: API protection
+
+### 🎨 **Advanced UI/UX Features**
+- **GSAP Animations**: Professional-grade animations with timeline coordination
+- **ScrollTrigger**: Viewport-based animations that respond to scroll
+- **Responsive Breakpoints**: Animations that adapt to screen size
+- **Magnetic Interactions**: Elements that follow cursor movement
+- **Parallax Effects**: Depth and dimension through layered motion
+- **Performance Optimized**: Smooth 60fps animations with reduced motion support
+
+### 🧪 **Testing & Optimization**
+- **Performance Monitor**: Real-time FPS, memory, and animation tracking
+- **Accessibility Checker**: WCAG AA compliance testing
+- **Responsive Testing**: Multi-device layout verification
+- **Browser Compatibility**: Cross-browser testing and optimization
+- **Keyboard Shortcuts**: Quick access to testing tools (Ctrl+Shift+P for Performance, Ctrl+Shift+T for Testing Dashboard)
 
 ## 🛠️ Technology Stack
 
@@ -54,7 +69,7 @@ A comprehensive anti-fraud platform that helps users verify the safety and credi
 - **VirusTotal API**: Malware detection
 - **ScamAdviser API**: Scam detection
 - **ScreenshotLayer API**: Website screenshots
-- **OpenAI API**: AI-powered assistance
+- **Gemini API**: AI-powered assistance
 - **Firebase**: Authentication & database
 
 ## 📦 Installation
@@ -104,8 +119,8 @@ Edit `.env` with your actual API keys and configuration. See **[ENV_SETUP_GUIDE.
 - Firebase configuration (required)
 - Google Safe Browsing API (recommended - free tier)
 - VirusTotal API (recommended - free tier)
-- OpenAI/Gemini API (for AI features)
-OPENAI_TEMPERATURE=0.7
+- Gemini API (for AI features)
+GEMINI_TEMPERATURE=0.7
 
 # VirusTotal API
 VIRUSTOTAL_API_KEY=your-virustotal-api-key
@@ -164,6 +179,31 @@ The application will be available at:
 - Frontend: http://localhost:3000
 - Backend API: http://localhost:5000
 
+### Testing Tools
+
+The application includes comprehensive testing and optimization tools:
+
+#### Performance Monitor (Ctrl+Shift+P)
+- Real-time FPS monitoring
+- Memory usage tracking
+- Active animations count
+- Performance score calculation
+- Device type detection
+
+#### Testing Dashboard (Ctrl+Shift+T)
+- Performance testing suite
+- Accessibility compliance checking
+- Responsive design testing
+- Browser compatibility verification
+- Automated test execution
+
+#### Accessibility Features
+- WCAG AA compliance testing
+- Screen reader compatibility
+- Keyboard navigation support
+- Color contrast verification
+- Reduced motion preferences
+
 ### Available Scripts
 
 #### Root Level
@@ -198,7 +238,7 @@ firebase deploy --only hosting
 
 Ensure all required environment variables are set in your production environment:
 
-- `OPENAI_API_KEY`
+- `GEMINI_API_KEY`
 - `VIRUSTOTAL_API_KEY` 
 - `SCAMADVISER_API_KEY`
 - `SCREENSHOTLAYER_API_KEY`
@@ -217,7 +257,7 @@ Ensure all required environment variables are set in your production environment
 - `GET /api/links/history` - User's check history
 
 ### Chat Endpoints
-- `POST /api/chat/openai` - AI security assistant
+- `POST /api/chat/gemini` - AI security assistant
 - `POST /api/chat/widget` - Quick chat responses
 - `GET /api/chat/starters` - Conversation starters
 
@@ -232,7 +272,7 @@ Ensure all required environment variables are set in your production environment
 - VirusTotal: 4 requests/minute (free tier)
 - ScamAdviser: 100 requests/month (free tier)
 - ScreenshotLayer: 100 requests/month (free tier)
-- OpenAI: Based on your plan
+- Gemini: Based on your plan
 
 ### Security Features
 - CORS protection
@@ -262,5 +302,5 @@ For support, email support@factcheck.com or join our Discord community.
 - [VirusTotal](https://www.virustotal.com/) for malware detection
 - [ScamAdviser](https://www.scamadviser.com/) for scam detection
 - [ScreenshotLayer](https://screenshotlayer.com/) for website screenshots
-- [OpenAI](https://openai.com/) for AI assistance
+- [Gemini](https://ai.google.dev/) for AI assistance
 - [Firebase](https://firebase.google.com/) for authentication and database

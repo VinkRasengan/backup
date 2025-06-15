@@ -1,324 +1,313 @@
-import React, { useEffect, useRef } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useRef } from 'react';
 import { Search, Shield, Users, BarChart3, BookOpen, MessageCircle } from 'lucide-react';
-import { useAuth } from '../context/AuthContext';
+import { motion } from 'framer-motion';
 import TrendingArticles from '../components/TrendingArticles';
 import AnimatedStats from '../components/AnimatedStats';
-import StickyHeroButtons from '../components/ui/StickyHeroButtons';
-import { ActionCard, FeatureCard } from '../components/ui/StandardCard';
+import CommunityPreview from '../components/CommunityPreview';
+import LatestNews from '../components/LatestNews';
+import { ActionCard } from '../components/ui/StandardCard';
 import { ResponsiveContainer, Section } from '../components/ui/ResponsiveLayout';
-import { useStaggerAnimation, useScrollTrigger } from '../hooks/useGSAP';
+import EnhancedHeroSection from '../components/hero/EnhancedHeroSection';
+import ScrollTriggeredSection from '../components/animations/ScrollTriggeredSection';
+import PageTransition from '../components/transitions/PageTransition';
+
 import { gsap } from '../utils/gsap';
+import { useGSAP } from '../hooks/useGSAP';
 
 const HomePage = () => {
-  const { user } = useAuth();
+  const containerRef = useRef(null);
+  const featuresRef = useRef(null);
+  const ctaRef = useRef(null);
 
-  // Refs for premium animations
-  const heroRef = useRef(); // For sticky buttons
-  const heroTitleRef = useRef();
-  const heroSubtitleRef = useRef();
-  const heroButtonsRef = useRef();
-  const backgroundRef = useRef();
-  const particlesRef = useRef();
-
-  // GSAP animations
-  const communityCardsRef = useStaggerAnimation('staggerFadeIn', true);
-  const featuresRef = useScrollTrigger(
-    {
-      from: { opacity: 0, y: 50 },
-      to: { opacity: 1, y: 0, duration: 0.8, ease: "power3.out" }
-    },
-    { start: "top 80%" }
-  );  // Premium Hero Animation Timeline with proper cleanup
-  useEffect(() => {
-    if (!heroTitleRef.current || !heroSubtitleRef.current || !backgroundRef.current) return;
-
-    // Store refs to avoid stale closure
-    const titleEl = heroTitleRef.current;
-    const subtitleEl = heroSubtitleRef.current;
-    const backgroundEl = backgroundRef.current;
-    const buttonsEl = heroButtonsRef.current;
-    const particlesEl = particlesRef.current;
-
-    const tl = gsap.timeline({ delay: 0.5 });
-
-    // Background gradient animation
-    tl.fromTo(backgroundEl,
-      {
-        background: "linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)"
-      },
-      {
-        background: "linear-gradient(135deg, #1e40af 0%, #7c3aed 50%, #ec4899 100%)",
-        duration: 2,
-        ease: "power2.inOut"
-      }
-    )
-
-    // Title cinematic reveal - safer targeting
-    if (titleEl.children.length > 0) {
-      tl.fromTo(Array.from(titleEl.children),
-        {
-          y: 100,
-          opacity: 0,
-          rotationX: 90
-        },
-        {
-          y: 0,
-          opacity: 1,
-          rotationX: 0,
-          duration: 1.2,
-          ease: "power3.out",
-          stagger: 0.1
-        }, "-=1.5");
-    }
-
-    // Subtitle scale bounce
-    tl.fromTo(subtitleEl,
-      {
-        scale: 0.8,
-        opacity: 0,
-        y: 30
-      },
-      {
-        scale: 1,
-        opacity: 1,
-        y: 0,
-        duration: 0.8,
-        ease: "back.out(1.7)"
-      }, "-=0.8");
-
-    // Buttons magnetic entrance
-    if (buttonsEl?.children) {
-      tl.fromTo(Array.from(buttonsEl.children),
-        {
-          y: 50,
-          opacity: 0,
-          scale: 0.9
-        },
-        {
-          y: 0,
-          opacity: 1,
-          scale: 1,
-          duration: 0.6,
-          ease: "power2.out",
-          stagger: 0.2
-        }, "-=0.4");
-    }
-
-    // Floating particles animation - safer targeting
-    let particlesArray = null;
-    if (particlesEl?.children) {
-      particlesArray = Array.from(particlesEl.children);
-      gsap.to(particlesArray, {
-        y: "random(-20, 20)",
-        x: "random(-10, 10)",
-        rotation: "random(-180, 180)",
-        duration: "random(3, 6)",
-        ease: "sine.inOut",
-        repeat: -1,
-        yoyo: true,
-        stagger: 0.2
-      });
-    }
-
-    // Cleanup function
-    return () => {
-      tl.kill();
-      if (particlesArray) {
-        gsap.killTweensOf(particlesArray);
-      }
-    };  }, []); // Empty dependency array to run once
+  // Enhanced features with new icons and descriptions
   const features = [
     {
       icon: Search,
       title: 'Kiểm Tra Link',
-      description: 'Kiểm tra ngay độ tin cậy của bài viết tin tức và nguồn thông tin với hệ thống xác minh tiên tiến.'
+      description: 'Kiểm tra ngay độ tin cậy của bài viết tin tức và nguồn thông tin với hệ thống xác minh tiên tiến.',
+      color: 'blue',
+      gradient: 'from-blue-500 to-cyan-500'
     },
     {
       icon: Shield,
       title: 'Nguồn Đáng Tin',
-      description: 'Nhận thông tin từ các tổ chức báo chí uy tín và các tổ chức kiểm chứng sự thật để đảm bảo độ chính xác.'
+      description: 'Nhận thông tin từ các tổ chức báo chí uy tín và các tổ chức kiểm chứng sự thật để đảm bảo độ chính xác.',
+      color: 'green',
+      gradient: 'from-green-500 to-emerald-500'
     },
     {
       icon: BarChart3,
       title: 'Chấm Điểm Tin Cậy',
-      description: 'Nhận điểm số độ tin cậy chi tiết và phân tích để giúp bạn đưa ra quyết định thông tin chính xác.'
+      description: 'Nhận điểm số độ tin cậy chi tiết và phân tích để giúp bạn đưa ra quyết định thông tin chính xác.',
+      color: 'purple',
+      gradient: 'from-purple-500 to-pink-500'
     },
     {
       icon: Users,
       title: 'Cộng Đồng',
-      description: 'Tham gia cộng đồng kiểm chứng sự thật và cùng nhau chống lại thông tin sai lệch.'
+      description: 'Tham gia cộng đồng kiểm chứng sự thật và cùng nhau chống lại thông tin sai lệch.',
+      color: 'orange',
+      gradient: 'from-orange-500 to-red-500'
     }
   ];
 
+  // GSAP animations
+  useGSAP(() => {
+    if (!containerRef.current) return;
+
+    // Animate features on scroll
+    gsap.fromTo(featuresRef.current?.children || [],
+      { y: 60, opacity: 0, scale: 0.9 },
+      {
+        y: 0,
+        opacity: 1,
+        scale: 1,
+        duration: 0.8,
+        stagger: 0.2,
+        ease: "power3.out",
+        scrollTrigger: {
+          trigger: featuresRef.current,
+          start: "top 80%",
+          end: "bottom 20%",
+          toggleActions: "play none none reverse"
+        }
+      }
+    );
+
+    // Animate CTA section
+    gsap.fromTo(ctaRef.current,
+      { y: 40, opacity: 0 },
+      {
+        y: 0,
+        opacity: 1,
+        duration: 0.6,
+        ease: "power2.out",
+        scrollTrigger: {
+          trigger: ctaRef.current,
+          start: "top 85%",
+          toggleActions: "play none none reverse"
+        }
+      }
+    );
+
+  }, []);
+
   return (
-    <>
-      {/* Sticky Hero Buttons */}
-      <StickyHeroButtons heroRef={heroRef} />
+    <PageTransition>
+      <div ref={containerRef}>
 
-      {/* Premium Hero Section */}
-      <section
-        ref={heroRef}
-        className="relative overflow-hidden bg-gradient-to-br from-blue-500 to-purple-600 dark:from-blue-600 dark:to-purple-700 text-white py-20 text-center min-h-[80vh] flex items-center z-10"
-      >
-        {/* Floating Particles Background */}
-        <div ref={particlesRef} className="absolute inset-0 pointer-events-none">
-          <div className="absolute top-20 left-10 w-4 h-4 bg-white/20 rounded-full"></div>
-          <div className="absolute top-40 right-20 w-6 h-6 bg-white/10 rounded-full"></div>
-          <div className="absolute top-60 left-1/4 w-3 h-3 bg-white/30 rounded-full"></div>
-          <div className="absolute bottom-40 right-10 w-5 h-5 bg-white/15 rounded-full"></div>
-          <div className="absolute bottom-60 left-20 w-2 h-2 bg-white/25 rounded-full"></div>
-          <div className="absolute top-32 right-1/3 w-4 h-4 bg-white/20 rounded-full"></div>
-          <div className="absolute bottom-32 left-1/3 w-3 h-3 bg-white/35 rounded-full"></div>
-        </div>
 
-        {/* Gradient Overlay */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent"></div>
+      {/* Enhanced Hero Section */}
+      <EnhancedHeroSection />
 
-        {/* Container with max-width constraint */}
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 z-10">
-          <div ref={heroTitleRef} className="mb-6">
-            <span className="inline-block text-4xl md:text-6xl lg:text-7xl font-bold tracking-tight">
-              Chống
-            </span>
-            <span className="inline-block text-4xl md:text-6xl lg:text-7xl font-bold tracking-tight ml-4 bg-gradient-to-r from-yellow-300 to-orange-300 bg-clip-text text-transparent">
-              Thông Tin
-            </span>
-            <span className="inline-block text-4xl md:text-6xl lg:text-7xl font-bold tracking-tight ml-4">
-              Sai Lệch
-            </span>
-            <div className="mt-2">
-              <span className="inline-block text-2xl md:text-4xl lg:text-5xl font-light tracking-wider opacity-90">
-                với FactCheck
-              </span>
-            </div>
-          </div>
-
-          <div ref={heroSubtitleRef} className="mb-10">
-            <p className="text-xl md:text-2xl lg:text-3xl mb-4 opacity-90 font-light leading-relaxed max-w-4xl mx-auto">
-              Xác minh độ tin cậy của tin tức và nguồn thông tin ngay lập tức.
-            </p>
-            <p className="text-lg md:text-xl opacity-75 max-w-3xl mx-auto">
-              Tham gia cuộc chiến chống tin giả và thông tin sai lệch với công nghệ AI tiên tiến.
-            </p>
-          </div>
-
-          <div ref={heroButtonsRef} className="flex flex-wrap gap-6 justify-center">
-            <Link
-              to="/check"
-              className="group relative px-10 py-5 bg-white text-blue-600 rounded-2xl font-bold text-lg hover:bg-gray-50 transition-all duration-300 flex items-center gap-3 shadow-2xl hover:shadow-3xl transform hover:-translate-y-1 hover:scale-105 focus:outline-none focus:ring-4 focus:ring-blue-300/50"
-              aria-label="Kiểm tra link ngay bây giờ"
-            >
-              <Search size={24} className="group-hover:rotate-12 transition-transform duration-300" />
-              <span>Kiểm Tra Ngay</span>
-              <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-blue-600 to-purple-600 opacity-0 group-hover:opacity-10 transition-opacity duration-300"></div>
-
-              {/* Ripple effect */}
-              <div className="absolute inset-0 rounded-2xl bg-white opacity-0 group-active:opacity-20 transition-opacity duration-150"></div>
-            </Link>
-            {user ? (
-              <Link
-                to="/dashboard"
-                className="group relative px-10 py-5 bg-transparent border-3 border-white text-white rounded-2xl font-bold text-lg hover:bg-white hover:text-blue-600 transition-all duration-300 shadow-lg hover:shadow-2xl transform hover:-translate-y-1 hover:scale-105"
-              >
-                <span>Xem Dashboard</span>
-                <div className="absolute inset-0 rounded-2xl bg-white opacity-0 group-hover:opacity-100 transition-opacity duration-300 -z-10"></div>
-              </Link>
-            ) : (
-              <Link
-                to="/register"
-                className="group relative px-10 py-5 bg-transparent border-3 border-white text-white rounded-2xl font-bold text-lg hover:bg-white hover:text-blue-600 transition-all duration-300 shadow-lg hover:shadow-2xl transform hover:-translate-y-1 hover:scale-105"
-              >
-                <span>Đăng Ký Miễn Phí</span>
-                <div className="absolute inset-0 rounded-2xl bg-white opacity-0 group-hover:opacity-100 transition-opacity duration-300 -z-10"></div>
-              </Link>
-            )}
-          </div>
-
-          {/* Scroll Indicator */}
-          <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 animate-bounce">
-            <div className="w-6 h-10 border-2 border-white/50 rounded-full flex justify-center">
-              <div className="w-1 h-3 bg-white/70 rounded-full mt-2 animate-pulse"></div>
-            </div>
-          </div>
-        </div>
-      </section>      {/* Trending Articles Section */}
+      {/* Main Content Section - Enterprise Layout */}
       <Section className="py-16 bg-white dark:bg-gray-900">
-        <ResponsiveContainer size="lg">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Main Content */}
-            <div className="lg:col-span-2">
-              <h2 className="text-3xl md:text-4xl font-bold mb-8 text-gray-900 dark:text-white">
-                Hoạt động cộng đồng
-              </h2>
-              <div ref={communityCardsRef} className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <ResponsiveContainer size="xl">
+          {/* Section Header */}
+          <div className="text-center mb-12">
+            <h2 className="text-3xl md:text-4xl font-bold mb-4 text-gray-900 dark:text-white">
+              Hoạt động cộng đồng
+            </h2>
+            <p className="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto leading-relaxed">
+              Tham gia vào hệ sinh thái kiểm chứng thông tin toàn diện với các công cụ và tính năng tiên tiến
+            </p>
+          </div>          <div className="grid grid-cols-1 xl:grid-cols-3 gap-8 lg:gap-12">
+            {/* Main Action Cards */}
+            <div className="xl:col-span-2">
+              <ScrollTriggeredSection
+                animation="popIn"
+                stagger={0.15}
+                className="grid grid-cols-1 md:grid-cols-2 gap-8 auto-rows-fr"
+              >
                 <ActionCard
                   icon={Users}
                   title="Cộng đồng kiểm tin"
-                  description="Tham gia cùng cộng đồng đánh giá và xác minh thông tin"
+                  description="Tham gia cùng cộng đồng đánh giá và xác minh thông tin với hệ thống voting thông minh. Kết nối với hàng nghìn người dùng để cùng nhau xác minh độ tin cậy của các thông tin trên mạng."
                   color="blue"
                   onClick={() => window.location.href = '/community'}
-                />
-                
+                >
+                  <div className="flex items-center gap-2 text-sm text-white/80">
+                    <Users size={16} />
+                    <span>1,234+ thành viên</span>
+                  </div>
+                </ActionCard>
+
                 <ActionCard
                   icon={BookOpen}
                   title="Kiến thức nền"
-                  description="Học cách nhận biết và kiểm tra thông tin sai lệch"
+                  description="Học cách nhận biết và kiểm tra thông tin sai lệch qua các khóa học chuyên sâu. Nâng cao kỹ năng phân tích và đánh giá nguồn tin một cách khoa học."
                   color="green"
                   onClick={() => window.location.href = '/knowledge'}
-                />
+                >
+                  <div className="flex items-center gap-2 text-sm text-white/80">
+                    <BookOpen size={16} />
+                    <span>50+ bài học</span>
+                  </div>
+                </ActionCard>
 
                 <ActionCard
                   icon={MessageCircle}
                   title="Trợ lý AI"
-                  description="Hỏi đáp với AI về cách kiểm tra thông tin"
+                  description="Hỏi đáp với AI về cách kiểm tra thông tin sử dụng công nghệ Gemini tiên tiến. Nhận được phân tích chi tiết và lời khuyên từ trí tuệ nhân tạo."
                   color="purple"
                   onClick={() => window.location.href = '/chat'}
-                />
+                >
+                  <div className="flex items-center gap-2 text-sm text-white/80">
+                    <MessageCircle size={16} />
+                    <span>Powered by Gemini</span>
+                  </div>
+                </ActionCard>
 
                 <ActionCard
                   icon={Search}
                   title="Gửi bài viết"
-                  description="Chia sẻ bài viết để cộng đồng cùng đánh giá"
+                  description="Chia sẻ bài viết để cộng đồng cùng đánh giá với hệ thống phân tích đa chiều. Góp phần xây dựng cơ sở dữ liệu thông tin đáng tin cậy."
                   color="orange"
                   onClick={() => window.location.href = '/submit'}
-                />
+                >
+                  <div className="flex items-center gap-2 text-sm text-white/80">
+                    <Search size={16} />
+                    <span>Kiểm tra ngay</span>
+                  </div>
+                </ActionCard>
+              </ScrollTriggeredSection>
+            </div>            {/* Enhanced Sidebar - Bigger Size */}
+            <div className="xl:col-span-1">
+              <div className="sticky top-8">
+                <TrendingArticles />
               </div>
             </div>
+          </div>
+        </ResponsiveContainer>
+      </Section>      {/* Animated Statistics Section */}
+      <AnimatedStats />
 
-            {/* Sidebar */}
-            <div className="lg:col-span-1">
-              <TrendingArticles />
-            </div>
+      {/* Additional Content Cards Section */}
+      <Section className="py-16 bg-white dark:bg-gray-900">
+        <ResponsiveContainer size="xl">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl md:text-4xl font-bold mb-4 text-gray-900 dark:text-white">
+              Cập nhật mới nhất
+            </h2>
+            <p className="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto leading-relaxed">
+              Theo dõi hoạt động cộng đồng và tin tức bảo mật mới nhất
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            {/* Community Preview */}
+            <CommunityPreview />
+
+            {/* Latest News */}
+            <LatestNews />
           </div>
         </ResponsiveContainer>
       </Section>
 
-      {/* Animated Statistics Section */}
-      <AnimatedStats />      {/* Features Section */}
-      <Section className="py-16 bg-gray-50 dark:bg-gray-800">
-        <ResponsiveContainer size="lg">
-          <div ref={featuresRef}>
-            <h2 className="text-center text-3xl md:text-4xl font-bold mb-12 text-gray-900 dark:text-white">
-              Tại Sao Chọn FactCheck?
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {features.map((feature) => (
-                <FeatureCard
+      {/* Features Section - Enterprise Design */}
+      <Section className="py-16 bg-gradient-to-br from-gray-50 via-blue-50 to-purple-50 dark:from-gray-800 dark:via-gray-900 dark:to-gray-800">
+        <ResponsiveContainer size="xl">
+          <ScrollTriggeredSection animation="scaleIn" stagger={0.1}>
+            {/* Section Header */}
+            <div className="text-center mb-16">
+              <h2 className="text-3xl md:text-4xl font-bold mb-4 text-gray-900 dark:text-white">
+                Tại Sao Chọn FactCheck?
+              </h2>
+              <p className="text-lg text-gray-600 dark:text-gray-300 max-w-3xl mx-auto leading-relaxed">
+                Nền tảng kiểm chứng thông tin hàng đầu với công nghệ AI tiên tiến và cộng đồng chuyên gia
+              </p>
+            </div>
+
+            {/* Features Grid */}
+            <div ref={featuresRef} className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-8 lg:gap-10">
+              {features.map((feature, index) => (
+                <motion.div
                   key={feature.title}
-                  icon={feature.icon}
-                  title={feature.title}
-                  description={feature.description}
-                  color="blue"
-                />
+                  className="group relative"
+                  whileHover={{ y: -8, scale: 1.02 }}
+                  transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                >
+                  <div className="relative p-8 bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+                    {/* Gradient Background */}
+                    <div className={`absolute inset-0 bg-gradient-to-br ${feature.gradient} opacity-0 group-hover:opacity-10 transition-opacity duration-300`}></div>
+
+                    {/* Icon */}
+                    <div className={`relative w-16 h-16 bg-gradient-to-br ${feature.gradient} rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300`}>
+                      <feature.icon className="w-8 h-8 text-white" />
+                    </div>
+
+                    {/* Content */}
+                    <div className="relative">
+                      <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4 group-hover:text-transparent group-hover:bg-gradient-to-r group-hover:bg-clip-text group-hover:from-blue-600 group-hover:to-purple-600 transition-all duration-300">
+                        {feature.title}
+                      </h3>
+                      <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
+                        {feature.description}
+                      </p>
+                    </div>
+
+                    {/* Hover Effect */}
+                    <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 to-purple-500 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left"></div>
+                  </div>
+                </motion.div>
               ))}
             </div>
-          </div>
+
+            {/* Enhanced Call to Action */}
+            <div ref={ctaRef} className="text-center mt-16">
+              <motion.div
+                className="relative inline-block"
+                whileHover={{ scale: 1.02 }}
+                transition={{ type: "spring", stiffness: 300, damping: 20 }}
+              >
+                <div className="relative px-12 py-8 bg-gradient-to-br from-white via-blue-50 to-purple-50 dark:from-gray-800 dark:via-gray-800 dark:to-gray-700 rounded-3xl shadow-2xl border border-gray-200 dark:border-gray-600 overflow-hidden">
+                  {/* Background Pattern */}
+                  <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 to-purple-500/10"></div>
+
+                  {/* Floating Elements */}
+                  <div className="absolute top-4 left-4 w-2 h-2 bg-blue-400 rounded-full animate-pulse"></div>
+                  <div className="absolute top-8 right-6 w-1 h-1 bg-purple-400 rounded-full animate-pulse delay-300"></div>
+                  <div className="absolute bottom-6 left-8 w-1.5 h-1.5 bg-pink-400 rounded-full animate-pulse delay-700"></div>
+
+                  <div className="relative flex flex-col sm:flex-row items-center gap-6">
+                    <div className="text-center sm:text-left">
+                      <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+                        Sẵn sàng bắt đầu?
+                      </h3>
+                      <p className="text-gray-600 dark:text-gray-300">
+                        Tham gia cộng đồng kiểm chứng thông tin ngay hôm nay
+                      </p>
+                    </div>
+
+                    <div className="flex flex-col sm:flex-row gap-3">
+                      <motion.button
+                        onClick={() => window.location.href = '/check'}
+                        className="px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-2xl font-semibold hover:from-blue-700 hover:to-purple-700 transition-all duration-300 shadow-lg hover:shadow-xl relative overflow-hidden group"
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                      >
+                        <span className="relative z-10">Kiểm tra ngay</span>
+                        <div className="absolute inset-0 bg-gradient-to-r from-purple-600 to-pink-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                      </motion.button>
+
+                      <motion.button
+                        onClick={() => window.location.href = '/community'}
+                        className="px-8 py-4 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-2xl font-semibold border-2 border-gray-200 dark:border-gray-600 hover:border-blue-300 dark:hover:border-blue-500 transition-all duration-300 shadow-md hover:shadow-lg"
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                      >
+                        Tham gia cộng đồng
+                      </motion.button>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            </div>
+          </ScrollTriggeredSection>
         </ResponsiveContainer>
       </Section>
-
-
-    </>
+      </div>
+    </PageTransition>
   );
 };
 

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useCallback } from 'react';
 import { gsap, gsapUtils, gsapPresets } from '../utils/gsap';
 import { performanceMonitor, performanceUtils } from '../utils/performance';
+import { AdvancedTimeline, getCurrentBreakpoint, prefersReducedMotion, createResponsiveAnimation } from '../utils/advancedAnimations';
 
 // Main GSAP hook with performance optimizations
 export const useGSAP = (animationFn, dependencies = [], options = {}) => {
@@ -273,6 +274,161 @@ export const useIntersectionAnimation = (animationConfig, options = {}) => {
       observer.disconnect();
     };
   }, [animationConfig, options]);
+
+  return ref;
+};
+
+// Advanced Timeline Hook
+export const useAdvancedTimeline = (options = {}) => {
+  const timelineRef = useRef();
+
+  useEffect(() => {
+    timelineRef.current = new AdvancedTimeline(options);
+
+    return () => {
+      if (timelineRef.current) {
+        timelineRef.current.kill();
+      }
+    };
+  }, []);
+
+  return timelineRef.current;
+};
+
+// Responsive Animation Hook
+export const useResponsiveAnimation = (animations, dependencies = []) => {
+  const ref = useRef();
+  const animationRef = useRef();
+
+  useEffect(() => {
+    if (!ref.current) return;
+
+    if (animationRef.current) {
+      animationRef.current.kill();
+    }
+
+    animationRef.current = createResponsiveAnimation(ref.current, animations);
+
+    return () => {
+      if (animationRef.current) {
+        animationRef.current.kill();
+      }
+    };
+  }, dependencies);
+
+  return ref;
+};
+
+// Breakpoint-aware Animation Hook
+export const useBreakpointAnimation = (animationFn, dependencies = []) => {
+  const ref = useRef();
+  const animationRef = useRef();
+  const currentBreakpoint = useRef(getCurrentBreakpoint());
+
+  useEffect(() => {
+    const handleResize = () => {
+      const newBreakpoint = getCurrentBreakpoint();
+      if (newBreakpoint !== currentBreakpoint.current) {
+        currentBreakpoint.current = newBreakpoint;
+
+        if (animationRef.current) {
+          animationRef.current.kill();
+        }
+
+        if (ref.current && animationFn) {
+          animationRef.current = animationFn(ref.current, newBreakpoint);
+        }
+      }
+    };
+
+    // Initial animation
+    if (ref.current && animationFn) {
+      animationRef.current = animationFn(ref.current, currentBreakpoint.current);
+    }
+
+    window.addEventListener('resize', handleResize);
+
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      if (animationRef.current) {
+        animationRef.current.kill();
+      }
+    };
+  }, dependencies);
+
+  return ref;
+};
+
+// Magnetic Hover Effect Hook
+export const useMagneticHover = (intensity = 1) => {
+  const ref = useRef();
+
+  useEffect(() => {
+    const element = ref.current;
+    if (!element || prefersReducedMotion()) return;
+
+    const handleMouseMove = (e) => {
+      const rect = element.getBoundingClientRect();
+      const x = e.clientX - rect.left - rect.width / 2;
+      const y = e.clientY - rect.top - rect.height / 2;
+
+      gsap.to(element, {
+        x: x * intensity * 0.1,
+        y: y * intensity * 0.1,
+        duration: 0.3,
+        ease: "power2.out"
+      });
+    };
+
+    const handleMouseLeave = () => {
+      gsap.to(element, {
+        x: 0,
+        y: 0,
+        duration: 0.5,
+        ease: "elastic.out(1, 0.3)"
+      });
+    };
+
+    element.addEventListener('mousemove', handleMouseMove);
+    element.addEventListener('mouseleave', handleMouseLeave);
+
+    return () => {
+      element.removeEventListener('mousemove', handleMouseMove);
+      element.removeEventListener('mouseleave', handleMouseLeave);
+    };
+  }, [intensity]);
+
+  return ref;
+};
+
+// Parallax Effect Hook
+export const useParallax = (speed = 0.5, direction = 'vertical') => {
+  const ref = useRef();
+
+  useEffect(() => {
+    const element = ref.current;
+    if (!element || prefersReducedMotion()) return;
+
+    const animation = gsap.to(element, {
+      [direction === 'vertical' ? 'yPercent' : 'xPercent']: -50 * speed,
+      ease: "none",
+      scrollTrigger: {
+        trigger: element,
+        start: "top bottom",
+        end: "bottom top",
+        scrub: true
+      }
+    });
+
+    return () => {
+      if (animation && animation.scrollTrigger) {
+        animation.scrollTrigger.kill();
+      }
+      if (animation) {
+        animation.kill();
+      }
+    };
+  }, [speed, direction]);
 
   return ref;
 };

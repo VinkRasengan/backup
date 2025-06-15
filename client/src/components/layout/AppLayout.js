@@ -4,7 +4,7 @@ import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
 import AppHeader from './AppHeader';
 import AppSidebar from './AppSidebar';
-import FloatingActions from './FloatingActions';
+import UnifiedWidgets from './UnifiedWidgets';
 import MobileTabBar from '../navigation/MobileTabBar';
 import { cn } from '../../utils/cn';
 
@@ -45,8 +45,8 @@ const AppLayout = ({ children, className, ...props }) => {
     }
   }, [location.pathname]);
 
-  // Determine if we should show sidebar (hide on homepage, login, register)
-  const showSidebar = user && !['/login', '/register', '/', '/home'].includes(location.pathname);
+  // Determine if we should show sidebar (hide on login/register pages only)
+  const showSidebar = user && !['/login', '/register'].includes(location.pathname);
 
   return (
     <div 
@@ -90,8 +90,8 @@ const AppLayout = ({ children, className, ...props }) => {
         </main>
       </div>
 
-      {/* Floating Actions */}
-      <FloatingActions />
+      {/* Unified Widgets - Replaces all duplicated floating widgets */}
+      <UnifiedWidgets />
 
       {/* Mobile Navigation Bar */}
       <MobileTabBar />

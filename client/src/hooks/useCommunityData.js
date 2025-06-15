@@ -6,8 +6,10 @@ class CommunityDataManager {
     this.cache = new Map();
     this.prefetchQueue = new Set();
     this.activeRequests = new Map();
-    this.cacheTimeout = 10 * 60 * 1000; // 10 minutes - longer cache time
-    this.maxCacheSize = 100; // Increased cache size
+    this.cacheTimeout = 60 * 60 * 1000; // 60 minutes - much longer cache time
+    this.maxCacheSize = 200; // Increased cache size
+    this.debounceMap = new Map(); // For debouncing requests
+    this.debounceDelay = 500; // 500ms debounce
   }
 
   // Generate cache key
@@ -56,51 +58,67 @@ class CommunityDataManager {
     console.log('💾 Cached:', key);
   }
 
-  // Fetch data with smart caching
+  // Fetch data with smart caching and debouncing
   async fetchData(params) {
     const key = this.getCacheKey(params);
-    
+
     // Check cache first
     const cached = this.getFromCache(params);
     if (cached) {
-      // Prefetch next page in background
-      this.prefetchNext(params);
+      console.log('📦 Using cached data:', key);
       return cached;
     }
 
-    // Check if request is already in progress
-    if (this.activeRequests.has(key)) {
-      console.log('⏳ Request in progress:', key);
-      return this.activeRequests.get(key);
+    // Debounce requests to prevent spam
+    if (this.debounceMap.has(key)) {
+      clearTimeout(this.debounceMap.get(key));
     }
 
-    // Make new request
-    const requestPromise = this.makeRequest(params);
-    this.activeRequests.set(key, requestPromise);
+    return new Promise((resolve, reject) => {
+      const timeoutId = setTimeout(async () => {
+        this.debounceMap.delete(key);
 
-    try {
-      const data = await requestPromise;
-      this.setToCache(params, data);
-      this.activeRequests.delete(key);
-      
-      // Prefetch related data
-      this.prefetchRelated(params);
-      
-      return data;
-    } catch (error) {
-      this.activeRequests.delete(key);
-      throw error;
-    }
+        // Check if request is already in progress
+        if (this.activeRequests.has(key)) {
+          console.log('⏳ Request in progress:', key);
+          try {
+            const result = await this.activeRequests.get(key);
+            resolve(result);
+          } catch (error) {
+            reject(error);
+          }
+          return;
+        }
+
+        // Make new request
+        const requestPromise = this.makeRequest(params);
+        this.activeRequests.set(key, requestPromise);
+
+        try {
+          const data = await requestPromise;
+          this.setToCache(params, data);
+          this.activeRequests.delete(key);
+
+          console.log('✅ Data fetched and cached:', key);
+          resolve(data);
+        } catch (error) {
+          this.activeRequests.delete(key);
+          reject(error);
+        }
+      }, this.debounceDelay);
+
+      this.debounceMap.set(key, timeoutId);
+    });
   }
 
-  // Make actual API request with optimization
+  // Enhanced API request with Facebook/Reddit-style optimization
   async makeRequest(params) {
     const { sort = 'trending', filter = 'all', search = '', page = 1 } = params;
 
     const urlParams = new URLSearchParams({
       page,
       sort,
-      limit: 15, // Increased limit for better UX
+      limit: page === 1 ? 10 : 5, // Load fewer items for subsequent pages
       includeNews: 'true'
     });
 
@@ -114,10 +132,17 @@ class CommunityDataManager {
 
     console.log('🌐 API Request:', urlParams.toString());
 
+    // Enhanced token handling
+    const token = localStorage.getItem('token') ||
+                 localStorage.getItem('authToken') ||
+                 localStorage.getItem('backendToken') ||
+                 localStorage.getItem('firebaseToken');
+
     const response = await fetch(`/api/community/posts?${urlParams}`, {
       headers: {
-        'Authorization': `Bearer ${localStorage.getItem('authToken') || localStorage.getItem('backendToken')}`,
-        'Cache-Control': 'max-age=300' // 5 minutes cache
+        'Authorization': `Bearer ${token}`,
+        'Cache-Control': 'max-age=300', // 5 minutes cache
+        'X-Request-ID': `community-${Date.now()}` // Request tracking
       }
     });
 
@@ -129,55 +154,34 @@ class CommunityDataManager {
     return data.data;
   }
 
-  // Prefetch next page
+  // Prefetch next page - DISABLED to reduce requests
   prefetchNext(params) {
-    const nextParams = { ...params, page: (params.page || 1) + 1 };
-    const key = this.getCacheKey(nextParams);
-    
-    if (!this.cache.has(key) && !this.prefetchQueue.has(key)) {
-      this.prefetchQueue.add(key);
-      
-      // Prefetch after a short delay
-      setTimeout(() => {
-        this.fetchData(nextParams).catch(() => {
-          // Ignore prefetch errors
-        }).finally(() => {
-          this.prefetchQueue.delete(key);
-        });
-      }, 1000);
-    }
+    // Temporarily disable prefetching to reduce API load
+    // Only load data on explicit user action
+    console.log('🚫 Prefetch disabled to reduce API requests');
+    return;
   }
 
-  // Prefetch related filters
+  // Prefetch related filters - DISABLED to reduce requests
   prefetchRelated(params) {
-    if (params.filter === 'all' && !params.search) {
-      // Prefetch popular categories
-      const popularFilters = ['security', 'health', 'technology'];
-      
-      popularFilters.forEach(filter => {
-        const relatedParams = { ...params, filter, page: 1 };
-        const key = this.getCacheKey(relatedParams);
-        
-        if (!this.cache.has(key) && !this.prefetchQueue.has(key)) {
-          this.prefetchQueue.add(key);
-          
-          setTimeout(() => {
-            this.fetchData(relatedParams).catch(() => {
-              // Ignore prefetch errors
-            }).finally(() => {
-              this.prefetchQueue.delete(key);
-            });
-          }, 2000);
-        }
-      });
-    }
+    // Temporarily disable related prefetching to reduce API load
+    console.log('🚫 Related prefetch disabled to reduce API requests');
+    return;
   }
 
-  // Clear cache
+  // Clear cache and debounce timers
   clearCache() {
     this.cache.clear();
     this.prefetchQueue.clear();
-    console.log('🗑️ Cache cleared');
+
+    // Clear all debounce timers
+    this.debounceMap.forEach(timeoutId => clearTimeout(timeoutId));
+    this.debounceMap.clear();
+
+    // Clear active requests
+    this.activeRequests.clear();
+
+    console.log('🗑️ Cache, debounce timers, and active requests cleared');
   }
 
   // Get cache stats
@@ -237,7 +241,8 @@ export const useCommunityData = () => {
     error,
     fetchData,
     clearCache,
-    getCacheStats
+    getCacheStats,
+    dataManager // Export dataManager for monitoring
   };
 };
 

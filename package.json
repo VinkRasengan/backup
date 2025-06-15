@@ -1,12 +1,15 @@
 {
   "name": "factcheck-app",
   "version": "1.0.0",
-  "description": "FactCheck - A web application for verifying news credibility",
-  "scripts": {
+  "description": "FactCheck - A web application for verifying news credibility",  "scripts": {
     "setup": "setup.bat",
     "setup:unix": "chmod +x setup.sh && ./setup.sh",
     "dev": "start-dev.bat",
     "dev:unix": "chmod +x start-dev.sh && ./start-dev.sh",
+    "restart-all": "node restart-all.js",
+    "restart-all:windows": "restart-all.bat",    "restart-all:unix": "chmod +x restart-all.sh && ./restart-all.sh",    "kill-all": "node restart-all.js --kill-only",
+    "kill-all:windows": "kill-all.bat",
+    "test:frontend": "node test-frontend-improvements.js",
     "build": "cd client && npm run build",
     "deploy": "deploy.bat",
     "deploy:unix": "chmod +x deploy.sh && ./deploy.sh",

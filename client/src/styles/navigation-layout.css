@@ -1,0 +1,99 @@
+/* Navigation Layout Optimizations */
+
+/* Fix double scroll issue - Ensure proper container behavior */
+.nav-container {
+  position: relative;
+  min-height: 100vh;
+  max-height: 100vh;
+  overflow-x: hidden;
+  overflow-y: auto;
+  transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.nav-container.with-sidebar {
+  margin-left: 0;
+}
+
+@media (min-width: 768px) {
+  .nav-container.with-sidebar {
+    margin-left: 20rem; /* 320px / 16 = 20rem */
+  }
+}
+
+/* Ensure sidebar doesn't interfere with content */
+.nav-sidebar-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 30;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+.nav-sidebar-overlay.active {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* Prevent sidebar from covering hamburger menu */
+.hamburger-menu {
+  position: fixed !important;
+  top: 1rem !important;
+  left: 1rem !important;
+  z-index: 51 !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  display: block !important;
+}
+
+.nav-sidebar {
+  z-index: 40 !important;
+}
+
+/* Smooth transitions for all navigation elements */
+.nav-transition {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Hide sidebar completely when closed */
+.nav-sidebar.closed {
+  transform: translateX(-100%);
+  visibility: hidden;
+}
+
+.nav-sidebar.open {
+  transform: translateX(0);
+  visibility: visible;
+}
+
+/* Mobile specific optimizations */
+@media (max-width: 767px) {
+  .nav-container.with-sidebar {
+    margin-left: 0 !important;
+  }
+  
+  .nav-sidebar {
+    width: 100vw !important;
+    max-width: 320px;
+  }
+}
+
+/* Ensure content doesn't jump and fix scroll issues */
+.nav-content {
+  min-height: 100vh;
+  width: 100%;
+  overflow-x: hidden;
+  position: relative;
+}
+
+/* Fix for potential z-index conflicts */
+.nav-hamburger {
+  position: fixed !important;
+  top: 1rem !important;
+  left: 1rem !important;
+  z-index: 51 !important;
+}

@@ -56,12 +56,11 @@ const authenticateToken = async (req, res, next) => {
     const decodedToken = await auth.verifyIdToken(token);
 
     // Get user data from Firestore
-    const userDoc = await db.collection(collections.USERS).doc(decodedToken.uid).get();
-
-    if (userDoc.exists) {
+    const userDoc = await db.collection(collections.USERS).doc(decodedToken.uid).get();    if (userDoc.exists) {
       const userData = userDoc.data();
       req.user = {
         userId: decodedToken.uid,
+        uid: decodedToken.uid, // Add for backward compatibility
         email: decodedToken.email,
         emailVerified: decodedToken.email_verified,
         ...userData
@@ -84,6 +83,7 @@ const authenticateToken = async (req, res, next) => {
 
       req.user = {
         userId: decodedToken.uid,
+        uid: decodedToken.uid, // Add for backward compatibility
         email: decodedToken.email,
         emailVerified: decodedToken.email_verified,
         ...userData

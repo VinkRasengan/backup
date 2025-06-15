@@ -21,12 +21,13 @@ import VoteComponent from '../components/Community/VoteComponent';
 import CommentsSection from '../components/Community/CommentsSection';
 import CommentPreview from '../components/Community/CommentPreview';
 import ReportModal from '../components/Community/ReportModal';
+import RequestMonitor from '../components/Community/RequestMonitor';
 import { useStaggerAnimation, useFadeIn } from '../hooks/useGSAP';
 import PageLayout from '../components/layout/PageLayout';
 
 const CommunityFeedPage = () => {
   const { isDarkMode } = useTheme();
-  const { data: communityData, loading, fetchData } = useCommunityData();
+  const { data: communityData, loading, fetchData, dataManager } = useCommunityData();
   const [sortBy] = useState('trending');
   const [filterBy, setFilterBy] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -38,6 +39,7 @@ const CommunityFeedPage = () => {
   const [viewMode, setViewMode] = useState('card'); // card, list, compact
   const [autoRefresh, setAutoRefresh] = useState(false);
   const [showImages, setShowImages] = useState(true);
+  const [showRequestMonitor, setShowRequestMonitor] = useState(false);
 
   // Refs for debouncing and stable references
   const searchTimeoutRef = useRef(null);
@@ -163,18 +165,21 @@ const CommunityFeedPage = () => {
       window.removeEventListener('storage', handleStorageChange);
     };
   }, [refreshData]);
-
-  // Auto-refresh functionality
+  // Auto-refresh functionality - DISABLED to reduce requests
+  // Temporarily disabled to prevent excessive API requests
+  // Users can manually refresh using the refresh button
+  /*
   useEffect(() => {
     if (!autoRefresh) return;
 
     const interval = setInterval(() => {
       console.log('🔄 Auto-refreshing community data...');
-      fetchDataRef.current({ page: 1 }); // Use fetchDataRef instead of refreshData
-    }, 30000); // Refresh every 30 seconds
+      fetchDataRef.current({ page: 1 });
+    }, 300000); // 5 minutes if re-enabled
 
     return () => clearInterval(interval);
-  }, [autoRefresh]); // Remove refreshData dependency
+  }, [autoRefresh]);
+  */
 
   const toggleComments = (articleId) => {
     setShowComments(prev => ({
@@ -471,7 +476,17 @@ const CommunityFeedPage = () => {
                               onChange={(e) => setAutoRefresh(e.target.checked)}
                               className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
                             />
-                            <span className="text-sm text-gray-700 dark:text-gray-300">Tự động làm mới</span>
+                            <span className="text-sm text-gray-700 dark:text-gray-300">Tự động làm mới (Tạm tắt)</span>
+                          </label>
+
+                          <label className="flex items-center space-x-3">
+                            <input
+                              type="checkbox"
+                              checked={showRequestMonitor}
+                              onChange={(e) => setShowRequestMonitor(e.target.checked)}
+                              className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                            />
+                            <span className="text-sm text-gray-700 dark:text-gray-300">Monitor API requests</span>
                           </label>
                         </div>
 
@@ -595,6 +610,13 @@ const CommunityFeedPage = () => {
           onClose={() => setShowReportModal(null)}
         />
       )}
+
+      {/* Request Monitor */}
+      <RequestMonitor
+        dataManager={dataManager}
+        isVisible={showRequestMonitor}
+        onClose={() => setShowRequestMonitor(false)}
+      />
     </PageLayout>
   );
 };
