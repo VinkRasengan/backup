@@ -23,21 +23,21 @@ if [ ! -f .env ]; then
 # Service Configuration
 NODE_ENV=development
 
-# Firebase Configuration
-FIREBASE_PROJECT_ID=factcheck-1d6e8
-FIREBASE_CLIENT_EMAIL=
-FIREBASE_PRIVATE_KEY=
+# Firebase Configuration - REQUIRED: Update with your project details
+FIREBASE_PROJECT_ID=your_firebase_project_id_here
+FIREBASE_CLIENT_EMAIL=your_service_account_email@your_project.iam.gserviceaccount.com
+FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\nYOUR_PRIVATE_KEY_HERE\n-----END PRIVATE KEY-----"
 
-# JWT Configuration
-JWT_SECRET=your-super-secret-jwt-key-change-this-in-production
+# JWT Configuration - REQUIRED: Generate a secure secret key
+JWT_SECRET=CHANGE_THIS_TO_A_STRONG_SECRET_KEY_AT_LEAST_32_CHARS
 
-# API Keys
-GEMINI_API_KEY=AIzaSyDszcx_S3Wm65ACIprlmJLDu5FPmDfX1nE
-VIRUSTOTAL_API_KEY=
-SCAMADVISER_API_KEY=
-SCREENSHOTLAYER_API_KEY=
-NEWSAPI_API_KEY=
-NEWSDATA_API_KEY=
+# API Keys - REQUIRED: Get from respective providers
+GEMINI_API_KEY=your_gemini_api_key_here
+VIRUSTOTAL_API_KEY=your_virustotal_api_key_here
+SCAMADVISER_API_KEY=your_scamadviser_api_key_here
+SCREENSHOTLAYER_API_KEY=your_screenshotlayer_api_key_here
+NEWSAPI_API_KEY=your_newsapi_api_key_here
+NEWSDATA_API_KEY=your_newsdata_api_key_here
 
 # Service URLs (for development)
 AUTH_SERVICE_URL=http://auth-service:3001
@@ -50,13 +50,13 @@ ADMIN_SERVICE_URL=http://admin-service:3006
 # CORS
 ALLOWED_ORIGINS=http://localhost:3000,http://localhost:8080
 
-# React App Configuration
+# React App Configuration - REQUIRED: Update with your Firebase settings
 REACT_APP_API_URL=http://localhost:8080
-REACT_APP_FIREBASE_API_KEY=
-REACT_APP_FIREBASE_AUTH_DOMAIN=factcheck-1d6e8.firebaseapp.com
-REACT_APP_FIREBASE_PROJECT_ID=factcheck-1d6e8
+REACT_APP_FIREBASE_API_KEY=your_firebase_web_api_key_here
+REACT_APP_FIREBASE_AUTH_DOMAIN=your_project_id.firebaseapp.com
+REACT_APP_FIREBASE_PROJECT_ID=your_firebase_project_id_here
 EOF
-    echo "✅ .env file created. Please update it with your actual API keys."
+    echo "✅ .env template created. Please update all placeholder values before deployment."
 fi
 
 # Start services without rebuild

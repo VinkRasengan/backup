@@ -25,16 +25,25 @@ function checkFirebaseCLI() {
     }
 }
 
+// Get project ID from environment
+const projectId = process.env.FIREBASE_PROJECT_ID;
+
+if (!projectId) {
+    console.error('❌ FIREBASE_PROJECT_ID environment variable is required');
+    console.error('   Set it in your .env file: FIREBASE_PROJECT_ID=your-project-id');
+    process.exit(1);
+}
+
 // Check if user is logged in
 function checkFirebaseAuth() {
     try {
         const result = execSync('firebase projects:list', { stdio: 'pipe', encoding: 'utf8' });
-        if (result.includes('factcheck-1d6e8')) {
+        if (result.includes(projectId)) {
             console.log('✅ Firebase authentication verified');
-            console.log('✅ Project factcheck-1d6e8 found');
+            console.log(`✅ Project ${projectId} found`);
             return true;
         } else {
-            console.error('❌ Project factcheck-1d6e8 not found in your Firebase projects');
+            console.error(`❌ Project ${projectId} not found in your Firebase projects`);
             return false;
         }
     } catch (error) {
@@ -55,7 +64,7 @@ function deployRules() {
             return false;
         }
         
-        execSync('firebase deploy --only firestore:rules --project factcheck-1d6e8', { 
+        execSync(`firebase deploy --only firestore:rules --project ${projectId}`, { 
             stdio: 'inherit' 
         });
         
@@ -78,7 +87,7 @@ function deployIndexes() {
             createBasicIndexes();
         }
         
-        execSync('firebase deploy --only firestore:indexes --project factcheck-1d6e8', { 
+        execSync(`firebase deploy --only firestore:indexes --project ${projectId}`, { 
             stdio: 'inherit' 
         });
         
@@ -178,7 +187,7 @@ async function deployFirebase() {
         console.log('✅ FactCheck app ready for production');
         
         console.log('\n🔗 Firebase Console:');
-        console.log('https://console.firebase.google.com/project/factcheck-1d6e8');
+        console.log(`https://console.firebase.google.com/project/${projectId}`);
     } else {
         console.log('💥 Firebase deployment failed!');
         console.log('Please check the errors above and try again.');
