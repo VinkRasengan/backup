@@ -159,6 +159,33 @@ validate_environment() {
     print_success "✅ Environment validation passed"
 }
 
+# Function to check if rebuild is needed
+check_if_rebuild_needed() {
+    # Check if images exist
+    local services=("api-gateway" "auth-service" "link-service" "community-service" "chat-service" "news-service" "admin-service")
+    local missing_images=0
+    
+    for service in "${services[@]}"; do
+        if ! docker image inspect "backup_${service}:latest" > /dev/null 2>&1; then
+            ((missing_images++))
+        fi
+    done
+    
+    if [ $missing_images -gt 0 ]; then
+        print_warning "$missing_images images missing. Will build all services..."
+        return 0  # Need rebuild
+    fi
+    
+    # Check if force rebuild flag is set
+    if [ "$1" == "--rebuild" ] || [ "$1" == "--build" ]; then
+        print_warning "Force rebuild requested..."
+        return 0  # Need rebuild
+    fi
+    
+    print_success "All images exist. Using existing images for faster deployment..."
+    return 1  # No rebuild needed
+}
+
 # Validate environment variables
 validate_environment
 
@@ -166,15 +193,28 @@ validate_environment
 print_status "Stopping existing containers..."
 docker-compose -f docker-compose.microservices.yml down > /dev/null 2>&1
 
-# Build and start all services
-print_status "Building and starting microservices..."
-print_warning "This may take a few minutes for the first build..."
-
-if docker-compose -f docker-compose.microservices.yml up --build -d; then
-    print_success "All services started successfully!"
+# Smart build decision
+if check_if_rebuild_needed "$1"; then
+    # Build and start all services
+    print_status "Building and starting microservices..."
+    print_warning "This may take a few minutes for the first build..."
+    
+    if docker-compose -f docker-compose.microservices.yml up --build -d; then
+        print_success "All services built and started successfully!"
+    else
+        print_error "Failed to build/start services. Check the logs for details."
+        exit 1
+    fi
 else
-    print_error "Failed to start services. Check the logs for details."
-    exit 1
+    # Just start from existing images
+    print_status "Starting microservices from existing images..."
+    
+    if docker-compose -f docker-compose.microservices.yml up -d; then
+        print_success "All services started successfully!"
+    else
+        print_error "Failed to start services. Check the logs for details."
+        exit 1
+    fi
 fi
 
 # Wait for services to be ready
@@ -251,6 +291,9 @@ echo "🔧 Management:"
 echo "  View logs:        docker-compose -f docker-compose.microservices.yml logs -f [service-name]"
 echo "  Stop services:    docker-compose -f docker-compose.microservices.yml down"
 echo "  Restart service:  docker-compose -f docker-compose.microservices.yml restart [service-name]"
+echo "  Force rebuild:    ./scripts/deploy-microservices.sh --rebuild"
+echo ""
+echo "💡 Next deployments will be faster (using existing images unless --rebuild flag is used)"
 echo ""
 
 if [ $healthy_count -eq $total_services ]; then
