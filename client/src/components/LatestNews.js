@@ -9,7 +9,7 @@ import {
   RefreshCw
 } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
-import { gsap } from '../utils/gsap';
+import { gsap, ScrollTrigger } from '../utils/gsap';
 
 // Get API base URL (same logic as api.js)
 const getApiBaseUrl = () => {
@@ -102,46 +102,38 @@ const LatestNews = () => {
     fetchLatestNews();
   }, []);
 
-  // GSAP ScrollTrigger animation
+  // Optimized lightweight animation
   useEffect(() => {
     if (!containerRef.current || loading || news.length === 0) return;
-
-    console.log('🎬 LatestNews: Setting up ScrollTrigger animations...');
 
     const container = containerRef.current;
     const newsItems = container.querySelectorAll('[data-news]');
 
-    // Set initial state - content visible but positioned for animation
+    // Set content visible immediately - no lag
     gsap.set(container, { opacity: 1 });
-    gsap.set(newsItems, { opacity: 1, x: 20, scale: 0.98 });
+    gsap.set(newsItems, { opacity: 1, x: 0, scale: 1 });
 
-    // ScrollTrigger animation
-    const tl = gsap.timeline({
-      scrollTrigger: {
-        trigger: container,
-        start: "top 90%",
-        end: "bottom 20%",
-        toggleActions: "play none none reverse"
+    // Lightweight ScrollTrigger with minimal animation
+    const st = ScrollTrigger.create({
+      trigger: container,
+      start: "top 95%",
+      once: true, // Only run once for performance
+      onEnter: () => {
+        // Simple fade-in only
+        gsap.fromTo(newsItems,
+          { opacity: 0.7 },
+          {
+            opacity: 1,
+            duration: 0.3,
+            ease: "none",
+            stagger: 0.05
+          }
+        );
       }
     });
 
-    // Animate container
-    tl.to(container, {
-      y: 0,
-      duration: 0.6,
-      ease: "power2.out"
-    })
-    // Then animate news items with stagger
-    .to(newsItems, {
-      x: 0,
-      scale: 1,
-      duration: 0.4,
-      ease: "power2.out",
-      stagger: 0.1
-    }, "-=0.3");
-
     return () => {
-      tl.kill();
+      st.kill();
     };
   }, [loading, news]);
 

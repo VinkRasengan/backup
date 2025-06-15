@@ -11,7 +11,7 @@ import EnhancedHeroSection from '../components/hero/EnhancedHeroSection';
 import ScrollTriggeredSection from '../components/animations/ScrollTriggeredSection';
 import PageTransition from '../components/transitions/PageTransition';
 
-import { gsap } from '../utils/gsap';
+import { gsap, ScrollTrigger } from '../utils/gsap';
 import { useGSAP } from '../hooks/useGSAP';
 
 const HomePage = () => {
@@ -51,93 +51,53 @@ const HomePage = () => {
     }
   ];
 
-  // Enhanced GSAP animations with scroll triggers
+  // Optimized lightweight animations
   useGSAP(() => {
     if (!containerRef.current) return;
 
-    // Create timeline for coordinated animations
-    const tl = gsap.timeline();
+    // Simple feature animation - no complex transforms
+    const featureElements = featuresRef.current?.children;
+    if (featureElements && featureElements.length > 0) {
+      gsap.set(featureElements, { opacity: 1, y: 0 }); // Visible immediately
 
-    // Animate features with enhanced effects
-    gsap.fromTo(featuresRef.current?.children || [],
-      {
-        y: 80,
-        opacity: 0,
-        scale: 0.8,
-        rotationY: 15,
-        transformOrigin: "center center"
-      },
-      {
-        y: 0,
-        opacity: 1,
-        scale: 1,
-        rotationY: 0,
-        duration: 1.2,
-        stagger: {
-          amount: 0.8,
-          from: "start",
-          ease: "power2.out"
-        },
-        ease: "back.out(1.7)",
-        scrollTrigger: {
-          trigger: featuresRef.current,
-          start: "top 85%",
-          end: "bottom 20%",
-          toggleActions: "play none none reverse",
-          onEnter: () => {
-            // Add floating animation after entrance
-            gsap.to(featuresRef.current?.children || [], {
-              y: "random(-5, 5)",
-              duration: "random(2, 4)",
-              repeat: -1,
-              yoyo: true,
-              ease: "sine.inOut",
-              stagger: 0.2
-            });
-          }
+      ScrollTrigger.create({
+        trigger: featuresRef.current,
+        start: "top 90%",
+        once: true,
+        onEnter: () => {
+          gsap.fromTo(featureElements,
+            { opacity: 0.8 },
+            {
+              opacity: 1,
+              duration: 0.4,
+              ease: "none",
+              stagger: 0.1
+            }
+          );
         }
-      }
-    );
+      });
+    }
 
-    // Enhanced CTA section with multiple elements
-    gsap.fromTo(ctaRef.current,
-      {
-        y: 60,
-        opacity: 0,
-        scale: 0.9,
-        filter: "blur(10px)"
-      },
-      {
-        y: 0,
-        opacity: 1,
-        scale: 1,
-        filter: "blur(0px)",
-        duration: 1,
-        ease: "power3.out",
-        scrollTrigger: {
-          trigger: ctaRef.current,
-          start: "top 90%",
-          toggleActions: "play none none reverse"
-        }
-      }
-    );
+    // Simple CTA animation
+    if (ctaRef.current) {
+      gsap.set(ctaRef.current, { opacity: 1, y: 0 }); // Visible immediately
 
-    // Add parallax effect to section backgrounds
-    gsap.utils.toArray('.parallax-bg').forEach((bg) => {
-      gsap.fromTo(bg,
-        { yPercent: -50 },
-        {
-          yPercent: 50,
-          ease: "none",
-          scrollTrigger: {
-            trigger: bg,
-            start: "top bottom",
-            end: "bottom top",
-            scrub: true
-          }
+      ScrollTrigger.create({
+        trigger: ctaRef.current,
+        start: "top 95%",
+        once: true,
+        onEnter: () => {
+          gsap.fromTo(ctaRef.current,
+            { opacity: 0.8 },
+            {
+              opacity: 1,
+              duration: 0.3,
+              ease: "none"
+            }
+          );
         }
-      );
-    });
+      });
+    }
 
   }, []);
 
@@ -359,11 +319,11 @@ const HomePage = () => {
             {/* Community Preview - Left Side */}
             <motion.div
               className="w-full flex"
-              initial={{ opacity: 0, x: -30 }}
+              initial={{ opacity: 1, x: 0 }}
               whileInView={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.6, delay: 0.1 }}
-              viewport={{ once: true }}
-              whileHover={{ y: -4 }}
+              transition={{ duration: 0.3, ease: "easeOut" }}
+              viewport={{ once: true, margin: "-100px" }}
+              whileHover={{ y: -2 }}
             >
               <div className="w-full">
                 <CommunityPreview />
@@ -373,11 +333,11 @@ const HomePage = () => {
             {/* Latest News - Right Side */}
             <motion.div
               className="w-full flex"
-              initial={{ opacity: 0, x: 30 }}
+              initial={{ opacity: 1, x: 0 }}
               whileInView={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.6, delay: 0.2 }}
-              viewport={{ once: true }}
-              whileHover={{ y: -4 }}
+              transition={{ duration: 0.3, ease: "easeOut" }}
+              viewport={{ once: true, margin: "-100px" }}
+              whileHover={{ y: -2 }}
             >
               <div className="w-full">
                 <LatestNews />

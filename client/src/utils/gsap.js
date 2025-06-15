@@ -5,12 +5,20 @@ import { TextPlugin } from 'gsap/TextPlugin';
 // Register GSAP plugins
 gsap.registerPlugin(ScrollTrigger, TextPlugin);
 
-// GSAP configuration for performance
+// Optimized GSAP configuration for performance
 gsap.config({
   nullTargetWarn: false,
   trialWarn: false,
   force3D: true, // Force hardware acceleration
-  autoSleep: 60 // Auto-sleep after 60 seconds of inactivity
+  autoSleep: 30, // Auto-sleep after 30 seconds for better performance
+  units: { left: "px", top: "px" } // Optimize units
+});
+
+// Performance optimizations
+gsap.ticker.lagSmoothing(500, 33); // Smooth out lag spikes
+ScrollTrigger.config({
+  autoRefreshEvents: "visibilitychange,DOMContentLoaded,load", // Reduce refresh events
+  ignoreMobileResize: true // Better mobile performance
 });
 
 // Common animation presets - optimized for performance
