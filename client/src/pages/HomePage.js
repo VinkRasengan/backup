@@ -51,44 +51,93 @@ const HomePage = () => {
     }
   ];
 
-  // GSAP animations
+  // Enhanced GSAP animations with scroll triggers
   useGSAP(() => {
     if (!containerRef.current) return;
 
-    // Animate features on scroll
+    // Create timeline for coordinated animations
+    const tl = gsap.timeline();
+
+    // Animate features with enhanced effects
     gsap.fromTo(featuresRef.current?.children || [],
-      { y: 60, opacity: 0, scale: 0.9 },
+      {
+        y: 80,
+        opacity: 0,
+        scale: 0.8,
+        rotationY: 15,
+        transformOrigin: "center center"
+      },
       {
         y: 0,
         opacity: 1,
         scale: 1,
-        duration: 0.8,
-        stagger: 0.2,
-        ease: "power3.out",
+        rotationY: 0,
+        duration: 1.2,
+        stagger: {
+          amount: 0.8,
+          from: "start",
+          ease: "power2.out"
+        },
+        ease: "back.out(1.7)",
         scrollTrigger: {
           trigger: featuresRef.current,
-          start: "top 80%",
+          start: "top 85%",
           end: "bottom 20%",
+          toggleActions: "play none none reverse",
+          onEnter: () => {
+            // Add floating animation after entrance
+            gsap.to(featuresRef.current?.children || [], {
+              y: "random(-5, 5)",
+              duration: "random(2, 4)",
+              repeat: -1,
+              yoyo: true,
+              ease: "sine.inOut",
+              stagger: 0.2
+            });
+          }
+        }
+      }
+    );
+
+    // Enhanced CTA section with multiple elements
+    gsap.fromTo(ctaRef.current,
+      {
+        y: 60,
+        opacity: 0,
+        scale: 0.9,
+        filter: "blur(10px)"
+      },
+      {
+        y: 0,
+        opacity: 1,
+        scale: 1,
+        filter: "blur(0px)",
+        duration: 1,
+        ease: "power3.out",
+        scrollTrigger: {
+          trigger: ctaRef.current,
+          start: "top 90%",
           toggleActions: "play none none reverse"
         }
       }
     );
 
-    // Animate CTA section
-    gsap.fromTo(ctaRef.current,
-      { y: 40, opacity: 0 },
-      {
-        y: 0,
-        opacity: 1,
-        duration: 0.6,
-        ease: "power2.out",
-        scrollTrigger: {
-          trigger: ctaRef.current,
-          start: "top 85%",
-          toggleActions: "play none none reverse"
+    // Add parallax effect to section backgrounds
+    gsap.utils.toArray('.parallax-bg').forEach((bg) => {
+      gsap.fromTo(bg,
+        { yPercent: -50 },
+        {
+          yPercent: 50,
+          ease: "none",
+          scrollTrigger: {
+            trigger: bg,
+            start: "top bottom",
+            end: "bottom top",
+            scrub: true
+          }
         }
-      }
-    );
+      );
+    });
 
   }, []);
 
@@ -100,106 +149,240 @@ const HomePage = () => {
       {/* Enhanced Hero Section */}
       <EnhancedHeroSection />
 
-      {/* Main Content Section - Enterprise Layout */}
-      <Section className="py-16 bg-white dark:bg-gray-900">
+      {/* Main Content Section - Modern Layout */}
+      <Section className="py-20 bg-gradient-to-br from-gray-50 via-white to-blue-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
         <ResponsiveContainer size="xl">
           {/* Section Header */}
-          <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4 text-gray-900 dark:text-white">
-              Hoạt động cộng đồng
-            </h2>
-            <p className="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto leading-relaxed">
+          <div className="text-center mb-16">
+            <motion.h2
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8 }}
+              className="text-4xl md:text-5xl font-bold mb-6 bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent"
+            >
+              Khám phá tính năng
+            </motion.h2>
+            <motion.p
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 0.2 }}
+              className="text-xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto leading-relaxed"
+            >
               Tham gia vào hệ sinh thái kiểm chứng thông tin toàn diện với các công cụ và tính năng tiên tiến
-            </p>
-          </div>          <div className="grid grid-cols-1 xl:grid-cols-3 gap-8 lg:gap-12">
-            {/* Main Action Cards */}
-            <div className="xl:col-span-2">
+            </motion.p>
+          </div>
+
+          {/* Modern Grid Layout */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12">
+            {/* Main Action Cards - Redesigned */}
+            <div className="lg:col-span-8">
               <ScrollTriggeredSection
                 animation="popIn"
                 stagger={0.15}
-                className="grid grid-cols-1 md:grid-cols-2 gap-8 auto-rows-fr"
+                className="grid grid-cols-1 md:grid-cols-2 gap-6"
               >
-                <ActionCard
-                  icon={Users}
-                  title="Cộng đồng kiểm tin"
-                  description="Tham gia cùng cộng đồng đánh giá và xác minh thông tin với hệ thống voting thông minh. Kết nối với hàng nghìn người dùng để cùng nhau xác minh độ tin cậy của các thông tin trên mạng."
-                  color="blue"
-                  onClick={() => window.location.href = '/community'}
-                >
-                  <div className="flex items-center gap-2 text-sm text-white/80">
-                    <Users size={16} />
-                    <span>1,234+ thành viên</span>
-                  </div>
-                </ActionCard>
+                {/* Primary Card - Larger */}
+                <div className="md:col-span-2">
+                  <div className="card-hover floating-card stagger-1 group">
+                    <div className="relative p-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-3xl shadow-2xl border border-blue-200 dark:border-blue-800 overflow-hidden">
+                      {/* Background Pattern */}
+                      <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent"></div>
+                      <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -translate-y-16 translate-x-16"></div>
 
-                <ActionCard
-                  icon={BookOpen}
-                  title="Kiến thức nền"
-                  description="Học cách nhận biết và kiểm tra thông tin sai lệch qua các khóa học chuyên sâu. Nâng cao kỹ năng phân tích và đánh giá nguồn tin một cách khoa học."
-                  color="green"
-                  onClick={() => window.location.href = '/knowledge'}
-                >
-                  <div className="flex items-center gap-2 text-sm text-white/80">
-                    <BookOpen size={16} />
-                    <span>50+ bài học</span>
+                      <div className="relative flex items-center justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-4 mb-4">
+                            <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-sm">
+                              <MessageCircle className="w-8 h-8 text-white" />
+                            </div>
+                            <div>
+                              <h3 className="text-2xl font-bold text-white mb-1">Trợ lý AI</h3>
+                              <p className="text-blue-100 text-sm">Powered by Gemini</p>
+                            </div>
+                          </div>
+                          <p className="text-white/90 text-lg leading-relaxed mb-6">
+                            Hỏi đáp với AI về cách kiểm tra thông tin sử dụng công nghệ Gemini tiên tiến
+                          </p>
+                          <button
+                            onClick={() => window.location.href = '/chat'}
+                            className="px-6 py-3 bg-white/20 hover:bg-white/30 text-white rounded-xl font-semibold transition-all duration-300 backdrop-blur-sm border border-white/20"
+                          >
+                            Bắt đầu chat →
+                          </button>
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                </ActionCard>
+                </div>
 
-                <ActionCard
-                  icon={MessageCircle}
-                  title="Trợ lý AI"
-                  description="Hỏi đáp với AI về cách kiểm tra thông tin sử dụng công nghệ Gemini tiên tiến. Nhận được phân tích chi tiết và lời khuyên từ trí tuệ nhân tạo."
-                  color="purple"
-                  onClick={() => window.location.href = '/chat'}
-                >
-                  <div className="flex items-center gap-2 text-sm text-white/80">
-                    <MessageCircle size={16} />
-                    <span>Powered by Gemini</span>
-                  </div>
-                </ActionCard>
+                {/* Secondary Cards */}
+                <div className="card-hover floating-card stagger-2">
+                  <div className="relative p-6 bg-gradient-to-br from-blue-50 via-white to-blue-100 dark:from-blue-900/20 dark:via-gray-800 dark:to-blue-800/20 rounded-2xl shadow-xl border border-blue-200 dark:border-blue-700/50 h-full group hover:shadow-2xl transition-all duration-300 overflow-hidden">
+                    {/* Background Pattern */}
+                    <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-transparent"></div>
+                    <div className="absolute top-0 right-0 w-20 h-20 bg-blue-400/10 rounded-full -translate-y-10 translate-x-10"></div>
 
-                <ActionCard
-                  icon={Search}
-                  title="Gửi bài viết"
-                  description="Chia sẻ bài viết để cộng đồng cùng đánh giá với hệ thống phân tích đa chiều. Góp phần xây dựng cơ sở dữ liệu thông tin đáng tin cậy."
-                  color="orange"
-                  onClick={() => window.location.href = '/submit'}
-                >
-                  <div className="flex items-center gap-2 text-sm text-white/80">
-                    <Search size={16} />
-                    <span>Kiểm tra ngay</span>
+                    <div className="relative">
+                      <div className="flex items-center gap-3 mb-4">
+                        <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg">
+                          <Users className="w-6 h-6 text-white" />
+                        </div>
+                        <div>
+                          <h3 className="text-lg font-bold text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">Cộng đồng</h3>
+                          <p className="text-sm text-blue-600 dark:text-blue-400 font-medium">1,234+ thành viên</p>
+                        </div>
+                      </div>
+                      <p className="text-gray-600 dark:text-gray-300 mb-4 leading-relaxed">
+                        Tham gia cộng đồng đánh giá và xác minh thông tin với hệ thống voting thông minh
+                      </p>
+                      <button
+                        onClick={() => window.location.href = '/community'}
+                        className="px-4 py-2 bg-blue-500/10 hover:bg-blue-500/20 text-blue-600 dark:text-blue-400 font-semibold rounded-lg transition-all duration-300 border border-blue-200 dark:border-blue-600/50"
+                      >
+                        Tham gia →
+                      </button>
+                    </div>
                   </div>
-                </ActionCard>
+                </div>
+
+                <div className="card-hover floating-card stagger-3">
+                  <div className="relative p-6 bg-gradient-to-br from-green-50 via-white to-emerald-100 dark:from-green-900/20 dark:via-gray-800 dark:to-emerald-800/20 rounded-2xl shadow-xl border border-green-200 dark:border-green-700/50 h-full group hover:shadow-2xl transition-all duration-300 overflow-hidden">
+                    {/* Background Pattern */}
+                    <div className="absolute inset-0 bg-gradient-to-br from-green-500/5 to-transparent"></div>
+                    <div className="absolute top-0 right-0 w-20 h-20 bg-green-400/10 rounded-full -translate-y-10 translate-x-10"></div>
+
+                    <div className="relative">
+                      <div className="flex items-center gap-3 mb-4">
+                        <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl flex items-center justify-center shadow-lg">
+                          <BookOpen className="w-6 h-6 text-white" />
+                        </div>
+                        <div>
+                          <h3 className="text-lg font-bold text-gray-900 dark:text-white group-hover:text-green-600 dark:group-hover:text-green-400 transition-colors">Kiến thức</h3>
+                          <p className="text-sm text-green-600 dark:text-green-400 font-medium">50+ bài học</p>
+                        </div>
+                      </div>
+                      <p className="text-gray-600 dark:text-gray-300 mb-4 leading-relaxed">
+                        Học cách nhận biết và kiểm tra thông tin sai lệch qua các khóa học chuyên sâu
+                      </p>
+                      <button
+                        onClick={() => window.location.href = '/knowledge'}
+                        className="px-4 py-2 bg-green-500/10 hover:bg-green-500/20 text-green-600 dark:text-green-400 font-semibold rounded-lg transition-all duration-300 border border-green-200 dark:border-green-600/50"
+                      >
+                        Học ngay →
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="card-hover floating-card stagger-4">
+                  <div className="relative p-6 bg-gradient-to-br from-orange-50 via-white to-amber-100 dark:from-orange-900/20 dark:via-gray-800 dark:to-amber-800/20 rounded-2xl shadow-xl border border-orange-200 dark:border-orange-700/50 h-full group hover:shadow-2xl transition-all duration-300 overflow-hidden">
+                    {/* Background Pattern */}
+                    <div className="absolute inset-0 bg-gradient-to-br from-orange-500/5 to-transparent"></div>
+                    <div className="absolute top-0 right-0 w-20 h-20 bg-orange-400/10 rounded-full -translate-y-10 translate-x-10"></div>
+
+                    <div className="relative">
+                      <div className="flex items-center gap-3 mb-4">
+                        <div className="w-12 h-12 bg-gradient-to-br from-orange-500 to-amber-600 rounded-xl flex items-center justify-center shadow-lg">
+                          <Search className="w-6 h-6 text-white" />
+                        </div>
+                        <div>
+                          <h3 className="text-lg font-bold text-gray-900 dark:text-white group-hover:text-orange-600 dark:group-hover:text-orange-400 transition-colors">Kiểm tra</h3>
+                          <p className="text-sm text-orange-600 dark:text-orange-400 font-medium">Phân tích ngay</p>
+                        </div>
+                      </div>
+                      <p className="text-gray-600 dark:text-gray-300 mb-4 leading-relaxed">
+                        Chia sẻ bài viết để cộng đồng cùng đánh giá với hệ thống phân tích đa chiều
+                      </p>
+                      <button
+                        onClick={() => window.location.href = '/submit'}
+                        className="px-4 py-2 bg-orange-500/10 hover:bg-orange-500/20 text-orange-600 dark:text-orange-400 font-semibold rounded-lg transition-all duration-300 border border-orange-200 dark:border-orange-600/50"
+                      >
+                        Gửi ngay →
+                      </button>
+                    </div>
+                  </div>
+                </div>
               </ScrollTriggeredSection>
-            </div>            {/* Enhanced Sidebar - Bigger Size */}
-            <div className="xl:col-span-1">
-              <div className="sticky top-8">
-                <TrendingArticles />
-              </div>
+            </div>
+
+            {/* Enhanced Sidebar */}
+            <div className="lg:col-span-4">
+              <ScrollTriggeredSection
+                animation="fadeInRight"
+                stagger={0.1}
+                className="sticky top-8"
+              >
+                <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+                  <TrendingArticles />
+                </div>
+              </ScrollTriggeredSection>
             </div>
           </div>
         </ResponsiveContainer>
       </Section>      {/* Animated Statistics Section */}
-      <AnimatedStats />
+      <ScrollTriggeredSection
+        animation="scaleIn"
+        stagger={0.2}
+        trigger="top 85%"
+      >
+        <AnimatedStats />
+      </ScrollTriggeredSection>
 
       {/* Additional Content Cards Section */}
-      <Section className="py-16 bg-white dark:bg-gray-900">
+      <Section className="py-20 bg-gradient-to-br from-white via-gray-50 to-blue-50 dark:from-gray-800 dark:via-gray-900 dark:to-gray-800">
         <ResponsiveContainer size="xl">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4 text-gray-900 dark:text-white">
+          <div className="text-center mb-16">
+            <motion.h2
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8 }}
+              viewport={{ once: true }}
+              className="text-4xl md:text-5xl font-bold mb-6 text-gray-900 dark:text-white"
+            >
               Cập nhật mới nhất
-            </h2>
-            <p className="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto leading-relaxed">
+            </motion.h2>
+            <motion.p
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 0.2 }}
+              viewport={{ once: true }}
+              className="text-xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto leading-relaxed"
+            >
               Theo dõi hoạt động cộng đồng và tin tức bảo mật mới nhất
-            </p>
+            </motion.p>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {/* Community Preview */}
-            <CommunityPreview />
+          <div
+            className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-stretch"
+            style={{ minHeight: '600px' }}
+          >
+            {/* Community Preview - Left Side */}
+            <motion.div
+              className="w-full flex"
+              initial={{ opacity: 0, x: -30 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.6, delay: 0.1 }}
+              viewport={{ once: true }}
+              whileHover={{ y: -4 }}
+            >
+              <div className="w-full">
+                <CommunityPreview />
+              </div>
+            </motion.div>
 
-            {/* Latest News */}
-            <LatestNews />
+            {/* Latest News - Right Side */}
+            <motion.div
+              className="w-full flex"
+              initial={{ opacity: 0, x: 30 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.6, delay: 0.2 }}
+              viewport={{ once: true }}
+              whileHover={{ y: -4 }}
+            >
+              <div className="w-full">
+                <LatestNews />
+              </div>
+            </motion.div>
           </div>
         </ResponsiveContainer>
       </Section>
@@ -207,7 +390,7 @@ const HomePage = () => {
       {/* Features Section - Enterprise Design */}
       <Section className="py-16 bg-gradient-to-br from-gray-50 via-blue-50 to-purple-50 dark:from-gray-800 dark:via-gray-900 dark:to-gray-800">
         <ResponsiveContainer size="xl">
-          <ScrollTriggeredSection animation="scaleIn" stagger={0.1}>
+          <ScrollTriggeredSection animation="fadeInUp" stagger={0.1} trigger="top 90%">
             {/* Section Header */}
             <div className="text-center mb-16">
               <h2 className="text-3xl md:text-4xl font-bold mb-4 text-gray-900 dark:text-white">

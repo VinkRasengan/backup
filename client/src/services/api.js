@@ -1,7 +1,6 @@
 import axios from 'axios';
 import Cookies from 'js-cookie';
 import mockAPI from './mockAPI';
-import geminiConfig from '../config/gemini';
 
 // Create axios instance for Render deployment
 const getApiBaseUrl = () => {
@@ -224,7 +223,7 @@ export const chatAPI = {
   sendGeminiMessage: async (message) => {
     try {
       console.log('Sending message to Gemini API:', message);
-      const response = await fetch('http://localhost:5000/api/chat/gemini', {
+      const response = await fetch(`${getApiBaseUrl()}/chat/gemini`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -249,7 +248,7 @@ export const chatAPI = {
   // Test Gemini API configuration
   testGeminiConfig: async () => {
     console.log('🔧 Testing Gemini API configuration');
-    return await api.get(geminiConfig.endpoints.test);
+    return await api.get('/chat/test-gemini');
   },
 
   // Get conversation starters

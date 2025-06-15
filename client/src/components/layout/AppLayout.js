@@ -49,9 +49,9 @@ const AppLayout = ({ children, className, ...props }) => {
   const showSidebar = user && !['/login', '/register'].includes(location.pathname);
 
   return (
-    <div 
+    <div
       className={cn(
-        'min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-300',
+        'bg-gray-50 dark:bg-gray-900 transition-colors duration-300',
         className
       )}
       data-theme={isDarkMode ? 'dark' : 'light'}
@@ -77,7 +77,7 @@ const AppLayout = ({ children, className, ...props }) => {
         {/* Main Content Area */}
         <main
           className={cn(
-            'flex-1 min-h-screen transition-all duration-300',
+            'flex-1 transition-all duration-300',
             showSidebar && sidebarOpen && !sidebarCollapsed && 'lg:ml-[280px]',
             showSidebar && sidebarOpen && sidebarCollapsed && 'lg:ml-[80px]',
             'pt-16' // Account for fixed header

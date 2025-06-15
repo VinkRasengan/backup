@@ -11,6 +11,19 @@ import {
 import { useTheme } from '../context/ThemeContext';
 import { gsap } from '../utils/gsap';
 
+// Get API base URL (same logic as api.js)
+const getApiBaseUrl = () => {
+  if (process.env.REACT_APP_API_URL) {
+    return process.env.REACT_APP_API_URL;
+  }
+
+  if (process.env.NODE_ENV === 'production') {
+    return '/api';
+  }
+
+  return 'http://localhost:5000/api';
+};
+
 const LatestNews = () => {
   const { isDarkMode } = useTheme();
   const [news, setNews] = useState([]);
@@ -71,7 +84,7 @@ const LatestNews = () => {
         const headers = { 'Content-Type': 'application/json' };
         if (token) headers['Authorization'] = `Bearer ${token}`;
 
-        const response = await fetch('/api/news/latest?source=newsapi&pageSize=5', { headers });
+        const response = await fetch(`${getApiBaseUrl()}/news/latest?source=newsapi&pageSize=5`, { headers });
 
         if (response.ok) {
           const data = await response.json();
@@ -335,7 +348,10 @@ const LatestNews = () => {
             <ChevronRight size={14} />
           </motion.button>
         </div>
-      </div>      {/* News List */}      <div className="space-y-4">
+      </div>
+
+      {/* News List */}
+      <div className="space-y-4">
         {renderNewsContent()}
       </div>
 

@@ -12,13 +12,28 @@ import { useTheme } from '../context/ThemeContext';
 import { Card, CardHeader, CardTitle, CardContent } from './ui/Card';
 import { gsap } from '../utils/gsap';
 
+// Get API base URL (same logic as api.js)
+const getApiBaseUrl = () => {
+  if (process.env.REACT_APP_API_URL) {
+    return process.env.REACT_APP_API_URL;
+  }
+
+  if (process.env.NODE_ENV === 'production') {
+    return '/api';
+  }
+
+  return 'http://localhost:5000/api';
+};
+
 const TrendingArticles = () => {
+  console.log('🔥 TrendingArticles component rendered');
   const { isDarkMode } = useTheme();
   const [trendingArticles, setTrendingArticles] = useState([]);
   const [loading, setLoading] = useState(true);
   const cardRef = useRef(null);
 
   useEffect(() => {
+    console.log('🔥 TrendingArticles useEffect triggered');
     loadTrendingArticles();
   }, []);
 
@@ -66,8 +81,9 @@ const TrendingArticles = () => {
   }, [loading, trendingArticles]);
 
   const loadTrendingArticles = async () => {
-    // Load mock data immediately for better UX
-    console.log('🚀 Loading trending articles immediately...');
+    try {
+      // Load mock data immediately for better UX
+      console.log('🚀 Loading trending articles immediately...');
 
     // Set mock data first for instant display
     const mockData = [
@@ -134,7 +150,7 @@ const TrendingArticles = () => {
     // Try to fetch real data in background
     try {
       console.log('🔄 Fetching real trending data from API...');
-      const response = await fetch('http://localhost:5000/api/community/posts?sort=trending&limit=5', {
+      const response = await fetch(`${getApiBaseUrl()}/community/posts?sort=trending&limit=5`, {
         headers: {
           'Cache-Control': 'max-age=60',
           'Content-Type': 'application/json'
@@ -172,6 +188,10 @@ const TrendingArticles = () => {
       }
     } catch (error) {
       console.log('ℹ️ API not available, using mock data:', error.message);
+    }
+    } catch (error) {
+      console.error('🚨 Error in loadTrendingArticles:', error);
+      setLoading(false);
     }
   };
 
@@ -235,104 +255,115 @@ const TrendingArticles = () => {
     );
   }
   return (
-    <Card ref={cardRef} className={`${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} shadow-lg`}>
-      <CardHeader className="pb-4">
-        <CardTitle className={`flex items-center text-lg font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-          <Flame className="w-6 h-6 mr-3 text-orange-500" />
-          Bài viết thịnh hành
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="pt-0">
+    <div ref={cardRef} className="h-full">
+      {/* Modern Header */}
+      <div className="p-6 pb-4">
+        <div className="flex items-center justify-between mb-2">
+          <h3 className="text-xl font-bold text-gray-900 dark:text-white flex items-center">
+            <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-red-500 rounded-xl flex items-center justify-center mr-3">
+              <Flame className="w-5 h-5 text-white" />
+            </div>
+            Bài viết thịnh hành
+          </h3>
+          <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
+        </div>
+        <p className="text-sm text-gray-500 dark:text-gray-400">
+          Những bài viết được quan tâm nhất
+        </p>
+      </div>
+
+      <div className="px-6 pb-6">
         {trendingArticles.length === 0 ? (
-          <div className="text-center py-8">
-            <TrendingUp className={`w-12 h-12 mx-auto mb-4 ${isDarkMode ? 'text-gray-600' : 'text-gray-400'}`} />
-            <p className={`${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+          <div className="text-center py-12">
+            <div className="w-16 h-16 bg-gray-100 dark:bg-gray-800 rounded-2xl flex items-center justify-center mx-auto mb-4">
+              <TrendingUp className="w-8 h-8 text-gray-400" />
+            </div>
+            <p className="text-gray-500 dark:text-gray-400 text-lg">
               Chưa có bài viết thịnh hành
             </p>
           </div>
         ) : (
-          <div className="space-y-5">
+          <div className="space-y-4">
             {trendingArticles.map((article, index) => (
-                  <motion.div
-                    key={article.id}
-                    data-article
-                    initial={{ opacity: 1, y: 0 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className={`p-5 rounded-xl border hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-all duration-200 cursor-pointer group hover:shadow-md ${
-                  isDarkMode ? 'border-gray-700' : 'border-gray-200'
-                }`}
-                    onClick={() => window.open(article.url, '_blank')}
-                  >                      <div className="flex items-start space-x-4">                        <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 ${getRankBadgeStyle(index)}`}>
-                          {index + 1}
+              <motion.div
+                key={article.id}
+                data-article
+                initial={{ opacity: 1, y: 0 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="group cursor-pointer"
+                onClick={() => window.open(article.url, '_blank')}
+              >
+                <div className={`p-4 rounded-2xl border transition-all duration-300 hover:shadow-lg hover:scale-[1.02] ${
+                  isDarkMode
+                    ? 'border-gray-700 hover:border-gray-600 hover:bg-gray-700/30'
+                    : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                }`}>
+                    <div className="flex items-start space-x-3">
+                      {/* Rank Badge */}
+                      <div className={`w-8 h-8 rounded-xl flex items-center justify-center text-sm font-bold flex-shrink-0 ${getRankBadgeStyle(index)}`}>
+                        {index + 1}
+                      </div>
+
+                      <div className="flex-1 min-w-0">
+                        {/* Title */}
+                        <h4 className={`font-semibold text-sm leading-5 mb-2 group-hover:text-blue-600 transition-colors line-clamp-2 ${
+                          isDarkMode ? 'text-gray-200' : 'text-gray-900'
+                        }`}>
+                          {article.title}
+                        </h4>
+
+                        {/* Credibility Score */}
+                        <div className="mb-2">
+                          <span className={`px-2 py-1 rounded-lg text-xs font-medium ${getCredibilityColor(article.credibilityScore)}`}>
+                            {article.credibilityScore}%
+                          </span>
                         </div>
-                        
-                        <div className="flex-1 min-w-0">
-                          {/* Title */}
-                          <h4 className={`font-semibold text-base leading-6 mb-3 group-hover:text-blue-600 transition-colors line-clamp-2 ${
-                            isDarkMode ? 'text-gray-200' : 'text-gray-900'
-                          }`}>
-                            {article.title}
-                          </h4>                          
-                          {/* Credibility Score */}
-                          <div className="flex items-center space-x-2 mb-3">
-                            <span className={`px-3 py-1.5 rounded-full text-sm font-medium ${getCredibilityColor(article.credibilityScore)}`}>
-                              {article.credibilityScore}% - {getCredibilityLabel(article.credibilityScore)}
-                            </span>
+
+                        {/* Stats */}
+                        <div className="flex items-center space-x-3 text-xs text-gray-500">
+                          <div className="flex items-center space-x-1">
+                            <ThumbsUp size={12} />
+                            <span>{article.voteCount}</span>
                           </div>
-                          
-                          {/* Stats */}
-                          <div className="flex items-center space-x-4 text-sm text-gray-500">
-                            <div className="flex items-center space-x-1">
-                              <ThumbsUp size={14} />
-                              <span>{article.voteCount}</span>
-                            </div>
-                            <div className="flex items-center space-x-1">
-                              <MessageCircle size={14} />
-                              <span>{article.commentCount}</span>
-                            </div>
-                            <div className="flex items-center space-x-1">
-                              <TrendingUp size={14} />
-                              <span>{Math.round(article.engagementScore)}</span>
-                            </div>
-                            <div className="flex items-center space-x-1">
-                              <Clock size={14} />
-                              <span>{formatTimeAgo(article.createdAt)}</span>
-                            </div>
-                          </div>                          
-                          {/* Author */}
-                          {article.author && (
-                            <div className="mt-3 text-sm text-gray-400">
-                              Bởi {article.author.firstName} {article.author.lastName}
-                            </div>
-                          )}
+                          <div className="flex items-center space-x-1">
+                            <MessageCircle size={12} />
+                            <span>{article.commentCount}</span>
+                          </div>
+                          <div className="flex items-center space-x-1">
+                            <Clock size={12} />
+                            <span>{formatTimeAgo(article.createdAt)}</span>
+                          </div>
                         </div>
-                        
-                        {/* External Link Icon */}
-                        <div className="flex-shrink-0">
-                          <ExternalLink size={18} className="text-gray-400 group-hover:text-blue-500 transition-colors" />
-                        </div>
+                      </div>
+
+                      {/* External Link Icon */}
+                      <div className="flex-shrink-0">
+                        <ExternalLink size={16} className="text-gray-400 group-hover:text-blue-500 transition-colors" />
+                      </div>
                     </div>
-                  </motion.div>
-                ))}
+                </div>
+              </motion.div>
+            ))}
           </div>
         )}
-          {/* View All Link */}
+
+        {/* View All Link */}
         {trendingArticles.length > 0 && (
-          <div className="mt-8 pt-6 border-t border-gray-200 dark:border-gray-700">
+          <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
             <button
               onClick={() => window.location.href = '/community?sort=trending'}
-              className={`w-full text-center text-base font-semibold py-3 px-6 rounded-xl transition-all duration-200 hover:scale-105 ${
-                isDarkMode 
-                  ? 'text-blue-400 hover:bg-blue-900/20 border border-blue-400/20 hover:border-blue-400/40' 
+              className={`w-full text-center text-sm font-semibold py-3 px-4 rounded-xl transition-all duration-300 hover:scale-105 ${
+                isDarkMode
+                  ? 'text-blue-400 hover:bg-blue-900/20 border border-blue-400/20 hover:border-blue-400/40'
                   : 'text-blue-600 hover:bg-blue-50 border border-blue-200 hover:border-blue-300'
               }`}
             >
-              Xem tất cả bài viết thịnh hành →
+              Xem tất cả →
             </button>
           </div>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 };
 

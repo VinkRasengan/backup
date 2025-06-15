@@ -60,13 +60,33 @@ const ScrollTriggeredSection = ({
         slideInRotate: {
           from: { opacity: 0, y: 100, rotation: 10 },
           to: { opacity: 1, y: 0, rotation: 0, duration: 1, ease: "power3.out" }
+        },
+        slideInFromSides: {
+          from: { opacity: 0, x: 0, y: 50 },
+          to: { opacity: 1, x: 0, y: 0, duration: 1, ease: "power3.out" }
         }
       };
 
       const config = animations[animation] || animations.fadeInUp;
 
-      // Set initial state
-      gsap.set(elements, config.from);
+      // Special handling for slideInFromSides animation
+      if (animation === 'slideInFromSides') {
+        Array.from(elements).forEach((element, index) => {
+          const isLeft = element.classList.contains('scroll-trigger-left');
+          const isRight = element.classList.contains('scroll-trigger-right');
+
+          if (isLeft) {
+            gsap.set(element, { opacity: 0, x: -100, y: 30 });
+          } else if (isRight) {
+            gsap.set(element, { opacity: 0, x: 100, y: 30 });
+          } else {
+            gsap.set(element, config.from);
+          }
+        });
+      } else {
+        // Set initial state for other animations
+        gsap.set(elements, config.from);
+      }
 
       // Create ScrollTrigger
       const scrollTriggerConfig = {
@@ -76,10 +96,26 @@ const ScrollTriggeredSection = ({
         pin: pin,
         scrub: scrub,
         onEnter: () => {
-          gsap.to(elements, {
-            ...config.to,
-            stagger: stagger
-          });
+          if (animation === 'slideInFromSides') {
+            Array.from(elements).forEach((element, index) => {
+              const isLeft = element.classList.contains('scroll-trigger-left');
+              const isRight = element.classList.contains('scroll-trigger-right');
+
+              gsap.to(element, {
+                opacity: 1,
+                x: 0,
+                y: 0,
+                duration: 1.2,
+                ease: "power3.out",
+                delay: index * stagger
+              });
+            });
+          } else {
+            gsap.to(elements, {
+              ...config.to,
+              stagger: stagger
+            });
+          }
         },
         onLeave: () => {
           if (scrub) {

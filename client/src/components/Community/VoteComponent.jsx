@@ -10,18 +10,29 @@ import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import { useCounterAnimation, useHoverAnimation } from '../../hooks/useGSAP';
 import { gsap } from '../../utils/gsap';
+import { usePostVote } from '../../hooks/useBatchVotes';
 
 const VoteComponent = ({ linkId, postData, className = '' }) => {
   const { user } = useAuth();
   const { isDarkMode } = useTheme();
-  const [voteStats, setVoteStats] = useState({
+
+  // Use optimized batch voting hook
+  const { votes: batchVoteStats, userVote: batchUserVote, loading: batchLoading, submitVote } = usePostVote(linkId);
+
+  // Legacy state for fallback
+  const [legacyVoteStats, setLegacyVoteStats] = useState({
     safe: 0,
     unsafe: 0,
     suspicious: 0,
     total: 0
   });
-  const [userVote, setUserVote] = useState(null); // 'safe', 'unsafe', 'suspicious', or null
-  const [loading, setLoading] = useState(false);
+  const [legacyUserVote, setLegacyUserVote] = useState(null);
+  const [legacyLoading, setLegacyLoading] = useState(false);
+
+  // Use batch data if available, otherwise fallback to legacy
+  const voteStats = batchVoteStats.total > 0 ? batchVoteStats : legacyVoteStats;
+  const userVote = batchUserVote !== null ? batchUserVote : legacyUserVote;
+  const loading = batchLoading || legacyLoading;
 
   // GSAP refs and animations
   const [counterRef, startCounterAnimation] = useCounterAnimation(voteStats.total, {
@@ -49,27 +60,28 @@ const VoteComponent = ({ linkId, postData, className = '' }) => {
   // Load vote data on component mount
   useEffect(() => {
     if (postData && postData.voteStats) {
-      // Use data from post
+      // Use data from post for legacy fallback
       const newStats = {
         safe: postData.voteStats.safe || 0,
         unsafe: postData.voteStats.unsafe || 0,
         suspicious: postData.voteStats.suspicious || 0,
         total: postData.voteStats.total || 0
       };
-      setVoteStats(newStats);
-      setUserVote(postData.userVote || null);
+      setLegacyVoteStats(newStats);
+      setLegacyUserVote(postData.userVote || null);
 
       // Trigger counter animation
       setTimeout(() => startCounterAnimation(), 100);
-    } else if (linkId) {
+    } else if (linkId && batchVoteStats.total === 0) {
+      // Only load legacy data if batch data is not available
       loadVoteData();
     }
 
-    // Always load user vote if user is logged in
-    if (linkId && user) {
+    // Always load user vote if user is logged in and batch data doesn't have it
+    if (linkId && user && batchUserVote === null) {
       loadUserVote();
     }
-  }, [linkId, postData, user, startCounterAnimation]);
+  }, [linkId, postData, user, startCounterAnimation, batchVoteStats.total, batchUserVote]);
 
   // Animate counter when vote stats change
   useEffect(() => {
@@ -80,7 +92,7 @@ const VoteComponent = ({ linkId, postData, className = '' }) => {
 
   const loadVoteData = async () => {
     try {
-      setLoading(true);
+      setLegacyLoading(true);
 
       // Use optimized endpoint with caching
       const token = localStorage.getItem('authToken') || localStorage.getItem('backendToken') || localStorage.getItem('token');
@@ -99,8 +111,8 @@ const VoteComponent = ({ linkId, postData, className = '' }) => {
           suspicious: data.statistics?.suspicious || 0,
           total: data.statistics?.total || 0
         };
-        setVoteStats(newStats);
-        setUserVote(data.userVote);
+        setLegacyVoteStats(newStats);
+        setLegacyUserVote(data.userVote);
 
         // Trigger counter animation
         setTimeout(() => startCounterAnimation(), 100);
@@ -113,7 +125,7 @@ const VoteComponent = ({ linkId, postData, className = '' }) => {
       // Fallback to regular endpoint
       await loadVoteDataFallback();
     } finally {
-      setLoading(false);
+      setLegacyLoading(false);
     }
   };
 
@@ -134,14 +146,14 @@ const VoteComponent = ({ linkId, postData, className = '' }) => {
           suspicious: data.statistics?.suspicious || 0,
           total: data.statistics?.total || 0
         };
-        setVoteStats(newStats);
-        setUserVote(data.userVote);
+        setLegacyVoteStats(newStats);
+        setLegacyUserVote(data.userVote);
       } else {
         // Generate mock data as last resort
         const safe = Math.floor(Math.random() * 50) + 10;
         const unsafe = Math.floor(Math.random() * 20);
         const suspicious = Math.floor(Math.random() * 10);
-        setVoteStats({
+        setLegacyVoteStats({
           safe,
           unsafe,
           suspicious,
@@ -154,7 +166,7 @@ const VoteComponent = ({ linkId, postData, className = '' }) => {
       const safe = Math.floor(Math.random() * 50) + 10;
       const unsafe = Math.floor(Math.random() * 20);
       const suspicious = Math.floor(Math.random() * 10);
-      setVoteStats({
+      setLegacyVoteStats({
         safe,
         unsafe,
         suspicious,
@@ -177,7 +189,7 @@ const VoteComponent = ({ linkId, postData, className = '' }) => {
 
       if (response.ok) {
         const data = await response.json();
-        setUserVote(data.userVote?.voteType || null);
+        setLegacyUserVote(data.userVote?.voteType || null);
       }
     } catch (error) {
       console.error('Error loading user vote:', error);
@@ -190,8 +202,19 @@ const VoteComponent = ({ linkId, postData, className = '' }) => {
       return;
     }
 
+    // Try to use optimized batch voting first
+    if (submitVote) {
+      try {
+        await submitVote(voteType);
+        return;
+      } catch (error) {
+        console.error('Batch vote failed, falling back to legacy:', error);
+      }
+    }
+
+    // Fallback to legacy voting
     try {
-      setLoading(true);
+      setLegacyLoading(true);
       const isUnvote = userVote === voteType;
       const oldVote = userVote;
 
@@ -210,19 +233,19 @@ const VoteComponent = ({ linkId, postData, className = '' }) => {
         });
       }
 
-      // Optimistic update
+      // Optimistic update for legacy state
       if (isUnvote) {
         // Remove vote
-        setUserVote(null);
-        setVoteStats(prev => ({
+        setLegacyUserVote(null);
+        setLegacyVoteStats(prev => ({
           ...prev,
           [voteType]: Math.max(0, prev[voteType] - 1),
           total: Math.max(0, prev.total - 1)
         }));
       } else {
         // Add/change vote
-        setUserVote(voteType);
-        setVoteStats(prev => {
+        setLegacyUserVote(voteType);
+        setLegacyVoteStats(prev => {
           let newStats = { ...prev };
 
           // Remove old vote if exists
@@ -271,18 +294,18 @@ const VoteComponent = ({ linkId, postData, className = '' }) => {
       console.error('Vote error:', error);
       // Revert changes on error
       if (postData && postData.voteStats) {
-        setVoteStats({
+        setLegacyVoteStats({
           safe: postData.voteStats.safe || 0,
           unsafe: postData.voteStats.unsafe || 0,
           suspicious: postData.voteStats.suspicious || 0,
           total: postData.voteStats.total || 0
         });
-        setUserVote(postData.userVote || null);
+        setLegacyUserVote(postData.userVote || null);
       } else if (linkId) {
         await loadVoteData();
       }
     } finally {
-      setLoading(false);
+      setLegacyLoading(false);
     }
   };
 

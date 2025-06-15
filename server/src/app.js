@@ -58,7 +58,7 @@ try {
 }
 
 const app = express();
-const PORT = process.env.PORT || 5001;
+const PORT = process.env.PORT || 5000;
 
 // Production environment check
 const isProduction = process.env.NODE_ENV === 'production'; // Changed from 5000 to avoid Firebase hosting conflict

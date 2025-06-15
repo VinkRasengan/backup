@@ -1,0 +1,94 @@
+/* ULTIMATE SCROLL FIX - Eliminates dual scrollbar issue completely */
+
+/* Force single scroll container approach */
+html {
+  overflow: hidden !important;
+  height: 100% !important;
+  width: 100% !important;
+}
+
+body {
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  height: 100vh !important;
+  width: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  position: relative !important;
+}
+
+#root {
+  overflow: visible !important;
+  height: auto !important;
+  min-height: 100vh !important;
+  width: 100% !important;
+  position: relative !important;
+}
+
+/* Reset all potential scroll containers */
+div, section, main, article, aside, nav, header, footer {
+  overflow: visible !important;
+  height: auto !important;
+  max-height: none !important;
+}
+
+/* Specific layout fixes */
+.nav-container,
+.nav-content,
+.nav-transition {
+  overflow: visible !important;
+  height: auto !important;
+}
+
+/* Tailwind class overrides */
+.min-h-screen {
+  min-height: 0 !important;
+}
+
+.overflow-hidden,
+.overflow-auto,
+.overflow-y-auto,
+.overflow-y-scroll {
+  overflow: visible !important;
+}
+
+.h-screen,
+.h-full {
+  height: auto !important;
+}
+
+/* Allow specific components to scroll when needed */
+.chat-messages,
+.messages-area,
+.messenger-messages,
+.scrollable-content {
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  max-height: 400px !important;
+}
+
+/* Widget containers should not create scroll */
+.widget-container,
+.floating-widget,
+.fixed,
+.absolute {
+  overflow: visible !important;
+}
+
+/* Ensure no iframe or embedded content creates scroll */
+iframe {
+  overflow: hidden !important;
+}
+
+/* Mobile specific fixes */
+@media (max-width: 768px) {
+  body {
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+  }
+  
+  .chat-messages,
+  .messages-area {
+    max-height: 300px !important;
+  }
+}

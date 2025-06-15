@@ -1,6 +1,19 @@
 // System Test Utilities for FactCheck Application
 // Tests chat interface, homepage layout, and overall system functionality
 
+// Get API base URL (same logic as api.js)
+const getApiBaseUrl = () => {
+  if (process.env.REACT_APP_API_URL) {
+    return process.env.REACT_APP_API_URL;
+  }
+
+  if (process.env.NODE_ENV === 'production') {
+    return '/api';
+  }
+
+  return 'http://localhost:5000/api';
+};
+
 class SystemTest {
   constructor() {
     this.results = [];
@@ -18,7 +31,7 @@ class SystemTest {
 
       // Test 2: Test Gemini API endpoint
       const testMessage = 'Hello, this is a test message';
-      const response = await fetch('/api/chat/gemini', {
+      const response = await fetch(`${getApiBaseUrl()}/chat/gemini`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

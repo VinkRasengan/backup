@@ -5,6 +5,7 @@ import { useAuth } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { initAccessibility } from './utils/accessibility';
 import { globalCleanup } from './utils/requestOptimizer';
+import './utils/scrollDebugger';
 
 // Pages
 import HomePage from './pages/HomePage';

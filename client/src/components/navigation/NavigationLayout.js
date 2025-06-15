@@ -11,6 +11,7 @@ import NotificationWidget from '../widgets/NotificationWidget';
 import QuickActionWidget from '../widgets/QuickActionWidget';
 import PerformanceMonitor from '../testing/PerformanceMonitor';
 import TestingDashboard from '../testing/TestingDashboard';
+import ScrollDebugPanel from '../debug/ScrollDebugPanel';
 import { cn } from '../../utils/cn';
 
 const NavigationLayout = ({ children, showHamburger = true, className, ...props }) => {
@@ -53,12 +54,13 @@ const NavigationLayout = ({ children, showHamburger = true, className, ...props 
   const hideNavigation = ['/login', '/register'].includes(location.pathname) || (!user && location.pathname === '/');
 
   return (
-    <div 
+    <div
       className={cn(
-        'min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-300',
+        'bg-gray-50 dark:bg-gray-900 transition-colors duration-300 min-h-screen',
         className
       )}
       data-theme={isDarkMode ? 'dark' : 'light'}
+      style={{ overflow: 'visible', height: 'auto' }}
       {...props}
     >
       {/* Hamburger Menu Button */}
@@ -76,7 +78,10 @@ const NavigationLayout = ({ children, showHamburger = true, className, ...props 
           onToggle={toggleSidebar}
         />
       )}      {/* Main Content */}
-      <div className={`nav-content nav-transition ${sidebarOpen && !hideNavigation ? 'nav-container with-sidebar' : 'nav-container'}`}>
+      <div
+        className={`nav-content nav-transition ${sidebarOpen && !hideNavigation ? 'nav-container with-sidebar' : 'nav-container'}`}
+        style={{ overflow: 'visible', height: 'auto', minHeight: 'auto' }}
+      >
         {children}
       </div>
 
@@ -103,8 +108,11 @@ const NavigationLayout = ({ children, showHamburger = true, className, ...props 
       {/* Mobile Navigation Bar */}
       <MobileTabBar />
 
+      {/* Debug Tools */}
+      <ScrollDebugPanel />
+
       {/* Accessibility Skip Link */}
-      <a 
+      <a
         href="#main-content"
         className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 bg-blue-600 text-white px-4 py-2 rounded-md z-50"
       >

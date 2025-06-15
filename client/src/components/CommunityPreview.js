@@ -11,6 +11,19 @@ import {
 import { useTheme } from '../context/ThemeContext';
 import { gsap } from '../utils/gsap';
 
+// Get API base URL (same logic as api.js)
+const getApiBaseUrl = () => {
+  if (process.env.REACT_APP_API_URL) {
+    return process.env.REACT_APP_API_URL;
+  }
+
+  if (process.env.NODE_ENV === 'production') {
+    return '/api';
+  }
+
+  return 'http://localhost:5000/api';
+};
+
 const CommunityPreview = () => {
   const { isDarkMode } = useTheme();
   const [posts, setPosts] = useState([]);
@@ -78,7 +91,7 @@ const CommunityPreview = () => {
         const headers = { 'Content-Type': 'application/json' };
         if (token) headers['Authorization'] = `Bearer ${token}`;
 
-        const response = await fetch('http://localhost:5000/api/community/posts?limit=4&sort=trending', { headers });
+        const response = await fetch(`${getApiBaseUrl()}/community/posts?limit=4&sort=trending`, { headers });
 
         console.log('📡 Community API Response status:', response.status);
 
@@ -303,7 +316,8 @@ const CommunityPreview = () => {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-4 text-xs">
                     <div className="flex items-center space-x-1">
-                      <Clock className="w-3 h-3" />                      <span className="text-gray-500 dark:text-gray-500">
+                      <Clock className="w-3 h-3" />
+                      <span className="text-gray-500 dark:text-gray-500">
                         {formatTime(post.createdAt)}
                       </span>
                     </div>

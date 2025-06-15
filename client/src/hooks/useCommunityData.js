@@ -1,4 +1,17 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef } from 'react';
+
+// Get API base URL (same logic as api.js)
+const getApiBaseUrl = () => {
+  if (process.env.REACT_APP_API_URL) {
+    return process.env.REACT_APP_API_URL;
+  }
+
+  if (process.env.NODE_ENV === 'production') {
+    return '/api';
+  }
+
+  return 'http://localhost:5000/api';
+};
 
 // Smart Community Data Manager with Caching & Prefetching
 class CommunityDataManager {
@@ -138,7 +151,7 @@ class CommunityDataManager {
                  localStorage.getItem('backendToken') ||
                  localStorage.getItem('firebaseToken');
 
-    const response = await fetch(`/api/community/posts?${urlParams}`, {
+    const response = await fetch(`${getApiBaseUrl()}/community/posts?${urlParams}`, {
       headers: {
         'Authorization': `Bearer ${token}`,
         'Cache-Control': 'max-age=300', // 5 minutes cache

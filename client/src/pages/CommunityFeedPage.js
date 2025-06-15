@@ -22,6 +22,7 @@ import CommentsSection from '../components/Community/CommentsSection';
 import CommentPreview from '../components/Community/CommentPreview';
 import ReportModal from '../components/Community/ReportModal';
 import RequestMonitor from '../components/Community/RequestMonitor';
+import { useBatchVotes } from '../hooks/useBatchVotes';
 import { useStaggerAnimation, useFadeIn } from '../hooks/useGSAP';
 import PageLayout from '../components/layout/PageLayout';
 
@@ -39,6 +40,9 @@ const CommunityFeedPage = () => {
   const [viewMode, setViewMode] = useState('card'); // card, list, compact
   const [autoRefresh, setAutoRefresh] = useState(false);
   const [showImages, setShowImages] = useState(true);
+
+  // Batch votes optimization
+  const { preloadVotes } = useBatchVotes();
   const [showRequestMonitor, setShowRequestMonitor] = useState(false);
 
   // Refs for debouncing and stable references
@@ -70,6 +74,17 @@ const CommunityFeedPage = () => {
 
   // Extract data from hook
   const articles = communityData.posts || [];
+
+  // Preload votes for visible articles
+  useEffect(() => {
+    if (articles.length > 0) {
+      const postIds = articles.map(article => article.id).filter(Boolean);
+      if (postIds.length > 0) {
+        console.log('🚀 Preloading votes for', postIds.length, 'posts');
+        preloadVotes(postIds);
+      }
+    }
+  }, [articles, preloadVotes]);
 
   // GSAP animations
   const headerRef = useFadeIn('fadeInUp', 0.2);

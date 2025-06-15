@@ -11,6 +11,7 @@
 @import './styles/optimizations.css';
 @import './styles/navigation-layout.css';
 @import './styles/vietnamese-design-system.css';
+@import './styles/scroll-fix.css';
 
 @layer base {
   :root {
@@ -75,8 +76,9 @@
   }
 
   #root {
-    min-height: 100vh;
     overflow-x: hidden;
+    min-height: 100vh;
+    height: auto;
   }
 }
 

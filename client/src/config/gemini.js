@@ -1,10 +1,23 @@
+// Get API base URL (same logic as api.js)
+const getApiBaseUrl = () => {
+  if (process.env.REACT_APP_API_URL) {
+    return process.env.REACT_APP_API_URL;
+  }
+
+  if (process.env.NODE_ENV === 'production') {
+    return '/api';
+  }
+
+  return 'http://localhost:5000/api';
+};
+
 // Cấu hình Gemini API cho client
 const geminiConfig = {
   // Endpoints
   endpoints: {
-    chat: '/api/chat/gemini',
-    test: '/api/chat/test-gemini',
-    analyze: '/api/analyze/gemini'
+    chat: `${getApiBaseUrl()}/chat/gemini`,
+    test: `${getApiBaseUrl()}/chat/test-gemini`,
+    analyze: `${getApiBaseUrl()}/analyze/gemini`
   },
 
   // Cấu hình mặc định cho chat UI

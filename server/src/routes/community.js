@@ -417,4 +417,24 @@ router.get('/optimized/user-profile/:userId', authenticateToken, async (req, res
     }
 });
 
+/**
+ * @route POST /api/community/votes/batch
+ * @desc Get votes for multiple posts in batch (optimization)
+ * @access Public
+ * @body {string[]} postIds - Array of post IDs (max 10)
+ */
+router.post('/votes/batch', injectCommunityController, (req, res) => {
+    req.communityController.getBatchVotes(req, res);
+});
+
+/**
+ * @route POST /api/community/votes/batch/user
+ * @desc Get user votes for multiple posts in batch
+ * @access Private
+ * @body {string[]} postIds - Array of post IDs (max 10)
+ */
+router.post('/votes/batch/user', authenticateToken, injectCommunityController, (req, res) => {
+    req.communityController.getBatchUserVotes(req, res);
+});
+
 module.exports = router;

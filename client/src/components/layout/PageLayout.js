@@ -35,10 +35,9 @@ const PageLayout = ({
   };
 
   return (
-    <div 
+    <div
       id="main-content"
       className={cn(
-        'min-h-screen',
         className
       )}
       {...props}

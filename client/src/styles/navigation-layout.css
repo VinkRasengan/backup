@@ -1,12 +1,11 @@
 /* Navigation Layout Optimizations */
 
-/* Fix double scroll issue - Ensure proper container behavior */
+/* Fix double scroll issue - Remove height constraints from container */
 .nav-container {
   position: relative;
-  min-height: 100vh;
-  max-height: 100vh;
   overflow-x: hidden;
-  overflow-y: auto;
+  overflow-y: visible;
+  height: auto;
   transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
@@ -84,10 +83,10 @@
 
 /* Ensure content doesn't jump and fix scroll issues */
 .nav-content {
-  min-height: 100vh;
   width: 100%;
-  overflow-x: hidden;
   position: relative;
+  overflow-y: visible;
+  height: auto;
 }
 
 /* Fix for potential z-index conflicts */

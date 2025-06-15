@@ -67,7 +67,7 @@ class FirestoreCommunityController {
         }
     }
 
-    // Legacy method as fallback
+    // Optimized method with aggregated data
     async getCommunityPostsLegacy(req, res) {
         try {
             const {
@@ -78,7 +78,9 @@ class FirestoreCommunityController {
                 limit = 10
             } = req.query;
 
-            // Base query
+            console.log('🚀 Using optimized query with aggregated vote data');
+
+            // Base query with ordering
             let query = this.db.collection('links');
 
             // Filter by category if specified
@@ -86,85 +88,114 @@ class FirestoreCommunityController {
                 query = query.where('category', '==', category);
             }
 
-            // Get all documents first (Firestore has limited query capabilities)
+            // Add ordering based on sort type
+            if (sort === 'newest') {
+                query = query.orderBy('createdAt', 'desc');
+            }
+
+            // Apply pagination
+            query = query.limit(parseInt(limit));
+            if (page > 1) {
+                const offset = (page - 1) * parseInt(limit);
+                // For simplicity, we'll get all and slice (in production, use cursor-based pagination)
+                query = query.limit(offset + parseInt(limit));
+            }
+
             const snapshot = await query.get();
             let posts = [];
 
-            for (const doc of snapshot.docs) {
-                const linkData = doc.data();
-                
-                // Get votes for this link
-                const votesSnapshot = await this.db.collection('votes')
-                    .where('linkId', '==', doc.id)
-                    .get();
-                
-                const votes = { safe: 0, unsafe: 0, suspicious: 0 };
-                votesSnapshot.forEach(voteDoc => {
-                    const vote = voteDoc.data();
-                    votes[vote.voteType]++;
+            // Process documents in batches for better performance
+            const batchSize = 10;
+            const docs = snapshot.docs;
+
+            for (let i = 0; i < docs.length; i += batchSize) {
+                const batch = docs.slice(i, i + batchSize);
+                const batchPromises = batch.map(async (doc) => {
+                    const linkData = doc.data();
+
+                    // Use aggregated vote data if available, otherwise calculate
+                    let votes = linkData.voteStats || { safe: 0, unsafe: 0, suspicious: 0 };
+                    let commentsCount = linkData.commentsCount || 0;
+
+                    // If no aggregated data, calculate (fallback)
+                    if (!linkData.voteStats) {
+                        const [votesSnapshot, commentsSnapshot] = await Promise.all([
+                            this.db.collection('votes').where('linkId', '==', doc.id).get(),
+                            this.db.collection('comments').where('linkId', '==', doc.id).get()
+                        ]);
+
+                        votes = { safe: 0, unsafe: 0, suspicious: 0 };
+                        votesSnapshot.forEach(voteDoc => {
+                            const vote = voteDoc.data();
+                            votes[vote.voteType]++;
+                        });
+
+                        commentsCount = commentsSnapshot.size;
+
+                        // Update document with aggregated data for future queries
+                        this.updateAggregatedData(doc.id, votes, commentsCount);
+                    }
+
+                    // Get user info
+                    let author = { id: 'unknown', name: 'Unknown User', avatar: '' };
+                    if (linkData.submittedBy) {
+                        try {
+                            const userDoc = await this.db.collection('users').doc(linkData.submittedBy).get();
+                            if (userDoc.exists) {
+                                const userData = userDoc.data();
+                                author = {
+                                    id: linkData.submittedBy,
+                                    name: userData.displayName || `${userData.firstName} ${userData.lastName}`,
+                                    avatar: userData.avatarUrl || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(userData.displayName || 'User')
+                                };
+                            }
+                        } catch (userError) {
+                            console.warn('Failed to fetch user data:', userError);
+                        }
+                    }
+
+                    // Calculate trust score based on votes and status
+                    const totalVotes = votes.safe + votes.unsafe + votes.suspicious;
+                    let trustScore = 50; // Default
+                    if (totalVotes > 0) {
+                        trustScore = Math.round((votes.safe / totalVotes) * 100);
+                    }
+                    if (linkData.status === 'safe') trustScore = Math.max(trustScore, 70);
+                    if (linkData.status === 'unsafe') trustScore = Math.min(trustScore, 30);
+
+                    const post = {
+                        id: doc.id,
+                        type: 'community_post',
+                        title: linkData.title || 'Untitled Link',
+                        content: linkData.description || 'No description available',
+                        url: linkData.url,
+                        imageUrl: linkData.screenshot || linkData.imageUrl || null,
+                        author,
+                        source: 'Community',
+                        category: this.mapStatusToCategory(linkData.status),
+                        tags: this.generateTags(linkData),
+                        voteStats: {
+                            safe: votes.safe,
+                            unsafe: votes.unsafe,
+                            suspicious: votes.suspicious,
+                            total: totalVotes
+                        },
+                        userVote: null, // TODO: Get user's vote if authenticated
+                        commentsCount: commentsCount,
+                        createdAt: linkData.createdAt?.toDate?.()?.toISOString() || new Date().toISOString(),
+                        isVerified: linkData.status === 'safe',
+                        trustScore,
+                        status: linkData.status,
+                        scanResults: linkData.scanResults || {},
+                        metadata: linkData.metadata || {},
+                        screenshot: linkData.screenshot || null
+                    };
+
+                    return post;
                 });
 
-                // Get comments count
-                const commentsSnapshot = await this.db.collection('comments')
-                    .where('linkId', '==', doc.id)
-                    .get();
-
-                // Get user info
-                let author = { id: 'unknown', name: 'Unknown User', avatar: '' };
-                if (linkData.submittedBy) {
-                    try {
-                        const userDoc = await this.db.collection('users').doc(linkData.submittedBy).get();
-                        if (userDoc.exists) {
-                            const userData = userDoc.data();
-                            author = {
-                                id: linkData.submittedBy,
-                                name: userData.displayName || `${userData.firstName} ${userData.lastName}`,
-                                avatar: userData.avatarUrl || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(userData.displayName || 'User')
-                            };
-                        }
-                    } catch (userError) {
-                        console.warn('Failed to fetch user data:', userError);
-                    }
-                }
-
-                // Calculate trust score based on votes and status
-                const totalVotes = votes.safe + votes.unsafe + votes.suspicious;
-                let trustScore = 50; // Default
-                if (totalVotes > 0) {
-                    trustScore = Math.round((votes.safe / totalVotes) * 100);
-                }
-                if (linkData.status === 'safe') trustScore = Math.max(trustScore, 70);
-                if (linkData.status === 'unsafe') trustScore = Math.min(trustScore, 30);
-
-                const post = {
-                    id: doc.id,
-                    type: 'community_post',
-                    title: linkData.title || 'Untitled Link',
-                    content: linkData.description || 'No description available',
-                    url: linkData.url,
-                    imageUrl: linkData.screenshot || linkData.imageUrl || null,
-                    author,
-                    source: 'Community',
-                    category: this.mapStatusToCategory(linkData.status),
-                    tags: this.generateTags(linkData),
-                    voteStats: {
-                        safe: votes.safe,
-                        unsafe: votes.unsafe,
-                        suspicious: votes.suspicious,
-                        total: totalVotes
-                    },
-                    userVote: null, // TODO: Get user's vote if authenticated
-                    commentsCount: commentsSnapshot.size,
-                    createdAt: linkData.createdAt?.toDate?.()?.toISOString() || new Date().toISOString(),
-                    isVerified: linkData.status === 'safe',
-                    trustScore,
-                    status: linkData.status,
-                    scanResults: linkData.scanResults || {},
-                    metadata: linkData.metadata || {},
-                    screenshot: linkData.screenshot || null
-                };
-
-                posts.push(post);
+                const batchResults = await Promise.all(batchPromises);
+                posts.push(...batchResults);
             }
 
             // Apply search filter
@@ -324,11 +355,85 @@ class FirestoreCommunityController {
     mapStatusToCategory(status) {
         const mapping = {
             'safe': 'security',
-            'unsafe': 'security', 
+            'unsafe': 'security',
             'suspicious': 'security',
             'pending': 'general'
         };
         return mapping[status] || 'general';
+    }
+
+    // Update aggregated data for better performance
+    async updateAggregatedData(linkId, votes, commentsCount) {
+        try {
+            if (this.db) {
+                await this.db.collection('links').doc(linkId).update({
+                    voteStats: votes,
+                    commentsCount: commentsCount,
+                    lastUpdated: new Date()
+                });
+            }
+        } catch (error) {
+            console.warn('Failed to update aggregated data:', error);
+        }
+    }
+
+    // Fallback method when Firestore is not available
+    async getCommunityPostsFallback(req, res) {
+        try {
+            console.log('🔄 Using fallback data for community posts');
+
+            // Return mock data when Firestore is not available
+            const mockPosts = [
+                {
+                    id: 'mock-1',
+                    type: 'community_post',
+                    title: 'Sample Community Post',
+                    content: 'This is a sample post when database is not available',
+                    url: 'https://example.com',
+                    imageUrl: null,
+                    author: { id: 'demo', name: 'Demo User', avatar: '' },
+                    source: 'Community',
+                    category: 'general',
+                    tags: ['demo', 'fallback'],
+                    voteStats: { safe: 5, unsafe: 1, suspicious: 0, total: 6 },
+                    userVote: null,
+                    commentsCount: 2,
+                    createdAt: new Date().toISOString(),
+                    isVerified: false,
+                    trustScore: 83,
+                    status: 'pending'
+                }
+            ];
+
+            res.json({
+                success: true,
+                data: {
+                    posts: mockPosts,
+                    pagination: {
+                        currentPage: 1,
+                        totalPages: 1,
+                        totalPosts: mockPosts.length,
+                        hasNext: false,
+                        hasPrev: false
+                    }
+                },
+                filters: {
+                    sort: 'newest',
+                    category: 'all',
+                    search: null
+                },
+                timestamp: new Date().toISOString(),
+                note: 'Using fallback data - Firestore not available'
+            });
+
+        } catch (error) {
+            console.error('Fallback method error:', error);
+            res.status(500).json({
+                success: false,
+                error: 'Failed to fetch community posts',
+                message: error.message
+            });
+        }
     }
 
     generateTags(linkData) {
@@ -615,6 +720,113 @@ class FirestoreCommunityController {
         }
     }
 
+    // Get votes for multiple posts in batch (optimization)
+    async getBatchVotes(req, res) {
+        try {
+            const { postIds } = req.body;
+
+            if (!postIds || !Array.isArray(postIds)) {
+                return res.status(400).json({
+                    success: false,
+                    error: 'postIds array is required'
+                });
+            }
+
+            if (!this.db) {
+                throw new Error('Firestore not initialized');
+            }
+
+            console.log('🚀 Batch fetching votes for', postIds.length, 'posts');
+
+            // Get all votes for these posts in one query
+            const votesSnapshot = await this.db.collection('votes')
+                .where('linkId', 'in', postIds.slice(0, 10)) // Firestore 'in' limit is 10
+                .get();
+
+            // Aggregate votes by post ID
+            const votesByPost = {};
+            postIds.forEach(postId => {
+                votesByPost[postId] = { safe: 0, unsafe: 0, suspicious: 0, total: 0 };
+            });
+
+            votesSnapshot.forEach(doc => {
+                const vote = doc.data();
+                if (votesByPost[vote.linkId]) {
+                    votesByPost[vote.linkId][vote.voteType]++;
+                    votesByPost[vote.linkId].total++;
+                }
+            });
+
+            res.json({
+                success: true,
+                data: votesByPost,
+                timestamp: new Date().toISOString()
+            });
+
+        } catch (error) {
+            console.error('Batch votes error:', error);
+            res.status(500).json({
+                success: false,
+                error: 'Failed to fetch batch votes',
+                message: error.message
+            });
+        }
+    }
+
+    // Get user votes for multiple posts in batch
+    async getBatchUserVotes(req, res) {
+        try {
+            const { postIds } = req.body;
+            const userId = req.user?.userId;
+
+            if (!postIds || !Array.isArray(postIds)) {
+                return res.status(400).json({
+                    success: false,
+                    error: 'postIds array is required'
+                });
+            }
+
+            if (!userId) {
+                return res.status(401).json({
+                    success: false,
+                    error: 'Authentication required'
+                });
+            }
+
+            if (!this.db) {
+                throw new Error('Firestore not initialized');
+            }
+
+            console.log('🚀 Batch fetching user votes for', postIds.length, 'posts');
+
+            // Get user's votes for these posts
+            const userVotesSnapshot = await this.db.collection('votes')
+                .where('linkId', 'in', postIds.slice(0, 10))
+                .where('userId', '==', userId)
+                .get();
+
+            const userVotesByPost = {};
+            userVotesSnapshot.forEach(doc => {
+                const vote = doc.data();
+                userVotesByPost[vote.linkId] = vote.voteType;
+            });
+
+            res.json({
+                success: true,
+                data: userVotesByPost,
+                timestamp: new Date().toISOString()
+            });
+
+        } catch (error) {
+            console.error('Batch user votes error:', error);
+            res.status(500).json({
+                success: false,
+                error: 'Failed to fetch batch user votes',
+                message: error.message
+            });
+        }
+    }
+
     // Analyze a specific post with AI
     async analyzePost(req, res) {
         try {
@@ -690,112 +902,7 @@ class FirestoreCommunityController {
         }
     }
 
-    // Fallback method when Firestore is not available
-    getCommunityPostsFallback(req, res) {
-        const {
-            sort = 'newest',
-            category = 'all',
-            search = '',
-            page = 1,
-            limit = 10
-        } = req.query;
 
-        // Sample fallback data
-        const fallbackPosts = [
-            {
-                id: 'fallback_1',
-                type: 'community_post',
-                title: 'Cảnh báo: Website lừa đảo mạo danh ngân hàng',
-                content: 'Phát hiện website giả mạo giao diện ngân hàng để đánh cắp thông tin tài khoản.',
-                url: 'https://example-scam-site.com',
-                imageUrl: null,
-                author: {
-                    id: 'system',
-                    name: 'FactCheck System',
-                    avatar: 'https://ui-avatars.com/api/?name=FactCheck'
-                },
-                source: 'Community',
-                category: 'security',
-                tags: ['scam', 'banking', 'phishing'],
-                voteStats: { safe: 2, unsafe: 15, suspicious: 3, total: 20 },
-                userVote: null,
-                commentsCount: 8,
-                createdAt: new Date(Date.now() - 86400000).toISOString(),
-                isVerified: false,
-                trustScore: 25,
-                status: 'unsafe'
-            },
-            {
-                id: 'fallback_2',
-                type: 'community_post',
-                title: 'Website chính thức của Bộ Y tế về COVID-19',
-                content: 'Trang web chính thức cung cấp thông tin cập nhật về tình hình dịch bệnh.',
-                url: 'https://moh.gov.vn',
-                imageUrl: null,
-                author: {
-                    id: 'verified_user',
-                    name: 'Verified User',
-                    avatar: 'https://ui-avatars.com/api/?name=Verified'
-                },
-                source: 'Community',
-                category: 'health',
-                tags: ['official', 'health', 'government'],
-                voteStats: { safe: 25, unsafe: 0, suspicious: 1, total: 26 },
-                userVote: null,
-                commentsCount: 12,
-                createdAt: new Date(Date.now() - 172800000).toISOString(),
-                isVerified: true,
-                trustScore: 95,
-                status: 'safe'
-            }
-        ];
-
-        // Apply filters and pagination
-        let filteredPosts = fallbackPosts;
-
-        if (search) {
-            const searchLower = search.toLowerCase();
-            filteredPosts = filteredPosts.filter(post =>
-                post.title.toLowerCase().includes(searchLower) ||
-                post.content.toLowerCase().includes(searchLower)
-            );
-        }
-
-        // Sort
-        if (sort === 'trending') {
-            filteredPosts.sort((a, b) => {
-                const aScore = a.voteStats.total * a.trustScore;
-                const bScore = b.voteStats.total * b.trustScore;
-                return bScore - aScore;
-            });
-        }
-
-        // Pagination
-        const startIndex = (page - 1) * limit;
-        const endIndex = startIndex + parseInt(limit);
-        const paginatedPosts = filteredPosts.slice(startIndex, endIndex);
-
-        res.json({
-            success: true,
-            data: {
-                posts: paginatedPosts,
-                pagination: {
-                    currentPage: parseInt(page),
-                    totalPages: Math.ceil(filteredPosts.length / limit),
-                    totalPosts: filteredPosts.length,
-                    hasNext: endIndex < filteredPosts.length,
-                    hasPrev: page > 1
-                }
-            },
-            filters: {
-                sort,
-                category,
-                search: search || null
-            },
-            timestamp: new Date().toISOString(),
-            fallback: true
-        });
-    }
 }
 
 module.exports = new FirestoreCommunityController();
