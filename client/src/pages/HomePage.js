@@ -3,6 +3,8 @@ import { Search, Shield, Users, BarChart3, BookOpen, MessageCircle } from 'lucid
 import { motion } from 'framer-motion';
 import TrendingArticles from '../components/TrendingArticles';
 import AnimatedStats from '../components/AnimatedStats';
+import CommunityPreview from '../components/CommunityPreview';
+import LatestNews from '../components/LatestNews';
 import { ActionCard } from '../components/ui/StandardCard';
 import { ResponsiveContainer, Section } from '../components/ui/ResponsiveLayout';
 import EnhancedHeroSection from '../components/hero/EnhancedHeroSection';
@@ -109,11 +111,9 @@ const HomePage = () => {
             <p className="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto leading-relaxed">
               Tham gia vào hệ sinh thái kiểm chứng thông tin toàn diện với các công cụ và tính năng tiên tiến
             </p>
-          </div>
-
-          <div className="grid grid-cols-1 xl:grid-cols-4 gap-8 lg:gap-12">
+          </div>          <div className="grid grid-cols-1 xl:grid-cols-3 gap-8 lg:gap-12">
             {/* Main Action Cards */}
-            <div className="xl:col-span-3">
+            <div className="xl:col-span-2">
               <ScrollTriggeredSection
                 animation="popIn"
                 stagger={0.15}
@@ -171,9 +171,7 @@ const HomePage = () => {
                   </div>
                 </ActionCard>
               </ScrollTriggeredSection>
-            </div>
-
-            {/* Enhanced Sidebar */}
+            </div>            {/* Enhanced Sidebar - Bigger Size */}
             <div className="xl:col-span-1">
               <div className="sticky top-8">
                 <TrendingArticles />
@@ -181,10 +179,30 @@ const HomePage = () => {
             </div>
           </div>
         </ResponsiveContainer>
-      </Section>
-
-      {/* Animated Statistics Section */}
+      </Section>      {/* Animated Statistics Section */}
       <AnimatedStats />
+
+      {/* Additional Content Cards Section */}
+      <Section className="py-16 bg-white dark:bg-gray-900">
+        <ResponsiveContainer size="xl">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl md:text-4xl font-bold mb-4 text-gray-900 dark:text-white">
+              Cập nhật mới nhất
+            </h2>
+            <p className="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto leading-relaxed">
+              Theo dõi hoạt động cộng đồng và tin tức bảo mật mới nhất
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            {/* Community Preview */}
+            <CommunityPreview />
+
+            {/* Latest News */}
+            <LatestNews />
+          </div>
+        </ResponsiveContainer>
+      </Section>
 
       {/* Features Section - Enterprise Design */}
       <Section className="py-16 bg-gradient-to-br from-gray-50 via-blue-50 to-purple-50 dark:from-gray-800 dark:via-gray-900 dark:to-gray-800">

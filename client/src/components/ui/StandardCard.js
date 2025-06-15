@@ -196,13 +196,19 @@ FeatureCard.propTypes = {
 const ActionCard = ({ icon: Icon, title, description, color = 'blue', children, ...props }) => (
   <StandardCard
     variant="interactive"
-    className="group overflow-hidden hover:shadow-xl transition-all duration-300 min-h-[280px] flex flex-col"
+    className="group overflow-hidden hover:shadow-xl transition-all duration-300 min-h-[280px] flex flex-col relative"
     {...props}
   >
-    <div className="relative z-10 flex-1 flex flex-col">
+    {/* Base gradient background */}
+    <div className={cn(
+      'absolute inset-0 transition-opacity duration-300',
+      `bg-gradient-to-br from-${color}-500 to-${color}-600`
+    )}></div>
+    
+    <div className="relative z-10 flex-1 flex flex-col p-6">
       <div className={cn(
         'w-16 h-16 mb-6 rounded-2xl flex items-center justify-center transition-all duration-300 group-hover:scale-110 group-hover:rotate-6',
-        `bg-gradient-to-br from-${color}-500 to-${color}-600 text-white shadow-lg`
+        'bg-white/20 text-white shadow-lg backdrop-blur-sm'
       )}>
         <Icon size={24} />
       </div>
@@ -218,11 +224,13 @@ const ActionCard = ({ icon: Icon, title, description, color = 'blue', children, 
         </div>
       )}
     </div>
-    {/* Animated background overlay */}
+    
+    {/* Hover overlay */}
     <div className={cn(
       'absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300',
       `bg-gradient-to-br from-${color}-400 to-${color}-700`
     )}></div>
+    
     {/* Enhanced decorative elements */}
     <div className="absolute top-4 right-4 w-3 h-3 bg-green-400 rounded-full animate-pulse shadow-lg"></div>
     <div className="absolute top-8 right-8 w-2 h-2 bg-blue-300 rounded-full animate-pulse delay-300"></div>
