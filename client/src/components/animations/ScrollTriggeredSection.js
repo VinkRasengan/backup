@@ -262,7 +262,9 @@ export const AnimatedCounter = ({
             duration: duration,
             ease: "power2.out",
             onUpdate: () => {
-              element.textContent = `${prefix}${Math.ceil(obj.value).toLocaleString()}${suffix}`;
+              if (element && element.textContent !== undefined) {
+                element.textContent = `${prefix}${Math.ceil(obj.value).toLocaleString()}${suffix}`;
+              }
             }
           });
         }

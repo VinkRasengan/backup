@@ -5,6 +5,8 @@ import { communityAPI } from '../../services/api';
 import { MessageCircle, ChevronDown, Send, User } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
+// Import mock service to enable mock data
+import '../../services/mockCommentsService';
 
 const CommentPreview = ({ linkId, onToggleFullComments }) => {
   const { user } = useAuth();
@@ -21,6 +23,7 @@ const CommentPreview = ({ linkId, onToggleFullComments }) => {
     if (linkId) {
       loadPreviewComments();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [linkId]);
 
   const loadPreviewComments = async () => {
@@ -124,9 +127,9 @@ const CommentPreview = ({ linkId, onToggleFullComments }) => {
       <div className="flex items-center justify-between mb-3">
         <button
           onClick={onToggleFullComments}
-          className={`flex items-center space-x-2 text-sm ${
-            isDarkMode ? 'text-gray-300 hover:text-white' : 'text-gray-600 hover:text-gray-900'
-          } transition-colors`}
+          className={`flex items-center space-x-2 text-sm font-medium transition-colors ${
+            isDarkMode ? 'text-gray-300 hover:text-blue-400' : 'text-gray-600 hover:text-blue-600'
+          }`}
         >
           <MessageCircle size={16} />
           <span>{totalComments} bình luận</span>
@@ -134,13 +137,17 @@ const CommentPreview = ({ linkId, onToggleFullComments }) => {
 
         <button
           onClick={() => setShowCommentForm(!showCommentForm)}
-          className={`text-sm px-3 py-1 rounded-full transition-colors ${
-            isDarkMode 
-              ? 'text-blue-400 hover:bg-blue-900/20' 
-              : 'text-blue-600 hover:bg-blue-50'
+          className={`text-sm px-4 py-1.5 rounded-full font-medium transition-all duration-200 ${
+            showCommentForm
+              ? isDarkMode
+                ? 'bg-blue-600 text-white'
+                : 'bg-blue-600 text-white'
+              : isDarkMode
+                ? 'text-blue-400 hover:bg-blue-900/20 hover:text-blue-300'
+                : 'text-blue-600 hover:bg-blue-50 hover:text-blue-700'
           }`}
         >
-          Bình luận
+          {showCommentForm ? 'Hủy' : 'Bình luận'}
         </button>
       </div>
 
@@ -196,20 +203,22 @@ const CommentPreview = ({ linkId, onToggleFullComments }) => {
                 value={newComment}
                 onChange={(e) => setNewComment(e.target.value)}
                 placeholder="Viết bình luận..."
-                className={`flex-1 px-3 py-2 rounded-full text-sm border ${
-                  isDarkMode 
-                    ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' 
-                    : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
-                } focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
+                className={`flex-1 px-4 py-2 rounded-full text-sm border transition-colors ${
+                  isDarkMode
+                    ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400 focus:bg-gray-600'
+                    : 'bg-gray-50 border-gray-300 text-gray-900 placeholder-gray-500 focus:bg-white'
+                } focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500`}
                 disabled={submitting}
               />
               <button
                 type="submit"
                 disabled={submitting || !newComment.trim()}
-                className={`p-2 rounded-full transition-colors ${
+                className={`p-2 rounded-full transition-all duration-200 ${
                   submitting || !newComment.trim()
-                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                    : 'bg-blue-600 text-white hover:bg-blue-700'
+                    ? isDarkMode
+                      ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
+                      : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                    : 'bg-blue-600 text-white hover:bg-blue-700 hover:scale-105 active:scale-95'
                 }`}
               >
                 <Send size={14} />

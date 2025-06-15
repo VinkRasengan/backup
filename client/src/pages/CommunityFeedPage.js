@@ -25,6 +25,9 @@ import RequestMonitor from '../components/Community/RequestMonitor';
 import { useBatchVotes } from '../hooks/useBatchVotes';
 import { useStaggerAnimation, useFadeIn } from '../hooks/useGSAP';
 import PageLayout from '../components/layout/PageLayout';
+// Import mock services for testing
+import '../services/mockCommentsService';
+import '../services/mockPostsService';
 
 const CommunityFeedPage = () => {
   const { isDarkMode } = useTheme();

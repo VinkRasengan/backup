@@ -226,15 +226,18 @@ const GlobalAnimationProvider = ({ children }) => {
 
     // Counter animation
     counter: (element, target, config = {}) => {
+      if (!element) return null;
       const duration = config.duration || 2;
       const obj = { value: 0 };
-      
+
       return gsap.to(obj, {
         value: target,
         duration: duration,
         ease: "power2.out",
         onUpdate: () => {
-          element.textContent = Math.ceil(obj.value).toLocaleString();
+          if (element && element.textContent !== undefined) {
+            element.textContent = Math.ceil(obj.value).toLocaleString();
+          }
         },
         ...config
       });

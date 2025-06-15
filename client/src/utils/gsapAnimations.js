@@ -196,7 +196,9 @@ class GSAPAnimations {
               ease: ANIMATION_CONFIG.ease.expo,
               snap: { textContent: 1 },
               onUpdate: function() {
-                counter.textContent = Math.ceil(this.targets()[0].textContent).toLocaleString();
+                if (counter && counter.textContent !== undefined) {
+                  counter.textContent = Math.ceil(this.targets()[0].textContent).toLocaleString();
+                }
               }
             }
           );

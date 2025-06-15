@@ -3,7 +3,6 @@ import { motion } from 'framer-motion';
 import {
   ChevronUp,
   ChevronDown,
-  MessageCircle,
   Share,
   Bookmark,
   MoreHorizontal,
@@ -14,6 +13,7 @@ import {
 import { gsap } from '../../utils/gsap';
 import { useIntersectionObserver } from '../../hooks/useIntersectionObserver';
 import CommentsSection from './CommentsSection';
+import CommentPreview from './CommentPreview';
 
 const LazyPostCard = ({ 
   post, 
@@ -45,7 +45,7 @@ const LazyPostCard = ({
 
   const handleVote = useCallback((type) => {
     // GSAP animation for vote button
-    const voteButton = document.querySelector(`[data-vote-${type}-${post.id}]`);
+    const voteButton = document.querySelector(`[data-vote-${type}="${post.id}"]`);
     if (voteButton) {
       gsap.to(voteButton, {
         scale: 1.2,
@@ -60,7 +60,7 @@ const LazyPostCard = ({
 
   const handleSave = useCallback(() => {
     // GSAP animation for save button
-    const saveButton = document.querySelector(`[data-save-${post.id}]`);
+    const saveButton = document.querySelector(`[data-save="${post.id}"]`);
     if (saveButton) {
       gsap.to(saveButton, {
         scale: 1.15,
@@ -229,16 +229,7 @@ const LazyPostCard = ({
             </motion.button>
           </div>
 
-          {/* Comments */}
-          <motion.button
-            onClick={() => onToggleComments(post.id)}
-            className="flex items-center space-x-1 p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors text-gray-500 dark:text-gray-400"
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-          >
-            <MessageCircle size={16} />
-            <span className="text-sm">{post.commentCount || 0}</span>
-          </motion.button>
+
 
           {/* Views */}
           <div className="flex items-center space-x-1 text-gray-500 dark:text-gray-400">
@@ -274,7 +265,13 @@ const LazyPostCard = ({
         </div>
       </div>
 
-      {/* Comments Section */}
+      {/* Comments Preview - Always show */}
+      <CommentPreview
+        linkId={post.id}
+        onToggleFullComments={() => onToggleComments(post.id)}
+      />
+
+      {/* Full Comments Section */}
       {showComments && (
         <motion.div
           initial={{ opacity: 0, height: 0 }}

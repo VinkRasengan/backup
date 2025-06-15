@@ -137,13 +137,16 @@ export const gsapUtils = {
   
   // Counter animation
   counter: (element, endValue, options = {}) => {
+    if (!element) return null;
     const obj = { value: 0 };
     return gsap.to(obj, {
       value: endValue,
       duration: options.duration || 2,
       ease: "power2.out",
       onUpdate: () => {
-        element.textContent = Math.round(obj.value);
+        if (element && element.textContent !== undefined) {
+          element.textContent = Math.round(obj.value);
+        }
       },
       ...options
     });
