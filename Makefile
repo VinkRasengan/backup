@@ -71,6 +71,10 @@ start: check-script ## Start all services
 	@echo "$(BLUE)ℹ️  Starting all services...$(NC)"
 	@$(SCRIPT_DIR)/dev-deploy.sh start
 
+dev: check-script ## Start in development mode with hot reload (recommended)
+	@echo "$(BLUE)ℹ️  Starting development mode with hot reload...$(NC)"
+	@$(SCRIPT_DIR)/dev-deploy.sh dev
+
 stop: check-script ## Stop all services
 	@echo "$(BLUE)ℹ️  Stopping all services...$(NC)"
 	@$(SCRIPT_DIR)/dev-deploy.sh stop
@@ -244,11 +248,15 @@ info: ## Show project information
 	@echo ""
 
 # Development workflow shortcuts
-dev: setup start health urls ## Complete development setup (setup + start + health + urls)
+dev-full: setup dev health urls ## Complete development setup (setup + dev + health + urls)
 
 quick: ## Quick start without building (uses existing images)
 	@echo "$(BLUE)ℹ️  Quick starting with existing images...$(NC)"
 	@$(SCRIPT_DIR)/dev-deploy.sh start --no-build
+
+dev-quick: ## Quick start development mode without building
+	@echo "$(BLUE)ℹ️  Quick starting development mode with existing images...$(NC)"
+	@$(SCRIPT_DIR)/dev-deploy.sh dev --no-build
 
 fresh: clean-force rebuild health ## Fresh start (clean + rebuild + health)
 

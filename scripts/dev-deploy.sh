@@ -31,7 +31,7 @@ STOP="🛑"
 # Print functions
 print_header() {
     echo -e "\n${WHITE}${ROCKET} $1${NC}"
-    echo -e "${WHITE}$(printf '=%.0s' {1..60})${NC}"
+    echo -e "${WHITE}============================================================${NC}"
 }
 
 print_status() {
@@ -52,12 +52,13 @@ print_error() {
 
 print_section() {
     echo -e "\n${CYAN}${GEAR} $1${NC}"
-    echo -e "${CYAN}$(printf '-%.0s' {1..40})${NC}"
+    echo -e "${CYAN}----------------------------------------${NC}"
 }
 
 # Configuration
 PROJECT_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 COMPOSE_FILE="docker-compose.microservices.yml"
+DEV_COMPOSE_FILE="docker-compose.dev.yml"
 ENV_FILE=".env"
 BUILD_TIMESTAMP=".build_timestamp"
 
@@ -94,6 +95,7 @@ show_usage() {
     echo ""
     echo -e "${CYAN}Commands:${NC}"
     echo "  start, up, deploy    - Start all services (default)"
+    echo "  dev                 - Start in development mode with hot reload"
     echo "  stop, down          - Stop all services"
     echo "  restart             - Restart all services"
     echo "  rebuild             - Force rebuild and start"
@@ -111,9 +113,11 @@ show_usage() {
     echo "  --force            - Force action without confirmation"
     echo "  --verbose          - Verbose output"
     echo "  --follow           - Follow logs (for logs command)"
+    echo "  --dev              - Use development mode with hot reload"
     echo ""
     echo -e "${CYAN}Examples:${NC}"
     echo "  $0 start                    # Start all services"
+    echo "  $0 dev                      # Start with hot reload (no rebuild needed)"
     echo "  $0 logs --service auth      # Show auth service logs"
     echo "  $0 restart --service api    # Restart API gateway"
     echo "  $0 rebuild --force          # Force rebuild all services"
@@ -373,15 +377,21 @@ build_services() {
 # Function to start services
 start_services() {
     local target_service=${1:-""}
+    local compose_file=${2:-"$COMPOSE_FILE"}
 
     print_section "Starting Services"
 
+    if [ "$DEV_MODE" = true ]; then
+        print_status "Starting in development mode with hot reload..."
+        compose_file="$DEV_COMPOSE_FILE"
+    fi
+
     if [ -n "$target_service" ]; then
         print_status "Starting $target_service..."
-        docker-compose -f "$COMPOSE_FILE" up -d "$target_service"
+        docker-compose -f "$compose_file" up -d "$target_service"
     else
         print_status "Starting all services..."
-        docker-compose -f "$COMPOSE_FILE" up -d
+        docker-compose -f "$compose_file" up -d
     fi
 
     print_success "Services started successfully"
@@ -657,11 +667,17 @@ NO_BUILD=false
 VERBOSE=false
 FOLLOW_LOGS=false
 FORCE_ACTION=false
+DEV_MODE=false
 
 while [[ $# -gt 0 ]]; do
     case $1 in
         start|up|deploy)
             COMMAND="start"
+            shift
+            ;;
+        dev)
+            COMMAND="dev"
+            DEV_MODE=true
             shift
             ;;
         stop|down)
@@ -723,6 +739,10 @@ while [[ $# -gt 0 ]]; do
             ;;
         --follow)
             FOLLOW_LOGS=true
+            shift
+            ;;
+        --dev)
+            DEV_MODE=true
             shift
             ;;
         *)
@@ -799,6 +819,49 @@ case $COMMAND in
             show_deployment_summary
         else
             print_success "$TARGET_SERVICE started successfully"
+        fi
+        ;;
+
+    dev)
+        check_prerequisites
+
+        # Load environment variables
+        if [ -f "$ENV_FILE" ]; then
+            set -a
+            source "$ENV_FILE"
+            set +a
+        else
+            create_env_file
+            if [ $? -eq 1 ]; then
+                exit 1
+            fi
+        fi
+
+        print_header "Development Mode with Hot Reload"
+        print_status "Code changes will be automatically reloaded without rebuilding containers"
+        print_warning "First run will build containers, subsequent runs will be much faster"
+
+        # Build services (only first time or when forced)
+        if [ "$FORCE_BUILD" = true ] || [ ! -f "$BUILD_TIMESTAMP" ]; then
+            build_services "$FORCE_BUILD" "$TARGET_SERVICE"
+        else
+            print_success "Using existing images (use --force to rebuild)"
+        fi
+
+        # Start services in development mode
+        DEV_MODE=true
+        start_services "$TARGET_SERVICE" "$DEV_COMPOSE_FILE"
+
+        # Wait for services to be ready
+        if [ -z "$TARGET_SERVICE" ]; then
+            wait_for_services 60
+            check_health
+            show_deployment_summary
+            echo ""
+            print_success "🔥 Development mode active! Code changes will auto-reload"
+            print_status "Edit files in services/*/src/ and see changes instantly"
+        else
+            print_success "$TARGET_SERVICE started in development mode"
         fi
         ;;
 
