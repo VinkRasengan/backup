@@ -1,0 +1,50 @@
+{
+  "name": "auth-service",
+  "version": "1.0.0",
+  "description": "User Authentication Service for Anti-Fraud Platform",
+  "main": "src/app.js",
+  "scripts": {
+    "start": "node src/app.js",
+    "dev": "nodemon src/app.js",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "lint": "eslint src/",
+    "lint:fix": "eslint src/ --fix",
+    "build": "echo 'No build step required for Node.js service'"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5",
+    "helmet": "^7.1.0",
+    "morgan": "^1.10.0",
+    "dotenv": "^16.3.1",
+    "firebase-admin": "^11.11.1",
+    "jsonwebtoken": "^9.0.2",
+    "bcryptjs": "^2.4.3",
+    "joi": "^17.11.0",
+    "express-rate-limit": "^7.1.5",
+    "winston": "^3.11.0",
+    "axios": "^1.6.2",
+    "express-validator": "^7.0.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2",
+    "jest": "^29.7.0",
+    "supertest": "^6.3.3",
+    "eslint": "^8.55.0",
+    "@types/jest": "^29.5.8"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "keywords": [
+    "authentication",
+    "microservice",
+    "firebase",
+    "jwt",
+    "user-management"
+  ],
+  "author": "Anti-Fraud Platform Team",
+  "license": "MIT"
+}

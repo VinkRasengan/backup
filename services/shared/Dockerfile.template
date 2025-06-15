@@ -1,0 +1,58 @@
+# Multi-stage build for Node.js microservice
+FROM node:18-alpine AS base
+
+# Install dumb-init for proper signal handling
+RUN apk add --no-cache dumb-init
+
+# Create app directory
+WORKDIR /app
+
+# Create non-root user
+RUN addgroup -g 1001 -S nodejs
+RUN adduser -S nodejs -u 1001
+
+# Copy package files
+COPY package*.json ./
+
+# Install dependencies
+FROM base AS deps
+RUN npm ci --only=production && npm cache clean --force
+
+# Development stage
+FROM base AS dev
+RUN npm ci
+COPY . .
+USER nodejs
+EXPOSE 3000
+CMD ["dumb-init", "npm", "run", "dev"]
+
+# Build stage
+FROM base AS build
+RUN npm ci
+COPY . .
+RUN npm run build 2>/dev/null || echo "No build script found"
+
+# Production stage
+FROM base AS production
+
+# Copy production dependencies
+COPY --from=deps --chown=nodejs:nodejs /app/node_modules ./node_modules
+
+# Copy application code
+COPY --chown=nodejs:nodejs . .
+
+# Copy built assets if they exist
+COPY --from=build --chown=nodejs:nodejs /app/dist ./dist 2>/dev/null || true
+
+# Switch to non-root user
+USER nodejs
+
+# Expose port (will be overridden by service-specific port)
+EXPOSE 3000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+  CMD node healthcheck.js || exit 1
+
+# Start the application
+CMD ["dumb-init", "node", "src/app.js"]

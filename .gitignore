@@ -150,3 +150,17 @@ service-account-*.json
 # Local development
 .env.backup
 .env.example.local
+
+# Old monolith files (deprecated after microservices migration)
+server/
+functions/
+firebase.json
+firestore.rules
+firestore.indexes.json
+firestore.indexes.new.json
+restart-all.bat
+restart-all.js
+
+# Backup directories
+backup-monolith/
+backup-monolith-manual/
