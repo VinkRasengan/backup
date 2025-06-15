@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { gsap } from '../../utils/gsap';
 import { useIntersectionObserver } from '../../hooks/useIntersectionObserver';
+import CommentsSection from './CommentsSection';
 
 const LazyPostCard = ({ 
   post, 
@@ -153,6 +154,24 @@ const LazyPostCard = ({
         </p>
       </div>
 
+      {/* Post Image */}
+      {(post.imageUrl || post.screenshot) && (
+        <div className="mb-4">
+          <img
+            src={post.imageUrl || post.screenshot}
+            alt={post.title}
+            className="w-full max-w-md h-48 object-cover rounded-lg border border-gray-200 dark:border-gray-700 cursor-pointer hover:opacity-90 transition-opacity"
+            onError={(e) => {
+              e.target.style.display = 'none';
+            }}
+            onClick={() => {
+              // Open image in new tab
+              window.open(post.imageUrl || post.screenshot, '_blank');
+            }}
+          />
+        </div>
+      )}
+
       {/* Tags */}
       <div className="flex flex-wrap gap-2 mb-4">
         {post.tags?.map((tag) => (
@@ -263,9 +282,10 @@ const LazyPostCard = ({
           exit={{ opacity: 0, height: 0 }}
           className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700"
         >
-          <div className="text-sm text-gray-600 dark:text-gray-400">
-            Bình luận sẽ được hiển thị ở đây...
-          </div>
+          <CommentsSection
+            linkId={post.id}
+            className="border-0 rounded-none bg-transparent"
+          />
         </motion.div>
       )}
     </motion.div>
