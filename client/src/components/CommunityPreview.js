@@ -1,19 +1,21 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { 
-  Users, 
-  MessageCircle, 
-  TrendingUp, 
+import {
+  Users,
+  MessageCircle,
+  TrendingUp,
   ExternalLink,
   ChevronRight,
   Clock
 } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
+import { gsap } from '../utils/gsap';
 
 const CommunityPreview = () => {
   const { isDarkMode } = useTheme();
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const containerRef = useRef(null);
 
   useEffect(() => {
     const fetchRecentPosts = async () => {
@@ -92,6 +94,49 @@ const CommunityPreview = () => {
     fetchRecentPosts();
   }, []);
 
+  // GSAP ScrollTrigger animation
+  useEffect(() => {
+    if (!containerRef.current || loading || posts.length === 0) return;
+
+    console.log('🎬 CommunityPreview: Setting up ScrollTrigger animations...');
+
+    const container = containerRef.current;
+    const postItems = container.querySelectorAll('[data-post]');
+
+    // Set initial state - content visible but positioned for animation
+    gsap.set(container, { opacity: 1 });
+    gsap.set(postItems, { opacity: 1, x: -20, scale: 0.98 });
+
+    // ScrollTrigger animation
+    const tl = gsap.timeline({
+      scrollTrigger: {
+        trigger: container,
+        start: "top 90%",
+        end: "bottom 20%",
+        toggleActions: "play none none reverse"
+      }
+    });
+
+    // Animate container
+    tl.to(container, {
+      y: 0,
+      duration: 0.6,
+      ease: "power2.out"
+    })
+    // Then animate posts with stagger
+    .to(postItems, {
+      x: 0,
+      scale: 1,
+      duration: 0.4,
+      ease: "power2.out",
+      stagger: 0.1
+    }, "-=0.3");
+
+    return () => {
+      tl.kill();
+    };
+  }, [loading, posts]);
+
   const formatTime = (dateString) => {
     const date = new Date(dateString);
     const now = new Date();
@@ -143,9 +188,9 @@ const CommunityPreview = () => {
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
+      ref={containerRef}
+      initial={{ opacity: 1, y: 0 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.6 }}
       className={`rounded-2xl shadow-sm border hover:shadow-lg transition-all duration-300 ${
         isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
       } p-6`}
@@ -196,12 +241,12 @@ const CommunityPreview = () => {
           posts.map((post, index) => (
             <motion.div
               key={post.id}
-              initial={{ opacity: 0, x: -20 }}
+              data-post
+              initial={{ opacity: 1, x: 0 }}
               animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.4, delay: index * 0.1 }}
               className={`group flex space-x-4 p-4 rounded-xl border transition-all duration-200 cursor-pointer ${
-                isDarkMode 
-                  ? 'border-gray-700 hover:border-purple-500/50 hover:bg-gray-700/50' 
+                isDarkMode
+                  ? 'border-gray-700 hover:border-purple-500/50 hover:bg-gray-700/50'
                   : 'border-gray-100 hover:border-purple-200 hover:bg-purple-50/50'
               }`}
               onClick={() => window.location.href = '/community'}

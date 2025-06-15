@@ -57,42 +57,47 @@ const AnimatedStats = () => {
     const container = containerRef.current;
     if (!container) return;
 
-    // Create timeline for better control
+    console.log('🚀 AnimatedStats: Content visible immediately, animations on scroll...');
+
+    // Set initial state - cards visible immediately but positioned for animation
+    gsap.set(container.children, {
+      opacity: 1, // Content visible immediately
+      y: 30,
+      scale: 0.95
+    });
+
+    // Create ScrollTrigger timeline for smooth animations
     const tl = gsap.timeline({
       scrollTrigger: {
         trigger: container,
-        start: "top 80%",
+        start: "top 85%",
+        end: "bottom 20%",
+        toggleActions: "play none none reverse",
         onEnter: () => {
-          // Start counter animations when visible
+          // Start counter animations when scrolled into view
           setTimeout(() => {
             startUsersCount();
             startChecksCount();
             startAccuracy();
             startTrends();
-          }, 300);
+          }, 200);
         }
       }
     });
 
-    // Stagger animation for stats cards with improved performance
-    tl.fromTo(container.children,
-      {
-        opacity: 0,
-        y: 30,
-        scale: 0.9
-      },
-      {
-        opacity: 1,
-        y: 0,
-        scale: 1,
-        duration: 0.6,
-        ease: "power2.out",
-        stagger: 0.15
-      }
-    );
+    // Smooth stagger animation on scroll
+    tl.to(container.children, {
+      y: 0,
+      scale: 1,
+      duration: 0.8,
+      ease: "power2.out",
+      stagger: 0.15
+    });
 
-    // Simplified hover effects with better performance
+    // Enhanced hover effects with better performance
     const cards = Array.from(container.children);
+    const eventHandlers = new Map();
+
     cards.forEach((card) => {
       const handleMouseEnter = () => {
         gsap.to(card, {
@@ -112,6 +117,9 @@ const AnimatedStats = () => {
         });
       };
 
+      // Store handlers for cleanup
+      eventHandlers.set(card, { handleMouseEnter, handleMouseLeave });
+
       card.addEventListener('mouseenter', handleMouseEnter);
       card.addEventListener('mouseleave', handleMouseLeave);
     });
@@ -120,11 +128,15 @@ const AnimatedStats = () => {
     return () => {
       tl.kill();
       cards.forEach((card) => {
-        card.removeEventListener('mouseenter', () => {});
-        card.removeEventListener('mouseleave', () => {});
+        const handlers = eventHandlers.get(card);
+        if (handlers) {
+          card.removeEventListener('mouseenter', handlers.handleMouseEnter);
+          card.removeEventListener('mouseleave', handlers.handleMouseLeave);
+        }
       });
+      eventHandlers.clear();
     };
-  }, []);
+  }, [startUsersCount, startChecksCount, startAccuracy, startTrends]);
 
   return (
     <div className={`py-16 ${isDarkMode ? 'bg-gray-800' : 'bg-gray-50'}`}>

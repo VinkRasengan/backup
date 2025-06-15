@@ -1,25 +1,69 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import {
   TrendingUp,
   MessageCircle,
   ThumbsUp,
-  Eye,
   ExternalLink,
   Clock,
   Flame
 } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { Card, CardHeader, CardTitle, CardContent } from './ui/Card';
+import { gsap } from '../utils/gsap';
 
 const TrendingArticles = () => {
   const { isDarkMode } = useTheme();
   const [trendingArticles, setTrendingArticles] = useState([]);
   const [loading, setLoading] = useState(true);
+  const cardRef = useRef(null);
 
   useEffect(() => {
     loadTrendingArticles();
   }, []);
+
+  // GSAP ScrollTrigger animation
+  useEffect(() => {
+    if (!cardRef.current || loading || trendingArticles.length === 0) return;
+
+    console.log('🎬 TrendingArticles: Setting up ScrollTrigger animations...');
+
+    const card = cardRef.current;
+    const articles = card.querySelectorAll('[data-article]');
+
+    // Set initial state - content visible but positioned for animation
+    gsap.set(card, { opacity: 1 });
+    gsap.set(articles, { opacity: 1, y: 20, scale: 0.98 });
+
+    // ScrollTrigger animation
+    const tl = gsap.timeline({
+      scrollTrigger: {
+        trigger: card,
+        start: "top 90%",
+        end: "bottom 20%",
+        toggleActions: "play none none reverse"
+      }
+    });
+
+    // Animate card container
+    tl.to(card, {
+      y: 0,
+      duration: 0.6,
+      ease: "power2.out"
+    })
+    // Then animate articles with stagger
+    .to(articles, {
+      y: 0,
+      scale: 1,
+      duration: 0.5,
+      ease: "power2.out",
+      stagger: 0.1
+    }, "-=0.3");
+
+    return () => {
+      tl.kill();
+    };
+  }, [loading, trendingArticles]);
 
   const loadTrendingArticles = async () => {
     // Load mock data immediately for better UX
@@ -165,7 +209,7 @@ const TrendingArticles = () => {
     );
   }
   return (
-    <Card className={`${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} shadow-lg`}>
+    <Card ref={cardRef} className={`${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} shadow-lg`}>
       <CardHeader className="pb-4">
         <CardTitle className={`flex items-center text-lg font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
           <Flame className="w-6 h-6 mr-3 text-orange-500" />
@@ -185,9 +229,10 @@ const TrendingArticles = () => {
             {trendingArticles.map((article, index) => (
                   <motion.div
                     key={article.id}
-                    initial={{ opacity: 0, y: 20 }}
+                    data-article
+                    initial={{ opacity: 1, y: 0 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: index * 0.1 }}                className={`p-5 rounded-xl border hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-all duration-200 cursor-pointer group hover:shadow-md ${
+                    className={`p-5 rounded-xl border hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-all duration-200 cursor-pointer group hover:shadow-md ${
                   isDarkMode ? 'border-gray-700' : 'border-gray-200'
                 }`}
                     onClick={() => window.open(article.url, '_blank')}
