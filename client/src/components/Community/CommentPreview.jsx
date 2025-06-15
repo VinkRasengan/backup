@@ -2,9 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import { communityAPI } from '../../services/api';
-import { MessageCircle, ChevronDown, Send, User } from 'lucide-react';
+import { MessageCircle, ChevronDown, Send, User, Heart } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
+import CommentVoteButton from './CommentVoteButton';
 // Import mock service to enable mock data
 import '../../services/mockCommentsService';
 
@@ -34,15 +35,30 @@ const CommentPreview = ({ linkId, onToggleFullComments }) => {
       console.log('📝 Comments API response:', response);
 
       if (response.data && response.data.success) {
-        setComments(response.data.data.comments || []);
-        setTotalComments(response.data.data.pagination?.totalComments || 0);
-        console.log('✅ Comments loaded:', response.data.data.comments?.length || 0);
+        const comments = response.data.data?.comments || [];
+        const pagination = response.data.data?.pagination || {};
+
+        setComments(comments);
+        // Handle different response structures
+        setTotalComments(
+          pagination.totalComments ||
+          pagination.total ||
+          comments.length ||
+          0
+        );
+        console.log('✅ Comments loaded:', comments.length, 'Total:', pagination.totalComments || pagination.total);
       } else {
         console.warn('⚠️ Comments API response not successful:', response.data);
+        // Set empty state on failure
+        setComments([]);
+        setTotalComments(0);
       }
     } catch (error) {
       console.error('❌ Load preview comments error:', error);
       console.error('Error details:', error.response?.data || error.message);
+      // Set empty state on error
+      setComments([]);
+      setTotalComments(0);
     } finally {
       setLoading(false);
     }
@@ -114,9 +130,26 @@ const CommentPreview = ({ linkId, onToggleFullComments }) => {
             {comment.content}
           </p>
         </div>
-        <p className={`text-xs mt-1 ml-3 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-          {formatTimeAgo(comment.created_at)}
-        </p>
+        <div className="flex items-center justify-between mt-1 ml-3">
+          <p className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+            {formatTimeAgo(comment.created_at)}
+          </p>
+          <div className="flex items-center space-x-2">
+            <CommentVoteButton
+              commentId={comment.id}
+              initialVotes={comment.votes || Math.floor(Math.random() * 10) - 2}
+              initialUserVote={null}
+            />
+            <button className={`flex items-center space-x-1 text-xs px-2 py-1 rounded-full transition-colors ${
+              isDarkMode
+                ? 'text-gray-400 hover:text-red-400 hover:bg-red-900/20'
+                : 'text-gray-500 hover:text-red-600 hover:bg-red-50'
+            }`}>
+              <Heart size={12} />
+              <span>{comment.likes || Math.floor(Math.random() * 5)}</span>
+            </button>
+          </div>
+        </div>
       </div>
     </motion.div>
   );

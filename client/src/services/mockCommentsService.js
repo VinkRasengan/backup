@@ -17,7 +17,9 @@ class MockCommentsService {
           created_at: new Date(Date.now() - 3600000), // 1 hour ago
           updated_at: new Date(Date.now() - 3600000),
           user_email: 'nguyen.vana@example.com',
-          user_name: 'Nguyễn Văn A'
+          user_name: 'Nguyễn Văn A',
+          votes: 5,
+          likes: 2
         },
         {
           id: 'comment2',
@@ -25,7 +27,9 @@ class MockCommentsService {
           created_at: new Date(Date.now() - 1800000), // 30 minutes ago
           updated_at: new Date(Date.now() - 1800000),
           user_email: 'tran.thib@example.com',
-          user_name: 'Trần Thị B'
+          user_name: 'Trần Thị B',
+          votes: 8,
+          likes: 4
         },
         {
           id: 'comment3',
@@ -33,7 +37,9 @@ class MockCommentsService {
           created_at: new Date(Date.now() - 900000), // 15 minutes ago
           updated_at: new Date(Date.now() - 900000),
           user_email: 'le.vanc@example.com',
-          user_name: 'Lê Văn C'
+          user_name: 'Lê Văn C',
+          votes: 3,
+          likes: 1
         }
       ],
       'link2': [
@@ -43,7 +49,9 @@ class MockCommentsService {
           created_at: new Date(Date.now() - 7200000), // 2 hours ago
           updated_at: new Date(Date.now() - 7200000),
           user_email: 'pham.thid@example.com',
-          user_name: 'Phạm Thị D'
+          user_name: 'Phạm Thị D',
+          votes: 12,
+          likes: 6
         },
         {
           id: 'comment5',
@@ -51,7 +59,9 @@ class MockCommentsService {
           created_at: new Date(Date.now() - 5400000), // 1.5 hours ago
           updated_at: new Date(Date.now() - 5400000),
           user_email: 'hoang.vane@example.com',
-          user_name: 'Hoàng Văn E'
+          user_name: 'Hoàng Văn E',
+          votes: 7,
+          likes: 3
         }
       ],
       'link3': [
@@ -61,7 +71,9 @@ class MockCommentsService {
           created_at: new Date(Date.now() - 10800000), // 3 hours ago
           updated_at: new Date(Date.now() - 10800000),
           user_email: 'vu.thif@example.com',
-          user_name: 'Vũ Thị F'
+          user_name: 'Vũ Thị F',
+          votes: 4,
+          likes: 2
         }
       ]
     };
@@ -113,7 +125,9 @@ class MockCommentsService {
       created_at: new Date(),
       updated_at: new Date(),
       user_email: userEmail,
-      user_name: userName
+      user_name: userName,
+      votes: 0,
+      likes: 0
     };
 
     const existingComments = this.mockComments.get(linkId) || [];

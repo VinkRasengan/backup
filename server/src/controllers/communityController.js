@@ -126,24 +126,26 @@ class CommunityController {
     // Get community posts with optional filtering
     async getCommunityPosts(req, res) {
         try {
-            const { 
-                sort = 'newest', 
-                category, 
-                search, 
-                page = 1, 
+            const {
+                sort = 'newest',
+                category,
+                search,
+                page = 1,
                 limit = 10,
-                includeNews = 'true'
+                includeNews = 'true',
+                newsOnly = 'false',
+                userPostsOnly = 'false'
             } = req.query;
 
-            let posts = [...this.posts];
+            let posts = [];
 
-            // Include real news if requested
-            if (includeNews === 'true') {
+            // Handle different content types
+            if (newsOnly === 'true') {
+                // Only news content
                 try {
-                    // Get latest news from NewsAPI
                     const newsResponse = await this.getLatestNewsForCommunity();
-                    if (newsResponse && newsResponse.articles) {
-                        const newsArticles = newsResponse.articles.slice(0, 5).map(article => ({
+                    if (newsResponse?.articles) {
+                        posts = newsResponse.articles.slice(0, parseInt(limit) * 2).map(article => ({
                             id: `news_${Date.now()}_${Math.random()}`,
                             type: 'news',
                             title: article.title,
@@ -165,10 +167,50 @@ class CommunityController {
                             isVerified: true,
                             trustScore: 85
                         }));
-                        posts = [...newsArticles, ...posts];
                     }
                 } catch (newsError) {
                     console.warn('Failed to fetch news for community:', newsError.message);
+                    posts = [];
+                }
+            } else if (userPostsOnly === 'true') {
+                // Only user posts
+                posts = [...this.posts];
+            } else {
+                // Mixed content (default behavior)
+                posts = [...this.posts];
+
+                // Include real news if requested
+                if (includeNews === 'true') {
+                    try {
+                        const newsResponse = await this.getLatestNewsForCommunity();
+                        if (newsResponse?.articles) {
+                            const newsArticles = newsResponse.articles.slice(0, 5).map(article => ({
+                                id: `news_${Date.now()}_${Math.random()}`,
+                                type: 'news',
+                                title: article.title,
+                                content: article.description || article.content,
+                                url: article.url,
+                                imageUrl: article.urlToImage,
+                                author: {
+                                    id: 'news_source',
+                                    name: article.source?.name || 'News Source',
+                                    avatar: 'https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=100'
+                                },
+                                source: article.source?.name || 'News',
+                                category: 'news',
+                                tags: ['tin-tuc', 'thoi-su'],
+                                votes: { safe: 0, unsafe: 0, suspicious: 0 },
+                                userVote: null,
+                                commentsCount: 0,
+                                createdAt: article.publishedAt || new Date().toISOString(),
+                                isVerified: true,
+                                trustScore: 85
+                            }));
+                            posts = [...newsArticles, ...posts];
+                        }
+                    } catch (newsError) {
+                        console.warn('Failed to fetch news for community:', newsError.message);
+                    }
                 }
             }
 

@@ -27,8 +27,8 @@ class CommunityDataManager {
 
   // Generate cache key
   getCacheKey(params) {
-    const { sort, filter, search, page } = params;
-    return `${sort}-${filter}-${search || 'none'}-${page}`;
+    const { sort, filter, search, page, newsOnly, userPostsOnly, includeNews } = params;
+    return `${sort}-${filter}-${search || 'none'}-${page}-${newsOnly || 'false'}-${userPostsOnly || 'false'}-${includeNews || 'true'}`;
   }
 
   // Check if data is fresh
@@ -126,14 +126,34 @@ class CommunityDataManager {
 
   // Enhanced API request with Facebook/Reddit-style optimization
   async makeRequest(params) {
-    const { sort = 'trending', filter = 'all', search = '', page = 1 } = params;
+    const {
+      sort = 'trending',
+      filter = 'all',
+      search = '',
+      page = 1,
+      newsOnly = false,
+      userPostsOnly = false,
+      includeNews = true
+    } = params;
 
     const urlParams = new URLSearchParams({
       page,
       sort,
       limit: page === 1 ? 10 : 5, // Load fewer items for subsequent pages
-      includeNews: 'true'
     });
+
+    // Handle content type filters
+    if (newsOnly) {
+      urlParams.append('newsOnly', 'true');
+      urlParams.append('includeNews', 'false');
+      urlParams.append('userPostsOnly', 'false');
+    } else if (userPostsOnly) {
+      urlParams.append('userPostsOnly', 'true');
+      urlParams.append('includeNews', 'false');
+      urlParams.append('newsOnly', 'false');
+    } else {
+      urlParams.append('includeNews', includeNews ? 'true' : 'false');
+    }
 
     if (filter !== 'all') {
       urlParams.append('category', filter);

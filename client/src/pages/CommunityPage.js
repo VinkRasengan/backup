@@ -11,25 +11,26 @@ import {
 import NavigationLayout from '../components/navigation/NavigationLayout';
 import LazyPostCard from '../components/Community/LazyPostCard';
 import { PostSkeletonGrid } from '../components/Community/PostSkeleton';
+import VoteTest from '../components/Community/VoteTest';
 import { gsap } from '../utils/gsap';
 import { useGSAP } from '../hooks/useGSAP';
-import firestoreService from '../services/firestoreService';
-import communityCache from '../services/communityCache';
 import { useAuth } from '../context/AuthContext';
 import { useCommunityStats } from '../hooks/useFirestoreStats';
+import { useCommunityData } from '../hooks/useCommunityData';
 
 const CommunityPage = () => {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('trending');
   const [searchQuery, setSearchQuery] = useState('');
-  const [posts, setPosts] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [hasMore, setHasMore] = useState(true);
-  const [lastDoc, setLastDoc] = useState(null);
   const [showComments, setShowComments] = useState({});
 
   // Get community stats
   const communityStats = useCommunityStats();
+
+  // Use community data hook for user posts only
+  const { data: communityData, loading, fetchData } = useCommunityData();
+  const posts = communityData.posts || [];
+  const hasMore = communityData.pagination?.hasNext || false;
 
   // GSAP refs
   const containerRef = useRef(null);
@@ -80,120 +81,23 @@ const CommunityPage = () => {
       }
     );
   }, [posts, loading]);
-  // Fetch posts from API backend
+  // Fetch posts using hook for user posts only
   const fetchPosts = async (refresh = false) => {
-    try {
-      setLoading(true);
+    const sortBy = activeTab === 'trending' ? 'trending' : 'newest';
+    const page = refresh ? 1 : Math.floor(posts.length / 10) + 1;
 
-      const sortBy = activeTab === 'trending' ? 'trending' : 'newest';
-      const page = refresh ? 1 : Math.floor(posts.length / 10) + 1;
+    console.log('🔄 Fetching user posts only...', { sortBy, page, refresh });
 
-      console.log('🔄 Fetching community posts from API...', { sortBy, page, refresh });
+    const params = {
+      sort: sortBy,
+      page,
+      search: searchQuery,
+      userPostsOnly: true, // Only user posts for community discussions
+      includeNews: false,
+      newsOnly: false
+    };
 
-      // Get auth token if available
-      const token = localStorage.getItem('token') ||
-                   localStorage.getItem('authToken') ||
-                   localStorage.getItem('backendToken');
-
-      const headers = { 'Content-Type': 'application/json' };
-      if (token) headers['Authorization'] = `Bearer ${token}`;
-
-      const response = await fetch(`http://localhost:5000/api/community/posts?sort=${sortBy}&page=${page}&limit=10`, {
-        headers
-      });
-
-      console.log('📡 Community API Response status:', response.status);
-
-      if (response.ok) {
-        const data = await response.json();
-        console.log('📊 Community API Response data:', data);
-
-        if (data.success && data.data?.posts) {
-          const newPosts = data.data.posts.map(post => ({
-            id: post.id,
-            title: post.title,
-            description: post.content || post.description || 'No description available',
-            url: post.url,
-            imageUrl: post.imageUrl || post.screenshot,
-            userId: post.author?.id || 'unknown',
-            userEmail: post.author?.email || 'unknown@example.com',
-            createdAt: new Date(post.createdAt),
-            voteCount: post.voteStats?.total || 0,
-            commentCount: post.commentsCount || 0,
-            status: 'active',
-            tags: post.tags || [],
-            userVoted: post.userVote,
-            saved: false
-          }));
-
-          if (refresh) {
-            setPosts(newPosts);
-          } else {
-            setPosts(prev => [...prev, ...newPosts]);
-          }
-
-          setHasMore(data.data.pagination?.hasNext || false);
-          setLoading(false);
-          return;
-        }
-      }
-
-      // If API fails, fall back to mock data
-      console.log('⚠️ API failed, using fallback data');
-      throw new Error('API request failed');
-
-    } catch (err) {
-      console.error('Error fetching posts:', err);
-      setLoading(false);
-
-      // Fallback to mock data if Firestore fails
-      const mockPostsData = [
-        {
-          id: 'mock-1',
-          title: 'Cảnh báo: Website lừa đảo giả mạo ngân hàng đang hoạt động',
-          description: 'Vừa phát hiện website lừa đảo có domain tương tự ngân hàng VCB. Các bạn cần cẩn thận khi truy cập các trang web ngân hàng.',
-          url: 'https://example-scam.com',
-          imageUrl: 'https://images.unsplash.com/photo-1563013544-824ae1b704d3?w=400',
-          userId: 'mock-user-1',
-          userEmail: 'user1@example.com',
-          createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000),
-          voteCount: 23,
-          commentCount: 8,
-          status: 'active',
-          tags: ['lừa đảo', 'ngân hàng']
-        },
-        {
-          id: 'mock-2',
-          title: 'Chia sẻ cách nhận biết email phishing hiệu quả',
-          description: 'Sau khi bị lừa một lần, mình đã học được cách nhận biết email lừa đảo. Chia sẻ với mọi người một số tip hữu ích.',
-          url: 'https://example-phishing.com',
-          imageUrl: 'https://images.unsplash.com/photo-1563206767-5b18f218e8de?w=400',
-          userId: 'mock-user-2',
-          userEmail: 'user2@example.com',
-          createdAt: new Date(Date.now() - 5 * 60 * 60 * 1000),
-          voteCount: 41,
-          commentCount: 15,
-          status: 'active',
-          tags: ['phishing', 'email', 'bảo mật']
-        },
-        {
-          id: 'mock-3',
-          title: 'Trang web giả mạo Shopee đang lừa đảo người dùng',
-          description: 'Phát hiện trang web có giao diện giống hệt Shopee nhưng domain khác. Đã có nhiều người bị lừa mất tiền.',
-          url: 'https://fake-shopee.com',
-          imageUrl: 'https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=400',
-          userId: 'mock-user-3',
-          userEmail: 'user3@example.com',
-          createdAt: new Date(Date.now() - 1 * 60 * 60 * 1000),
-          voteCount: 67,
-          commentCount: 23,
-          status: 'active',
-          tags: ['shopee', 'lừa đảo', 'thương mại điện tử']
-        }
-      ];
-      setPosts(mockPostsData);
-      setHasMore(false);
-    }
+    await fetchData(params);
   };
 
   useEffect(() => {
@@ -246,11 +150,10 @@ const CommunityPage = () => {
       const headers = { 'Content-Type': 'application/json' };
       if (token) headers['Authorization'] = `Bearer ${token}`;
 
-      const response = await fetch(`http://localhost:5000/api/votes`, {
+      const response = await fetch(`http://localhost:5000/api/votes/${postId}`, {
         method: 'POST',
         headers,
         body: JSON.stringify({
-          linkId: postId,
           voteType: voteType,
           userId: userId,
           userEmail: user.email
@@ -261,18 +164,9 @@ const CommunityPage = () => {
         throw new Error('Vote submission failed');
       }
 
-      // Update local state optimistically
-      setPosts(posts.map(post => {
-        if (post.id === postId) {
-          const currentVoteCount = post.voteCount || 0;
-          return {
-            ...post,
-            voteCount: type === 'up' ? currentVoteCount + 1 : Math.max(0, currentVoteCount - 1),
-            userVoted: voteType
-          };
-        }
-        return post;
-      }));
+      // Update local state optimistically - refresh data
+      console.log('✅ Vote submitted, refreshing data...');
+      fetchPosts(true);
     } catch (error) {
       console.error('Error voting:', error);
       alert('Không thể vote. Vui lòng thử lại.');
@@ -291,9 +185,8 @@ const CommunityPage = () => {
       });
     }
 
-    setPosts(posts.map(post =>
-      post.id === postId ? { ...post, saved: !post.saved } : post
-    ));
+    // For now, just show feedback - could implement save to backend later
+    console.log('💾 Post saved:', postId);
   };
 
   const toggleComments = (postId) => {
@@ -499,6 +392,9 @@ const CommunityPage = () => {
                   </motion.button>
                 </div>
               </motion.div>
+
+              {/* Vote Test Component */}
+              <VoteTest />
             </div>
 
             {/* Posts */}

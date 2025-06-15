@@ -102,7 +102,10 @@ const CommunityFeedPage = () => {
       sort: params.sort || sortBy,
       filter: params.filter || filterBy,
       search: params.search || searchQuery,
-      page: params.page || 1
+      page: params.page || 1,
+      newsOnly: true, // Only fetch news for feed page
+      includeNews: false, // Don't mix with user posts
+      userPostsOnly: false
     };
 
     fetchDataRef.current(finalParams);
@@ -126,7 +129,10 @@ const CommunityFeedPage = () => {
           sort: sortBy,
           filter: filterBy,
           search: searchQuery.trim(),
-          page: 1
+          page: 1,
+          newsOnly: true,
+          includeNews: false,
+          userPostsOnly: false
         };
         fetchDataRef.current(finalParams);
         setPage(1);
@@ -138,7 +144,10 @@ const CommunityFeedPage = () => {
         sort: sortBy,
         filter: filterBy,
         search: '',
-        page: 1
+        page: 1,
+        newsOnly: true,
+        includeNews: false,
+        userPostsOnly: false
       };
       fetchDataRef.current(finalParams);
       setPage(1);
@@ -390,8 +399,8 @@ const CommunityFeedPage = () => {
 
   return (
     <PageLayout
-      title="Cộng đồng FactCheck"
-      subtitle="Cộng đồng kiểm tra và xác minh thông tin"
+      title="Bảng tin FactCheck"
+      subtitle="Tin tức và cảnh báo an toàn mạng từ các nguồn uy tín"
       maxWidth="6xl"
       padding="lg"
     >

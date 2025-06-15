@@ -1,7 +1,11 @@
 // Mock Posts Service for testing Community Feed
+import newsService from './newsService';
+
 class MockPostsService {
   constructor() {
     this.mockPosts = this.generateMockPosts();
+    this.newsCache = new Map();
+    this.newsCacheTimeout = 10 * 60 * 1000; // 10 minutes
   }
 
   generateMockPosts() {
@@ -104,11 +108,84 @@ class MockPostsService {
     ];
   }
 
+  // Get news from newsService
+  async getNewsData(limit = 3) {
+    const cacheKey = `news_${limit}`;
+    const cached = this.newsCache.get(cacheKey);
+
+    if (cached && Date.now() - cached.timestamp < this.newsCacheTimeout) {
+      return cached.data;
+    }
+
+    try {
+      const newsData = await newsService.getNews({ limit, useRealAPI: false });
+      const formattedNews = newsData.map(news => ({
+        id: news.id,
+        title: news.title,
+        content: news.description,
+        url: news.url,
+        imageUrl: news.urlToImage,
+        screenshot: news.urlToImage,
+        type: 'news',
+        source: news.source.name,
+        author: { name: news.author || news.source.name },
+        userInfo: { name: news.author || news.source.name },
+        createdAt: news.publishedAt,
+        isVerified: true,
+        trustScore: news.trustScore,
+        tags: news.tags,
+        viewCount: Math.floor(Math.random() * 1000) + 100,
+        commentCount: Math.floor(Math.random() * 20),
+        voteCount: Math.floor(Math.random() * 50) + 10
+      }));
+
+      this.newsCache.set(cacheKey, {
+        data: formattedNews,
+        timestamp: Date.now()
+      });
+
+      return formattedNews;
+    } catch (error) {
+      console.error('Failed to fetch news:', error);
+      return [];
+    }
+  }
+
   // Get mock posts with pagination
-  getMockPosts(params = {}) {
-    const { page = 1, limit = 10, sort = 'trending', filter = 'all', search = '' } = params;
+  async getMockPosts(params = {}) {
+    const { page = 1, limit = 10, sort = 'trending', filter = 'all', search = '', includeNews = true, newsOnly = false, userPostsOnly = false } = params;
     
-    let filteredPosts = [...this.mockPosts];
+    // Handle different content types
+    let allPosts = [];
+
+    if (newsOnly) {
+      // Only news content
+      try {
+        const newsData = await this.getNewsData(limit * 2); // Get more news for better pagination
+        allPosts = [...newsData];
+      } catch (error) {
+        console.warn('Failed to load news data:', error);
+        allPosts = [];
+      }
+    } else if (userPostsOnly) {
+      // Only user posts
+      allPosts = [...this.mockPosts];
+    } else {
+      // Mixed content (default behavior)
+      allPosts = [...this.mockPosts];
+
+      // Add news data if requested and on first page
+      if (includeNews && page === 1) {
+        try {
+          const newsData = await this.getNewsData(3);
+          allPosts = [...newsData, ...allPosts];
+        } catch (error) {
+          console.warn('Failed to load news data:', error);
+        }
+      }
+    }
+
+    let filteredPosts = [...allPosts];
 
     // Apply search filter
     if (search.trim()) {
@@ -150,11 +227,12 @@ class MockPostsService {
         case 'most_viewed':
           return (b.viewCount || 0) - (a.viewCount || 0);
         case 'trending':
-        default:
+        default: {
           // Trending algorithm: combine recency, votes, and views
           const aScore = (a.voteCount || 0) * 2 + (a.viewCount || 0) * 0.1 + (a.commentCount || 0) * 3;
           const bScore = (b.voteCount || 0) * 2 + (b.viewCount || 0) * 0.1 + (b.commentCount || 0) * 3;
           return bScore - aScore;
+        }
       }
     });
 
@@ -206,7 +284,7 @@ window.fetch = async (url, options = {}) => {
     // Simulate network delay
     await new Promise(resolve => setTimeout(resolve, 300 + Math.random() * 200));
 
-    const mockData = mockPostsService.getMockPosts(params);
+    const mockData = await mockPostsService.getMockPosts(params);
     
     return new Response(JSON.stringify({
       success: true,

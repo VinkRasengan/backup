@@ -96,7 +96,7 @@ const VoteComponent = ({ linkId, postData, className = '' }) => {
 
       // Use optimized endpoint with caching
       const token = localStorage.getItem('authToken') || localStorage.getItem('backendToken') || localStorage.getItem('token');
-      const response = await fetch(`/api/votes/${linkId}/optimized`, {
+      const response = await fetch(`http://localhost:5000/api/votes/${linkId}/optimized`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Cache-Control': 'max-age=300' // 5 minutes cache
@@ -132,7 +132,7 @@ const VoteComponent = ({ linkId, postData, className = '' }) => {
   const loadVoteDataFallback = async () => {
     try {
       const token = localStorage.getItem('authToken') || localStorage.getItem('backendToken') || localStorage.getItem('token');
-      const response = await fetch(`/api/votes/${linkId}/stats`, {
+      const response = await fetch(`http://localhost:5000/api/votes/${linkId}/stats`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -181,7 +181,7 @@ const VoteComponent = ({ linkId, postData, className = '' }) => {
 
     try {
       const token = localStorage.getItem('authToken') || localStorage.getItem('backendToken');
-      const response = await fetch(`/api/votes/${linkId}/user`, {
+      const response = await fetch(`http://localhost:5000/api/votes/${linkId}/user`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -266,7 +266,7 @@ const VoteComponent = ({ linkId, postData, className = '' }) => {
       let response;
       if (isUnvote) {
         // Delete vote
-        response = await fetch(`/api/votes/${linkId}`, {
+        response = await fetch(`http://localhost:5000/api/votes/${linkId}`, {
           method: 'DELETE',
           headers: {
             'Content-Type': 'application/json',
@@ -275,7 +275,7 @@ const VoteComponent = ({ linkId, postData, className = '' }) => {
         });
       } else {
         // Submit new vote
-        response = await fetch(`/api/votes/${linkId}`, {
+        response = await fetch(`http://localhost:5000/api/votes/${linkId}`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

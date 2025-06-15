@@ -178,10 +178,16 @@ export const usePostVote = (postId) => {
 
         setLocalLoading(true);
         try {
-            const response = await fetch(`${API_BASE_URL}/votes/${postId}`, {
+            // Get auth token
+            const token = localStorage.getItem('authToken') ||
+                         localStorage.getItem('backendToken') ||
+                         localStorage.getItem('token');
+
+            const response = await fetch(`http://localhost:5000/api/votes/${postId}`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
+                    ...(token && { 'Authorization': `Bearer ${token}` })
                 },
                 body: JSON.stringify({ voteType }),
             });
