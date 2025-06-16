@@ -1,0 +1,1 @@
+   scripts\dev-deploy.bat setup
