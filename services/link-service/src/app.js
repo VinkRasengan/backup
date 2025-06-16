@@ -3,7 +3,10 @@ const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
 const rateLimit = require('express-rate-limit');
-require('dotenv').config();
+const path = require('path');
+
+// Load environment variables from root directory
+require('dotenv').config({ path: path.join(__dirname, '../../../.env') });
 
 // Import shared utilities
 const Logger = require('../shared/utils/logger');

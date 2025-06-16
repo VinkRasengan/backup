@@ -42,11 +42,11 @@ const config = {
     threatEntryTypes: ['URL']
   },
 
-  // PhishTank API
+  // PhishTank API (disabled - no registration available)
   phishTank: {
     apiKey: process.env.PHISHTANK_API_KEY,
     baseUrl: 'https://checkurl.phishtank.com',
-    enabled: !!process.env.PHISHTANK_API_KEY,
+    enabled: !!process.env.PHISHTANK_API_KEY && !process.env.PHISHTANK_API_KEY.includes('disabled'),
     appKey: process.env.PHISHTANK_API_KEY,
     format: 'json'
   },
@@ -62,11 +62,11 @@ const config = {
     }
   },
 
-  // CriminalIP API
+  // CriminalIP API (disabled - now public source)
   criminalIP: {
     apiKey: process.env.CRIMINALIP_API_KEY,
     baseUrl: 'https://api.criminalip.io',
-    enabled: !!process.env.CRIMINALIP_API_KEY,
+    enabled: !!process.env.CRIMINALIP_API_KEY && !process.env.CRIMINALIP_API_KEY.includes('disabled'),
     endpoints: {
       ipData: '/v1/ip/data',
       ipSummary: '/v1/ip/summary',

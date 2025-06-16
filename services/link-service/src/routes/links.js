@@ -16,6 +16,41 @@ router.get('/test', (req, res) => {
   });
 });
 
+// Debug endpoint for API keys
+router.get('/debug', (req, res) => {
+  const { config } = require('../config/thirdPartyAPIs');
+  res.json({
+    success: true,
+    apis: {
+      googleSafeBrowsing: {
+        enabled: config.googleSafeBrowsing.enabled,
+        hasKey: !!process.env.GOOGLE_SAFE_BROWSING_API_KEY
+      },
+      phishTank: {
+        enabled: config.phishTank.enabled,
+        hasKey: !!process.env.PHISHTANK_API_KEY
+      },
+      scamAdviser: {
+        enabled: config.scamAdviser.enabled,
+        hasKey: !!process.env.SCAMADVISER_API_KEY
+      },
+      virusTotal: {
+        enabled: config.virusTotal.enabled,
+        hasKey: !!process.env.VIRUSTOTAL_API_KEY
+      },
+      criminalIP: {
+        enabled: config.criminalIP.enabled,
+        hasKey: !!process.env.CRIMINALIP_API_KEY
+      },
+      ipQualityScore: {
+        enabled: config.ipQualityScore.enabled,
+        hasKey: !!process.env.IPQUALITYSCORE_API_KEY
+      }
+    },
+    timestamp: new Date().toISOString()
+  });
+});
+
 // @route   POST /links/check
 // @desc    Check a link for security and credibility
 // @access  Public (temporarily bypassed for testing)
