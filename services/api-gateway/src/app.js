@@ -7,8 +7,8 @@ const { createProxyMiddleware } = require('http-proxy-middleware');
 require('dotenv').config();
 
 // Import shared utilities
-const Logger = require('/app/shared/utils/logger');
-const { HealthCheck, commonChecks } = require('/app/shared/utils/health-check');
+const Logger = require('../../../shared/utils/logger');
+const { HealthCheck, commonChecks } = require('../../../shared/utils/health-check');
 
 // Import local modules (simplified for now)
 // const authMiddleware = require('./middleware/auth');

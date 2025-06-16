@@ -6,8 +6,8 @@ const rateLimit = require('express-rate-limit');
 require('dotenv').config();
 
 // Import shared utilities
-const Logger = require('/app/shared/utils/logger');
-const { HealthCheck, commonChecks } = require('/app/shared/utils/health-check');
+const Logger = require('../../../shared/utils/logger');
+const { HealthCheck, commonChecks } = require('../../../shared/utils/health-check');
 
 // Import local modules
 const linkRoutes = require('./routes/links');

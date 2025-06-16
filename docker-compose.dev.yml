@@ -38,7 +38,7 @@ services:
   auth-service:
     build:
       context: ./services/auth-service
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.dev
     ports:
       - "3001:3001"
     environment:
@@ -62,7 +62,7 @@ services:
   link-service:
     build:
       context: ./services/link-service
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.dev
     ports:
       - "3002:3002"
     environment:
@@ -91,7 +91,7 @@ services:
   community-service:
     build:
       context: ./services/community-service
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.dev
     ports:
       - "3003:3003"
     environment:
@@ -119,7 +119,7 @@ services:
   chat-service:
     build:
       context: ./services/chat-service
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.dev
     ports:
       - "3004:3004"
     environment:
@@ -146,7 +146,7 @@ services:
   news-service:
     build:
       context: ./services/news-service
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.dev
     ports:
       - "3005:3005"
     environment:
@@ -174,7 +174,7 @@ services:
   admin-service:
     build:
       context: ./services/admin-service
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.dev
     ports:
       - "3006:3006"
     environment:
@@ -215,7 +215,7 @@ services:
   frontend:
     build:
       context: ./client
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.dev
     ports:
       - "3000:3000"
     environment:

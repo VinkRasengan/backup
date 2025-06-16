@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const securityAggregatorService = require('../services/securityAggregatorService');
 const screenshotService = require('../services/screenshotService');
-const AuthMiddleware = require('/app/shared/middleware/auth');
+const AuthMiddleware = require('../../../../shared/middleware/auth');
 const { validateRequest, schemas } = require('../middleware/validation');
 const Logger = require('/app/shared/utils/logger');
 

@@ -1,0 +1,36 @@
+{
+  "name": "factcheck-platform",
+  "version": "1.0.0",
+  "description": "FactCheck Anti-Fraud Platform - Microservices Architecture",
+  "private": true,
+  "scripts": {
+    "dev": "echo Starting development environment... && npm run dev:services",
+    "dev:services": "concurrently \"npm run dev:auth\" \"npm run dev:api-gateway\" \"npm run dev:admin\" \"npm run dev:chat\" \"npm run dev:community\" \"npm run dev:link\" \"npm run dev:news\"",
+    "dev:client": "cd client && npm run start",
+    "dev:auth": "cd services/auth-service && npm run dev",
+    "dev:api-gateway": "cd services/api-gateway && npm run dev",
+    "dev:admin": "cd services/admin-service && npm run dev",
+    "dev:chat": "cd services/chat-service && npm run dev",
+    "dev:community": "cd services/community-service && npm run dev",
+    "dev:link": "cd services/link-service && npm run dev",
+    "dev:news": "cd services/news-service && npm run dev",
+    "dev:full": "concurrently \"npm run dev:services\" \"npm run dev:client\"",
+    "install:all": "npm install && cd client && npm install && cd ../services/auth-service && npm install && cd ../api-gateway && npm install && cd ../admin-service && npm install && cd ../chat-service && npm install && cd ../community-service && npm install && cd ../link-service && npm install && cd ../news-service && npm install",
+    "docker:dev": "docker-compose -f docker-compose.dev.yml up --build",
+    "docker:dev:down": "docker-compose -f docker-compose.dev.yml down",
+    "docker:prod": "docker-compose -f docker-compose.microservices.yml up --build",
+    "start": "npm run docker:prod",
+    "stop": "npm run docker:dev:down && docker-compose -f docker-compose.microservices.yml down"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  },
+  "engines": {
+    "node": ">=16.0.0",
+    "npm": ">=8.0.0"
+  },
+  "workspaces": [
+    "client",
+    "services/*"
+  ]
+}
