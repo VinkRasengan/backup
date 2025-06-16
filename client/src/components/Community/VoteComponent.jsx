@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   ChevronUp,
   ChevronDown,
@@ -11,6 +11,10 @@ import { useTheme } from '../../context/ThemeContext';
 import { useCounterAnimation, useHoverAnimation } from '../../hooks/useGSAP';
 import { gsap } from '../../utils/gsap';
 import { usePostVote } from '../../hooks/useBatchVotes';
+
+// Simple cache to prevent duplicate requests
+const voteDataCache = new Map();
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
 const VoteComponent = ({ linkId, postData, className = '' }) => {
   const { user } = useAuth();
@@ -81,7 +85,7 @@ const VoteComponent = ({ linkId, postData, className = '' }) => {
     if (linkId && user && batchUserVote === null) {
       loadUserVote();
     }
-  }, [linkId, postData, user, startCounterAnimation, batchVoteStats.total, batchUserVote]);
+  }, [linkId, postData, user, batchVoteStats.total, batchUserVote]); // Removed startCounterAnimation dependency
 
   // Animate counter when vote stats change
   useEffect(() => {
@@ -90,7 +94,22 @@ const VoteComponent = ({ linkId, postData, className = '' }) => {
     }
   }, [voteStats.total, startCounterAnimation]);
 
-  const loadVoteData = async () => {
+  // Debounced version of loadVoteData to prevent spam
+  const loadVoteData = useCallback(async () => {
+    // Prevent multiple simultaneous requests
+    if (legacyLoading) return;
+
+    // Check cache first
+    const cacheKey = `vote_${linkId}`;
+    const cached = voteDataCache.get(cacheKey);
+    if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
+      console.log('Using cached vote data for', linkId);
+      setLegacyVoteStats(cached.stats);
+      setLegacyUserVote(cached.userVote);
+      setTimeout(() => startCounterAnimation(), 100);
+      return;
+    }
+
     try {
       setLegacyLoading(true);
 
@@ -114,6 +133,13 @@ const VoteComponent = ({ linkId, postData, className = '' }) => {
         setLegacyVoteStats(newStats);
         setLegacyUserVote(data.userVote);
 
+        // Cache the result
+        voteDataCache.set(cacheKey, {
+          stats: newStats,
+          userVote: data.userVote,
+          timestamp: Date.now()
+        });
+
         // Trigger counter animation
         setTimeout(() => startCounterAnimation(), 100);
       } else {
@@ -127,7 +153,7 @@ const VoteComponent = ({ linkId, postData, className = '' }) => {
     } finally {
       setLegacyLoading(false);
     }
-  };
+  }, [linkId, legacyLoading, startCounterAnimation]);
 
   const loadVoteDataFallback = async () => {
     try {

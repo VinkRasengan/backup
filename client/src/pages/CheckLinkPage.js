@@ -543,18 +543,84 @@ const CheckLinkPage = () => {
               <Card className="shadow-xl border-0 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm">
                 <CardHeader className="text-center pb-4">
                   <CardTitle className="text-lg">Kết quả từ bên thứ 3</CardTitle>
+                  <CardDescription>
+                    Phân tích từ {result.security?.servicesChecked || 0} dịch vụ bảo mật
+                  </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-3">
-                  {result.thirdPartyResults?.map((item, index) => (
-                    <div key={index} className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                      <span className="font-medium text-gray-900 dark:text-gray-100">
-                        {item.name}
-                      </span>
-                      <span className={`font-semibold ${getThirdPartyStatusColor(item.status)}`}>
-                        {item.details}
-                      </span>
+                  {result.security?.details?.map((item, index) => {
+                    const getStatusIcon = (safe, error) => {
+                      if (error) return '⚠️';
+                      return safe ? '✅' : '❌';
+                    };
+
+                    const getStatusText = (item) => {
+                      if (item.error) return 'Lỗi';
+                      if (!item.enabled) return 'Không khả dụng';
+                      if (item.safe === true) return 'An toàn';
+                      if (item.safe === false) return 'Nguy hiểm';
+                      return 'Không xác định';
+                    };
+
+                    const getScoreDisplay = (item) => {
+                      if (item.score !== null && item.score !== undefined) {
+                        return `${item.score}/100`;
+                      }
+                      if (item.trustScore) return `${item.trustScore}/100`;
+                      if (item.riskScore) return `Rủi ro: ${item.riskScore}`;
+                      return '';
+                    };
+
+                    return (
+                      <div key={index} className="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                        <div className="flex justify-between items-start">
+                          <div className="flex items-center space-x-2">
+                            <span className="text-lg">{getStatusIcon(item.safe, item.error)}</span>
+                            <div>
+                              <span className="font-medium text-gray-900 dark:text-gray-100">
+                                {item.source}
+                              </span>
+                              {getScoreDisplay(item) && (
+                                <div className="text-xs text-gray-500 dark:text-gray-400">
+                                  {getScoreDisplay(item)}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                          <span className={`font-semibold text-sm px-2 py-1 rounded ${
+                            item.error ? 'text-yellow-700 bg-yellow-100 dark:text-yellow-300 dark:bg-yellow-900/30' :
+                            !item.enabled ? 'text-gray-700 bg-gray-100 dark:text-gray-300 dark:bg-gray-900/30' :
+                            item.safe === true ? 'text-green-700 bg-green-100 dark:text-green-300 dark:bg-green-900/30' :
+                            item.safe === false ? 'text-red-700 bg-red-100 dark:text-red-300 dark:bg-red-900/30' :
+                            'text-gray-700 bg-gray-100 dark:text-gray-300 dark:bg-gray-900/30'
+                          }`}>
+                            {getStatusText(item)}
+                          </span>
+                        </div>
+
+                        {/* Additional details */}
+                        {item.threats && item.threats.length > 0 && (
+                          <div className="mt-2 text-xs text-red-600 dark:text-red-400">
+                            Phát hiện: {item.threats.map(t => t.type).join(', ')}
+                          </div>
+                        )}
+                        {item.categories && item.categories.length > 0 && (
+                          <div className="mt-2 text-xs text-gray-600 dark:text-gray-400">
+                            Danh mục: {item.categories.join(', ')}
+                          </div>
+                        )}
+                        {item.error && (
+                          <div className="mt-2 text-xs text-yellow-600 dark:text-yellow-400">
+                            {item.error}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  }) || (
+                    <div className="text-center text-gray-500 dark:text-gray-400 py-4">
+                      Không có dữ liệu từ bên thứ 3
                     </div>
-                  ))}
+                  )}
                 </CardContent>
               </Card>
 

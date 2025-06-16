@@ -1,14 +1,19 @@
 const axios = require('axios');
 const crypto = require('crypto');
 const Logger = require('../../shared/utils/logger');
+const { config } = require('../config/thirdPartyAPIs');
 
 const logger = new Logger('link-service');
 
 class ScreenshotService {
   constructor() {
-    this.apiKey = process.env.SCREENSHOTLAYER_API_KEY;
-    this.baseUrl = 'http://api.screenshotlayer.com/api/capture';
-    this.timeout = 30000; // 30 seconds for screenshot
+    this.config = config.screenshotOne;
+    this.requestConfig = config.requestConfig;
+
+    // Fallback to old config for backward compatibility
+    this.apiKey = this.config.apiKey || process.env.SCREENSHOTLAYER_API_KEY;
+    this.baseUrl = this.config.baseUrl || 'http://api.screenshotlayer.com/api/capture';
+    this.timeout = this.requestConfig.timeout || 30000;
   }
 
   /**
@@ -49,9 +54,90 @@ class ScreenshotService {
   }
 
   /**
-   * Take screenshot using ScreenshotLayer API
+   * Generate signed URL for ScreenshotOne API
+   */
+  generateSignedUrl(url, options = {}) {
+    if (!this.config.enabled) {
+      return null;
+    }
+
+    const params = {
+      url: encodeURIComponent(url),
+      access_key: this.config.apiKey,
+      ...this.config.options,
+      ...options
+    };
+
+    // Create query string
+    const queryString = Object.keys(params)
+      .sort()
+      .map(key => `${key}=${params[key]}`)
+      .join('&');
+
+    // Generate signature if secret is provided
+    if (this.config.secret) {
+      const signature = crypto
+        .createHmac('sha256', this.config.secret)
+        .update(queryString)
+        .digest('hex');
+
+      return `${this.config.baseUrl}/take?${queryString}&signature=${signature}`;
+    }
+
+    return `${this.config.baseUrl}/take?${queryString}`;
+  }
+
+  /**
+   * Take screenshot using ScreenshotOne API (new method)
+   */
+  async takeScreenshotV2(url, options = {}) {
+    try {
+      if (!this.config.enabled) {
+        return this.getMockScreenshot(url);
+      }
+
+      const screenshotUrl = this.generateSignedUrl(url, options);
+
+      // Test if the screenshot URL is accessible
+      const response = await axios.head(screenshotUrl, {
+        timeout: this.timeout
+      });
+
+      if (response.status === 200) {
+        return {
+          success: true,
+          screenshotUrl,
+          thumbnailUrl: this.generateSignedUrl(url, {
+            ...options,
+            viewport_width: 400,
+            viewport_height: 300
+          }),
+          metadata: {
+            viewport: `${this.config.options.viewport_width}x${this.config.options.viewport_height}`,
+            format: this.config.options.format,
+            fullPage: this.config.options.full_page,
+            capturedAt: new Date().toISOString()
+          }
+        };
+      }
+
+      throw new Error(`Screenshot service returned status: ${response.status}`);
+
+    } catch (error) {
+      logger.warn('ScreenshotOne API error', { error: error.message, url });
+      return this.getMockScreenshot(url);
+    }
+  }
+
+  /**
+   * Take screenshot using ScreenshotLayer API (legacy method)
    */
   async takeScreenshot(url) {
+    // Try new API first, fallback to old API
+    if (this.config.enabled) {
+      return this.takeScreenshotV2(url);
+    }
+
     try {
       if (!this.apiKey) {
         return this.getMockScreenshot(url);
@@ -77,7 +163,7 @@ class ScreenshotService {
         // In a real implementation, you would upload this to cloud storage
         // For now, we'll create a mock URL
         const screenshotUrl = this.generateScreenshotUrl(url);
-        
+
         return {
           success: true,
           screenshotUrl,

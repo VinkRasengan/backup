@@ -10,7 +10,8 @@ const getApiBaseUrl = () => {
     return '/api';
   }
 
-  return 'http://localhost:5000/api';
+  // Fixed: Use API Gateway port 8080 instead of 5000
+  return 'http://localhost:8080/api';
 };
 
 // Smart Community Data Manager with Caching & Prefetching
@@ -239,21 +240,25 @@ export const useCommunityData = () => {
 
   const fetchData = useCallback(async (params) => {
     try {
+      console.log('🚀 useCommunityData.fetchData called with params:', params);
+
       // Cancel previous request
       if (abortControllerRef.current) {
         abortControllerRef.current.abort();
       }
-      
+
       setLoading(true);
       setError(null);
 
+      console.log('📡 Calling dataManager.fetchData...');
       const result = await dataManager.fetchData(params);
-      
+      console.log('✅ dataManager.fetchData result:', result);
+
       setData(result);
     } catch (err) {
       if (err.name !== 'AbortError') {
         setError(err.message);
-        console.error('Data fetch error:', err);
+        console.error('❌ Data fetch error:', err);
       }
     } finally {
       setLoading(false);

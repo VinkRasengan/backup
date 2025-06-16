@@ -43,13 +43,23 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization', 'x-correlation-id', 'x-service-name', 'x-service-key']
 }));
 
-// Rate limiting
+// Rate limiting - Increased limits for development
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // limit each IP to 100 requests per windowMs
+  max: process.env.NODE_ENV === 'production' ? 500 : 2000, // Higher limit for dev
   message: {
     error: 'Too many requests from this IP',
     code: 'RATE_LIMIT_EXCEEDED'
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+  // Skip rate limiting for localhost in development
+  skip: (req) => {
+    if (process.env.NODE_ENV !== 'production') {
+      const ip = req.ip || req.connection.remoteAddress;
+      return ip === '127.0.0.1' || ip === '::1' || ip === '::ffff:127.0.0.1';
+    }
+    return false;
   }
 });
 app.use(limiter);

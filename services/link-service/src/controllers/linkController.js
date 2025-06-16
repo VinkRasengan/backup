@@ -2,12 +2,44 @@ const { db, collections } = require('../config/firebase');
 const Logger = require('../../shared/utils/logger');
 const AuthMiddleware = require('../../shared/middleware/auth');
 const securityAggregatorService = require('../services/securityAggregatorService');
+const securityAPIService = require('../services/securityAPIService');
 const screenshotService = require('../services/screenshotService');
 const geminiService = require('../services/geminiService');
 const crawlerService = require('../services/crawlerService');
 
 const logger = new Logger('link-service');
 const authMiddleware = new AuthMiddleware(process.env.AUTH_SERVICE_URL);
+
+/**
+ * Generate summary text based on analysis results
+ */
+function generateSummary(finalScore, securityScore, credibilityScore, threats) {
+  let summary = `Link đã được kiểm tra thành công. `;
+
+  if (finalScore >= 80) {
+    summary += `Đây là một trang web an toàn với điểm tin cậy cao (${finalScore}/100).`;
+  } else if (finalScore >= 60) {
+    summary += `Trang web này có độ tin cậy trung bình (${finalScore}/100). Hãy thận trọng khi truy cập.`;
+  } else if (finalScore >= 30) {
+    summary += `Cảnh báo: Trang web này có độ tin cậy thấp (${finalScore}/100). Không khuyến khích truy cập.`;
+  } else {
+    summary += `Nguy hiểm: Trang web này có độ tin cậy rất thấp (${finalScore}/100). Tránh truy cập.`;
+  }
+
+  summary += ` Điểm bảo mật: ${securityScore}/100, Điểm tin cậy: ${credibilityScore}/100.`;
+
+  if (threats.phishing) {
+    summary += ` Phát hiện dấu hiệu lừa đảo (phishing).`;
+  }
+  if (threats.malware) {
+    summary += ` Phát hiện mã độc (malware).`;
+  }
+  if (threats.suspicious) {
+    summary += ` Có dấu hiệu đáng nghi.`;
+  }
+
+  return summary;
+}
 
 class LinkController {
   /**
@@ -33,106 +65,53 @@ class LinkController {
         });
       }
 
-      // For testing, return mock data immediately
-      const mockResult = {
-        id: Date.now().toString(),
-        url,
-        status: 'completed',
-        credibilityScore: 85,
-        securityScore: 90,
-        finalScore: 87,
-        summary: `Link đã được kiểm tra thành công. Điểm tin cậy: 85/100, Điểm bảo mật: 90/100.`,
-        threats: {
-          malicious: false,
-          suspicious: false,
-          phishing: false,
-          malware: false
-        },
-        checkedAt: new Date().toISOString(),
-        mockData: true
-      };
-
-      logger.withCorrelationId(req.correlationId).info('Link check completed (mock)', {
-        url,
-        finalScore: mockResult.finalScore
-      });
-
-      res.json({
-        success: true,
-        result: mockResult
-      });
-
-      return; // Skip the complex analysis for now
-
-      // Check if link was recently checked by this user (within 1 hour)
-      if (userId) {
-        const recentCheck = await db.collection(collections.LINKS)
-          .where('userId', '==', userId)
-          .where('url', '==', url)
-          .orderBy('checkedAt', 'desc')
-          .limit(1)
-          .get();
-
-        if (!recentCheck.empty) {
-          const lastCheck = recentCheck.docs[0].data();
-          const lastCheckTime = new Date(lastCheck.checkedAt);
-          const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
-
-          if (lastCheckTime > oneHourAgo) {
-            logger.withCorrelationId(req.correlationId).info('Returning cached result', {
-              url,
-              lastCheckTime
-            });
-
-            return res.json({
-              message: 'Link was recently checked',
-              cached: true,
-              result: {
-                id: recentCheck.docs[0].id,
-                ...lastCheck
-              }
-            });
-          }
-        }
-      }
-
-      // Run comprehensive analysis
+      // Run comprehensive analysis with new security APIs
       logger.withCorrelationId(req.correlationId).info('Starting comprehensive analysis', { url });
 
       const [securityAnalysis, screenshotAnalysis, geminiAnalysis] = await Promise.allSettled([
-        securityAggregatorService.analyzeUrl(url),
+        securityAPIService.comprehensiveCheck(url),
         screenshotService.takeScreenshotWithRetry(url),
         geminiService.analyzeUrl(url)
       ]);
 
       // Process security results
-      const securityData = securityAnalysis.status === 'fulfilled' 
-        ? securityAnalysis.value 
-        : { success: false, error: 'Security analysis failed' };
+      const securityData = securityAnalysis.status === 'fulfilled'
+        ? securityAnalysis.value
+        : {
+            overallScore: null,
+            overallSafety: 'unknown',
+            results: [],
+            error: 'Security analysis failed'
+          };
 
       // Process Screenshot results
       const screenshotData = screenshotAnalysis.status === 'fulfilled'
         ? screenshotAnalysis.value
-        : { success: false, error: 'Screenshot capture failed', screenshotUrl: screenshotService.getFallbackScreenshot(url) };
+        : {
+            success: false,
+            error: 'Screenshot capture failed',
+            screenshotUrl: screenshotService.getFallbackScreenshot(url)
+          };
 
       // Process Gemini AI analysis results
       const geminiData = geminiAnalysis.status === 'fulfilled'
         ? geminiAnalysis.value
-        : { success: false, error: 'Gemini AI analysis failed', analysis: null, credibilityScore: null };
+        : {
+            success: false,
+            error: 'Gemini AI analysis failed',
+            analysis: null,
+            credibilityScore: null
+          };
 
       // Get basic content analysis
       const contentAnalysis = await crawlerService.mockCrawlerAPI(url);
 
-      // Calculate combined security score
-      const securityScore = securityData.success 
-        ? (100 - securityData.overallRisk.score) // Convert risk score to security score
-        : 50;
+      // Calculate combined scores
+      const securityScore = securityData.overallScore || 50;
+      const credibilityScore = geminiData.credibilityScore || contentAnalysis.credibilityScore || 70;
 
       // Calculate final score combining credibility and security
-      const finalScore = crawlerService.calculateFinalScore(
-        contentAnalysis.credibilityScore,
-        securityScore
-      );
+      const finalScore = Math.round((credibilityScore * 0.4) + (securityScore * 0.6));
 
       // Determine overall status
       let status = 'safe';
@@ -142,25 +121,38 @@ class LinkController {
         status = 'suspicious';
       }
 
+      // Extract threats from security analysis
+      const threats = {
+        malicious: securityData.overallSafety === 'unsafe',
+        suspicious: securityData.overallSafety === 'unknown' || finalScore < 60,
+        phishing: securityData.results?.some(r => r.source === 'PhishTank' && !r.safe) || false,
+        malware: securityData.results?.some(r => r.malware || r.malwareDetected) || false
+      };
+
       // Create comprehensive result
-      const crawlerResult = {
+      const result = {
+        id: Date.now().toString(),
         url,
         title: contentAnalysis.title,
         description: contentAnalysis.description,
-        credibilityScore: contentAnalysis.credibilityScore,
+        credibilityScore,
         securityScore,
         finalScore,
         status,
+        summary: generateSummary(finalScore, securityScore, credibilityScore, threats),
+        threats,
         security: {
-          threats: securityData.threats || {},
-          riskFactors: securityData.riskFactors || [],
-          servicesChecked: securityData.servicesChecked || 0,
-          details: securityData.results || {}
+          overallSafety: securityData.overallSafety,
+          summary: securityData.summary,
+          servicesChecked: securityData.results?.length || 0,
+          details: securityData.results || []
         },
         screenshot: {
           url: screenshotData.screenshotUrl || null,
+          thumbnailUrl: screenshotData.thumbnailUrl || null,
           success: screenshotData.success,
-          error: screenshotData.error || null
+          error: screenshotData.error || null,
+          metadata: screenshotData.metadata || null
         },
         aiAnalysis: {
           analysis: geminiData.analysis || null,
@@ -169,11 +161,11 @@ class LinkController {
           error: geminiData.error || null
         },
         thirdPartyResults: [
-          ...(securityData.results ? Object.entries(securityData.results).map(([service, result]) => ({
-            service,
+          ...(securityData.results || []).map(result => ({
+            service: result.source,
             result,
             type: 'security'
-          })) : []),
+          })),
           {
             service: 'screenshot',
             result: screenshotData,
@@ -185,35 +177,35 @@ class LinkController {
             type: 'ai-analysis'
           }
         ],
-        analyzedAt: new Date().toISOString()
+        analyzedAt: new Date().toISOString(),
+        duration: securityData.duration || null
       };
 
-      logger.withCorrelationId(req.correlationId).info('Analysis completed', {
+      logger.withCorrelationId(req.correlationId).info('Link check completed', {
         url,
         finalScore,
         status,
         securityScore,
-        servicesChecked: securityData.servicesChecked || 0
+        servicesChecked: securityData.results?.length || 0
       });
 
       // Save result to database if user is authenticated
       if (userId) {
         const linkData = {
           userId,
-          url,
-          ...crawlerResult,
+          ...result,
           checkedAt: new Date().toISOString()
         };
 
         const linkRef = await db.collection(collections.LINKS).add(linkData);
-        
+
         // Update user stats
         await db.collection(collections.USERS).doc(userId).update({
           'stats.linksChecked': db.FieldValue.increment(1),
           updatedAt: new Date().toISOString()
         });
 
-        crawlerResult.id = linkRef.id;
+        result.id = linkRef.id;
 
         logger.withCorrelationId(req.correlationId).info('Link result saved', {
           linkId: linkRef.id,
@@ -223,8 +215,10 @@ class LinkController {
 
       res.json({
         success: true,
-        result: crawlerResult
+        result
       });
+
+
 
     } catch (error) {
       logger.logError(error, req);
@@ -417,6 +411,8 @@ class LinkController {
       next(error);
     }
   }
+
+
 
   /**
    * Helper method to check a single URL (used by bulk check)

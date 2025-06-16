@@ -86,6 +86,7 @@ const CommunityPage = () => {
     const sortBy = activeTab === 'trending' ? 'trending' : 'newest';
     const page = refresh ? 1 : Math.floor(posts.length / 10) + 1;
 
+    console.log('🎯 CommunityPage.fetchPosts called with refresh:', refresh);
     console.log('🔄 Fetching user posts only...', { sortBy, page, refresh });
 
     const params = {
@@ -97,12 +98,16 @@ const CommunityPage = () => {
       newsOnly: false
     };
 
+    console.log('📋 CommunityPage.fetchPosts params:', params);
+    console.log('🔄 Calling fetchData...');
     await fetchData(params);
   };
 
   useEffect(() => {
+    console.log('🔄 useEffect [activeTab] triggered, activeTab:', activeTab);
     // Debounce tab changes to prevent rapid API calls
     const timeoutId = setTimeout(() => {
+      console.log('⏰ Debounced timeout triggered, calling fetchPosts(true)');
       fetchPosts(true);
     }, 300);
 
@@ -111,6 +116,7 @@ const CommunityPage = () => {
 
   // Initialize posts on component mount
   useEffect(() => {
+    console.log('🚀 useEffect [] (mount) triggered, calling fetchPosts(true)');
     fetchPosts(true);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const handleVote = async (postId, type) => {
