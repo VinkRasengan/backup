@@ -8,7 +8,7 @@ const getApiBaseUrl = () => {
     return ''; // Use relative URL for production
   }
 
-  return 'http://localhost:5000'; // Development fallback
+  return 'http://localhost:8080'; // Development fallback (API Gateway)
 };
 
 const API_BASE_URL = getApiBaseUrl();

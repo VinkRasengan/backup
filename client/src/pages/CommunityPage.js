@@ -150,7 +150,7 @@ const CommunityPage = () => {
       const headers = { 'Content-Type': 'application/json' };
       if (token) headers['Authorization'] = `Bearer ${token}`;
 
-      const response = await fetch(`http://localhost:5000/api/votes/${postId}`, {
+      const response = await fetch(`http://localhost:8080/api/votes/${postId}`, {
         method: 'POST',
         headers,
         body: JSON.stringify({

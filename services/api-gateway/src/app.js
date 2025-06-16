@@ -7,8 +7,8 @@ const { createProxyMiddleware } = require('http-proxy-middleware');
 require('dotenv').config();
 
 // Import shared utilities
-const Logger = require('../../../shared/utils/logger');
-const { HealthCheck, commonChecks } = require('../../../shared/utils/health-check');
+const Logger = require('../shared/utils/logger');
+const { HealthCheck, commonChecks } = require('../shared/utils/health-check');
 
 // Import local modules (simplified for now)
 // const authMiddleware = require('./middleware/auth');
@@ -158,9 +158,144 @@ app.get('/services/status', async (req, res) => {
   }
 });
 
+// API routes with /api prefix
+app.use('/api/users', createProxyMiddleware({
+  target: process.env.AUTH_SERVICE_URL || 'http://localhost:3001',
+  changeOrigin: true,
+  pathRewrite: { '^/api/users': '/users' },
+  onError: (err, req, res) => {
+    logger.error('Auth service proxy error', { error: err.message });
+    res.status(503).json({
+      error: 'Auth service unavailable',
+      code: 'SERVICE_UNAVAILABLE'
+    });
+  }
+}));
+
+app.use('/api/auth', createProxyMiddleware({
+  target: process.env.AUTH_SERVICE_URL || "http://localhost:3001" || 'http://localhost:3001',
+  changeOrigin: true,
+  pathRewrite: { '^/api/auth': '/auth' },
+  onError: (err, req, res) => {
+    logger.error('Auth service proxy error', { error: err.message });
+    res.status(503).json({
+      error: 'Auth service unavailable',
+      code: 'SERVICE_UNAVAILABLE'
+    });
+  }
+}));
+
+app.use('/api/links', createProxyMiddleware({
+  target: process.env.LINK_SERVICE_URL || 'http://localhost:3002',
+  changeOrigin: true,
+  pathRewrite: { '^/api/links': '/links' },
+  onError: (err, req, res) => {
+    logger.error('Link service proxy error', { error: err.message });
+    res.status(503).json({
+      error: 'Link service unavailable',
+      code: 'SERVICE_UNAVAILABLE'
+    });
+  }
+}));
+
+app.use('/api/community', createProxyMiddleware({
+  target: process.env.COMMUNITY_SERVICE_URL || 'http://localhost:3003',
+  changeOrigin: true,
+  pathRewrite: { '^/api/community': '' },
+  onError: (err, req, res) => {
+    logger.error('Community service proxy error', { error: err.message });
+    res.status(503).json({
+      error: 'Community service unavailable',
+      code: 'SERVICE_UNAVAILABLE'
+    });
+  }
+}));
+
+app.use('/api/chat', createProxyMiddleware({
+  target: process.env.CHAT_SERVICE_URL || 'http://localhost:3004',
+  changeOrigin: true,
+  pathRewrite: { '^/api/chat': '/chat' },
+  onError: (err, req, res) => {
+    logger.error('Chat service proxy error', { error: err.message });
+    res.status(503).json({
+      error: 'Chat service unavailable',
+      code: 'SERVICE_UNAVAILABLE'
+    });
+  }
+}));
+
+app.use('/api/news', createProxyMiddleware({
+  target: process.env.NEWS_SERVICE_URL || 'http://localhost:3005',
+  changeOrigin: true,
+  pathRewrite: { '^/api/news': '/news' },
+  onError: (err, req, res) => {
+    logger.error('News service proxy error', { error: err.message });
+    res.status(503).json({
+      error: 'News service unavailable',
+      code: 'SERVICE_UNAVAILABLE'
+    });
+  }
+}));
+
+app.use('/api/admin', createProxyMiddleware({
+  target: process.env.ADMIN_SERVICE_URL || 'http://localhost:3006',
+  changeOrigin: true,
+  pathRewrite: { '^/api/admin': '/admin' },
+  onError: (err, req, res) => {
+    logger.error('Admin service proxy error', { error: err.message });
+    res.status(503).json({
+      error: 'Admin service unavailable',
+      code: 'SERVICE_UNAVAILABLE'
+    });
+  }
+}));
+
+// Votes routes (proxy to community service)
+app.use('/api/votes', createProxyMiddleware({
+  target: process.env.COMMUNITY_SERVICE_URL || 'http://localhost:3003',
+  changeOrigin: true,
+  timeout: 30000, // 30 seconds
+  proxyTimeout: 30000,
+  pathRewrite: { '^/api/votes': '/votes' },
+  onProxyReq: (proxyReq, req, res) => {
+    logger.info('Proxying votes request', {
+      method: req.method,
+      url: req.url,
+      target: proxyReq.path
+    });
+  },
+  onProxyRes: (proxyRes, req, res) => {
+    logger.info('Votes proxy response', {
+      status: proxyRes.statusCode,
+      url: req.url
+    });
+  },
+  onError: (err, req, res) => {
+    logger.error('Community service proxy error (votes)', { error: err.message });
+    res.status(503).json({
+      error: 'Community service unavailable',
+      code: 'SERVICE_UNAVAILABLE'
+    });
+  }
+}));
+
+// Comments routes (proxy to community service)
+app.use('/api/comments', createProxyMiddleware({
+  target: process.env.COMMUNITY_SERVICE_URL || 'http://localhost:3003',
+  changeOrigin: true,
+  pathRewrite: { '^/api/comments': '/comments' },
+  onError: (err, req, res) => {
+    logger.error('Community service proxy error (comments)', { error: err.message });
+    res.status(503).json({
+      error: 'Community service unavailable',
+      code: 'SERVICE_UNAVAILABLE'
+    });
+  }
+}));
+
 // Authentication routes (direct proxy to auth service)
 app.use('/auth', createProxyMiddleware({
-  target: process.env.AUTH_SERVICE_URL,
+  target: process.env.AUTH_SERVICE_URL || 'http://localhost:3001',
   changeOrigin: true,
   pathRewrite: { '^/auth': '/auth' },
   onError: (err, req, res) => {
@@ -174,7 +309,7 @@ app.use('/auth', createProxyMiddleware({
 
 // User routes (proxy to auth service)
 app.use('/users', createProxyMiddleware({
-  target: process.env.AUTH_SERVICE_URL,
+  target: process.env.AUTH_SERVICE_URL || "http://localhost:3001" || 'http://localhost:3001',
   changeOrigin: true,
   pathRewrite: { '^/users': '/users' },
   onError: (err, req, res) => {
@@ -188,7 +323,7 @@ app.use('/users', createProxyMiddleware({
 
 // Link verification routes (proxy to link service)
 app.use('/links', createProxyMiddleware({
-  target: process.env.LINK_SERVICE_URL,
+  target: process.env.LINK_SERVICE_URL || "http://localhost:3002",
   changeOrigin: true,
   pathRewrite: { '^/links': '/links' },
   onError: (err, req, res) => {
@@ -202,7 +337,7 @@ app.use('/links', createProxyMiddleware({
 
 // Security routes (proxy to link service)
 app.use('/security', createProxyMiddleware({
-  target: process.env.LINK_SERVICE_URL,
+  target: process.env.LINK_SERVICE_URL || "http://localhost:3002",
   changeOrigin: true,
   pathRewrite: { '^/security': '/security' },
   onError: (err, req, res) => {
@@ -216,7 +351,7 @@ app.use('/security', createProxyMiddleware({
 
 // Community routes (proxy to community service)
 app.use('/community', createProxyMiddleware({
-  target: process.env.COMMUNITY_SERVICE_URL,
+  target: process.env.COMMUNITY_SERVICE_URL || "http://localhost:3003",
   changeOrigin: true,
   pathRewrite: { '^/community': '' },
   onError: (err, req, res) => {
@@ -230,7 +365,7 @@ app.use('/community', createProxyMiddleware({
 
 // Chat routes (proxy to chat service)
 app.use('/chat', createProxyMiddleware({
-  target: process.env.CHAT_SERVICE_URL,
+  target: process.env.CHAT_SERVICE_URL || "http://localhost:3004",
   changeOrigin: true,
   pathRewrite: { '^/chat': '/chat' },
   onError: (err, req, res) => {
@@ -244,7 +379,7 @@ app.use('/chat', createProxyMiddleware({
 
 // Conversations routes (proxy to chat service)
 app.use('/conversations', createProxyMiddleware({
-  target: process.env.CHAT_SERVICE_URL,
+  target: process.env.CHAT_SERVICE_URL || "http://localhost:3004",
   changeOrigin: true,
   pathRewrite: { '^/conversations': '/conversations' },
   onError: (err, req, res) => {
@@ -258,7 +393,7 @@ app.use('/conversations', createProxyMiddleware({
 
 // News routes (proxy to news service)
 app.use('/news', createProxyMiddleware({
-  target: process.env.NEWS_SERVICE_URL,
+  target: process.env.NEWS_SERVICE_URL || "http://localhost:3005",
   changeOrigin: true,
   pathRewrite: { '^/news': '/news' },
   onError: (err, req, res) => {
@@ -272,7 +407,7 @@ app.use('/news', createProxyMiddleware({
 
 // Admin routes (proxy to admin service)
 app.use('/admin', createProxyMiddleware({
-  target: process.env.ADMIN_SERVICE_URL,
+  target: process.env.ADMIN_SERVICE_URL || "http://localhost:3006",
   changeOrigin: true,
   pathRewrite: { '^/admin': '/admin' },
   onError: (err, req, res) => {

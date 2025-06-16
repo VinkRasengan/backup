@@ -6,8 +6,8 @@ const rateLimit = require('express-rate-limit');
 require('dotenv').config();
 
 // Import shared utilities
-const Logger = require('../../../shared/utils/logger');
-const { HealthCheck, commonChecks } = require('../../../shared/utils/health-check');
+const Logger = require('../shared/utils/logger');
+const { HealthCheck, commonChecks } = require('../shared/utils/health-check');
 
 const app = express();
 const PORT = process.env.PORT || 3005;
@@ -71,6 +71,92 @@ app.get('/info', (req, res) => {
 });
 
 // Mock news endpoints
+app.get('/news/latest', (req, res) => {
+  const { source = 'all', pageSize = 10, page = 1 } = req.query;
+
+  // Mock news articles
+  const mockArticles = [
+    {
+      id: '1',
+      title: 'Cảnh báo: Chiến dịch lừa đảo mới nhắm vào khách hàng ngân hàng',
+      summary: 'Các nhà nghiên cứu bảo mật đã phát hiện một chiến dịch lừa đảo tinh vi nhắm vào thông tin tài khoản ngân hàng...',
+      url: 'https://example.com/news/1',
+      publishedAt: new Date(Date.now() - 1000 * 60 * 30).toISOString(), // 30 minutes ago
+      source: 'VnExpress',
+      category: 'Công nghệ',
+      credibilityScore: 95
+    },
+    {
+      id: '2',
+      title: 'Phát hiện mã độc mới có khả năng đánh cắp thông tin cá nhân',
+      summary: 'Chuyên gia an ninh mạng cảnh báo về loại mã độc mới có thể truy cập vào dữ liệu nhạy cảm...',
+      url: 'https://example.com/news/2',
+      publishedAt: new Date(Date.now() - 1000 * 60 * 60).toISOString(), // 1 hour ago
+      source: 'Tuổi Trẻ',
+      category: 'An ninh mạng',
+      credibilityScore: 92
+    },
+    {
+      id: '3',
+      title: 'Cách nhận biết và tránh các trang web giả mạo',
+      summary: 'Hướng dẫn chi tiết giúp người dùng internet nhận biết và tránh xa các trang web lừa đảo...',
+      url: 'https://example.com/news/3',
+      publishedAt: new Date(Date.now() - 1000 * 60 * 90).toISOString(), // 1.5 hours ago
+      source: 'Thanh Niên',
+      category: 'Giáo dục',
+      credibilityScore: 88
+    },
+    {
+      id: '4',
+      title: 'Tin tức giả lan truyền nhanh trên mạng xã hội',
+      summary: 'Nghiên cứu mới cho thấy tin tức giả lan truyền nhanh gấp 6 lần tin tức thật trên các nền tảng mạng xã hội...',
+      url: 'https://example.com/news/4',
+      publishedAt: new Date(Date.now() - 1000 * 60 * 120).toISOString(), // 2 hours ago
+      source: 'Dân Trí',
+      category: 'Xã hội',
+      credibilityScore: 90
+    },
+    {
+      id: '5',
+      title: 'Công nghệ AI giúp phát hiện tin tức giả',
+      summary: 'Các công ty công nghệ đang phát triển hệ thống AI tiên tiến để tự động phát hiện và gắn cờ tin tức giả...',
+      url: 'https://example.com/news/5',
+      publishedAt: new Date(Date.now() - 1000 * 60 * 180).toISOString(), // 3 hours ago
+      source: 'VietnamNet',
+      category: 'Công nghệ',
+      credibilityScore: 94
+    }
+  ];
+
+  // Filter by source if specified
+  let filteredArticles = mockArticles;
+  if (source !== 'all') {
+    filteredArticles = mockArticles.filter(article =>
+      article.source.toLowerCase().includes(source.toLowerCase())
+    );
+  }
+
+  // Pagination
+  const startIndex = (page - 1) * pageSize;
+  const endIndex = startIndex + parseInt(pageSize);
+  const paginatedArticles = filteredArticles.slice(startIndex, endIndex);
+
+  res.json({
+    success: true,
+    data: {
+      articles: paginatedArticles,
+      pagination: {
+        page: parseInt(page),
+        pageSize: parseInt(pageSize),
+        total: filteredArticles.length,
+        totalPages: Math.ceil(filteredArticles.length / pageSize)
+      },
+      source,
+      timestamp: new Date().toISOString()
+    }
+  });
+});
+
 app.get('/news/feed', (req, res) => {
   res.json({
     success: true,

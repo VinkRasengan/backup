@@ -1,5 +1,5 @@
 const { db, collections } = require('../config/firebase');
-const Logger = require('/app/shared/utils/logger');
+const Logger = require('../../shared/utils/logger');
 
 const logger = new Logger('auth-service');
 
@@ -114,7 +114,7 @@ class UserController {
       const userId = req.user.userId;
 
       const userDoc = await db.collection(collections.USERS).doc(userId).get();
-      
+
       if (!userDoc.exists) {
         return res.status(404).json({
           error: 'User not found',
@@ -135,6 +135,83 @@ class UserController {
 
       res.json({
         stats
+      });
+
+    } catch (error) {
+      logger.logError(error, req);
+      next(error);
+    }
+  }
+
+  /**
+   * Get user dashboard data
+   */
+  async getDashboard(req, res, next) {
+    try {
+      const userId = req.user.userId;
+
+      // For testing, return mock data directly without Firebase
+      const mockUserData = {
+        email: req.user.email || 'test@example.com',
+        displayName: 'Test User',
+        firstName: 'Test',
+        lastName: 'User',
+        isVerified: true,
+        roles: req.user.roles || ['user'],
+        createdAt: new Date().toISOString(),
+        lastLoginAt: new Date().toISOString(),
+        lastActiveAt: new Date().toISOString(),
+        profile: {
+          avatar: null,
+          bio: 'Test user for dashboard testing',
+          preferences: {
+            notifications: true,
+            theme: 'light'
+          }
+        },
+        stats: {
+          linksChecked: 42,
+          postsCreated: 5,
+          commentsPosted: 12,
+          reputationScore: 150
+        }
+      };
+
+      const userData = mockUserData;
+
+      // Dashboard data
+      const dashboard = {
+        user: {
+          id: userId,
+          displayName: userData.displayName,
+          email: userData.email,
+          avatar: userData.profile?.avatar,
+          isVerified: userData.isVerified,
+          roles: userData.roles || ['user']
+        },
+        stats: {
+          linksChecked: userData.stats?.linksChecked || 0,
+          postsCreated: userData.stats?.postsCreated || 0,
+          commentsPosted: userData.stats?.commentsPosted || 0,
+          reputationScore: userData.stats?.reputationScore || 0
+        },
+        activity: {
+          lastLoginAt: userData.lastLoginAt,
+          joinedAt: userData.createdAt,
+          lastActiveAt: userData.lastActiveAt || userData.lastLoginAt
+        },
+        preferences: userData.profile?.preferences || {
+          notifications: true,
+          theme: 'light'
+        }
+      };
+
+      logger.withCorrelationId(req.correlationId).info('User dashboard retrieved', {
+        userId
+      });
+
+      res.json({
+        dashboard
       });
 
     } catch (error) {

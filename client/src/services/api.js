@@ -14,7 +14,7 @@ const getApiBaseUrl = () => {
     return '/api'; // Use relative URL for production (handled by _redirects)
   }
 
-  return 'http://localhost:5000/api'; // Development fallback (updated to match server port)
+  return 'http://localhost:8080/api'; // Development fallback (API Gateway port)
 };
 
 const api = axios.create({
@@ -114,24 +114,48 @@ export const userAPI = {
 // Link API endpoints
 export const linkAPI = {
   checkLink: async (url) => {
-    console.log('🔍 Checking URL with backend API - prioritizing backend');
+    console.log('🔍 Checking URL with backend API:', url);
 
-    // Strategy 1: Try test endpoint first (always works, has third party results)
+    // Strategy 1: Try direct Link Service (bypass API Gateway temporarily)
     try {
-      console.log('🧪 Trying test endpoint first for full third party results');
-      const testResponse = await api.post('/test/check-link', { url });
-      console.log('✅ Test endpoint success:', testResponse.data);
-      return testResponse;
-    } catch (testError) {
-      console.log('🔄 Test endpoint failed, trying authenticated API...', testError.message);
+      console.log('🔗 Trying direct Link Service at http://localhost:3002/links/check');
+      console.log('🔗 Sending payload:', { url });
+
+      const response = await fetch('http://localhost:3002/links/check', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ url })
+      });
+
+      console.log('🔗 Response status:', response.status, response.statusText);
+
+      if (response.ok) {
+        const data = await response.json();
+        console.log('✅ Direct Link Service success:', data);
+        // Return in the expected format
+        return {
+          data: {
+            result: data.result,
+            success: data.success
+          }
+        };
+      } else {
+        const errorText = await response.text();
+        console.log('🔄 Direct Link Service HTTP error:', response.status, response.statusText, errorText);
+      }
+    } catch (directError) {
+      console.log('🔄 Direct Link Service failed:', directError.message);
+      console.log('🔄 Error details:', directError);
     }
 
-    // Strategy 2: Try authenticated backend
+    // Strategy 2: Try main link check endpoint via API Gateway
     try {
-      console.log('🔐 Trying authenticated backend API');
+      console.log('🔐 Trying main link check API via Gateway');
       return await api.post('/links/check', { url });
     } catch (authError) {
-      console.log('🔄 Authenticated API failed:', authError.response?.status, authError.message);
+      console.log('🔄 Main API failed:', authError.response?.status, authError.message);
     }
 
     // Strategy 3: Direct VirusTotal API call as fallback (no third party results)

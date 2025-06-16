@@ -183,7 +183,7 @@ export const usePostVote = (postId) => {
                          localStorage.getItem('backendToken') ||
                          localStorage.getItem('token');
 
-            const response = await fetch(`http://localhost:5000/api/votes/${postId}`, {
+            const response = await fetch(`http://localhost:8080/api/votes/${postId}`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
