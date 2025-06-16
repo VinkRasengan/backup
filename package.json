@@ -4,9 +4,25 @@
   "description": "FactCheck Anti-Fraud Platform - Microservices Architecture",
   "private": true,
   "scripts": {
-    "dev": "echo Starting development environment... && npm run dev:services",
-    "dev:services": "concurrently \"npm run dev:auth\" \"npm run dev:api-gateway\" \"npm run dev:admin\" \"npm run dev:chat\" \"npm run dev:community\" \"npm run dev:link\" \"npm run dev:news\"",
+    "start": "echo 🚀 Starting Full Stack Application... && npm run start:full",
+    "start:full": "concurrently --kill-others-on-fail \"npm run start:services\" \"npm run start:client:delayed\"",
+    "start:services": "concurrently --kill-others-on-fail \"npm run start:auth\" \"npm run start:api-gateway\" \"npm run start:admin\" \"npm run start:chat\" \"npm run start:community\" \"npm run start:link\" \"npm run start:news\" \"npm run start:criminalip\" \"npm run start:phishtank\"",
+    "start:client": "cd client && npm start",
+    "start:client:delayed": "echo ⏳ Waiting for services to start... && sleep 20 && npm run start:client",
+    "start:auth": "cd services/auth-service && npm start",
+    "start:api-gateway": "cd services/api-gateway && npm start",
+    "start:admin": "cd services/admin-service && npm start",
+    "start:chat": "cd services/chat-service && npm start",
+    "start:community": "cd services/community-service && npm start",
+    "start:link": "cd services/link-service && npm start",
+    "start:news": "cd services/news-service && npm start",
+    "start:criminalip": "cd services/criminalip-service && npm start",
+    "start:phishtank": "cd services/phishtank-service && npm start",
+    "dev": "echo 🔧 Starting development environment... && npm run dev:full",
+    "dev:full": "concurrently --kill-others-on-fail \"npm run dev:services\" \"npm run dev:client:delayed\"",
+    "dev:services": "concurrently --kill-others-on-fail \"npm run dev:auth\" \"npm run dev:api-gateway\" \"npm run dev:admin\" \"npm run dev:chat\" \"npm run dev:community\" \"npm run dev:link\" \"npm run dev:news\" \"npm run dev:criminalip\" \"npm run dev:phishtank\"",
     "dev:client": "cd client && npm run start",
+    "dev:client:delayed": "echo ⏳ Waiting for services to start... && sleep 20 && npm run dev:client",
     "dev:auth": "cd services/auth-service && npm run dev",
     "dev:api-gateway": "cd services/api-gateway && npm run dev",
     "dev:admin": "cd services/admin-service && npm run dev",
@@ -14,14 +30,18 @@
     "dev:community": "cd services/community-service && npm run dev",
     "dev:link": "cd services/link-service && npm run dev",
     "dev:news": "cd services/news-service && npm run dev",
-    "dev:full": "concurrently \"npm run dev:services\" \"npm run dev:client:delayed\"",
-    "dev:client:delayed": "sleep 15 && npm run dev:client",
-    "install:all": "npm install && cd client && npm install && cd ../services/auth-service && npm install && cd ../api-gateway && npm install && cd ../admin-service && npm install && cd ../chat-service && npm install && cd ../community-service && npm install && cd ../link-service && npm install && cd ../news-service && npm install",
+    "dev:criminalip": "cd services/criminalip-service && npm run dev",
+    "dev:phishtank": "cd services/phishtank-service && npm run dev",
+    "install:all": "npm install && cd client && npm install && cd ../services/auth-service && npm install && cd ../api-gateway && npm install && cd ../admin-service && npm install && cd ../chat-service && npm install && cd ../community-service && npm install && cd ../link-service && npm install && cd ../news-service && npm install && cd ../criminalip-service && npm install && cd ../phishtank-service && npm install",
     "docker:dev": "docker-compose -f docker-compose.dev.yml up --build",
     "docker:dev:down": "docker-compose -f docker-compose.dev.yml down",
     "docker:prod": "docker-compose -f docker-compose.microservices.yml up --build",
-    "start": "npm run docker:prod",
+    "docker:start": "npm run docker:prod",
     "stop": "npm run docker:dev:down && docker-compose -f docker-compose.microservices.yml down"
+  },
+  "dependencies": {
+    "concurrently": "^8.2.2",
+    "all": "^0.0.0"
   },
   "devDependencies": {
     "concurrently": "^8.2.2"
@@ -33,8 +53,5 @@
   "workspaces": [
     "client",
     "services/*"
-  ],
-  "dependencies": {
-    "all": "^0.0.0"
-  }
+  ]
 }
