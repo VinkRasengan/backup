@@ -53,6 +53,28 @@ const NavigationLayout = ({ children, showHamburger = true, className, ...props 
   // Don't show navigation on login/register pages, and homepage only when not logged in
   const hideNavigation = ['/login', '/register'].includes(location.pathname) || (!user && location.pathname === '/');
 
+  // Full-screen pages that should bypass navigation layout entirely
+  const isFullScreenPage = ['/chat'].includes(location.pathname);
+
+  // For full-screen pages like chat, render without navigation layout
+  if (isFullScreenPage) {
+    return (
+      <div
+        className={cn(
+          'bg-gray-50 dark:bg-gray-900 transition-colors duration-300',
+          className
+        )}
+        data-theme={isDarkMode ? 'dark' : 'light'}
+        style={{ height: '100vh', overflow: 'hidden' }}
+        {...props}
+      >
+        {children}
+        {/* Keep mobile tab bar for navigation */}
+        <MobileTabBar />
+      </div>
+    );
+  }
+
   return (
     <div
       className={cn(

@@ -1,0 +1,251 @@
+/* Chat Theme Integration with Design System */
+
+/* Override chat-specific styles to use design tokens */
+.chat-fullscreen {
+  background: hsl(var(--background)) !important;
+  color: hsl(var(--foreground)) !important;
+}
+
+.chat-fullscreen.dark {
+  background: hsl(var(--background)) !important;
+  color: hsl(var(--foreground)) !important;
+}
+
+/* Header styling with design system */
+.messenger-header {
+  background: hsl(var(--card)) !important;
+  border-bottom: 1px solid hsl(var(--border)) !important;
+  box-shadow: var(--shadow-sm) !important;
+}
+
+.dark .messenger-header {
+  background: hsl(var(--card)) !important;
+  border-bottom: 1px solid hsl(var(--border)) !important;
+}
+
+/* Sidebar styling */
+.messenger-sidebar {
+  background: hsl(var(--card)) !important;
+  border-right: 1px solid hsl(var(--border)) !important;
+}
+
+.dark .messenger-sidebar {
+  background: hsl(var(--card)) !important;
+  border-right: 1px solid hsl(var(--border)) !important;
+}
+
+/* Chat area styling */
+.messenger-chat-area {
+  background: hsl(var(--background)) !important;
+}
+
+.dark .messenger-chat-area {
+  background: hsl(var(--background)) !important;
+}
+
+/* Messages area */
+.messenger-messages-area {
+  background: hsl(var(--background)) !important;
+}
+
+.dark .messenger-messages-area {
+  background: hsl(var(--background)) !important;
+}
+
+/* Message bubbles with design system colors */
+.message-bubble.user {
+  background: hsl(var(--primary)) !important;
+  color: hsl(var(--primary-foreground)) !important;
+}
+
+.message-bubble.bot {
+  background: hsl(var(--muted)) !important;
+  color: hsl(var(--muted-foreground)) !important;
+}
+
+.dark .message-bubble.bot {
+  background: hsl(var(--muted)) !important;
+  color: hsl(var(--muted-foreground)) !important;
+}
+
+/* Input container */
+.messenger-input-container {
+  background: hsl(var(--card)) !important;
+  border-top: 1px solid hsl(var(--border)) !important;
+}
+
+.dark .messenger-input-container {
+  background: hsl(var(--card)) !important;
+  border-top: 1px solid hsl(var(--border)) !important;
+}
+
+/* Input box */
+.messenger-input-box {
+  background: hsl(var(--background)) !important;
+  border: 1px solid hsl(var(--border)) !important;
+  color: hsl(var(--foreground)) !important;
+}
+
+.messenger-input-box:focus {
+  border-color: hsl(var(--ring)) !important;
+  box-shadow: 0 0 0 2px hsl(var(--ring) / 0.2) !important;
+}
+
+.dark .messenger-input-box {
+  background: hsl(var(--background)) !important;
+  border: 1px solid hsl(var(--border)) !important;
+  color: hsl(var(--foreground)) !important;
+}
+
+/* Buttons */
+.messenger-send-button,
+.messenger-attachment-button {
+  background: hsl(var(--primary)) !important;
+  color: hsl(var(--primary-foreground)) !important;
+  border-radius: var(--radius-md) !important;
+  transition: var(--transition-base) !important;
+}
+
+.messenger-send-button:hover,
+.messenger-attachment-button:hover {
+  background: hsl(var(--primary) / 0.9) !important;
+  transform: translateY(-1px) !important;
+}
+
+/* Conversation items */
+.messenger-sidebar .conversation-item {
+  border-radius: var(--radius-md) !important;
+  transition: var(--transition-base) !important;
+}
+
+.messenger-sidebar .conversation-item:hover {
+  background: hsl(var(--accent)) !important;
+  transform: translateX(2px) !important;
+}
+
+.messenger-sidebar .conversation-item.active {
+  background: hsl(var(--primary) / 0.1) !important;
+  border-left: 3px solid hsl(var(--primary)) !important;
+}
+
+/* Search input */
+.messenger-sidebar input[type="text"] {
+  background: hsl(var(--background)) !important;
+  border: 1px solid hsl(var(--border)) !important;
+  color: hsl(var(--foreground)) !important;
+  border-radius: var(--radius-lg) !important;
+}
+
+.messenger-sidebar input[type="text"]:focus {
+  border-color: hsl(var(--ring)) !important;
+  box-shadow: 0 0 0 2px hsl(var(--ring) / 0.2) !important;
+}
+
+/* Welcome screen */
+.messenger-chat-area .welcome-screen {
+  background: hsl(var(--background)) !important;
+  color: hsl(var(--foreground)) !important;
+}
+
+.welcome-screen .feature-card {
+  background: hsl(var(--card)) !important;
+  border: 1px solid hsl(var(--border)) !important;
+  border-radius: var(--radius-lg) !important;
+  box-shadow: var(--shadow-sm) !important;
+  transition: var(--transition-base) !important;
+}
+
+.welcome-screen .feature-card:hover {
+  box-shadow: var(--shadow-md) !important;
+  transform: translateY(-2px) !important;
+}
+
+/* Scrollbar styling */
+.messenger-messages-area::-webkit-scrollbar {
+  width: 6px;
+}
+
+.messenger-messages-area::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.messenger-messages-area::-webkit-scrollbar-thumb {
+  background: hsl(var(--border));
+  border-radius: 3px;
+}
+
+.messenger-messages-area::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--border) / 0.8);
+}
+
+/* Typing indicator */
+.typing-indicator {
+  background: hsl(var(--muted)) !important;
+  color: hsl(var(--muted-foreground)) !important;
+  border-radius: var(--radius-lg) !important;
+}
+
+/* Reaction buttons */
+.message-reactions button {
+  background: hsl(var(--accent)) !important;
+  border: 1px solid hsl(var(--border)) !important;
+  border-radius: var(--radius-md) !important;
+  transition: var(--transition-fast) !important;
+}
+
+.message-reactions button:hover {
+  background: hsl(var(--accent) / 0.8) !important;
+  transform: scale(1.05) !important;
+}
+
+/* Status indicators */
+.status-indicator.online {
+  background: hsl(142 76% 36%) !important; /* Green */
+}
+
+.status-indicator.away {
+  background: hsl(45 93% 47%) !important; /* Yellow */
+}
+
+.status-indicator.offline {
+  background: hsl(var(--muted-foreground)) !important;
+}
+
+/* Mobile responsive adjustments */
+@media (max-width: 768px) {
+  .messenger-header {
+    padding: 0 var(--spacing-sm) !important;
+  }
+  
+  .messenger-input-container {
+    padding: var(--spacing-sm) !important;
+  }
+  
+  .messenger-messages-area {
+    padding: var(--spacing-sm) !important;
+  }
+}
+
+/* Desktop enhancements */
+@media (min-width: 1025px) {
+  .messenger-header {
+    padding: 0 var(--spacing-lg) !important;
+  }
+  
+  .messenger-input-container {
+    padding: var(--spacing-md) var(--spacing-lg) !important;
+  }
+  
+  .messenger-messages-area {
+    padding: var(--spacing-lg) !important;
+  }
+  
+  .message-bubble {
+    border-radius: var(--radius-lg) !important;
+    box-shadow: var(--shadow-sm) !important;
+  }
+  
+  .message-bubble:hover {
+    box-shadow: var(--shadow-md) !important;
+  }
+}

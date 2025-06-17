@@ -15,6 +15,11 @@ const MobileTabBar = () => {
   const location = useLocation();
   const { user } = useAuth();
 
+  // Hide mobile tab bar on chat page since it has its own navigation
+  if (location.pathname === '/chat') {
+    return null;
+  }
+
   const tabs = [
     {
       id: 'home',

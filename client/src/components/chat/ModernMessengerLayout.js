@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Search,
@@ -19,17 +19,21 @@ import {
   Home
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { useTheme } from '../../context/ThemeContext';
 import { useNavigate } from 'react-router-dom';
+import EmojiPicker from './EmojiPicker';
+import './MessengerLayout.css';
+import './ChatTheme.css';
 
 const ModernMessengerLayout = () => {
   const { user } = useAuth();
+  const { isDarkMode } = useTheme();
   const navigate = useNavigate();
   const [selectedChat, setSelectedChat] = useState(null);
   const [chatHistory, setChatHistory] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [isTyping, setIsTyping] = useState(false);
-  const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(true);  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [message, setMessage] = useState('');
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
@@ -84,49 +88,150 @@ const ModernMessengerLayout = () => {
       status: 'offline'
     }
   ]);
+  // Handle mobile responsive
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 1025);
+
+  useEffect(() => {
+    const handleResize = () => {
+      const mobile = window.innerWidth < 1025;
+      setIsMobile(mobile);
+      if (mobile) {
+        setSidebarCollapsed(false); // Don't auto-collapse on mobile
+        if (selectedChat) {
+          setSidebarOpen(false); // Hide sidebar when chat is selected on mobile
+        }
+      } else {
+        // Desktop mode - always show sidebar
+        setSidebarOpen(true);
+        setSidebarCollapsed(false);
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    handleResize();
+
+    return () => window.removeEventListener('resize', handleResize);
+  }, [selectedChat]);
+  // Auto-select FactCheck AI on load
+  useEffect(() => {
+    if (conversations.length > 0 && !selectedChat) {
+      const factcheckAI = conversations.find(conv => conv.id === 'factcheck-ai');
+      if (factcheckAI) {
+        setSelectedChat(factcheckAI);
+      }
+    }
+  }, [conversations, selectedChat]);
+
+
 
   // Load chat history
   useEffect(() => {
     if (selectedChat) {
-      const mockHistory = selectedChat.id === 'factcheck-ai' ? [
-        {
-          id: '1',
-          text: 'Xin chào! Tôi là trợ lý ảo FactCheck. Tôi có thể giúp bạn:',
-          sender: 'bot',
-          timestamp: new Date(Date.now() - 1800000),
-          reactions: []
-        },
-        {
-          id: '2',
-          text: '🔍 Kiểm tra độ tin cậy của link và website\n🛡️ Phát hiện email và tin nhắn lừa đảo\n📰 Xác minh thông tin và tin tức\n💡 Tư vấn về an toàn mạng\n\nHãy gửi cho tôi link hoặc câu hỏi bạn muốn kiểm tra!',
-          sender: 'bot',
-          timestamp: new Date(Date.now() - 1700000),
-          reactions: []
-        }
-      ] : [
-        {
-          id: '1',
-          text: 'Xin chào! Tôi có thể giúp bạn kiểm tra thông tin gì hôm nay?',
-          sender: 'bot',
-          timestamp: new Date(Date.now() - 1800000),
-          reactions: []
-        }
-      ];
+      let mockHistory = [];
+
+      switch (selectedChat.id) {
+        case 'factcheck-ai':
+          mockHistory = [
+            {
+              id: '1',
+              text: 'Xin chào! Tôi là trợ lý ảo FactCheck. Tôi có thể giúp bạn:',
+              sender: 'bot',
+              timestamp: new Date(Date.now() - 1800000),
+              reactions: []
+            },
+            {
+              id: '2',
+              text: '🔍 Kiểm tra độ tin cậy của link và website\n🛡️ Phát hiện email và tin nhắn lừa đảo\n📰 Xác minh thông tin và tin tức\n💡 Tư vấn về an toàn mạng\n\nHãy gửi cho tôi link hoặc câu hỏi bạn muốn kiểm tra!',
+              sender: 'bot',
+              timestamp: new Date(Date.now() - 1700000),
+              reactions: []
+            }
+          ];
+          break;
+
+        case 'support':
+          mockHistory = [
+            {
+              id: '1',
+              text: 'Xin chào! Đây là đội ngũ hỗ trợ kỹ thuật FactCheck. Chúng tôi có thể giúp bạn:',
+              sender: 'bot',
+              timestamp: new Date(Date.now() - 3600000),
+              reactions: []
+            },
+            {
+              id: '2',
+              text: '• Khắc phục sự cố kỹ thuật\n• Hướng dẫn sử dụng tính năng\n• Báo cáo lỗi\n• Góp ý cải thiện\n\nVui lòng mô tả vấn đề bạn gặp phải.',
+              sender: 'bot',
+              timestamp: new Date(Date.now() - 3500000),
+              reactions: []
+            }
+          ];
+          break;
+
+        case 'community':
+          mockHistory = [
+            {
+              id: '1',
+              text: 'Chào mừng đến với nhóm cộng đồng FactCheck! 👋',
+              sender: 'bot',
+              timestamp: new Date(Date.now() - 7200000),
+              reactions: []
+            },
+            {
+              id: '2',
+              text: 'Đây là nơi mọi người chia sẻ kinh nghiệm, thảo luận về an toàn mạng và hỗ trợ lẫn nhau.',
+              sender: 'bot',
+              timestamp: new Date(Date.now() - 7100000),
+              reactions: []
+            },
+            {
+              id: '3',
+              text: 'Cảm ơn mọi người đã hỗ trợ! Tôi đã học được nhiều điều mới.',
+              sender: 'user',
+              timestamp: new Date(Date.now() - 3600000),
+              reactions: []
+            }
+          ];
+          break;
+
+        case 'expert':
+          mockHistory = [
+            {
+              id: '1',
+              text: 'Xin chào! Tôi là chuyên gia bảo mật của FactCheck.',
+              sender: 'bot',
+              timestamp: new Date(Date.now() - 86400000),
+              reactions: []
+            },
+            {
+              id: '2',
+              text: 'Tài liệu về "Phòng chống tấn công phishing" đã được gửi đến email của bạn.',
+              sender: 'bot',
+              timestamp: new Date(Date.now() - 86300000),
+              reactions: []
+            }
+          ];
+          break;
+
+        default:
+          mockHistory = [
+            {
+              id: '1',
+              text: 'Xin chào! Tôi có thể giúp bạn kiểm tra thông tin gì hôm nay?',
+              sender: 'bot',
+              timestamp: new Date(Date.now() - 1800000),
+              reactions: []
+            }
+          ];
+      }
+
       setChatHistory(mockHistory);
     }
   }, [selectedChat]);
-
   // Auto scroll to bottom
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [chatHistory]);
-
-  // Auto-select FactCheck AI on first load
-  useEffect(() => {
-    if (conversations.length > 0 && !selectedChat) {
-      setSelectedChat(conversations[0]);
-    }
-  }, [conversations, selectedChat]);
 
   const handleSendMessage = async () => {
     if (!message.trim()) return;
@@ -194,6 +299,28 @@ const ModernMessengerLayout = () => {
     }
   };
 
+  const handleMessageReaction = (messageId, emoji) => {
+    setChatHistory(prev => prev.map(msg => {
+      if (msg.id === messageId) {
+        const existingReaction = msg.reactions.find(r => r.emoji === emoji);
+        if (existingReaction) {
+          // Remove reaction if already exists
+          return {
+            ...msg,
+            reactions: msg.reactions.filter(r => r.emoji !== emoji)
+          };
+        } else {
+          // Add new reaction
+          return {
+            ...msg,
+            reactions: [...msg.reactions, { emoji, count: 1, users: ['current-user'] }]
+          };
+        }
+      }
+      return msg;
+    }));
+  };
+
   const formatTime = (date) => {
     return new Intl.DateTimeFormat('vi-VN', {
       hour: '2-digit',
@@ -228,25 +355,28 @@ const ModernMessengerLayout = () => {
   );
 
   return (
-    <div className="h-full bg-white dark:bg-gray-900 flex flex-col overflow-hidden relative">
+    <div
+      className={`chat-fullscreen messenger-layout ${isDarkMode ? 'dark' : ''}`}
+      data-theme={isDarkMode ? 'dark' : 'light'}
+    >
       {/* Chat Navigation Header */}
-      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 py-3 flex items-center justify-between">
+      <div className="messenger-header bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
         <div className="flex items-center space-x-3">
           <button
             onClick={() => navigate('/')}
-            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
+            className="btn btn-ghost p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
             title="Về trang chủ"
           >
             <Home size={20} className="text-gray-600 dark:text-gray-400" />
           </button>
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors lg:hidden"
+            className="btn btn-ghost p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
             title="Menu"
           >
             <Menu size={20} className="text-gray-600 dark:text-gray-400" />
           </button>
-          <h1 className="text-lg font-semibold text-gray-900 dark:text-white">
+          <h1 className="heading-2 text-lg font-semibold text-gray-900 dark:text-white">
             FactCheck Chat
           </h1>
         </div>
@@ -254,25 +384,26 @@ const ModernMessengerLayout = () => {
           <div className="text-sm text-gray-600 dark:text-gray-400">
             {user?.displayName || user?.email || 'Người dùng'}
           </div>
-          <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-pink-600 rounded-full flex items-center justify-center text-white font-semibold text-sm">
+          <div className="w-8 h-8 bg-gradient-to-br from-primary-500 to-primary-600 rounded-full flex items-center justify-center text-white font-semibold text-sm">
             {user?.displayName?.charAt(0) || user?.email?.charAt(0) || '?'}
           </div>
         </div>
       </div>
 
       {/* Main Chat Container */}
-      <div className="flex-1 flex overflow-hidden">{/* Removed duplicate hamburger menu - using chat navigation header instead */}
+      <div className="messenger-content">
+        {/* Mobile Overlay */}
+        {sidebarOpen && isMobile && (
+          <button
+            className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
+            onClick={() => setSidebarOpen(false)}
+            onKeyDown={(e) => e.key === 'Escape' && setSidebarOpen(false)}
+            aria-label="Đóng menu"
+          />
+        )}
 
-      {/* Sidebar - Conversations List */}
-      <motion.div
-        initial={false}
-        animate={{
-          width: sidebarOpen ? (sidebarCollapsed ? 80 : 360) : 0,
-          opacity: sidebarOpen ? 1 : 0
-        }}
-        transition={{ duration: 0.3, ease: "easeInOut" }}
-        className="bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col overflow-hidden"
-      >
+        {/* Sidebar - Conversations List */}
+        <div className={`messenger-sidebar ${sidebarCollapsed ? 'collapsed' : ''} ${sidebarOpen ? 'open' : ''}`}>
         {/* Sidebar Header */}
         <div className="p-4 border-b border-gray-200 dark:border-gray-700">
           <div className="flex items-center justify-between mb-4">
@@ -408,164 +539,249 @@ const ModernMessengerLayout = () => {
             </motion.div>
           ))}
         </div>
-      </motion.div>
+        </div>
 
-      {/* Main Chat Area */}
-      <div className="flex-1 flex flex-col bg-gray-50 dark:bg-gray-900">
+        {/* Main Chat Area */}
+        <div className="messenger-chat-area">
         {selectedChat ? (
           <>
-            {/* Chat Header */}
-            <div className="p-4 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 shadow-sm">
-              <div className="flex items-center justify-between">
+            {/* Chat Header - Compact */}
+            <div className="flex-shrink-0 h-16 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 shadow-sm px-4 py-2">
+              <div className="flex items-center justify-between h-full">
                 <div className="flex items-center space-x-3">
                   <button
                     onClick={() => setSelectedChat(null)}
-                    className="lg:hidden p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
+                    className="lg:hidden p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
                   >
-                    <ArrowLeft size={20} className="text-gray-600 dark:text-gray-400" />
+                    <ArrowLeft size={18} className="text-gray-600 dark:text-gray-400" />
                   </button>
 
                   <div className="relative">
-                    <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-semibold">
+                    <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-semibold text-sm">
                       {selectedChat.avatar}
                     </div>
-                    <div className={`absolute -bottom-1 -right-1 w-3 h-3 ${getStatusColor(selectedChat.status)} border-2 border-white dark:border-gray-800 rounded-full`}></div>
+                    <div className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 ${getStatusColor(selectedChat.status)} border-2 border-white dark:border-gray-800 rounded-full`}></div>
                   </div>
 
                   <div>
-                    <h2 className="font-semibold text-gray-900 dark:text-white">
+                    <h2 className="font-semibold text-gray-900 dark:text-white text-sm">
                       {selectedChat.name}
                     </h2>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
                       {selectedChat.online ? 'Đang hoạt động' : `Hoạt động ${formatMessageTime(selectedChat.timestamp)} trước`}
                     </p>
                   </div>
                 </div>
 
-                <div className="flex items-center space-x-2">
-                  <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors">
-                    <Phone size={18} className="text-gray-600 dark:text-gray-400" />
+                <div className="flex items-center space-x-1">
+                  <button className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors">
+                    <Phone size={16} className="text-gray-600 dark:text-gray-400" />
                   </button>
-                  <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors">
-                    <Video size={18} className="text-gray-600 dark:text-gray-400" />
+                  <button className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors">
+                    <Video size={16} className="text-gray-600 dark:text-gray-400" />
                   </button>
-                  <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors">
-                    <Info size={18} className="text-gray-600 dark:text-gray-400" />
+                  <button className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors">
+                    <Info size={16} className="text-gray-600 dark:text-gray-400" />
                   </button>
                 </div>
               </div>
-            </div>
-
-            {/* Messages Area */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50 dark:bg-gray-900">
-              <AnimatePresence>
-                {chatHistory.map((msg) => (
-                  <motion.div
-                    key={msg.id}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -20 }}
-                    className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}
-                  >
-                    <div className={`max-w-xs lg:max-w-md ${msg.sender === 'user' ? 'ml-auto' : 'mr-auto'}`}>
+            </div>            {/* Messages Area - Messenger Bubble Style */}
+            <div className="messenger-messages-area">
+              <div className="messenger-bubble-container">
+                <AnimatePresence>
+                  {chatHistory.map((msg) => (
+                    <motion.div
+                      key={msg.id}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -10 }}
+                      className={`message-container ${msg.sender}`}
+                    >
                       {msg.sender === 'bot' && (
-                        <div className="flex items-center space-x-2 mb-1">
-                          <div className="w-6 h-6 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white text-xs">
-                            🤖
-                          </div>
-                          <span className="text-xs text-gray-500 dark:text-gray-400">
-                            {selectedChat.name}
-                          </span>
+                        <div className="message-avatar">
+                          🤖
                         </div>
                       )}
-                      <div
-                        className={`rounded-2xl px-4 py-2 ${
-                          msg.sender === 'user'
-                            ? 'bg-blue-500 text-white'
-                            : 'bg-white dark:bg-gray-800 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-700'
-                        }`}
-                      >
-                        <p className="text-sm leading-relaxed whitespace-pre-wrap">{msg.text}</p>
+
+                      <div className="message-content">
+                        <div className="relative group">
+                          <div
+                            className={`message-bubble ${msg.sender}`}
+                            onDoubleClick={() => handleMessageReaction(msg.id, '❤️')}
+                          >
+                            {msg.text}
+                          </div>
+
+                          {/* Quick Reaction Bar */}
+                          <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-full px-2 py-1 shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex space-x-1 z-10">
+                            {['❤️', '👍', '😂', '😮', '😢', '😡'].map((emoji) => (
+                              <button
+                                key={emoji}
+                                onClick={() => handleMessageReaction(msg.id, emoji)}
+                                className="text-lg hover:scale-125 transition-transform duration-150"
+                                title={`React with ${emoji}`}
+                              >
+                                {emoji}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Message Reactions */}
+                        {msg.reactions && msg.reactions.length > 0 && (
+                          <div className="flex flex-wrap gap-1 mt-1 px-2">
+                            {msg.reactions.map((reaction, reactionIndex) => (
+                              <button
+                                key={`${msg.id}-${reaction.emoji}-${reactionIndex}`}
+                                onClick={() => handleMessageReaction(msg.id, reaction.emoji)}
+                                className="flex items-center space-x-1 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-full px-2 py-0.5 text-xs transition-colors"
+                              >
+                                <span>{reaction.emoji}</span>
+                                <span className="text-gray-600 dark:text-gray-400">{reaction.count}</span>
+                              </button>
+                            ))}
+                          </div>
+                        )}
+
+                        <div className="message-timestamp">
+                          {formatTime(msg.timestamp)}
+                        </div>
                       </div>
-                      <div className={`text-xs text-gray-500 mt-1 ${msg.sender === 'user' ? 'text-right' : 'text-left'}`}>
-                        {formatTime(msg.timestamp)}
-                      </div>
+
+                      {msg.sender === 'user' && (
+                        <div className="message-avatar">
+                          {user?.displayName?.charAt(0) || user?.email?.charAt(0) || 'U'}
+                        </div>
+                      )}
+                    </motion.div>
+                  ))}
+                </AnimatePresence>
+
+                {isTyping && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="typing-indicator"
+                  >
+                    <div className="message-avatar">
+                      🤖
+                    </div>
+                    <div className="typing-dots">
+                      <div className="typing-dot"></div>
+                      <div className="typing-dot"></div>
+                      <div className="typing-dot"></div>
                     </div>
                   </motion.div>
-                ))}
-              </AnimatePresence>
-              
-              {isTyping && (
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="flex justify-start"
-                >
-                  <div className="max-w-xs lg:max-w-md">
-                    <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl px-4 py-2">
-                      <div className="flex space-x-1">
-                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
-                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-                      </div>
-                    </div>
-                  </div>
-                </motion.div>
-              )}
-              <div ref={messagesEndRef} />
-            </div>
-
-            {/* Message Input */}
-            <div className="p-4 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
-              <div className="flex items-end space-x-3">
-                <div className="flex-1 relative">
-                  <div className="flex items-center space-x-2 bg-gray-100 dark:bg-gray-700 rounded-2xl px-4 py-2">
-                    <button className="p-1 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-full transition-colors">
-                      <Paperclip size={18} className="text-gray-600 dark:text-gray-400" />
-                    </button>
-                    <button className="p-1 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-full transition-colors">
-                      <Image size={18} className="text-gray-600 dark:text-gray-400" />
-                    </button>
-                    <textarea
-                      ref={inputRef}
-                      value={message}
-                      onChange={(e) => setMessage(e.target.value)}
-                      onKeyPress={handleKeyPress}
-                      placeholder="Nhập tin nhắn..."
-                      className="flex-1 bg-transparent border-0 outline-none resize-none text-gray-900 dark:text-white placeholder-gray-500 max-h-32"
-                      rows={1}
-                      style={{ minHeight: '24px' }}
-                    />
-                    <button
-                      onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-                      className="p-1 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-full transition-colors"
-                    >
-                      <Smile size={18} className="text-gray-600 dark:text-gray-400" />
-                    </button>
-                  </div>
-                </div>
-
-                {message.trim() ? (
-                  <button
-                    onClick={handleSendMessage}
-                    className="p-3 bg-blue-500 hover:bg-blue-600 text-white rounded-full transition-colors"
-                  >
-                    <Send size={18} />
-                  </button>
-                ) : (
-                  <button
-                    onMouseDown={() => setIsRecording(true)}
-                    onMouseUp={() => setIsRecording(false)}
-                    className={`p-3 transition-colors rounded-full ${
-                      isRecording 
-                        ? 'bg-red-500 hover:bg-red-600 text-white' 
-                        : 'bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-400'
-                    }`}
-                  >
-                    <Mic size={18} />
-                  </button>
                 )}
+                <div ref={messagesEndRef} />
               </div>
+            </div>            {/* Message Input - Messenger Style */}
+            <div className="messenger-input-container">
+              {/* Emoji Picker */}
+              <EmojiPicker
+                isOpen={showEmojiPicker}
+                onEmojiSelect={(emoji) => setMessage(prev => prev + emoji)}
+                onClose={() => setShowEmojiPicker(false)}
+              />
+              
+              {/* Attachment buttons */}
+              <button
+                className="messenger-attachment-button"
+                title="Đính kèm file"
+                onClick={() => {
+                  const input = document.createElement('input');
+                  input.type = 'file';
+                  input.accept = '.pdf,.doc,.docx,.txt,.zip,.rar';
+                  input.onchange = (e) => {
+                    const file = e.target.files[0];
+                    if (file) {
+                      console.log('File selected:', file.name);
+                      // TODO: Handle file upload
+                    }
+                  };
+                  input.click();
+                }}
+              >
+                <Paperclip size={18} />
+              </button>
+
+              <button
+                className="messenger-attachment-button"
+                title="Đính kèm hình ảnh"
+                onClick={() => {
+                  const input = document.createElement('input');
+                  input.type = 'file';
+                  input.accept = 'image/*';
+                  input.onchange = (e) => {
+                    const file = e.target.files[0];
+                    if (file) {
+                      console.log('Image selected:', file.name);
+                      // TODO: Handle image upload
+                    }
+                  };
+                  input.click();
+                }}
+              >
+                <Image size={18} />
+              </button>
+              
+              {/* Input box */}
+              <textarea
+                ref={inputRef}
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+                onKeyDown={handleKeyPress}
+                placeholder="Aa"
+                className="messenger-input-box"
+                rows={1}
+              />
+              
+              {/* Emoji button */}
+              <button
+                onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                className="messenger-attachment-button"
+                title="Emoji"
+              >
+                <Smile size={18} />
+              </button>
+              
+              {/* Send button or Voice button */}
+              {message.trim() ? (
+                <button
+                  onClick={handleSendMessage}
+                  className="messenger-send-button"
+                  title="Gửi"
+                >
+                  <Send size={16} />
+                </button>
+              ) : (
+                <button
+                  onMouseDown={() => {
+                    setIsRecording(true);
+                    console.log('Started recording...');
+                    // TODO: Start voice recording
+                  }}
+                  onMouseUp={() => {
+                    setIsRecording(false);
+                    console.log('Stopped recording...');
+                    // TODO: Stop voice recording and process
+                  }}
+                  onMouseLeave={() => {
+                    if (isRecording) {
+                      setIsRecording(false);
+                      console.log('Recording cancelled...');
+                    }
+                  }}
+                  className={`messenger-send-button transition-all duration-200 ${
+                    isRecording
+                      ? 'bg-red-500 hover:bg-red-600 scale-110 animate-pulse'
+                      : 'bg-gray-400 hover:bg-gray-500'
+                  }`}
+                  title={isRecording ? "Đang ghi âm... (thả để gửi)" : "Giữ để ghi âm"}
+                >
+                  <Mic size={16} />
+                </button>
+              )}
             </div>
           </>
         ) : (
