@@ -1,0 +1,544 @@
+# Link Service
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: link-service
+  namespace: anti-fraud-platform
+  labels:
+    app: link-service
+    tier: backend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: link-service
+  template:
+    metadata:
+      labels:
+        app: link-service
+        tier: backend
+    spec:
+      containers:
+      - name: link-service
+        image: link-service:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 3002
+        env:
+        - name: NODE_ENV
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: NODE_ENV
+        - name: PORT
+          value: "3002"
+        - name: AUTH_SERVICE_URL
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: AUTH_SERVICE_URL
+        - name: FIREBASE_PROJECT_ID
+          valueFrom:
+            secretKeyRef:
+              name: app-secrets
+              key: FIREBASE_PROJECT_ID
+        - name: FIREBASE_PRIVATE_KEY
+          valueFrom:
+            secretKeyRef:
+              name: app-secrets
+              key: FIREBASE_PRIVATE_KEY
+        - name: FIREBASE_CLIENT_EMAIL
+          valueFrom:
+            secretKeyRef:
+              name: app-secrets
+              key: FIREBASE_CLIENT_EMAIL
+        - name: VIRUSTOTAL_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: app-secrets
+              key: VIRUSTOTAL_API_KEY
+              optional: true
+        - name: SCAMADVISER_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: app-secrets
+              key: SCAMADVISER_API_KEY
+              optional: true
+        - name: SCREENSHOTLAYER_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: app-secrets
+              key: SCREENSHOTLAYER_API_KEY
+              optional: true
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 3002
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 3002
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        volumeMounts:
+        - name: shared-volume
+          mountPath: /app/shared
+      volumes:
+      - name: shared-volume
+        emptyDir: {}
+      restartPolicy: Always
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: link-service
+  namespace: anti-fraud-platform
+  labels:
+    app: link-service
+spec:
+  selector:
+    app: link-service
+  ports:
+  - port: 3002
+    targetPort: 3002
+    protocol: TCP
+  type: ClusterIP
+
+---
+# Community Service
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: community-service
+  namespace: anti-fraud-platform
+  labels:
+    app: community-service
+    tier: backend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: community-service
+  template:
+    metadata:
+      labels:
+        app: community-service
+        tier: backend
+    spec:
+      containers:
+      - name: community-service
+        image: community-service:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 3003
+        env:
+        - name: NODE_ENV
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: NODE_ENV
+        - name: PORT
+          value: "3003"
+        - name: AUTH_SERVICE_URL
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: AUTH_SERVICE_URL
+        - name: REDIS_URL
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: REDIS_URL
+        - name: FIREBASE_PROJECT_ID
+          valueFrom:
+            secretKeyRef:
+              name: app-secrets
+              key: FIREBASE_PROJECT_ID
+        - name: FIREBASE_PRIVATE_KEY
+          valueFrom:
+            secretKeyRef:
+              name: app-secrets
+              key: FIREBASE_PRIVATE_KEY
+        - name: FIREBASE_CLIENT_EMAIL
+          valueFrom:
+            secretKeyRef:
+              name: app-secrets
+              key: FIREBASE_CLIENT_EMAIL
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 3003
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 3003
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        volumeMounts:
+        - name: shared-volume
+          mountPath: /app/shared
+      volumes:
+      - name: shared-volume
+        emptyDir: {}
+      restartPolicy: Always
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: community-service
+  namespace: anti-fraud-platform
+  labels:
+    app: community-service
+spec:
+  selector:
+    app: community-service
+  ports:
+  - port: 3003
+    targetPort: 3003
+    protocol: TCP
+  type: ClusterIP
+
+---
+# Chat Service
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: chat-service
+  namespace: anti-fraud-platform
+  labels:
+    app: chat-service
+    tier: backend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: chat-service
+  template:
+    metadata:
+      labels:
+        app: chat-service
+        tier: backend
+    spec:
+      containers:
+      - name: chat-service
+        image: chat-service:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 3004
+        env:
+        - name: NODE_ENV
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: NODE_ENV
+        - name: PORT
+          value: "3004"
+        - name: AUTH_SERVICE_URL
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: AUTH_SERVICE_URL
+        - name: FIREBASE_PROJECT_ID
+          valueFrom:
+            secretKeyRef:
+              name: app-secrets
+              key: FIREBASE_PROJECT_ID
+        - name: FIREBASE_PRIVATE_KEY
+          valueFrom:
+            secretKeyRef:
+              name: app-secrets
+              key: FIREBASE_PRIVATE_KEY
+        - name: FIREBASE_CLIENT_EMAIL
+          valueFrom:
+            secretKeyRef:
+              name: app-secrets
+              key: FIREBASE_CLIENT_EMAIL
+        - name: GEMINI_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: app-secrets
+              key: GEMINI_API_KEY
+              optional: true
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 3004
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 3004
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        volumeMounts:
+        - name: shared-volume
+          mountPath: /app/shared
+      volumes:
+      - name: shared-volume
+        emptyDir: {}
+      restartPolicy: Always
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: chat-service
+  namespace: anti-fraud-platform
+  labels:
+    app: chat-service
+spec:
+  selector:
+    app: chat-service
+  ports:
+  - port: 3004
+    targetPort: 3004
+    protocol: TCP
+  type: ClusterIP
+
+---
+# News Service
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: news-service
+  namespace: anti-fraud-platform
+  labels:
+    app: news-service
+    tier: backend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: news-service
+  template:
+    metadata:
+      labels:
+        app: news-service
+        tier: backend
+    spec:
+      containers:
+      - name: news-service
+        image: news-service:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 3005
+        env:
+        - name: NODE_ENV
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: NODE_ENV
+        - name: PORT
+          value: "3005"
+        - name: AUTH_SERVICE_URL
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: AUTH_SERVICE_URL
+        - name: FIREBASE_PROJECT_ID
+          valueFrom:
+            secretKeyRef:
+              name: app-secrets
+              key: FIREBASE_PROJECT_ID
+        - name: FIREBASE_PRIVATE_KEY
+          valueFrom:
+            secretKeyRef:
+              name: app-secrets
+              key: FIREBASE_PRIVATE_KEY
+        - name: FIREBASE_CLIENT_EMAIL
+          valueFrom:
+            secretKeyRef:
+              name: app-secrets
+              key: FIREBASE_CLIENT_EMAIL
+        - name: NEWSAPI_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: app-secrets
+              key: NEWSAPI_API_KEY
+              optional: true
+        - name: NEWSDATA_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: app-secrets
+              key: NEWSDATA_API_KEY
+              optional: true
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 3005
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 3005
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        volumeMounts:
+        - name: shared-volume
+          mountPath: /app/shared
+      volumes:
+      - name: shared-volume
+        emptyDir: {}
+      restartPolicy: Always
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: news-service
+  namespace: anti-fraud-platform
+  labels:
+    app: news-service
+spec:
+  selector:
+    app: news-service
+  ports:
+  - port: 3005
+    targetPort: 3005
+    protocol: TCP
+  type: ClusterIP
+
+---
+# Admin Service
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: admin-service
+  namespace: anti-fraud-platform
+  labels:
+    app: admin-service
+    tier: backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: admin-service
+  template:
+    metadata:
+      labels:
+        app: admin-service
+        tier: backend
+    spec:
+      containers:
+      - name: admin-service
+        image: admin-service:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 3006
+        env:
+        - name: NODE_ENV
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: NODE_ENV
+        - name: PORT
+          value: "3006"
+        - name: AUTH_SERVICE_URL
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: AUTH_SERVICE_URL
+        - name: COMMUNITY_SERVICE_URL
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: COMMUNITY_SERVICE_URL
+        - name: LINK_SERVICE_URL
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: LINK_SERVICE_URL
+        - name: FIREBASE_PROJECT_ID
+          valueFrom:
+            secretKeyRef:
+              name: app-secrets
+              key: FIREBASE_PROJECT_ID
+        - name: FIREBASE_PRIVATE_KEY
+          valueFrom:
+            secretKeyRef:
+              name: app-secrets
+              key: FIREBASE_PRIVATE_KEY
+        - name: FIREBASE_CLIENT_EMAIL
+          valueFrom:
+            secretKeyRef:
+              name: app-secrets
+              key: FIREBASE_CLIENT_EMAIL
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 3006
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 3006
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        volumeMounts:
+        - name: shared-volume
+          mountPath: /app/shared
+      volumes:
+      - name: shared-volume
+        emptyDir: {}
+      restartPolicy: Always
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: admin-service
+  namespace: anti-fraud-platform
+  labels:
+    app: admin-service
+spec:
+  selector:
+    app: admin-service
+  ports:
+  - port: 3006
+    targetPort: 3006
+    protocol: TCP
+  type: ClusterIP

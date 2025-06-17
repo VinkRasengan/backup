@@ -30,221 +30,247 @@ This platform uses a **microservices architecture** with the following services:
 
 ## 📋 Prerequisites
 
-Before deploying, ensure you have:
+Before deploying, ensure you have the appropriate tools for your chosen deployment method:
 
-- **Node.js 18+** (for local development)
-- **Docker & Docker Compose** (for containerized deployment)
-- **Kubernetes cluster** (for K8s deployment)
-- **Firebase account** (for authentication and database)
+### For All Deployments
 - **Git** (for cloning repository)
+- **Firebase account** (for authentication and database)
 
-## 🚀 Deployment Options
+### For Local Deployment (Method 1)
+- **Node.js 18+** and **npm**
 
-Choose your preferred deployment method based on your environment and requirements:
+### For Docker Deployment (Method 2)
+- **Docker Desktop** or **Docker Engine**
+- **Docker Compose**
 
-### 📦 Method 1: Local Development (No Docker)
+### For Kubernetes Deployment (Method 3)
+- **kubectl** (Kubernetes CLI)
+- **Access to a Kubernetes cluster** (local, cloud, or managed)
+- **Docker** (for building images, optional)
+
+## 🚀 Quick Start - Choose Your Deployment Method
+
+We provide **three simple deployment methods** that work on any machine or device:
+
+| Method | Best For | Command | Time to Deploy |
+|--------|----------|---------|----------------|
+| **🖥️ Local** | Development, debugging | `./scripts/deploy-local.sh` | ~5 minutes |
+| **🐳 Docker** | Production-like environment | `./scripts/deploy-docker.sh` | ~10 minutes |
+| **☸️ Kubernetes** | Scalable production | `./scripts/deploy-k8s.sh` | ~15 minutes |
+
+---
+
+## 📦 Method 1: Local Deployment (No Docker)
 
 **Best for**: Development, debugging, and testing individual services.
 
-#### Step 1: Clone and Setup
+### Quick Start
 
 ```bash
 # Clone the repository
 git clone <repository-url>
 cd anti-fraud-platform
 
-# Install dependencies for all services
+# Run the deployment script
+./scripts/deploy-local.sh
+
+# For Windows users
+scripts\deploy-local.bat
+```
+
+### Manual Steps (if needed)
+
+#### Step 1: Install Dependencies
+
+```bash
+# Install all dependencies
 npm run install:all
 ```
 
 #### Step 2: Configure Environment
 
-```bash
-# Copy environment template
-cp .env.example .env
+The deployment script will create a `.env` file automatically. Edit it with your configuration:
 
-# Edit .env file with your configuration
-# See Environment Configuration section below
+```env
+# Firebase Configuration (Required)
+FIREBASE_PROJECT_ID=your-project-id
+FIREBASE_CLIENT_EMAIL=your-client-email@your-project.iam.gserviceaccount.com
+FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\nYour-Private-Key-Here\n-----END PRIVATE KEY-----\n"
+
+# JWT Configuration
+JWT_SECRET=your-super-secret-jwt-key-minimum-32-characters-long
+
+# API Keys (Optional)
+GEMINI_API_KEY=your-gemini-api-key
+VIRUSTOTAL_API_KEY=your-virustotal-api-key
 ```
 
-#### Step 3: Start Firebase Emulator (Optional)
+#### Step 3: Start Services
 
 ```bash
-# Install Firebase CLI if not already installed
-npm install -g firebase-tools
+# Start all services
+npm start
 
-# Start Firebase emulator
-firebase emulators:start
-```
-
-#### Step 4: Start All Services
-
-```bash
-# Option A: Start all services with one command
+# Or start individual services for debugging
 npm run dev:services
-
-# Option B: Start services individually (for debugging)
-# Terminal 1: Auth Service
-cd services/auth-service && npm run dev
-
-# Terminal 2: Link Service
-cd services/link-service && npm run dev
-
-# Terminal 3: Community Service
-cd services/community-service && npm run dev
-
-# Terminal 4: Chat Service
-cd services/chat-service && npm run dev
-
-# Terminal 5: News Service
-cd services/news-service && npm run dev
-
-# Terminal 6: Admin Service
-cd services/admin-service && npm run dev
-
-# Terminal 7: API Gateway
-cd services/api-gateway && npm run dev
-
-# Terminal 8: Frontend
-cd client && npm start
 ```
 
-#### Step 5: Access Application
+#### Step 4: Access Application
 
 - **Frontend**: http://localhost:3000
 - **API Gateway**: http://localhost:8080
 - **Individual Services**: http://localhost:300X (where X is service port)
 
+#### Stop Services
+
+```bash
+# Stop all services
+./scripts/stop-local.sh
+
+# For Windows
+scripts\stop-local.bat
+```
+
 ---
 
-### 🐳 Method 2: Docker Deployment (Recommended)
+## 🐳 Method 2: Docker Deployment
 
-**Best for**: Production-like environment, easy setup, and consistent deployment.
+**Best for**: Production-like environment, easy setup, and consistent deployment across all platforms.
 
-#### Step 1: Clone and Setup
+### Quick Start
 
 ```bash
 # Clone the repository
 git clone <repository-url>
 cd anti-fraud-platform
+
+# Run the deployment script
+./scripts/deploy-docker.sh
+
+# For Windows users
+scripts\deploy-docker.bat
 ```
+
+### Manual Steps (if needed)
+
+#### Step 1: Install Docker
+
+- **Windows/Mac**: Install [Docker Desktop](https://www.docker.com/products/docker-desktop)
+- **Linux**: Install Docker Engine and Docker Compose
 
 #### Step 2: Configure Environment
 
-```bash
-# Copy environment template
-cp .env.example .env
+The deployment script will create a `.env` file automatically. Edit it with your configuration:
 
-# Edit .env file with your configuration
-# Docker will automatically use these variables
+```env
+# Firebase Configuration (Required)
+FIREBASE_PROJECT_ID=your-project-id
+FIREBASE_CLIENT_EMAIL=your-client-email@your-project.iam.gserviceaccount.com
+FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\nYour-Private-Key-Here\n-----END PRIVATE KEY-----\n"
+
+# JWT Configuration
+JWT_SECRET=your-super-secret-jwt-key-minimum-32-characters-long
+
+# API Keys (Optional)
+GEMINI_API_KEY=your-gemini-api-key
+VIRUSTOTAL_API_KEY=your-virustotal-api-key
 ```
 
-#### Step 3: Deploy with Docker Compose
+#### Step 3: Deploy Services
 
 ```bash
-# Make scripts executable (Linux/Mac)
-chmod +x scripts/*.sh
+# Build and start all services
+docker-compose up --build -d
 
-# Deploy all services with Docker
-./scripts/deploy-microservices.sh
-
-# Or manually with docker-compose
-docker-compose -f docker-compose.microservices.yml up -d
-```
-
-#### Step 4: Verify Deployment
-
-```bash
-# Check all containers are running
+# Check container status
 docker ps
-
-# Check service health
-curl http://localhost:8080/services/status
 ```
 
-#### Step 5: Access Application
+#### Step 4: Access Application
 
-- **Frontend**: http://localhost:3000
-- **API Gateway**: http://localhost:8080
-- **Monitoring**: http://localhost:9090 (Prometheus)
-- **Grafana**: http://localhost:3007 (admin/admin)
+- **Frontend**: <http://localhost:3000>
+- **API Gateway**: <http://localhost:8080>
+- **Redis**: <http://localhost:6379>
 
-#### Docker Management Commands
+#### Management Commands
 
 ```bash
 # View logs for all services
-docker-compose -f docker-compose.microservices.yml logs -f
+docker-compose logs -f
 
 # View logs for specific service
-docker-compose -f docker-compose.microservices.yml logs -f auth-service
+docker-compose logs -f auth-service
 
 # Restart specific service
-docker-compose -f docker-compose.microservices.yml restart auth-service
+docker-compose restart auth-service
 
 # Stop all services
-./scripts/stop-microservices.sh
+./scripts/stop-docker.sh
 
 # Scale specific service
-docker-compose -f docker-compose.microservices.yml up --scale auth-service=3 -d
+docker-compose up --scale auth-service=3 -d
 ```
 
 ---
 
-### ☸️ Method 3: Kubernetes Deployment
+## ☸️ Method 3: Kubernetes Deployment
 
 **Best for**: Production environments, high availability, and auto-scaling.
 
-#### Step 1: Prerequisites
+### Quick Start
 
 ```bash
-# Ensure you have kubectl and a Kubernetes cluster
-kubectl version --client
-kubectl cluster-info
+# Clone the repository
+git clone <repository-url>
+cd anti-fraud-platform
 
-# Install Helm (optional, for easier management)
-curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+# Run the deployment script
+./scripts/deploy-k8s.sh
+
+# For Windows users
+scripts\deploy-k8s.bat
 ```
 
-#### Step 2: Create Namespace
+### Manual Steps (if needed)
 
-```bash
-# Create dedicated namespace
-kubectl create namespace anti-fraud-platform
+#### Step 1: Install Prerequisites
 
-# Set as default namespace (optional)
-kubectl config set-context --current --namespace=anti-fraud-platform
+- **kubectl**: [Install kubectl](https://kubernetes.io/docs/tasks/tools/)
+- **Kubernetes cluster**: Local (minikube, kind) or cloud (GKE, EKS, AKS)
+- **Docker** (optional, for building images)
+
+#### Step 2: Configure Environment
+
+The deployment script will create a `.env` file automatically. Edit it with your configuration:
+
+```env
+# Firebase Configuration (Required)
+FIREBASE_PROJECT_ID=your-project-id
+FIREBASE_CLIENT_EMAIL=your-client-email@your-project.iam.gserviceaccount.com
+FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\nYour-Private-Key-Here\n-----END PRIVATE KEY-----\n"
+
+# JWT Configuration
+JWT_SECRET=your-super-secret-jwt-key-minimum-32-characters-long
+
+# API Keys (Optional)
+GEMINI_API_KEY=your-gemini-api-key
+VIRUSTOTAL_API_KEY=your-virustotal-api-key
 ```
 
-#### Step 3: Configure Secrets
+#### Step 3: Deploy Services
 
 ```bash
-# Create secret for environment variables
-kubectl create secret generic app-secrets \
-  --from-literal=FIREBASE_PROJECT_ID=your-project-id \
-  --from-literal=FIREBASE_PRIVATE_KEY="your-private-key" \
-  --from-literal=JWT_SECRET=your-jwt-secret \
-  --from-literal=GEMINI_API_KEY=your-gemini-key \
-  --namespace=anti-fraud-platform
-```
+# Create namespace
+kubectl apply -f k8s/namespace.yml
 
-#### Step 4: Deploy Services
+# Create secrets and config
+kubectl apply -f k8s/configmap.yml
 
-```bash
 # Deploy all services
-kubectl apply -f k8s/ -n anti-fraud-platform
-
-# Or deploy individually
-kubectl apply -f k8s/auth-service/ -n anti-fraud-platform
-kubectl apply -f k8s/link-service/ -n anti-fraud-platform
-kubectl apply -f k8s/community-service/ -n anti-fraud-platform
-kubectl apply -f k8s/chat-service/ -n anti-fraud-platform
-kubectl apply -f k8s/news-service/ -n anti-fraud-platform
-kubectl apply -f k8s/admin-service/ -n anti-fraud-platform
-kubectl apply -f k8s/api-gateway/ -n anti-fraud-platform
-kubectl apply -f k8s/frontend/ -n anti-fraud-platform
+kubectl apply -f k8s/
 ```
 
-#### Step 5: Verify Deployment
+#### Step 4: Verify Deployment
 
 ```bash
 # Check all pods are running
@@ -253,79 +279,59 @@ kubectl get pods -n anti-fraud-platform
 # Check services
 kubectl get services -n anti-fraud-platform
 
-# Check ingress (if configured)
-kubectl get ingress -n anti-fraud-platform
+# Check deployment status
+kubectl get deployments -n anti-fraud-platform
 ```
 
-#### Step 6: Access Application
+#### Step 5: Access Application
 
 ```bash
-# Port forward to access locally (for testing)
+# Port forward to access locally
 kubectl port-forward service/api-gateway 8080:8080 -n anti-fraud-platform
 kubectl port-forward service/frontend 3000:3000 -n anti-fraud-platform
 
-# Or access via LoadBalancer/Ingress (production)
-kubectl get service frontend -n anti-fraud-platform
+# Or get LoadBalancer IPs (if supported)
+kubectl get services -n anti-fraud-platform
 ```
 
-#### Kubernetes Management Commands
+#### Management Commands
 
 ```bash
-# View logs for specific pod
+# View logs for specific service
 kubectl logs -f deployment/auth-service -n anti-fraud-platform
 
 # Scale deployment
 kubectl scale deployment auth-service --replicas=3 -n anti-fraud-platform
 
 # Update deployment
-kubectl set image deployment/auth-service auth-service=your-registry/auth-service:v2 -n anti-fraud-platform
+kubectl rollout restart deployment/auth-service -n anti-fraud-platform
+
+# Stop all services
+./scripts/stop-k8s.sh
 
 # Delete all resources
 kubectl delete namespace anti-fraud-platform
-```
-
-#### Production Considerations
-
-```bash
-# Enable horizontal pod autoscaling
-kubectl autoscale deployment auth-service --cpu-percent=70 --min=2 --max=10 -n anti-fraud-platform
-
-# Configure resource limits (edit k8s manifests)
-resources:
-  requests:
-    memory: "256Mi"
-    cpu: "250m"
-  limits:
-    memory: "512Mi"
-    cpu: "500m"
-
-# Set up monitoring with Prometheus Operator
-helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
-helm install monitoring prometheus-community/kube-prometheus-stack -n monitoring --create-namespace
 ```
 
 ---
 
 ## 🔧 Environment Configuration
 
-All deployment methods require proper environment configuration. Create a `.env` file in the project root:
+All deployment scripts automatically create a `.env` file template. You need to edit it with your actual credentials:
 
 ### Required Configuration
 
 ```env
-# Service Configuration
-NODE_ENV=development
-
 # Firebase Configuration (Required)
-FIREBASE_PROJECT_ID=factcheck-1d6e8
-FIREBASE_CLIENT_EMAIL=your-client-email@factcheck-1d6e8.iam.gserviceaccount.com
+FIREBASE_PROJECT_ID=your-project-id
+FIREBASE_CLIENT_EMAIL=your-client-email@your-project.iam.gserviceaccount.com
 FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\nYour-Private-Key-Here\n-----END PRIVATE KEY-----\n"
 
 # JWT Configuration
-JWT_SECRET=your-super-secret-jwt-key-minimum-32-characters
+JWT_SECRET=your-super-secret-jwt-key-minimum-32-characters-long
 
 # API Keys (Optional - will use mock data if not provided)
-GEMINI_API_KEY=AIzaSyDszcx_S3Wm65ACIprlmJLDu5FPmDfX1nE
+GEMINI_API_KEY=your-gemini-api-key
 VIRUSTOTAL_API_KEY=your-virustotal-api-key
 SCAMADVISER_API_KEY=your-scamadviser-api-key
 SCREENSHOTLAYER_API_KEY=your-screenshotlayer-api-key
@@ -334,65 +340,8 @@ NEWSAPI_API_KEY=your-newsapi-api-key
 # React App Configuration
 REACT_APP_API_URL=http://localhost:8080
 REACT_APP_FIREBASE_API_KEY=your-firebase-web-api-key
-REACT_APP_FIREBASE_AUTH_DOMAIN=factcheck-1d6e8.firebaseapp.com
-REACT_APP_FIREBASE_PROJECT_ID=factcheck-1d6e8
-```
-
-### Deployment-Specific Configuration
-
-#### For Local Development (Method 1)
-
-```env
-# Service URLs (localhost)
-AUTH_SERVICE_URL=http://localhost:3001
-LINK_SERVICE_URL=http://localhost:3002
-COMMUNITY_SERVICE_URL=http://localhost:3003
-CHAT_SERVICE_URL=http://localhost:3004
-NEWS_SERVICE_URL=http://localhost:3005
-ADMIN_SERVICE_URL=http://localhost:3006
-
-# CORS
-ALLOWED_ORIGINS=http://localhost:3000,http://localhost:8080
-
-# Database
-USE_FIREBASE_EMULATOR=true
-FIREBASE_EMULATOR_HOST=localhost:8080
-```
-
-#### For Docker Deployment (Method 2)
-
-```env
-# Service URLs (Docker internal network)
-AUTH_SERVICE_URL=http://auth-service:3001
-LINK_SERVICE_URL=http://link-service:3002
-COMMUNITY_SERVICE_URL=http://community-service:3003
-CHAT_SERVICE_URL=http://chat-service:3004
-NEWS_SERVICE_URL=http://news-service:3005
-ADMIN_SERVICE_URL=http://admin-service:3006
-
-# CORS
-ALLOWED_ORIGINS=http://localhost:3000,http://localhost:8080
-
-# Database
-USE_FIREBASE_EMULATOR=false
-```
-
-#### For Kubernetes Deployment (Method 3)
-
-```env
-# Service URLs (Kubernetes internal DNS)
-AUTH_SERVICE_URL=http://auth-service.anti-fraud-platform.svc.cluster.local:3001
-LINK_SERVICE_URL=http://link-service.anti-fraud-platform.svc.cluster.local:3002
-COMMUNITY_SERVICE_URL=http://community-service.anti-fraud-platform.svc.cluster.local:3003
-CHAT_SERVICE_URL=http://chat-service.anti-fraud-platform.svc.cluster.local:3004
-NEWS_SERVICE_URL=http://news-service.anti-fraud-platform.svc.cluster.local:3005
-ADMIN_SERVICE_URL=http://admin-service.anti-fraud-platform.svc.cluster.local:3006
-
-# CORS (adjust for your domain)
-ALLOWED_ORIGINS=https://your-domain.com,https://api.your-domain.com
-
-# Database
-USE_FIREBASE_EMULATOR=false
+REACT_APP_FIREBASE_AUTH_DOMAIN=your-project.firebaseapp.com
+REACT_APP_FIREBASE_PROJECT_ID=your-project-id
 ```
 
 ### Getting API Keys
@@ -406,17 +355,60 @@ USE_FIREBASE_EMULATOR=false
 
 ---
 
-## 📊 Service Health Monitoring
+## 🆘 Troubleshooting
 
-After deployment, verify all services are running properly:
+### Common Issues
 
-### Health Check Commands
+| Issue | Solution |
+|-------|----------|
+| **Port conflicts** | Use deployment scripts - they automatically handle port conflicts |
+| **Docker not starting** | Ensure Docker Desktop is running |
+| **Kubernetes connection failed** | Check `kubectl cluster-info` |
+| **Firebase connection error** | Verify Firebase credentials in `.env` file |
+| **Services not responding** | Wait 30-60 seconds for services to fully start |
+
+### Quick Fixes
 
 ```bash
-# Check all services status via API Gateway
+# Check service health
 curl http://localhost:8080/services/status
 
-# Check individual service health
+# View logs (Docker)
+docker-compose logs -f [service-name]
+
+# View logs (Kubernetes)
+kubectl logs -f deployment/[service-name] -n anti-fraud-platform
+
+# Restart services (Local)
+./scripts/stop-local.sh && ./scripts/deploy-local.sh
+
+# Restart services (Docker)
+docker-compose restart [service-name]
+
+# Restart services (Kubernetes)
+kubectl rollout restart deployment/[service-name] -n anti-fraud-platform
+```
+
+### Getting Help
+
+If you encounter issues:
+
+1. **Check the logs** using the commands above
+2. **Verify your `.env` file** has correct Firebase credentials
+3. **Ensure all prerequisites** are installed for your deployment method
+4. **Wait for services to start** - initial startup can take 1-2 minutes
+
+---
+
+## 📊 Service Health Monitoring
+
+After deployment, verify all services are running:
+
+```bash
+# Check all services status
+curl http://localhost:8080/services/status
+
+# Check individual services
 curl http://localhost:3001/health  # Auth Service
 curl http://localhost:3002/health  # Link Service
 curl http://localhost:3003/health  # Community Service
@@ -425,168 +417,41 @@ curl http://localhost:3005/health  # News Service
 curl http://localhost:3006/health  # Admin Service
 ```
 
-### For Kubernetes Deployment
-
-```bash
-# Check pod status
-kubectl get pods -n anti-fraud-platform
-
-# Check service endpoints
-kubectl get endpoints -n anti-fraud-platform
-
-# Test service connectivity
-kubectl exec -it deployment/api-gateway -n anti-fraud-platform -- curl http://auth-service:3001/health
-```
+---
 
 ## 🔗 API Endpoints
 
-### API Gateway (http://localhost:8080)
+### API Gateway
 - `GET /health` - Gateway health
 - `GET /services/status` - All services status
 - `GET /info` - Gateway information
 
-### Authentication (via Gateway)
+### Authentication
 - `POST /auth/login` - User login
 - `POST /auth/register` - User registration
 - `GET /users/profile` - Get user profile
 
-### Link Verification (via Gateway)
+### Link Verification
 - `POST /links/check` - Check single link
 - `POST /links/bulk-check` - Check multiple links
 - `GET /links/history` - User's check history
 
-### Community (via Gateway)
+### Community
 - `GET /community/posts` - Get community posts
 - `POST /community/posts` - Create new post
 - `POST /community/posts/:id/comments` - Add comment
 
-### Chat (via Gateway)
+### Chat
 - `POST /chat/message` - Send chat message
 - `GET /conversations` - Get conversations
 
-### News (via Gateway)
+### News
 - `GET /news/feed` - Get news feed
 - `GET /news/trending` - Get trending news
 
-### Admin (via Gateway)
+### Admin
 - `GET /admin/dashboard` - Admin dashboard data
 - `GET /admin/users` - User management
-
----
-
-## 📈 Monitoring & Observability
-
-### Available Monitoring Tools
-
-- **Prometheus**: <http://localhost:9090> - Metrics collection and alerting
-- **Grafana**: <http://localhost:3007> - Visualization dashboards (admin/admin)
-- **Jaeger**: <http://localhost:16686> - Distributed tracing (Docker only)
-
-### Custom Metrics
-
-Each service exposes metrics at `/metrics` endpoint:
-
-```bash
-# View service metrics
-curl http://localhost:3001/metrics  # Auth Service metrics
-curl http://localhost:8080/metrics  # API Gateway metrics
-```
-
----
-
-## 🆘 Troubleshooting
-
-### Common Issues by Deployment Method
-
-#### Local Development Issues
-
-| Issue | Solution |
-|-------|----------|
-| Port conflicts | Check if ports 3000-3006, 8080 are free |
-| Node.js version | Use Node.js 18+ |
-| Firebase connection | Verify Firebase config in `.env` |
-| Service startup order | Start API Gateway last |
-
-```bash
-# Check port usage
-netstat -tulpn | grep :3000
-lsof -i :8080
-
-# Kill processes on specific ports
-kill -9 $(lsof -t -i:3000)
-```
-
-#### Docker Issues
-
-| Issue | Solution |
-|-------|----------|
-| Container not starting | Check `docker logs [container-name]` |
-| Network connectivity | Verify Docker network: `docker network ls` |
-| Volume permissions | Check file permissions for mounted volumes |
-| Memory issues | Increase Docker memory limit |
-
-```bash
-# Debug Docker containers
-docker ps -a
-docker logs auth-service
-docker exec -it auth-service /bin/sh
-
-# Check Docker resources
-docker system df
-docker system prune -f
-```
-
-#### Kubernetes Issues
-
-| Issue | Solution |
-|-------|----------|
-| Pod not starting | Check `kubectl describe pod [pod-name]` |
-| Service discovery | Verify service DNS resolution |
-| Resource limits | Check resource quotas and limits |
-| ConfigMap/Secret | Verify configuration is properly mounted |
-
-```bash
-# Debug Kubernetes deployment
-kubectl get events -n anti-fraud-platform
-kubectl describe pod [pod-name] -n anti-fraud-platform
-kubectl logs [pod-name] -n anti-fraud-platform
-
-# Test service connectivity
-kubectl exec -it [pod-name] -n anti-fraud-platform -- nslookup auth-service
-```
-
-### Performance Optimization
-
-#### For Local Development
-
-```bash
-# Increase Node.js memory limit
-export NODE_OPTIONS="--max-old-space-size=4096"
-
-# Use nodemon for faster restarts
-npm install -g nodemon
-```
-
-#### For Docker
-
-```bash
-# Optimize Docker build
-docker build --no-cache -t service-name .
-
-# Use multi-stage builds (already implemented)
-# Monitor resource usage
-docker stats
-```
-
-#### For Kubernetes
-
-```bash
-# Set resource requests and limits
-kubectl patch deployment auth-service -p '{"spec":{"template":{"spec":{"containers":[{"name":"auth-service","resources":{"requests":{"memory":"256Mi","cpu":"250m"},"limits":{"memory":"512Mi","cpu":"500m"}}}]}}}}'
-
-# Enable horizontal pod autoscaling
-kubectl autoscale deployment auth-service --cpu-percent=70 --min=2 --max=10
-```
 
 ---
 
@@ -594,24 +459,33 @@ kubectl autoscale deployment auth-service --cpu-percent=70 --min=2 --max=10
 
 ### Deployment Commands Summary
 
-| Method | Command | Access |
-|--------|---------|--------|
-| **Local** | `npm run dev:services` | <http://localhost:3000> |
-| **Docker** | `./scripts/deploy-microservices.sh` | <http://localhost:3000> |
-| **Kubernetes** | `kubectl apply -f k8s/` | Port-forward or Ingress |
+| Method | Command | Access | Time |
+|--------|---------|--------|------|
+| **Local** | `./scripts/deploy-local.sh` | <http://localhost:3000> | ~5 min |
+| **Docker** | `./scripts/deploy-docker.sh` | <http://localhost:3000> | ~10 min |
+| **Kubernetes** | `./scripts/deploy-k8s.sh` | Port-forward or LoadBalancer | ~15 min |
+
+### Stop Commands
+
+| Method | Command |
+|--------|---------|
+| **Local** | `./scripts/stop-local.sh` |
+| **Docker** | `./scripts/stop-docker.sh` |
+| **Kubernetes** | `./scripts/stop-k8s.sh` |
 
 ### Service Ports
 
-| Service | Local | Docker | Kubernetes |
-|---------|-------|--------|------------|
-| Frontend | 3000 | 3000 | 3000 |
-| Auth | 3001 | 3001 | 3001 |
-| Link | 3002 | 3002 | 3002 |
-| Community | 3003 | 3003 | 3003 |
-| Chat | 3004 | 3004 | 3004 |
-| News | 3005 | 3005 | 3005 |
-| Admin | 3006 | 3006 | 3006 |
-| API Gateway | 8080 | 8080 | 8080 |
+| Service | Port | Description |
+|---------|------|-------------|
+| Frontend | 3000 | React application |
+| Auth | 3001 | Authentication service |
+| Link | 3002 | Link verification service |
+| Community | 3003 | Community posts and comments |
+| Chat | 3004 | AI chat service |
+| News | 3005 | News aggregation service |
+| Admin | 3006 | Admin dashboard service |
+| API Gateway | 8080 | Central API gateway |
+| Redis | 6379 | Caching and sessions |
 
 ### Essential Commands
 
@@ -620,13 +494,13 @@ kubectl autoscale deployment auth-service --cpu-percent=70 --min=2 --max=10
 curl http://localhost:8080/services/status
 
 # View logs (Docker)
-docker-compose -f docker-compose.microservices.yml logs -f
+docker-compose logs -f [service-name]
 
 # View logs (Kubernetes)
-kubectl logs -f deployment/auth-service -n anti-fraud-platform
+kubectl logs -f deployment/[service-name] -n anti-fraud-platform
 
 # Scale services (Kubernetes)
-kubectl scale deployment auth-service --replicas=3 -n anti-fraud-platform
+kubectl scale deployment [service-name] --replicas=3 -n anti-fraud-platform
 ```
 
 ---
@@ -650,9 +524,7 @@ kubectl scale deployment auth-service --replicas=3 -n anti-fraud-platform
 - **Docker**: Containerization
 - **Docker Compose**: Multi-container orchestration
 - **Kubernetes**: Container orchestration platform
-- **Prometheus**: Metrics collection
-- **Grafana**: Monitoring dashboards
-- **Jaeger**: Distributed tracing
+- **Redis**: Caching and session storage
 
 ### External APIs
 - **Google Gemini**: AI-powered analysis
@@ -660,15 +532,6 @@ kubectl scale deployment auth-service --replicas=3 -n anti-fraud-platform
 - **ScamAdviser**: Website reputation
 - **ScreenshotLayer**: Website screenshots
 - **NewsAPI**: News aggregation
-
----
-
-## 📚 Additional Documentation
-
-- **Architecture**: [MICROSERVICES_ARCHITECTURE.md](MICROSERVICES_ARCHITECTURE.md)
-- **Individual Services**: Check `services/[service-name]/README.md`
-- **Deployment Scripts**: [scripts/README.md](scripts/README.md)
-- **Kubernetes Manifests**: [k8s/README.md](k8s/README.md)
 
 ---
 
@@ -690,15 +553,21 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 🆘 Support
 
-- **Issues**: [GitHub Issues](https://github.com/your-repo/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/your-repo/discussions)
-- **Documentation**: [Wiki](https://github.com/your-repo/wiki)
+If you encounter any issues:
+
+1. **Check the troubleshooting section** above
+2. **Review the logs** using the provided commands
+3. **Verify your environment configuration**
+4. **Create an issue** with detailed error information
 
 ---
 
-**🎉 You now have a fully functional microservices-based Anti-Fraud Platform with multiple deployment options!**
+**🎉 You now have a fully functional microservices-based Anti-Fraud Platform!**
 
 Choose the deployment method that best fits your needs:
-- **Local Development**: Fast iteration and debugging
-- **Docker**: Production-like environment with easy setup
-- **Kubernetes**: Scalable production deployment with high availability
+
+- **🖥️ Local Development**: Fast iteration and debugging with `./scripts/deploy-local.sh`
+- **🐳 Docker**: Production-like environment with `./scripts/deploy-docker.sh`
+- **☸️ Kubernetes**: Scalable production deployment with `./scripts/deploy-k8s.sh`
+
+All deployment methods work on **Windows**, **macOS**, and **Linux** with simple one-command deployment!

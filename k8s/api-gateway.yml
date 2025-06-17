@@ -1,0 +1,111 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api-gateway
+  namespace: anti-fraud-platform
+  labels:
+    app: api-gateway
+    tier: gateway
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: api-gateway
+  template:
+    metadata:
+      labels:
+        app: api-gateway
+        tier: gateway
+    spec:
+      containers:
+      - name: api-gateway
+        image: api-gateway:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8080
+        env:
+        - name: NODE_ENV
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: NODE_ENV
+        - name: PORT
+          value: "8080"
+        - name: AUTH_SERVICE_URL
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: AUTH_SERVICE_URL
+        - name: LINK_SERVICE_URL
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: LINK_SERVICE_URL
+        - name: COMMUNITY_SERVICE_URL
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: COMMUNITY_SERVICE_URL
+        - name: CHAT_SERVICE_URL
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: CHAT_SERVICE_URL
+        - name: NEWS_SERVICE_URL
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: NEWS_SERVICE_URL
+        - name: ADMIN_SERVICE_URL
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: ADMIN_SERVICE_URL
+        - name: REDIS_URL
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: REDIS_URL
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        volumeMounts:
+        - name: shared-volume
+          mountPath: /app/shared
+      volumes:
+      - name: shared-volume
+        emptyDir: {}
+      restartPolicy: Always
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: api-gateway
+  namespace: anti-fraud-platform
+  labels:
+    app: api-gateway
+spec:
+  selector:
+    app: api-gateway
+  ports:
+  - port: 8080
+    targetPort: 8080
+    protocol: TCP
+  type: LoadBalancer
