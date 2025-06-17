@@ -35,6 +35,9 @@ COPY --from=deps --chown=nodejs:nodejs /app/node_modules ./node_modules
 # Copy application code
 COPY --chown=nodejs:nodejs . .
 
+# Create logs directory and set permissions
+RUN mkdir -p logs && chown -R nodejs:nodejs logs
+
 # Create health check script
 COPY --chown=nodejs:nodejs <<EOF ./healthcheck.js
 const http = require('http');
