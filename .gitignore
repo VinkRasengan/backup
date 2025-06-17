@@ -128,9 +128,9 @@ test-*.html
 deploy-*.sh
 !scripts/deploy-microservices.sh
 !scripts/deploy-firebase-rules.js
-deploy-*.bat
+!scripts/deploy-*.bat
 setup-*.sh
-setup-*.bat
+!scripts/setup-*.bat
 *-debug.js
 *-test.js
 check-*.js
