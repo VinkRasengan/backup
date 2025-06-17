@@ -32,7 +32,7 @@ timeout /t 2 /nobreak >nul
 echo [INFO] Stopping services on specific ports...
 
 REM Define ports and services
-set PORTS=3000 3001 3002 3003 3004 3005 3006 8080
+set PORTS=3000 3001 3002 3003 3004 3005 3006 8082
 set SERVICE_3000=Frontend
 set SERVICE_3001=Auth Service
 set SERVICE_3002=Link Service
@@ -40,7 +40,7 @@ set SERVICE_3003=Community Service
 set SERVICE_3004=Chat Service
 set SERVICE_3005=News Service
 set SERVICE_3006=Admin Service
-set SERVICE_8080=API Gateway
+set SERVICE_8082=API Gateway
 
 REM Stop processes on each port
 for %%p in (%PORTS%) do (

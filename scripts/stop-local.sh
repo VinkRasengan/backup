@@ -99,7 +99,7 @@ main() {
         [3004]="Chat Service"
         [3005]="News Service"
         [3006]="Admin Service"
-        [8080]="API Gateway"
+        [8082]="API Gateway"
     )
     
     # Stop each service

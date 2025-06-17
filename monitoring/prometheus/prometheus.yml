@@ -49,7 +49,7 @@ scrape_configs:
   # News Service
   - job_name: 'news-service'
     static_configs:
-      - targets: ['news-service:3003']
+      - targets: ['news-service:3005']
     metrics_path: '/metrics'
     scrape_interval: 10s
     scrape_timeout: 5s
@@ -65,7 +65,7 @@ scrape_configs:
   # Community Service
   - job_name: 'community-service'
     static_configs:
-      - targets: ['community-service:3005']
+      - targets: ['community-service:3003']
     metrics_path: '/metrics'
     scrape_interval: 10s
     scrape_timeout: 5s

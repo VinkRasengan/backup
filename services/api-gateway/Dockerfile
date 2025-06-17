@@ -23,7 +23,7 @@ FROM base AS dev
 RUN npm ci
 COPY . .
 USER nodejs
-EXPOSE 8080
+EXPOSE 8082
 CMD ["dumb-init", "npm", "run", "dev"]
 
 # Production stage

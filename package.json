@@ -39,14 +39,18 @@
     "stop:local": "./scripts/stop-local.sh",
     "stop:docker": "./scripts/stop-docker.sh",
     "stop:k8s": "./scripts/stop-k8s.sh",
-    "health": "curl -s http://localhost:8080/services/status || echo 'Services not running'",
+    "health": "curl -s http://localhost:8082/services/status || echo 'Services not running'",
     "logs:docker": "docker-compose logs -f",
     "logs:k8s": "kubectl logs -f deployment/api-gateway -n anti-fraud-platform",
     "monitoring:install": "node scripts/install-monitoring.js",
     "monitoring:start": "node scripts/start-monitoring.js",
     "monitoring:stop": "node scripts/stop-monitoring.js",
     "monitoring:status": "node scripts/check-monitoring-status.js",
-    "monitoring:setup-grafana": "node scripts/setup-grafana.js"
+    "monitoring:setup-grafana": "node scripts/setup-grafana.js",
+    "fix:ports": "node scripts/fix-port-conflicts.js",
+    "validate:ports": "node scripts/validate-ports.js",
+    "start:fixed": "node scripts/start-all-fixed.js",
+    "stop:all": "npm run stop:local && npm run monitoring:stop"
   },
   "dependencies": {
     "all": "^0.0.0",

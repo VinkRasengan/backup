@@ -11,7 +11,7 @@ console.log('');
 const isWindows = os.platform() === 'win32';
 
 // Ports to check and kill
-const ports = [3000, 3001, 3002, 3003, 3004, 3005, 3006, 3007, 3008, 3009, 3010];
+const ports = [3000, 3001, 3002, 3003, 3004, 3005, 3006, 3007, 3008, 3009, 3010, 8082];
 
 // Function to kill process by port
 function killProcessOnPort(port) {

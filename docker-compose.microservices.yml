@@ -7,7 +7,7 @@ services:
       context: ./services/api-gateway
       dockerfile: Dockerfile
     ports:
-      - "8080:8080"
+      - "8082:8082"
     environment:
       - NODE_ENV=development
       - AUTH_SERVICE_URL=http://auth-service:3001
@@ -197,7 +197,7 @@ services:
     ports:
       - "3000:3000"
     environment:
-      - REACT_APP_API_URL=http://localhost:8080
+      - REACT_APP_API_URL=http://localhost:8082
       - REACT_APP_FIREBASE_API_KEY=${REACT_APP_FIREBASE_API_KEY}
       - REACT_APP_FIREBASE_AUTH_DOMAIN=${REACT_APP_FIREBASE_AUTH_DOMAIN}
       - REACT_APP_FIREBASE_PROJECT_ID=${REACT_APP_FIREBASE_PROJECT_ID}
@@ -228,7 +228,7 @@ services:
   grafana:
     image: grafana/grafana:latest
     ports:
-      - "3007:3000"
+      - "3010:3000"
     environment:
       - GF_SECURITY_ADMIN_PASSWORD=admin
     volumes:
