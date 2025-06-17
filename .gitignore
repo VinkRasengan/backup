@@ -140,6 +140,12 @@ check-*.js
 *.pem
 service-account-*.json
 
+# Security - Database files that may contain secrets
+services/phishtank-service/data/phishtank-database.json
+services/criminalip-service/data/*.json
+*.database.json
+*-database.json
+
 # Build artifacts
 *.zip
 *.tar
