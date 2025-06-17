@@ -1,0 +1,249 @@
+@startuml Kubernetes Deployment Detail
+!theme aws-orange
+title Anti-Fraud Platform - Kubernetes Deployment Detail
+
+!define KUBERNETES_PUML https://raw.githubusercontent.com/dcasati/kubernetes-PlantUML/master/dist
+
+' Kubernetes Resources
+package "Kubernetes Cluster" as cluster {
+  
+  package "Namespace: anti-fraud-platform" as namespace {
+    
+    ' Ingress Layer
+    package "Ingress Layer" as ingress_layer #purple {
+      component "Ingress Controller\n(nginx-ingress)" as ingress {
+        portin " " as ingress_in
+        portout " " as ingress_out
+      }
+      
+      component "TLS Certificates\n(cert-manager)" as tls #gray
+      
+      note right of ingress : "**Ingress Rules:**\n• / → frontend-service\n• /api → api-gateway-service\n• HTTPS redirect\n• Rate limiting"
+    }
+    
+    ' Frontend Tier
+    package "Frontend Tier" as frontend_tier #lightblue {
+      component "frontend-deployment" as frontend_deploy {
+        component "frontend-pod-1\nReplica 1" as frontend_pod1 #blue
+        component "frontend-pod-2\nReplica 2" as frontend_pod2 #blue
+        component "frontend-pod-3\nReplica 3" as frontend_pod3 #blue
+      }
+      
+      component "frontend-service\n(ClusterIP)" as frontend_svc #blue
+      component "frontend-hpa\n(HorizontalPodAutoscaler)" as frontend_hpa #lightblue
+      
+      note right of frontend_deploy : "**Container Specs:**\n• Image: frontend:latest\n• Port: 3000\n• Resources:\n  - CPU: 100m-500m\n  - Memory: 128Mi-512Mi\n• Liveness/Readiness probes"
+    }
+    
+    ' API Gateway Tier  
+    package "API Gateway Tier" as gateway_tier #orange {
+      component "api-gateway-deployment" as gateway_deploy {
+        component "gateway-pod-1\nReplica 1" as gateway_pod1 #orange
+        component "gateway-pod-2\nReplica 2" as gateway_pod2 #orange
+        component "gateway-pod-3\nReplica 3" as gateway_pod3 #orange
+      }
+      
+      component "api-gateway-service\n(ClusterIP)" as gateway_svc #orange
+      component "gateway-hpa\n(HorizontalPodAutoscaler)" as gateway_hpa #lightyellow
+      
+      note right of gateway_deploy : "**Container Specs:**\n• Image: api-gateway:latest\n• Port: 8082\n• Resources:\n  - CPU: 200m-1000m\n  - Memory: 256Mi-1Gi\n• Health checks on /health"
+    }
+    
+    ' Microservices Tier
+    package "Microservices Tier" as services_tier #lightgreen {
+      
+      ' Auth Service
+      component "auth-service-deployment" as auth_deploy {
+        component "auth-pod-1" as auth_pod1 #green
+        component "auth-pod-2" as auth_pod2 #green
+      }
+      component "auth-service\n(ClusterIP)" as auth_svc #green
+      
+      ' Link Service  
+      component "link-service-deployment" as link_deploy {
+        component "link-pod-1" as link_pod1 #green
+        component "link-pod-2" as link_pod2 #green
+      }
+      component "link-service\n(ClusterIP)" as link_svc #green
+      
+      ' Community Service
+      component "community-service-deployment" as community_deploy {
+        component "community-pod-1" as community_pod1 #green
+        component "community-pod-2" as community_pod2 #green
+      }
+      component "community-service\n(ClusterIP)" as community_svc #green
+      
+      ' Chat Service
+      component "chat-service-deployment" as chat_deploy {
+        component "chat-pod-1" as chat_pod1 #green
+        component "chat-pod-2" as chat_pod2 #green
+      }
+      component "chat-service\n(ClusterIP)" as chat_svc #green
+      
+      ' News Service
+      component "news-service-deployment" as news_deploy {
+        component "news-pod-1" as news_pod1 #green
+        component "news-pod-2" as news_pod2 #green
+      }
+      component "news-service\n(ClusterIP)" as news_svc #green
+      
+      ' Admin Service
+      component "admin-service-deployment" as admin_deploy {
+        component "admin-pod-1" as admin_pod1 #green
+      }
+      component "admin-service\n(ClusterIP)" as admin_svc #green
+      
+      note right of services_tier : "**Service Specs:**\n• Each service: 2 replicas\n• Resources:\n  - CPU: 100m-500m\n  - Memory: 128Mi-512Mi\n• Health checks\n• Rolling update strategy"
+    }
+    
+    ' Data Tier
+    package "Data Tier" as data_tier #red {
+      component "redis-statefulset" as redis_sts {
+        component "redis-pod-0\nMaster" as redis_pod #red
+      }
+      component "redis-service\n(ClusterIP)" as redis_svc #red
+      component "redis-pvc\n(PersistentVolumeClaim)\n10Gi" as redis_pvc #pink
+      
+      note right of redis_sts : "**Redis StatefulSet:**\n• Persistent storage\n• Volume: 10Gi SSD\n• Redis 7-alpine\n• AOF persistence\n• Resources:\n  - CPU: 100m-500m\n  - Memory: 256Mi-1Gi"
+    }
+    
+    ' Configuration
+    package "Configuration" as config_tier #yellow {
+      component "ConfigMap\napp-config" as configmap #yellow {
+        note bottom : "**Environment Variables:**\n• NODE_ENV=production\n• Service URLs\n• Feature flags\n• Non-sensitive config"
+      }
+      
+      component "Secret\napp-secrets" as secrets #gold {
+        note bottom : "**Sensitive Data:**\n• Firebase credentials\n• JWT secrets\n• API keys\n• Database passwords"
+      }
+    }
+    
+    ' Service Mesh (Optional)
+    package "Service Mesh (Istio)" as service_mesh #purple {
+      component "Istio Proxy\n(Envoy Sidecars)" as istio_proxy #purple
+      component "Istio Gateway" as istio_gateway #purple
+      component "VirtualServices" as virtual_services #purple
+      component "DestinationRules" as destination_rules #purple
+      
+      note right of service_mesh : "**Service Mesh Features:**\n• mTLS encryption\n• Traffic management\n• Observability\n• Circuit breaking\n• Load balancing\n• Security policies"
+    }
+    
+    ' Monitoring
+    package "Monitoring" as monitoring_tier #purple {
+      component "prometheus-deployment" as prometheus_deploy {
+        component "prometheus-pod" as prometheus_pod #purple
+      }
+      component "prometheus-service" as prometheus_svc #purple
+      component "prometheus-pvc\n20Gi" as prometheus_pvc #lightpurple
+      
+      component "grafana-deployment" as grafana_deploy {
+        component "grafana-pod" as grafana_pod #purple
+      }
+      component "grafana-service" as grafana_svc #purple
+      component "grafana-pvc\n5Gi" as grafana_pvc #lightpurple
+      
+      note right of monitoring_tier : "**Monitoring Stack:**\n• Prometheus metrics\n• Grafana dashboards\n• ServiceMonitor CRDs\n• Alert rules\n• Persistent storage"
+    }
+  }
+  
+  ' External LoadBalancer
+  component "LoadBalancer\n(Cloud Provider)" as lb #purple
+  
+  ' Persistent Volumes
+  package "Storage" as storage {
+    component "StorageClass\n(SSD)" as storage_class #gray
+    component "PersistentVolumes" as pv #gray
+  }
+}
+
+' External Services
+cloud "External Services" as external {
+  database "Firebase/Firestore" as firebase #gold
+  component "External APIs\n(VirusTotal, Gemini, etc.)" as external_apis #gray
+}
+
+' Network Connections
+lb --> ingress_in : HTTPS :443
+ingress_out --> frontend_svc : HTTP :3000
+ingress_out --> gateway_svc : HTTP :8082
+
+frontend_svc --> frontend_pod1 : HTTP :3000
+frontend_svc --> frontend_pod2 : HTTP :3000
+frontend_svc --> frontend_pod3 : HTTP :3000
+
+gateway_svc --> gateway_pod1 : HTTP :8082
+gateway_svc --> gateway_pod2 : HTTP :8082
+gateway_svc --> gateway_pod3 : HTTP :8082
+
+gateway_pod1 --> auth_svc : HTTP :3001
+gateway_pod1 --> link_svc : HTTP :3002
+gateway_pod1 --> community_svc : HTTP :3003
+gateway_pod1 --> chat_svc : HTTP :3004
+gateway_pod1 --> news_svc : HTTP :3005
+gateway_pod1 --> admin_svc : HTTP :3006
+
+auth_svc --> auth_pod1 : HTTP :3001
+auth_svc --> auth_pod2 : HTTP :3001
+
+link_svc --> link_pod1 : HTTP :3002
+link_svc --> link_pod2 : HTTP :3002
+
+community_svc --> community_pod1 : HTTP :3003
+community_svc --> community_pod2 : HTTP :3003
+community_svc --> redis_svc : TCP :6379
+
+chat_svc --> chat_pod1 : HTTP :3004
+chat_svc --> chat_pod2 : HTTP :3004
+
+news_svc --> news_pod1 : HTTP :3005
+news_svc --> news_pod2 : HTTP :3005
+
+admin_svc --> admin_pod1 : HTTP :3006
+
+redis_svc --> redis_pod : TCP :6379
+redis_pod --> redis_pvc : Storage
+
+' Configuration Connections
+auth_pod1 --> configmap : Mount
+auth_pod1 --> secrets : Mount
+link_pod1 --> configmap : Mount
+link_pod1 --> secrets : Mount
+
+' External Connections
+auth_pod1 --> firebase : HTTPS
+link_pod1 --> external_apis : HTTPS
+chat_pod1 --> external_apis : HTTPS
+
+' Monitoring Connections
+prometheus_pod --> auth_pod1 : Metrics :3001/metrics
+prometheus_pod --> link_pod1 : Metrics :3002/metrics
+prometheus_pod --> community_pod1 : Metrics :3003/metrics
+prometheus_pod --> redis_pod : Metrics :6379
+
+grafana_pod --> prometheus_svc : Query :9090
+prometheus_pod --> prometheus_pvc : Storage
+grafana_pod --> grafana_pvc : Storage
+
+' Storage Connections
+redis_pvc --> pv : Bind
+prometheus_pvc --> pv : Bind
+grafana_pvc --> pv : Bind
+pv --> storage_class : Provision
+
+' Auto-scaling
+frontend_hpa --> frontend_deploy : Scale based on CPU/Memory
+gateway_hpa --> gateway_deploy : Scale based on CPU/Memory
+
+' Service Mesh Connections (if enabled)
+istio_gateway --> ingress : Traffic
+istio_proxy --> auth_pod1 : Sidecar
+istio_proxy --> link_pod1 : Sidecar
+virtual_services --> istio_proxy : Routing rules
+destination_rules --> istio_proxy : Load balancing
+
+' Resource Requirements
+note bottom of cluster : "**Cluster Requirements:**\n• Kubernetes v1.24+\n• 3+ worker nodes\n• 4 CPU cores per node\n• 8GB RAM per node\n• 100GB+ storage\n• CNI plugin (Calico/Flannel)\n• Ingress controller\n• StorageClass configured"
+
+note top of namespace : "**Deployment Commands:**\n• kubectl apply -f k8s/namespace.yml\n• kubectl apply -f k8s/configmap.yml\n• kubectl apply -f k8s/secrets.yml\n• kubectl apply -f k8s/microservices.yml\n• ./scripts/deploy-k8s.sh"
+
+@enduml

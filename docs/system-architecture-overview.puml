@@ -1,0 +1,157 @@
+@startuml System Architecture Overview
+!theme aws-orange
+title Anti-Fraud Platform - System Architecture Overview
+
+' External Users
+actor "Web Users" as users #lightblue
+actor "Admin Users" as admin #orange
+actor "Mobile Users" as mobile #lightgreen
+
+' External Systems
+cloud "External APIs" as external {
+  component "VirusTotal API" as vt #red
+  component "ScamAdviser API" as sa #red  
+  component "Gemini AI API" as gemini #yellow
+  component "News APIs" as news #purple
+  component "Screenshot APIs" as screenshot #gray
+  component "CriminalIP API" as criminalip #red
+  component "PhishTank API" as phishtank #red
+}
+
+' Frontend Layer
+rectangle "Frontend Layer" as frontend_layer #lightblue {
+  component "React Frontend\n:3000" as react #blue
+}
+
+' API Gateway Layer
+rectangle "API Gateway Layer" as gateway_layer #orange {
+  component "API Gateway\n:8082" as gateway #orange
+  note right of gateway : Entry Point\nRouting & Auth\nRate Limiting\nLoad Balancing
+}
+
+' Microservices Layer
+rectangle "Microservices Layer" as services_layer #lightgreen {
+  component "Auth Service\n:3001" as auth #green
+  component "Link Service\n:3002" as link #green  
+  component "Community Service\n:3003" as community #green
+  component "Chat Service\n:3004" as chat #green
+  component "News Service\n:3005" as newsvc #green
+  component "Admin Service\n:3006" as adminvc #green
+}
+
+' Data & Cache Layer
+rectangle "Data & Storage Layer" as data_layer #yellow {
+  database "Firebase/Firestore\nDatabase" as firebase #gold
+  database "Redis Cache\n:6379" as redis #red
+}
+
+' Monitoring Layer
+rectangle "Monitoring & Observability" as monitoring_layer #purple {
+  component "Prometheus\n:9090" as prometheus #purple
+  component "Grafana\n:3010" as grafana #purple
+  component "Alertmanager\n:9093" as alertmanager #purple
+}
+
+' Shared Components
+rectangle "Shared Components" as shared_layer #gray {
+  component "Middleware" as middleware #gray
+  component "Utils" as utils #gray
+  component "Validation" as validation #gray
+}
+
+' User Connections
+users --> react : HTTPS
+admin --> react : HTTPS  
+mobile --> react : HTTPS
+
+' Frontend to Gateway
+react --> gateway : API Calls\nHTTP/REST
+
+' Gateway to Services
+gateway --> auth : Authentication\nUser Management
+gateway --> link : Link Verification\nSecurity Scanning  
+gateway --> community : Posts & Comments\nCommunity Reports
+gateway --> chat : AI Chatbot\nConversations
+gateway --> newsvc : News Content\nFraud Alerts
+gateway --> adminvc : Admin Functions\nSystem Management
+
+' Service Dependencies - Database
+auth --> firebase : User Data\nAuthentication
+link --> firebase : Link Reports\nScan Results
+community --> firebase : Posts/Comments\nVoting Data
+community --> redis : Session Cache\nTemp Data
+chat --> firebase : Chat History\nConversations
+newsvc --> firebase : News Articles\nContent Data
+adminvc --> firebase : Admin Logs\nSystem Data
+
+' Inter-Service API Communication
+link --> auth : POST /verify-token\nGET /user-info
+community --> auth : POST /verify-token\nGET /user-profile
+chat --> auth : POST /verify-token\nGET /user-context
+newsvc --> auth : POST /verify-token\nGET /user-preferences
+adminvc --> auth : POST /verify-admin\nGET /user-roles
+
+adminvc --> link : GET /scan-history\nPOST /bulk-scan
+adminvc --> community : GET /reports\nPOST /moderate-content
+adminvc --> newsvc : GET /content-stats\nPOST /manage-content
+
+community --> link : GET /link-reputation\nPOST /report-suspicious-link
+chat --> link : POST /quick-scan\nGET /scan-results
+
+' API Gateway Internal Routing
+note right of gateway : "Internal API Routes:\n/api/auth/* → Auth Service\n/api/links/* → Link Service\n/api/community/* → Community Service\n/api/chat/* → Chat Service\n/api/news/* → News Service\n/api/admin/* → Admin Service"
+
+' External API Connections
+link --> vt : Malware Scanning
+link --> sa : Reputation Check
+link --> screenshot : URL Screenshots
+link --> criminalip : IP Analysis  
+link --> phishtank : Phishing Check
+chat --> gemini : AI Analysis\nContent Generation
+newsvc --> news : News Aggregation
+
+' Monitoring Connections
+prometheus --> auth : Metrics
+prometheus --> link : Metrics
+prometheus --> community : Metrics
+prometheus --> chat : Metrics
+prometheus --> newsvc : Metrics
+prometheus --> adminvc : Metrics
+prometheus --> gateway : Metrics
+prometheus --> redis : Metrics
+
+grafana --> prometheus : Query Metrics
+alertmanager --> prometheus : Alert Rules
+
+' Shared Component Usage
+auth --> middleware : Common Functions
+link --> middleware : Common Functions
+community --> middleware : Common Functions
+chat --> middleware : Common Functions
+newsvc --> middleware : Common Functions
+adminvc --> middleware : Common Functions
+gateway --> middleware : Common Functions
+
+auth --> utils : Helper Functions
+link --> utils : Helper Functions
+community --> utils : Helper Functions
+chat --> utils : Helper Functions
+newsvc --> utils : Helper Functions
+adminvc --> utils : Helper Functions
+
+gateway --> validation : Input Validation
+auth --> validation : Data Validation
+link --> validation : URL Validation
+community --> validation : Content Validation
+
+' Network Security
+note top of gateway : "JWT Authentication\nAPI Rate Limiting\nCORS Protection\nInput Validation"
+
+note top of firebase : "NoSQL Database\nReal-time Updates\nScalable Storage\nBuilt-in Security"
+
+note top of redis : "Session Storage\nCaching Layer\nMessage Queue\nHigh Performance"
+
+' Deployment Notes
+note bottom : "Deployment Options:\n• Local Development (Node.js)\n• Docker Containers\n• Kubernetes Cluster\n• Cloud Native (Firebase, GCP)"
+
+@enduml

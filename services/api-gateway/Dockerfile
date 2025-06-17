@@ -41,7 +41,7 @@ const http = require('http');
 
 const options = {
   hostname: 'localhost',
-  port: process.env.PORT || 8080,
+  port: process.env.PORT || 8082,
   path: '/health/live',
   method: 'GET',
   timeout: 3000
@@ -71,7 +71,7 @@ EOF
 USER nodejs
 
 # Expose port
-EXPOSE 8080
+EXPOSE 8082
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \

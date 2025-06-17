@@ -1,0 +1,154 @@
+@startuml API Gateway Flow
+!theme aws-orange
+title Anti-Fraud Platform - API Gateway Flow & Routing
+
+actor "Client" as client
+participant "API Gateway\n:8082" as gateway
+participant "Auth Service\n:3001" as auth
+participant "Link Service\n:3002" as link  
+participant "Community Service\n:3003" as community
+participant "Chat Service\n:3004" as chat
+participant "News Service\n:3005" as news
+participant "Admin Service\n:3006" as admin
+database "Redis Cache" as redis
+database "Firebase" as firebase
+
+== Authentication Flow ==
+client -> gateway : POST /api/auth/login\n{email, password}
+activate gateway
+gateway -> auth : POST /login\n{email, password}
+activate auth
+auth -> firebase : Verify credentials
+firebase --> auth : User data
+auth --> gateway : JWT token + user info
+deactivate auth
+gateway --> client : {token, user, expires}
+deactivate gateway
+
+== Protected API Request Flow ==
+client -> gateway : GET /api/links/history\nAuthorization: Bearer <token>
+activate gateway
+note right of gateway : 1. Extract JWT token\n2. Validate format\n3. Check expiration
+gateway -> auth : POST /verify-token\n{token}
+activate auth
+auth -> firebase : Validate token
+firebase --> auth : User info
+auth --> gateway : {valid: true, user}
+deactivate auth
+note right of gateway : 4. Route to appropriate service\n5. Add user context
+gateway -> link : GET /scan-history\n{userId, permissions}
+activate link
+link -> firebase : Query user's scan history
+firebase --> link : Scan records
+link --> gateway : {scans: [...]}
+deactivate link
+gateway --> client : {success: true, data: [...]}
+deactivate gateway
+
+== Inter-Service Communication ==
+community -> auth : POST /internal/verify-token\n{token}
+activate auth
+auth -> redis : Check token cache
+alt Token in cache
+    redis --> auth : Cached user data
+else Token not cached
+    auth -> firebase : Validate token
+    firebase --> auth : User data
+    auth -> redis : Cache user data (5min TTL)
+end
+auth --> community : {valid: true, user}
+deactivate auth
+
+== Link Analysis Flow ==
+client -> gateway : POST /api/links/verify\n{url, options}
+activate gateway
+gateway -> auth : Verify user permissions
+auth --> gateway : Permission granted
+gateway -> link : POST /scan-url\n{url, userId, options}
+activate link
+link -> link : Validate URL format
+par External API Calls
+    link -> "VirusTotal" : Scan URL
+    link -> "ScamAdviser" : Check reputation  
+    link -> "PhishTank" : Check phishing DB
+end
+link -> firebase : Store scan results
+link --> gateway : {scanId, status, results}
+deactivate link
+gateway --> client : {scanId, status, results}
+deactivate gateway
+
+== Admin Moderation Flow ==
+client -> gateway : POST /api/admin/moderate\n{postId, action}
+activate gateway
+gateway -> auth : Verify admin permissions
+auth --> gateway : Admin verified
+gateway -> admin : POST /moderate-content\n{postId, action, adminId}
+activate admin
+admin -> community : POST /internal/moderate-post\n{postId, action}
+activate community
+community -> firebase : Update post status
+community -> redis : Clear post cache
+community --> admin : Moderation complete
+deactivate community
+admin -> firebase : Log admin action
+admin --> gateway : {success: true, actionId}
+deactivate admin
+gateway --> client : {success: true, message}
+deactivate gateway
+
+== Chat AI Analysis ==
+client -> gateway : POST /api/chat/message\n{message, conversationId}
+activate gateway
+gateway -> auth : Verify user
+auth --> gateway : User verified
+gateway -> chat : POST /ai-response\n{message, userId, context}
+activate chat
+chat -> link : POST /internal/analyze-urls\n{extractedUrls}
+activate link
+link --> chat : {urlAnalysis: [...]}
+deactivate link
+chat -> "Gemini AI" : Analyze content + URLs
+"Gemini AI" --> chat : AI response
+chat -> firebase : Store conversation
+chat --> gateway : {response, conversationId}
+deactivate chat
+gateway --> client : {response, conversationId}
+deactivate gateway
+
+== Error Handling ==
+client -> gateway : POST /api/links/verify\n{invalid_url}
+activate gateway
+gateway -> link : POST /scan-url\n{invalid_url}
+activate link
+link --> gateway : 400 Bad Request\n{error: "Invalid URL"}
+deactivate link
+gateway --> client : 400 Bad Request\n{error: "Invalid URL", code: "INVALID_URL"}
+deactivate gateway
+
+== Rate Limiting ==
+client -> gateway : Multiple rapid requests
+activate gateway
+note right of gateway : Check rate limit:\n100 requests per 15 minutes
+alt Rate limit exceeded
+    gateway --> client : 429 Too Many Requests\n{error: "Rate limit exceeded"}
+else Within rate limit
+    gateway -> auth : Continue normal flow
+end
+deactivate gateway
+
+== Health Check ==
+"Load Balancer" -> gateway : GET /health
+activate gateway
+par Health Checks
+    gateway -> auth : GET /health
+    gateway -> link : GET /health
+    gateway -> community : GET /health
+    gateway -> chat : GET /health
+    gateway -> news : GET /health
+    gateway -> admin : GET /health
+end
+gateway --> "Load Balancer" : 200 OK\n{status: "healthy", services: {...}}
+deactivate gateway
+
+@enduml

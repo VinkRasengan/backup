@@ -8,7 +8,7 @@ This platform uses a **microservices architecture** with the following services:
 
 | Service | Port | Description | Status |
 |---------|------|-------------|--------|
-| **API Gateway** | 8080 | Central entry point, routing, authentication | ✅ Ready |
+| **API Gateway** | 8082 | Central entry point, routing, authentication | ✅ Ready |
 | **Auth Service** | 3001 | User authentication and management | ✅ Ready |
 | **Link Service** | 3002 | Link verification and security scanning | ✅ Ready |
 | **Community Service** | 3003 | Posts, comments, voting, moderation | ✅ Ready |
@@ -48,12 +48,28 @@ Before deploying, ensure you have the appropriate tools for your chosen deployme
 - **Access to a Kubernetes cluster** (local, cloud, or managed)
 - **Docker** (for building images, optional)
 
+## ⚡ Super Quick Start
+
+**Just want to get started fast?**
+
+```bash
+# Clone and deploy in one command
+git clone <repository-url>
+cd anti-fraud-platform
+npm run deploy
+```
+
+That's it! Visit http://localhost:3000 when ready.
+
+---
+
 ## 🚀 Quick Start - Choose Your Deployment Method
 
 We provide **three simple deployment methods** that work on any machine or device:
 
 | Method | Best For | Command | Time to Deploy |
 |--------|----------|---------|----------------|
+| **⚡ Quick** | Fast local setup | `npm run deploy` | ~3 minutes |
 | **🖥️ Local** | Development, debugging | `./scripts/deploy-local.sh` | ~5 minutes |
 | **🐳 Docker** | Production-like environment | `./scripts/deploy-docker.sh` | ~10 minutes |
 | **☸️ Kubernetes** | Scalable production | `./scripts/deploy-k8s.sh` | ~15 minutes |
@@ -118,7 +134,7 @@ npm run dev:services
 #### Step 4: Access Application
 
 - **Frontend**: http://localhost:3000
-- **API Gateway**: http://localhost:8080
+- **API Gateway**: http://localhost:8082
 - **Individual Services**: http://localhost:300X (where X is service port)
 
 #### Stop Services
@@ -189,7 +205,7 @@ docker ps
 #### Step 4: Access Application
 
 - **Frontend**: <http://localhost:3000>
-- **API Gateway**: <http://localhost:8080>
+- **API Gateway**: <http://localhost:8082>
 - **Redis**: <http://localhost:6379>
 
 #### Management Commands
@@ -287,7 +303,7 @@ kubectl get deployments -n anti-fraud-platform
 
 ```bash
 # Port forward to access locally
-kubectl port-forward service/api-gateway 8080:8080 -n anti-fraud-platform
+kubectl port-forward service/api-gateway 8082:8082 -n anti-fraud-platform
 kubectl port-forward service/frontend 3000:3000 -n anti-fraud-platform
 
 # Or get LoadBalancer IPs (if supported)
@@ -338,7 +354,7 @@ SCREENSHOTLAYER_API_KEY=your-screenshotlayer-api-key
 NEWSAPI_API_KEY=your-newsapi-api-key
 
 # React App Configuration
-REACT_APP_API_URL=http://localhost:8080
+REACT_APP_API_URL=http://localhost:8082
 REACT_APP_FIREBASE_API_KEY=your-firebase-web-api-key
 REACT_APP_FIREBASE_AUTH_DOMAIN=your-project.firebaseapp.com
 REACT_APP_FIREBASE_PROJECT_ID=your-project-id
@@ -371,7 +387,7 @@ REACT_APP_FIREBASE_PROJECT_ID=your-project-id
 
 ```bash
 # Check service health
-curl http://localhost:8080/services/status
+curl http://localhost:8082/services/status
 
 # View logs (Docker)
 docker-compose logs -f [service-name]
@@ -406,7 +422,7 @@ After deployment, verify all services are running:
 
 ```bash
 # Check all services status
-curl http://localhost:8080/services/status
+curl http://localhost:8082/services/status
 
 # Check individual services
 curl http://localhost:3001/health  # Auth Service
@@ -461,6 +477,7 @@ curl http://localhost:3006/health  # Admin Service
 
 | Method | Command | Access | Time |
 |--------|---------|--------|------|
+| **Quick** | `npm run deploy` | <http://localhost:3000> | ~3 min |
 | **Local** | `./scripts/deploy-local.sh` | <http://localhost:3000> | ~5 min |
 | **Docker** | `./scripts/deploy-docker.sh` | <http://localhost:3000> | ~10 min |
 | **Kubernetes** | `./scripts/deploy-k8s.sh` | Port-forward or LoadBalancer | ~15 min |
@@ -469,6 +486,7 @@ curl http://localhost:3006/health  # Admin Service
 
 | Method | Command |
 |--------|---------|
+| **Quick/Local** | `npm run kill:all` |
 | **Local** | `./scripts/stop-local.sh` |
 | **Docker** | `./scripts/stop-docker.sh` |
 | **Kubernetes** | `./scripts/stop-k8s.sh` |
@@ -484,14 +502,14 @@ curl http://localhost:3006/health  # Admin Service
 | Chat | 3004 | AI chat service |
 | News | 3005 | News aggregation service |
 | Admin | 3006 | Admin dashboard service |
-| API Gateway | 8080 | Central API gateway |
+| API Gateway | 8082 | Central API gateway |
 | Redis | 6379 | Caching and sessions |
 
 ### Essential Commands
 
 ```bash
 # Health checks
-curl http://localhost:8080/services/status
+curl http://localhost:8082/services/status
 
 # View logs (Docker)
 docker-compose logs -f [service-name]

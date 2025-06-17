@@ -1,0 +1,124 @@
+@startuml Microservices API Interactions
+!theme aws-orange
+title Anti-Fraud Platform - Microservices API Interactions Detail
+
+' API Gateway
+component "API Gateway\n:8082" as gateway #orange
+
+' Core Services
+component "Auth Service\n:3001" as auth #green
+component "Link Service\n:3002" as link #green  
+component "Community Service\n:3003" as community #green
+component "Chat Service\n:3004" as chat #green
+component "News Service\n:3005" as newsvc #green
+component "Admin Service\n:3006" as adminvc #green
+
+' External Systems
+component "Firebase/Firestore" as firebase #gold
+component "Redis Cache" as redis #red
+
+' Frontend
+component "React Frontend\n:3000" as frontend #blue
+
+' API Gateway Routes
+frontend --> gateway : **Frontend to Gateway APIs**
+note right of gateway #lightblue
+**External API Endpoints:**
+• POST /api/auth/login
+• POST /api/auth/register
+• GET /api/auth/profile
+
+• POST /api/links/verify
+• GET /api/links/history
+• POST /api/links/report
+
+• GET /api/community/posts
+• POST /api/community/posts
+• POST /api/community/vote
+
+• POST /api/chat/message  
+• GET /api/chat/history
+• POST /api/chat/analyze
+
+• GET /api/news/articles
+• GET /api/news/alerts
+• POST /api/news/search
+
+• GET /api/admin/dashboard
+• POST /api/admin/users
+• POST /api/admin/moderate
+end note
+
+' Gateway to Services Internal Routing
+gateway --> auth : **Auth Service APIs**\n• POST /verify-token\n• GET /user/:id\n• POST /login\n• POST /register\n• GET /profile\n• PUT /profile\n• GET /permissions
+gateway --> link : **Link Service APIs**\n• POST /scan-url\n• GET /scan-history\n• POST /report-link\n• GET /link-stats\n• POST /bulk-scan
+gateway --> community : **Community APIs**\n• GET /posts\n• POST /posts\n• PUT /posts/:id\n• DELETE /posts/:id\n• POST /comments\n• POST /vote\n• GET /reports
+gateway --> chat : **Chat Service APIs**\n• POST /message\n• GET /conversations\n• POST /analyze-content\n• GET /chat-history\n• POST /ai-response
+gateway --> newsvc : **News Service APIs**\n• GET /articles\n• POST /articles\n• GET /categories\n• POST /search\n• GET /trending\n• POST /alerts
+gateway --> adminvc : **Admin Service APIs**\n• GET /dashboard\n• GET /users\n• POST /moderate\n• GET /system-stats\n• POST /user-actions\n• GET /audit-logs
+
+' Inter-Service Communication
+auth <--> firebase : **User Management**\n• User authentication\n• Profile management\n• Permission checks\n• Session management
+
+link --> auth : **Authentication Check**\n• POST /internal/verify-token\n• GET /internal/user-info\n• GET /internal/user-permissions
+link <--> firebase : **Link Data**\n• Store scan results\n• Link history\n• Report storage\n• Reputation data
+
+community --> auth : **User Verification**\n• POST /internal/verify-token\n• GET /internal/user-profile\n• GET /internal/user-reputation
+community <--> firebase : **Community Data**\n• Posts & comments\n• Voting records\n• User interactions\n• Moderation logs
+community <--> redis : **Real-time Cache**\n• Active users\n• Live discussions\n• Vote counts\n• Trending content
+
+chat --> auth : **User Context**\n• POST /internal/verify-token\n• GET /internal/user-context\n• GET /internal/chat-permissions
+chat --> link : **Quick Link Analysis**\n• POST /internal/quick-scan\n• GET /internal/link-reputation\n• POST /internal/analyze-url
+chat <--> firebase : **Chat Data**\n• Conversation history\n• AI responses\n• User preferences\n• Chat analytics
+
+newsvc --> auth : **User Preferences**\n• POST /internal/verify-token\n• GET /internal/user-preferences\n• GET /internal/subscription-info
+newsvc <--> firebase : **News Data**\n• Article content\n• Categories\n• User subscriptions\n• Reading history
+
+adminvc --> auth : **Admin Authorization**\n• POST /internal/verify-admin\n• GET /internal/admin-permissions\n• GET /internal/user-roles
+adminvc --> link : **Link Management**\n• GET /internal/scan-statistics\n• POST /internal/bulk-operations\n• GET /internal/flagged-links
+adminvc --> community : **Content Moderation**\n• GET /internal/reported-content\n• POST /internal/moderate-post\n• GET /internal/user-reports\n• POST /internal/ban-user
+adminvc --> newsvc : **Content Management**\n• GET /internal/content-stats\n• POST /internal/manage-articles\n• GET /internal/trending-topics
+adminvc <--> firebase : **Admin Data**\n• System logs\n• User actions\n• Audit trails\n• Admin activities
+
+' Service Health Checks
+note bottom of auth #lightgreen
+**Health Check Endpoints:**
+• GET /health
+• GET /metrics  
+• GET /ready
+• GET /live
+end note
+
+note bottom of link #lightgreen
+**Internal Service URLs:**
+• AUTH_SERVICE_URL=http://auth-service:3001
+• LINK_SERVICE_URL=http://link-service:3002
+• COMMUNITY_SERVICE_URL=http://community-service:3003
+• CHAT_SERVICE_URL=http://chat-service:3004
+• NEWS_SERVICE_URL=http://news-service:3005
+• ADMIN_SERVICE_URL=http://admin-service:3006
+end note
+
+' API Security
+note top of gateway #orange
+**API Security Features:**
+• JWT Token Validation
+• Rate Limiting (100 req/15min)
+• CORS Protection
+• Input Validation
+• API Key Management
+• Request/Response Logging
+end note
+
+' Error Handling
+note right of adminvc #red
+**Error Handling:**
+• Service Circuit Breakers
+• Retry Logic with Exponential Backoff
+• Graceful Degradation
+• Health Check Monitoring
+• Auto-scaling on Load
+• Fallback Responses
+end note
+
+@enduml

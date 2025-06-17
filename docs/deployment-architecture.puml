@@ -1,0 +1,236 @@
+@startuml Deployment Architecture
+!theme aws-orange
+title Anti-Fraud Platform - Deployment Architecture
+
+' Define deployment environments
+package "Development Environment" as dev_env #lightblue {
+  
+  package "Local Development (No Docker)" as local {
+    node "Developer Machine" as dev_machine {
+      component "Node.js Process\nAuth Service :3001" as local_auth #green
+      component "Node.js Process\nLink Service :3002" as local_link #green
+      component "Node.js Process\nCommunity Service :3003" as local_community #green
+      component "Node.js Process\nChat Service :3004" as local_chat #green
+      component "Node.js Process\nNews Service :3005" as local_news #green
+      component "Node.js Process\nAdmin Service :3006" as local_admin #green
+      component "Node.js Process\nAPI Gateway :8082" as local_gateway #orange
+      component "React Dev Server\n:3000" as local_frontend #blue
+      
+      note right of local_auth : "npm run dev\nHot reload enabled\nDirect file watching"
+    }
+  }
+  
+  package "Docker Development" as docker_dev {
+    node "Docker Host" as docker_host {
+      package "Docker Network: microservices-network" as docker_network {
+        component "auth-service\nContainer :3001" as docker_auth #green
+        component "link-service\nContainer :3002" as docker_link #green
+        component "community-service\nContainer :3003" as docker_community #green
+        component "chat-service\nContainer :3004" as docker_chat #green
+        component "news-service\nContainer :3005" as docker_news #green
+        component "admin-service\nContainer :3006" as docker_admin #green
+        component "api-gateway\nContainer :8082" as docker_gateway #orange
+        component "frontend\nContainer :3000" as docker_frontend #blue
+        component "redis\nContainer :6379" as docker_redis #red
+      }
+    }
+    
+    note right of docker_network : "Volume mounts for hot reload\ndocker-compose.dev.yml\nShared /app/shared folder"
+  }
+}
+
+package "Production Environment" as prod_env #lightgreen {
+  
+  package "Docker Production" as docker_prod {
+    node "Production Server" as prod_server {
+      package "Docker Swarm/Compose" as prod_docker {
+        component "auth-service\nReplica x2" as prod_auth #darkgreen
+        component "link-service\nReplica x2" as prod_link #darkgreen
+        component "community-service\nReplica x2" as prod_community #darkgreen
+        component "chat-service\nReplica x2" as prod_chat #darkgreen
+        component "news-service\nReplica x2" as prod_news #darkgreen
+        component "admin-service\nReplica x1" as prod_admin #darkgreen
+        component "api-gateway\nReplica x2" as prod_gateway #darkorange
+        component "frontend\nReplica x2" as prod_frontend #darkblue
+        component "redis\nPersistent Volume" as prod_redis #darkred
+      }
+      
+      component "Load Balancer\nNginx/HAProxy" as prod_lb #purple
+      component "SSL Termination\nLet's Encrypt" as prod_ssl #gray
+    }
+  }
+  
+  package "Kubernetes Production" as k8s_prod {
+    node "Kubernetes Cluster" as k8s_cluster {
+      package "Namespace: anti-fraud-platform" as k8s_namespace {
+        
+        package "Frontend Tier" as k8s_frontend_tier {
+          component "frontend\nDeployment\nReplicas: 3\nPods" as k8s_frontend #darkblue
+          component "frontend\nService\nClusterIP" as k8s_frontend_svc #blue
+        }
+        
+        package "API Gateway Tier" as k8s_gateway_tier {
+          component "api-gateway\nDeployment\nReplicas: 3\nPods" as k8s_gateway #darkorange
+          component "api-gateway\nService\nClusterIP" as k8s_gateway_svc #orange
+        }
+        
+        package "Microservices Tier" as k8s_services_tier {
+          component "auth-service\nDeployment\nReplicas: 2" as k8s_auth #darkgreen
+          component "link-service\nDeployment\nReplicas: 2" as k8s_link #darkgreen
+          component "community-service\nDeployment\nReplicas: 2" as k8s_community #darkgreen
+          component "chat-service\nDeployment\nReplicas: 2" as k8s_chat #darkgreen
+          component "news-service\nDeployment\nReplicas: 2" as k8s_news #darkgreen
+          component "admin-service\nDeployment\nReplicas: 1" as k8s_admin #darkgreen
+          
+          component "Services\n(ClusterIP)" as k8s_services_svc #green
+        }
+        
+        package "Data Tier" as k8s_data_tier {
+          component "redis\nStatefulSet\nReplicas: 1\nPV: 10Gi" as k8s_redis #darkred
+          component "redis\nService\nClusterIP" as k8s_redis_svc #red
+        }
+        
+        package "Ingress" as k8s_ingress {
+          component "Ingress Controller\nNginx/Traefik" as k8s_ingress_ctrl #purple
+          component "TLS Certificates\nCert-Manager" as k8s_tls #gray
+        }
+        
+        package "Configuration" as k8s_config {
+          component "ConfigMaps\napp-config" as k8s_configmap #yellow
+          component "Secrets\napp-secrets" as k8s_secrets #gold
+        }
+      }
+    }
+  }
+}
+
+package "External Services" as external #lightyellow {
+  database "Firebase/Firestore\nManaged Database" as firebase #gold
+  cloud "External APIs" as external_apis #gray {
+    component "VirusTotal API" as vt
+    component "ScamAdviser API" as sa
+    component "Gemini AI API" as gemini
+    component "News APIs" as news_apis
+  }
+}
+
+package "Monitoring Stack" as monitoring #lightpurple {
+  component "Prometheus\n:9090" as prometheus #purple
+  component "Grafana\n:3010" as grafana #purple
+  component "Alertmanager\n:9093" as alertmanager #purple
+  component "Node Exporter\n:9100" as node_exporter #purple
+}
+
+' Development Environment Connections
+local_frontend --> local_gateway : HTTP :8082
+local_gateway --> local_auth : HTTP :3001
+local_gateway --> local_link : HTTP :3002
+local_gateway --> local_community : HTTP :3003
+local_gateway --> local_chat : HTTP :3004
+local_gateway --> local_news : HTTP :3005
+local_gateway --> local_admin : HTTP :3006
+
+docker_frontend --> docker_gateway : HTTP :8082
+docker_gateway --> docker_auth : HTTP :3001
+docker_gateway --> docker_link : HTTP :3002
+docker_gateway --> docker_community : HTTP :3003
+docker_gateway --> docker_chat : HTTP :3004
+docker_gateway --> docker_news : HTTP :3005
+docker_gateway --> docker_admin : HTTP :3006
+docker_community --> docker_redis : TCP :6379
+
+' Production Environment Connections
+prod_ssl --> prod_lb : HTTPS :443
+prod_lb --> prod_gateway : HTTP :8082
+prod_lb --> prod_frontend : HTTP :3000
+prod_gateway --> prod_auth : HTTP :3001
+prod_gateway --> prod_link : HTTP :3002
+prod_gateway --> prod_community : HTTP :3003
+prod_gateway --> prod_chat : HTTP :3004
+prod_gateway --> prod_news : HTTP :3005
+prod_gateway --> prod_admin : HTTP :3006
+prod_community --> prod_redis : TCP :6379
+
+' Kubernetes Connections
+k8s_ingress_ctrl --> k8s_frontend_svc : HTTP
+k8s_ingress_ctrl --> k8s_gateway_svc : HTTP
+k8s_frontend_svc --> k8s_frontend : HTTP :3000
+k8s_gateway_svc --> k8s_gateway : HTTP :8082
+k8s_gateway --> k8s_services_svc : HTTP
+k8s_services_svc --> k8s_auth : HTTP :3001
+k8s_services_svc --> k8s_link : HTTP :3002
+k8s_services_svc --> k8s_community : HTTP :3003
+k8s_services_svc --> k8s_chat : HTTP :3004
+k8s_services_svc --> k8s_news : HTTP :3005
+k8s_services_svc --> k8s_admin : HTTP :3006
+k8s_community --> k8s_redis_svc : TCP :6379
+k8s_redis_svc --> k8s_redis : TCP :6379
+
+' External Connections (All Environments)
+local_auth --> firebase : HTTPS
+local_link --> firebase : HTTPS
+local_community --> firebase : HTTPS
+local_chat --> firebase : HTTPS
+local_news --> firebase : HTTPS
+local_admin --> firebase : HTTPS
+
+docker_auth --> firebase : HTTPS
+docker_link --> firebase : HTTPS
+docker_community --> firebase : HTTPS
+docker_chat --> firebase : HTTPS
+docker_news --> firebase : HTTPS
+docker_admin --> firebase : HTTPS
+
+prod_auth --> firebase : HTTPS
+prod_link --> firebase : HTTPS
+prod_community --> firebase : HTTPS
+prod_chat --> firebase : HTTPS
+prod_news --> firebase : HTTPS
+prod_admin --> firebase : HTTPS
+
+k8s_auth --> firebase : HTTPS
+k8s_link --> firebase : HTTPS
+k8s_community --> firebase : HTTPS
+k8s_chat --> firebase : HTTPS
+k8s_news --> firebase : HTTPS
+k8s_admin --> firebase : HTTPS
+
+local_link --> external_apis : HTTPS
+docker_link --> external_apis : HTTPS
+prod_link --> external_apis : HTTPS
+k8s_link --> external_apis : HTTPS
+
+local_chat --> external_apis : HTTPS
+docker_chat --> external_apis : HTTPS
+prod_chat --> external_apis : HTTPS
+k8s_chat --> external_apis : HTTPS
+
+' Monitoring Connections
+prometheus --> local_auth : Metrics :3001/metrics
+prometheus --> docker_auth : Metrics :3001/metrics
+prometheus --> prod_auth : Metrics :3001/metrics
+prometheus --> k8s_auth : Metrics :3001/metrics
+
+grafana --> prometheus : Query :9090
+alertmanager --> prometheus : Alerts :9090
+
+' Deployment Scripts
+note top of local : "Deployment Command:\n./scripts/deploy-local.sh\nscripts/deploy-local.bat"
+note top of docker_dev : "Deployment Command:\n./scripts/deploy-docker.sh\ndocker-compose up -d"
+note top of k8s_prod : "Deployment Command:\n./scripts/deploy-k8s.sh\nkubectl apply -f k8s/"
+
+' Environment Specifications
+note bottom of local : "**Local Development:**\n• No containers\n• Direct Node.js processes\n• Hot reload enabled\n• File watching\n• Fast startup (~2min)\n• Best for debugging"
+
+note bottom of docker_dev : "**Docker Development:**\n• Containerized services\n• Volume mounts for hot reload\n• Isolated environments\n• Docker networks\n• Medium startup (~5min)\n• Production-like environment"
+
+note bottom of k8s_prod : "**Kubernetes Production:**\n• High availability\n• Auto-scaling\n• Service mesh\n• Persistent volumes\n• Rolling updates\n• Health checks\n• Resource limits\n• Production-ready"
+
+' Resource Requirements
+note right of k8s_cluster : "**Resource Requirements:**\n• CPU: 4+ cores\n• Memory: 8GB+ RAM\n• Storage: 50GB+ SSD\n• Network: 1Gbps+\n• Kubernetes: v1.24+"
+
+note right of prod_server : "**Server Requirements:**\n• CPU: 2+ cores\n• Memory: 4GB+ RAM\n• Storage: 20GB+ SSD\n• Docker: v20.10+\n• Docker Compose: v2.0+"
+
+note right of dev_machine : "**Development Requirements:**\n• Node.js: v16+\n• npm: v8+\n• Memory: 2GB+ available\n• Storage: 5GB+ free"
+
+@enduml

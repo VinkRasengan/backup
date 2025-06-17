@@ -1,0 +1,186 @@
+@startuml Network Architecture
+!theme aws-orange
+title Anti-Fraud Platform - Network Architecture
+
+' PlantUML Configuration for better layout
+skinparam linetype ortho
+skinparam nodesep 100
+skinparam ranksep 80
+skinparam minlen 3
+skinparam componentStyle rectangle
+skinparam packageStyle rectangle
+
+' Internet/External
+cloud "Internet" as internet #E8F4FD
+cloud "External APIs" as external_apis #F0F0F0 {
+  component "VirusTotal\nAPI" as vt #FFE6E6
+  component "ScamAdviser\nAPI" as sa #FFE6E6  
+  component "Gemini AI\nAPI" as gemini #FFF2CC
+  component "Firebase\nServices" as firebase #FFE6CC
+}
+
+' Load Balancer/CDN
+package "Edge Layer" as edge #E8E3F3 {
+  component "Load Balancer\n(Cloud/On-Premise)" as lb #D4B3FF
+  component "SSL Termination\nTLS 1.3" as ssl #E6E6E6
+  component "CDN/Cache\n(Optional)" as cdn #F5F5F5
+  
+  note right of lb : "**Load Balancer Config:**\n• Health checks\n• Session affinity\n• Rate limiting\n• DDoS protection\n• SSL offloading"
+}
+
+' DMZ/Public Network
+package "DMZ Network\n(Public Subnet)" as dmz #E3F2FD {
+  component "Reverse Proxy\nNginx/HAProxy" as reverse_proxy #90CAF9
+  component "Web Application Firewall\n(WAF)" as waf #FFCDD2
+  
+  note right of reverse_proxy : "**Proxy Configuration:**\n• Port 80/443 → 8082\n• Request routing\n• Compression\n• Caching\n• Security headers"
+}
+
+' Application Network
+package "Application Network\n(Private Subnet)" as app_network #E8F5E8 {
+  
+  ' Frontend Network
+  package "Frontend Network\n192.168.1.0/24" as frontend_net #E1F5FE {
+    component "React Frontend\n192.168.1.10:3000" as frontend #81D4FA
+    
+    note right of frontend : "**Frontend Networking:**\n• Static assets serving\n• API proxy to gateway\n• WebSocket connections\n• Service Worker caching"
+  }
+  
+  ' Gateway Network
+  package "Gateway Network\n192.168.2.0/24" as gateway_net #FFF3E0 {
+    component "API Gateway\n192.168.2.10:8082" as gateway #FFB74D
+    component "API Gateway\n192.168.2.11:8082" as gateway2 #FFB74D
+    
+    note right of gateway : "**Gateway Networking:**\n• Load balancing\n• Service discovery\n• Circuit breakers\n• Request routing\n• Authentication"
+  }
+  
+  ' Microservices Network
+  package "Microservices Network\n192.168.3.0/24" as services_net #E8F5E8 {
+    component "Auth Service\n192.168.3.10:3001" as auth #A5D6A7
+    component "Link Service\n192.168.3.20:3002" as link #A5D6A7
+    component "Community Service\n192.168.3.30:3003" as community #A5D6A7
+    component "Chat Service\n192.168.3.40:3004" as chat #A5D6A7
+    component "News Service\n192.168.3.50:3005" as news #A5D6A7
+    component "Admin Service\n192.168.3.60:3006" as admin #A5D6A7
+    
+    note right of services_net : "**Service Mesh:**\n• Service-to-service auth\n• mTLS encryption\n• Traffic shaping\n• Observability\n• Failure handling"
+  }
+  
+  ' Data Network
+  package "Data Network\n192.168.4.0/24" as data_net #FFEBEE {
+    component "Redis Cache\n192.168.4.10:6379" as redis #EF5350
+    component "Redis Sentinel\n192.168.4.11:26379" as redis_sentinel #FFCDD2
+    
+    note right of data_net : "**Data Layer Security:**\n• Encrypted connections\n• Authentication required\n• Network isolation\n• Backup replication"
+  }
+}
+
+' Monitoring Network
+package "Monitoring Network\n192.168.5.0/24" as monitoring_net #F3E5F5 {
+  component "Prometheus\n192.168.5.10:9090" as prometheus #CE93D8
+  component "Grafana\n192.168.5.20:3010" as grafana #CE93D8
+  component "Alertmanager\n192.168.5.30:9093" as alertmanager #CE93D8
+  component "Jaeger\n192.168.5.40:14268" as jaeger #CE93D8
+  
+  note right of monitoring_net : "**Monitoring Security:**\n• Admin-only access\n• VPN required\n• Secure dashboards\n• Audit logging"
+}
+
+' Management Network
+package "Management Network\n192.168.6.0/24" as mgmt_net #F5F5F5 {
+  component "Jump Server\nBastion Host" as bastion #BDBDBD
+  component "CI/CD Pipeline\nJenkins/GitLab" as cicd #BDBDBD
+  component "Log Aggregation\nELK Stack" as logs #BDBDBD
+  
+  note right of mgmt_net : "**Management Access:**\n• SSH key-based auth\n• Multi-factor auth\n• Privileged access\n• Audit trails"
+}
+
+' Docker Networks (for Docker deployment)
+package "Docker Networks" as docker_networks #E0F7FA {
+  component "microservices-network\nBridge Driver" as docker_bridge #4DD0E1
+  component "monitoring-network\nOverlay Driver" as docker_overlay #4DD0E1
+  
+  note right of docker_networks : "**Docker Networking:**\n• Container isolation\n• Service discovery\n• Port mapping\n• Network policies"
+}
+
+' Kubernetes Networks (for K8s deployment)
+package "Kubernetes Networks" as k8s_networks #FFFDE7 {
+  component "Pod Network\nCNI Plugin" as k8s_pod_net #FFF176
+  component "Service Network\nClusterIP" as k8s_svc_net #FFF176
+  component "Ingress Network\nLoadBalancer" as k8s_ingress_net #FFF176
+  
+  note right of k8s_networks : "**K8s Networking:**\n• Pod-to-Pod communication\n• Service discovery\n• Network policies\n• Ingress controllers"
+}
+
+' Network Flow - External to Internal
+internet -down-> cdn : HTTPS :443
+cdn -down-> lb : HTTPS :443
+lb -down-> ssl : HTTPS :443
+ssl -down-> waf : HTTP :80
+waf -down-> reverse_proxy : HTTP :80
+reverse_proxy -down-> gateway : HTTP :8082
+reverse_proxy -down-> frontend : HTTP :3000
+
+' Internal Network Flow
+gateway -down-> auth : HTTP :3001
+gateway -down-> link : HTTP :3002
+gateway -down-> community : HTTP :3003
+gateway -down-> chat : HTTP :3004
+gateway -down-> news : HTTP :3005
+gateway -down-> admin : HTTP :3006
+
+' Service to Service Communication
+link -left-> auth : POST /verify-token
+community -left-> auth : POST /verify-token
+chat -left-> auth : POST /verify-token
+news -left-> auth : POST /verify-token
+admin -left-> auth : POST /verify-admin
+
+admin -down-> link : GET /scan-history
+admin -down-> community : GET /reports
+admin -down-> news : GET /content-stats
+
+community -down-> redis : TCP :6379
+chat -right-> link : POST /quick-scan
+
+' External API Connections
+link -up-> vt : HTTPS :443
+link -up-> sa : HTTPS :443
+chat -up-> gemini : HTTPS :443
+auth -up-> firebase : HTTPS :443
+
+' Monitoring Connections
+prometheus -right-> auth : HTTP :3001/metrics
+prometheus -right-> link : HTTP :3002/metrics
+prometheus -right-> community : HTTP :3003/metrics
+prometheus -right-> chat : HTTP :3004/metrics
+prometheus -right-> news : HTTP :3005/metrics
+prometheus -right-> admin : HTTP :3006/metrics
+prometheus -down-> redis : HTTP :6379/metrics
+
+grafana -left-> prometheus : HTTP :9090
+alertmanager -left-> prometheus : HTTP :9090
+
+' Management Connections
+bastion -right-> auth : SSH :22
+bastion -right-> link : SSH :22
+cicd -up-> gateway : HTTP :8082/health
+logs -up-> auth : TCP :5000
+logs -up-> link : TCP :5000
+
+' Network Security
+note top of waf #FFEBEE : "**Security Measures:**\n• DDoS protection\n• Rate limiting\n• IP whitelisting\n• Geographic blocking\n• Bot detection"
+
+note top of gateway #FFF3E0 : "**API Security:**\n• JWT validation\n• CORS policies\n• Input sanitization\n• Request signing\n• Audit logging"
+
+note top of services_net #E8F5E8 : "**Network Policies:**\n• Zero-trust architecture\n• Micro-segmentation\n• Encrypted communication\n• Access control lists\n• Traffic monitoring"
+
+' Port Mappings
+note bottom of internet #E8F4FD : "**Port Mappings:**\n• External → Internal\n• 80/443 → Load Balancer\n• 8082 → API Gateway\n• 3000 → Frontend\n• 3001-3006 → Services\n• 6379 → Redis\n• 9090 → Prometheus\n• 3010 → Grafana"
+
+' Firewall Rules
+note bottom of dmz #E3F2FD : "**Firewall Rules:**\n• Allow: 80,443 from Internet\n• Allow: 8082 from DMZ\n• Allow: 3001-3006 from Gateway\n• Allow: 6379 from Services\n• Block: Direct DB access\n• Block: Admin ports from public"
+
+' High Availability
+note bottom of gateway_net #FFF3E0 : "**High Availability:**\n• Multiple gateway instances\n• Load balancing\n• Health checks\n• Failover mechanisms\n• Geographic distribution"
+
+@enduml
