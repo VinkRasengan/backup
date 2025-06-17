@@ -45,7 +45,8 @@
     "monitoring:install": "node scripts/install-monitoring.js",
     "monitoring:start": "node scripts/start-monitoring.js",
     "monitoring:stop": "node scripts/stop-monitoring.js",
-    "monitoring:status": "node scripts/check-monitoring-status.js"
+    "monitoring:status": "node scripts/check-monitoring-status.js",
+    "monitoring:setup-grafana": "node scripts/setup-grafana.js"
   },
   "dependencies": {
     "all": "^0.0.0",

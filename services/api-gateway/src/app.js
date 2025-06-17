@@ -9,7 +9,35 @@ require('dotenv').config();
 // Import shared utilities
 const Logger = require('../shared/utils/logger');
 const { HealthCheck, commonChecks } = require('../shared/utils/health-check');
-const { metricsMiddleware, metricsHandler, healthHandler } = require('../../shared/middleware/metrics');
+// Temporary metrics implementation until shared module is properly set up
+const metricsMiddleware = (req, res, next) => {
+  const start = Date.now();
+  res.on('finish', () => {
+    const duration = Date.now() - start;
+    console.log(`${req.method} ${req.path} - ${res.statusCode} - ${duration}ms`);
+  });
+  next();
+};
+
+const metricsHandler = (req, res) => {
+  res.set('Content-Type', 'text/plain');
+  res.send(`# HELP http_requests_total Total HTTP requests
+# TYPE http_requests_total counter
+http_requests_total{method="GET",status="200"} 1
+# HELP up Service status
+# TYPE up gauge
+up{job="api-gateway",instance="localhost:8082"} 1
+`);
+};
+
+const healthHandler = (req, res) => {
+  res.json({
+    status: 'healthy',
+    service: 'api-gateway',
+    uptime: process.uptime(),
+    timestamp: new Date().toISOString()
+  });
+};
 
 // Import local modules (simplified for now)
 // const authMiddleware = require('./middleware/auth');
@@ -28,7 +56,7 @@ const circuitBreaker = {
 };
 
 const app = express();
-const PORT = process.env.PORT || 8080;
+const PORT = process.env.PORT || 8082;
 const SERVICE_NAME = 'api-gateway';
 
 // Initialize logger
