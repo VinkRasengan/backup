@@ -5,8 +5,9 @@
   "private": true,
   "scripts": {
     "start": "echo 🚀 Starting Full Stack Application... && npm run start:full",
-    "start:full": "concurrently --kill-others-on-fail \"npm run start:services\" \"npm run start:client:delayed\"",
+    "start:full": "concurrently --kill-others-on-fail \"npm run start:services:core\" \"npm run start:client:delayed\"",
     "start:services": "concurrently --kill-others-on-fail \"npm run start:auth\" \"npm run start:api-gateway\" \"npm run start:admin\" \"npm run start:chat\" \"npm run start:community\" \"npm run start:link\" \"npm run start:news\" \"npm run start:criminalip\" \"npm run start:phishtank\"",
+    "start:services:core": "concurrently --kill-others-on-fail \"npm run start:auth\" \"npm run start:api-gateway\" \"npm run start:admin\" \"npm run start:chat\" \"npm run start:community\" \"npm run start:link\" \"npm run start:news\"",
     "start:client": "cd client && npm start",
     "start:client:delayed": "node scripts/delay.js 20 && npm run start:client",
     "start:auth": "cd services/auth-service && npm start",
@@ -50,7 +51,13 @@
     "fix:ports": "node scripts/fix-port-conflicts.js",
     "validate:ports": "node scripts/validate-ports.js",
     "start:fixed": "node scripts/start-all-fixed.js",
-    "stop:all": "npm run stop:local && npm run monitoring:stop"
+    "stop:all": "npm run stop:local && npm run monitoring:stop",
+    "start:safe": "node scripts/start-all-fixed.js",
+    "kill:all": "node scripts/kill-all-services.js",
+    "kill": "npm run kill:all",
+    "stop": "npm run kill:all",
+    "restart": "npm run kill:all && npm run start:full",
+    "restart:safe": "npm run kill:all && npm run start:safe"
   },
   "dependencies": {
     "all": "^0.0.0",
