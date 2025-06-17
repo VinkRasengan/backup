@@ -109,7 +109,7 @@ VIRUSTOTAL_API_KEY=your-virustotal-api-key
 
 ```bash
 # Start all services
-npm start
+npm run start:all
 
 # Or start individual services for debugging
 npm run dev:services
