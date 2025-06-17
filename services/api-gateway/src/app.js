@@ -9,6 +9,7 @@ require('dotenv').config();
 // Import shared utilities
 const Logger = require('../shared/utils/logger');
 const { HealthCheck, commonChecks } = require('../shared/utils/health-check');
+const { metricsMiddleware, metricsHandler, healthHandler } = require('../../shared/middleware/metrics');
 
 // Import local modules (simplified for now)
 // const authMiddleware = require('./middleware/auth');
@@ -92,14 +93,20 @@ app.use(globalLimiter);
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
+// Metrics middleware (before other middleware)
+app.use(metricsMiddleware);
+
 // Logging middleware
 app.use(logger.logRequest.bind(logger));
 app.use(morgan('combined', {
   stream: { write: (message) => logger.info(message.trim()) }
 }));
 
+// Metrics endpoint
+app.get('/metrics', metricsHandler);
+
 // Health check endpoints
-app.get('/health', healthCheck.middleware());
+app.get('/health', healthHandler);
 app.get('/health/live', healthCheck.liveness());
 app.get('/health/ready', healthCheck.readiness());
 

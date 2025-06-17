@@ -2,7 +2,8 @@
   "name": "factcheck-platform",
   "version": "1.0.0",
   "description": "FactCheck Anti-Fraud Platform - Microservices Architecture",
-  "private": true,  "scripts": {
+  "private": true,
+  "scripts": {
     "start": "echo 🚀 Starting Full Stack Application... && npm run start:full",
     "start:full": "concurrently --kill-others-on-fail \"npm run start:services\" \"npm run start:client:delayed\"",
     "start:services": "concurrently --kill-others-on-fail \"npm run start:auth\" \"npm run start:api-gateway\" \"npm run start:admin\" \"npm run start:chat\" \"npm run start:community\" \"npm run start:link\" \"npm run start:news\" \"npm run start:criminalip\" \"npm run start:phishtank\"",
@@ -40,11 +41,16 @@
     "stop:k8s": "./scripts/stop-k8s.sh",
     "health": "curl -s http://localhost:8080/services/status || echo 'Services not running'",
     "logs:docker": "docker-compose logs -f",
-    "logs:k8s": "kubectl logs -f deployment/api-gateway -n anti-fraud-platform"
+    "logs:k8s": "kubectl logs -f deployment/api-gateway -n anti-fraud-platform",
+    "monitoring:install": "node scripts/install-monitoring.js",
+    "monitoring:start": "node scripts/start-monitoring.js",
+    "monitoring:stop": "node scripts/stop-monitoring.js",
+    "monitoring:status": "node scripts/check-monitoring-status.js"
   },
   "dependencies": {
+    "all": "^0.0.0",
     "concurrently": "^8.2.2",
-    "all": "^0.0.0"
+    "prom-client": "^15.1.0"
   },
   "devDependencies": {
     "concurrently": "^8.2.2"
