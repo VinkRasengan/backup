@@ -27,6 +27,7 @@ echo   npm run restart            - Restart all services
 echo   npm run restart:safe       - Safe restart with port checks
 echo.
 echo 🐳 DOCKER COMMANDS:
+echo   npm run docker:check       - Check Docker status
 echo   npm run docker:up          - Start Docker containers
 echo   npm run docker:down        - Stop Docker containers
 echo   npm run docker:build       - Build Docker images

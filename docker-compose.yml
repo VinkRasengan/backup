@@ -1,0 +1,192 @@
+version: '3.8'
+
+services:
+  # API Gateway
+  api-gateway:
+    build:
+      context: ./services/api-gateway
+      dockerfile: Dockerfile
+    ports:
+      - "8082:8082"
+    environment:
+      - NODE_ENV=production
+      - PORT=8082
+      - AUTH_SERVICE_URL=http://auth-service:3001
+      - LINK_SERVICE_URL=http://link-service:3002
+      - COMMUNITY_SERVICE_URL=http://community-service:3003
+      - CHAT_SERVICE_URL=http://chat-service:3004
+      - NEWS_SERVICE_URL=http://news-service:3005
+      - ADMIN_SERVICE_URL=http://admin-service:3006
+      - REDIS_URL=redis://redis:6379
+    env_file:
+      - .env
+    volumes:
+      - ./shared:/app/shared
+    depends_on:
+      - redis
+      - auth-service
+      - link-service
+      - community-service
+      - chat-service
+      - news-service
+      - admin-service
+    networks:
+      - app-network
+    restart: unless-stopped
+
+  # Authentication Service
+  auth-service:
+    build:
+      context: ./services/auth-service
+      dockerfile: Dockerfile
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=production
+      - PORT=3001
+    env_file:
+      - .env
+    volumes:
+      - ./shared:/app/shared
+    networks:
+      - app-network
+    restart: unless-stopped
+
+  # Link Verification Service
+  link-service:
+    build:
+      context: ./services/link-service
+      dockerfile: Dockerfile
+    ports:
+      - "3002:3002"
+    environment:
+      - NODE_ENV=production
+      - PORT=3002
+    env_file:
+      - .env
+    volumes:
+      - ./shared:/app/shared
+    depends_on:
+      - auth-service
+    networks:
+      - app-network
+    restart: unless-stopped
+
+  # Community Service
+  community-service:
+    build:
+      context: ./services/community-service
+      dockerfile: Dockerfile
+    ports:
+      - "3003:3003"
+    environment:
+      - NODE_ENV=production
+      - PORT=3003
+    env_file:
+      - .env
+    volumes:
+      - ./shared:/app/shared
+    depends_on:
+      - auth-service
+      - redis
+    networks:
+      - app-network
+    restart: unless-stopped
+
+  # Chat Service
+  chat-service:
+    build:
+      context: ./services/chat-service
+      dockerfile: Dockerfile
+    ports:
+      - "3004:3004"
+    environment:
+      - NODE_ENV=production
+      - PORT=3004
+    env_file:
+      - .env
+    volumes:
+      - ./shared:/app/shared
+    depends_on:
+      - auth-service
+    networks:
+      - app-network
+    restart: unless-stopped
+
+  # News Service
+  news-service:
+    build:
+      context: ./services/news-service
+      dockerfile: Dockerfile
+    ports:
+      - "3005:3005"
+    environment:
+      - NODE_ENV=production
+      - PORT=3005
+    env_file:
+      - .env
+    volumes:
+      - ./shared:/app/shared
+    depends_on:
+      - auth-service
+    networks:
+      - app-network
+    restart: unless-stopped
+
+  # Admin Service
+  admin-service:
+    build:
+      context: ./services/admin-service
+      dockerfile: Dockerfile
+    ports:
+      - "3006:3006"
+    environment:
+      - NODE_ENV=production
+      - PORT=3006
+    env_file:
+      - .env
+    volumes:
+      - ./shared:/app/shared
+    depends_on:
+      - auth-service
+      - community-service
+      - link-service
+    networks:
+      - app-network
+    restart: unless-stopped
+
+  # Redis for caching
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes
+    volumes:
+      - redis-data:/data
+    networks:
+      - app-network
+    restart: unless-stopped
+
+  # React Frontend
+  frontend:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+    env_file:
+      - .env
+    depends_on:
+      - api-gateway
+    networks:
+      - app-network
+    restart: unless-stopped
+
+volumes:
+  redis-data:
+
+networks:
+  app-network:
+    driver: bridge

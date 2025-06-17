@@ -74,7 +74,7 @@ if not exist ".env" (
         echo ADMIN_SERVICE_URL=http://localhost:3006
         echo.
         echo # CORS Configuration
-        echo ALLOWED_ORIGINS=http://localhost:3000,http://localhost:8080
+        echo ALLOWED_ORIGINS=http://localhost:3000,http://localhost:8082
         echo.
         echo # Firebase Configuration ^(Required^)
         echo FIREBASE_PROJECT_ID=factcheck-1d6e8
@@ -93,7 +93,7 @@ if not exist ".env" (
         echo NEWSAPI_API_KEY=your-newsapi-api-key
         echo.
         echo # React App Configuration
-        echo REACT_APP_API_URL=http://localhost:8080
+        echo REACT_APP_API_URL=http://localhost:8082
         echo REACT_APP_FIREBASE_API_KEY=your-firebase-web-api-key
         echo REACT_APP_FIREBASE_AUTH_DOMAIN=factcheck-1d6e8.firebaseapp.com
         echo REACT_APP_FIREBASE_PROJECT_ID=factcheck-1d6e8
@@ -116,7 +116,7 @@ if not exist ".env" (
 
 REM Check for occupied ports
 echo [INFO] Checking port availability...
-set PORTS=3000 3001 3002 3003 3004 3005 3006 8080
+set PORTS=3000 3001 3002 3003 3004 3005 3006 8082
 set OCCUPIED_PORTS=
 
 for %%p in (%PORTS%) do (
@@ -173,9 +173,9 @@ REM Check if services are running
 echo [INFO] Checking service health...
 
 REM Try to check API Gateway health
-curl -s http://localhost:8080/health >nul 2>&1
+curl -s http://localhost:8082/health >nul 2>&1
 if not errorlevel 1 (
-    echo [SUCCESS] API Gateway is running on http://localhost:8080
+    echo [SUCCESS] API Gateway is running on http://localhost:8082
 ) else (
     echo [WARNING] API Gateway health check failed, but services may still be starting...
 )
@@ -192,7 +192,7 @@ echo [SUCCESS] 🎉 Local deployment completed!
 echo.
 echo 📋 Service URLs:
 echo    Frontend:      http://localhost:3000
-echo    API Gateway:   http://localhost:8080
+echo    API Gateway:   http://localhost:8082
 echo    Auth Service:  http://localhost:3001
 echo    Link Service:  http://localhost:3002
 echo    Community:     http://localhost:3003
@@ -207,7 +207,7 @@ echo    3. Check service logs if any issues occur
 echo    4. Use 'scripts\stop-local.bat' to stop all services
 echo.
 echo 🔧 Troubleshooting:
-echo    - Check service health: curl http://localhost:8080/services/status
+echo    - Check service health: curl http://localhost:8082/services/status
 echo    - View logs in the console windows that opened
 echo.
 
