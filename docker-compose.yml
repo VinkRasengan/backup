@@ -1,139 +1,6 @@
 version: '3.8'
 
 services:
-  # API Gateway
-  api-gateway:
-    build:
-      context: ./services/api-gateway
-      dockerfile: Dockerfile
-    ports:
-      - "8082:8082"
-    environment:
-      - NODE_ENV=production
-      - AUTH_SERVICE_URL=http://auth-service:3001
-      - LINK_SERVICE_URL=http://link-service:3002
-      - COMMUNITY_SERVICE_URL=http://community-service:3003
-      - CHAT_SERVICE_URL=http://chat-service:3004
-      - NEWS_SERVICE_URL=http://news-service:3005
-      - ADMIN_SERVICE_URL=http://admin-service:3006
-      - REDIS_URL=redis://redis:6379
-    volumes:
-      - ./shared:/app/shared
-    depends_on:
-      - redis
-      - auth-service
-      - link-service
-      - community-service
-      - chat-service
-      - news-service
-      - admin-service
-    networks:
-      - app-network
-    restart: unless-stopped
-
-  # Authentication Service
-  auth-service:
-    build:
-      context: ./services/auth-service
-      dockerfile: Dockerfile
-    ports:
-      - "3001:3001"
-    env_file:
-      - .env
-    volumes:
-      - ./shared:/app/shared
-    networks:
-      - app-network
-    restart: unless-stopped
-
-  # Link Verification Service
-  link-service:
-    build:
-      context: ./services/link-service
-      dockerfile: Dockerfile
-    ports:
-      - "3002:3002"
-    env_file:
-      - .env
-    volumes:
-      - ./shared:/app/shared
-    depends_on:
-      - auth-service
-    networks:
-      - app-network
-    restart: unless-stopped
-
-  # Community Service
-  community-service:
-    build:
-      context: ./services/community-service
-      dockerfile: Dockerfile
-    ports:
-      - "3003:3003"
-    env_file:
-      - .env
-    volumes:
-      - ./shared:/app/shared
-    depends_on:
-      - auth-service
-      - redis
-    networks:
-      - app-network
-    restart: unless-stopped
-
-  # Chat Service
-  chat-service:
-    build:
-      context: ./services/chat-service
-      dockerfile: Dockerfile
-    ports:
-      - "3004:3004"
-    env_file:
-      - .env
-    volumes:
-      - ./shared:/app/shared
-    depends_on:
-      - auth-service
-    networks:
-      - app-network
-    restart: unless-stopped
-
-  # News Service
-  news-service:
-    build:
-      context: ./services/news-service
-      dockerfile: Dockerfile
-    ports:
-      - "3005:3005"
-    env_file:
-      - .env
-    volumes:
-      - ./shared:/app/shared
-    depends_on:
-      - auth-service
-    networks:
-      - app-network
-    restart: unless-stopped
-
-  # Admin Service
-  admin-service:
-    build:
-      context: ./services/admin-service
-      dockerfile: Dockerfile
-    ports:
-      - "3006:3006"
-    env_file:
-      - .env
-    volumes:
-      - ./shared:/app/shared
-    depends_on:
-      - auth-service
-      - community-service
-      - link-service
-    networks:
-      - app-network
-    restart: unless-stopped
-
   # Redis for caching
   redis:
     image: redis:7-alpine
@@ -146,10 +13,159 @@ services:
       - app-network
     restart: unless-stopped
 
+  # Authentication Service
+  auth-service:
+    build:
+      context: .
+      dockerfile: services/auth-service/Dockerfile
+    ports:
+      - "3001:3001"
+    env_file:
+      - .env
+    depends_on:
+      - redis
+    networks:
+      - app-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3001/health/live"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Link Verification Service
+  link-service:
+    build:
+      context: .
+      dockerfile: services/link-service/Dockerfile
+    ports:
+      - "3002:3002"
+    env_file:
+      - .env
+    depends_on:
+      - auth-service
+    networks:
+      - app-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3002/health/live"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # News Service
+  news-service:
+    build:
+      context: .
+      dockerfile: services/news-service/Dockerfile
+    ports:
+      - "3003:3003"
+    env_file:
+      - .env
+    depends_on:
+      - auth-service
+    networks:
+      - app-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3003/health/live"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Chat Service
+  chat-service:
+    build:
+      context: .
+      dockerfile: services/chat-service/Dockerfile
+    ports:
+      - "3004:3004"
+    env_file:
+      - .env
+    depends_on:
+      - auth-service
+    networks:
+      - app-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3004/health/live"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Community Service
+  community-service:
+    build:
+      context: .
+      dockerfile: services/community-service/Dockerfile
+    ports:
+      - "3005:3005"
+    env_file:
+      - .env
+    depends_on:
+      - auth-service
+      - redis
+    networks:
+      - app-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3005/health/live"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Admin Service
+  admin-service:
+    build:
+      context: .
+      dockerfile: services/admin-service/Dockerfile
+    ports:
+      - "3006:3006"
+    env_file:
+      - .env
+    depends_on:
+      - auth-service
+      - community-service
+      - link-service
+    networks:
+      - app-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3006/health/live"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # API Gateway
+  api-gateway:
+    build:
+      context: .
+      dockerfile: services/api-gateway/Dockerfile
+    ports:
+      - "8080:8080"
+    env_file:
+      - .env
+    depends_on:
+      - redis
+      - auth-service
+      - link-service
+      - community-service
+      - chat-service
+      - news-service
+      - admin-service
+    networks:
+      - app-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
   # React Frontend
   frontend:
     build:
-      context: ./client
+      context: client
       dockerfile: Dockerfile
     ports:
       - "3000:3000"

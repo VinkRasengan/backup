@@ -1,4 +1,4 @@
-# Multi-stage build for Admin Service
+# Multi-stage build for admin-service
 FROM node:18-alpine AS base
 
 # Install dumb-init for proper signal handling
@@ -11,8 +11,8 @@ WORKDIR /app
 RUN addgroup -g 1001 -S nodejs
 RUN adduser -S nodejs -u 1001
 
-# Copy package files
-COPY package*.json ./
+# Copy service package files first (for better caching)
+COPY services/admin-service/package*.json ./
 
 # Install dependencies
 FROM base AS deps
@@ -20,8 +20,13 @@ RUN npm install --only=production && npm cache clean --force
 
 # Development stage
 FROM base AS dev
+# Copy service package files
+COPY services/admin-service/package*.json ./
 RUN npm ci
-COPY . .
+# Copy shared utilities first
+COPY shared/ ./shared/
+# Copy service-specific code
+COPY services/admin-service/ ./
 USER nodejs
 EXPOSE 3006
 CMD ["dumb-init", "npm", "run", "dev"]
@@ -32,40 +37,11 @@ FROM base AS production
 # Copy production dependencies
 COPY --from=deps --chown=nodejs:nodejs /app/node_modules ./node_modules
 
-# Copy application code
-COPY --chown=nodejs:nodejs . .
+# Copy shared utilities first
+COPY --chown=nodejs:nodejs shared/ ./shared/
 
-# Create health check script
-COPY --chown=nodejs:nodejs <<EOF ./healthcheck.js
-const http = require('http');
-
-const options = {
-  hostname: 'localhost',
-  port: process.env.PORT || 3006,
-  path: '/health/live',
-  method: 'GET',
-  timeout: 3000
-};
-
-const req = http.request(options, (res) => {
-  if (res.statusCode === 200) {
-    process.exit(0);
-  } else {
-    process.exit(1);
-  }
-});
-
-req.on('error', () => {
-  process.exit(1);
-});
-
-req.on('timeout', () => {
-  req.destroy();
-  process.exit(1);
-});
-
-req.end();
-EOF
+# Copy service-specific code
+COPY --chown=nodejs:nodejs services/admin-service/ ./
 
 # Switch to non-root user
 USER nodejs
@@ -75,7 +51,7 @@ EXPOSE 3006
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD node healthcheck.js
+  CMD curl -f http://localhost:3006/health/live || exit 1
 
 # Start the application
 CMD ["dumb-init", "node", "src/app.js"]
