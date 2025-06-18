@@ -105,6 +105,10 @@ metadata:
   namespace: anti-fraud-platform
   labels:
     app: link-service
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "3002"
+    prometheus.io/path: "/metrics"
 spec:
   selector:
     app: link-service
@@ -209,6 +213,10 @@ metadata:
   namespace: anti-fraud-platform
   labels:
     app: community-service
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "3003"
+    prometheus.io/path: "/metrics"
 spec:
   selector:
     app: community-service
@@ -314,6 +322,10 @@ metadata:
   namespace: anti-fraud-platform
   labels:
     app: chat-service
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "3004"
+    prometheus.io/path: "/metrics"
 spec:
   selector:
     app: chat-service
@@ -425,6 +437,10 @@ metadata:
   namespace: anti-fraud-platform
   labels:
     app: news-service
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "3005"
+    prometheus.io/path: "/metrics"
 spec:
   selector:
     app: news-service
@@ -534,6 +550,10 @@ metadata:
   namespace: anti-fraud-platform
   labels:
     app: admin-service
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "3006"
+    prometheus.io/path: "/metrics"
 spec:
   selector:
     app: admin-service

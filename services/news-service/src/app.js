@@ -1,4 +1,5 @@
-const express = require('express');
+﻿const express = require('express');
+const promClient = require('prom-client');
 const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
@@ -10,6 +11,23 @@ const Logger = require('../shared/utils/logger');
 const { HealthCheck, commonChecks } = require('../shared/utils/health-check');
 
 const app = express();
+// Prometheus metrics setup
+const collectDefaultMetrics = promClient.collectDefaultMetrics;
+collectDefaultMetrics({ timeout: 5000 });
+
+// Custom metrics
+const httpRequestsTotal = new promClient.Counter({
+  name: 'http_requests_total',
+  help: 'Total number of HTTP requests',
+  labelNames: ['method', 'route', 'status_code']
+});
+
+const httpRequestDuration = new promClient.Histogram({
+  name: 'http_request_duration_seconds',
+  help: 'Duration of HTTP requests in seconds',
+  labelNames: ['method', 'route']
+});
+
 const PORT = process.env.PORT || 3005;
 const SERVICE_NAME = 'news-service';
 
@@ -46,6 +64,26 @@ app.use(limiter);
 
 // Body parsing middleware
 app.use(express.json({ limit: '10mb' }));
+// Metrics middleware
+app.use((req, res, next) => {
+  const start = Date.now();
+  
+  res.on('finish', () => {
+    const duration = (Date.now() - start) / 1000;
+    httpRequestsTotal.inc({
+      method: req.method,
+      route: req.route ? req.route.path : req.path,
+      status_code: res.statusCode
+    });
+    httpRequestDuration.observe({
+      method: req.method,
+      route: req.route ? req.route.path : req.path
+    }, duration);
+  });
+  
+  next();
+});
+
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Logging middleware
@@ -55,6 +93,18 @@ app.use(morgan('combined', {
 }));
 
 // Health check endpoints
+
+// Prometheus metrics endpoint
+app.get('/metrics', async (req, res) => {
+  try {
+    const metrics = await promClient.register.metrics();
+    res.set('Content-Type', promClient.register.contentType);
+    res.end(metrics);
+  } catch (error) {
+    console.error('Error generating metrics:', error);
+    res.status(500).end('Error generating metrics');
+  }
+});
 app.get('/health', healthCheck.middleware());
 app.get('/health/live', healthCheck.liveness());
 app.get('/health/ready', healthCheck.readiness());
@@ -78,52 +128,52 @@ app.get('/news/latest', (req, res) => {
   const mockArticles = [
     {
       id: '1',
-      title: 'Cảnh báo: Chiến dịch lừa đảo mới nhắm vào khách hàng ngân hàng',
-      summary: 'Các nhà nghiên cứu bảo mật đã phát hiện một chiến dịch lừa đảo tinh vi nhắm vào thông tin tài khoản ngân hàng...',
+      title: 'Cáº£nh bÃ¡o: Chiáº¿n dá»‹ch lá»«a Ä‘áº£o má»›i nháº¯m vÃ o khÃ¡ch hÃ ng ngÃ¢n hÃ ng',
+      summary: 'CÃ¡c nhÃ  nghiÃªn cá»©u báº£o máº­t Ä‘Ã£ phÃ¡t hiá»‡n má»™t chiáº¿n dá»‹ch lá»«a Ä‘áº£o tinh vi nháº¯m vÃ o thÃ´ng tin tÃ i khoáº£n ngÃ¢n hÃ ng...',
       url: 'https://example.com/news/1',
       publishedAt: new Date(Date.now() - 1000 * 60 * 30).toISOString(), // 30 minutes ago
       source: 'VnExpress',
-      category: 'Công nghệ',
+      category: 'CÃ´ng nghá»‡',
       credibilityScore: 95
     },
     {
       id: '2',
-      title: 'Phát hiện mã độc mới có khả năng đánh cắp thông tin cá nhân',
-      summary: 'Chuyên gia an ninh mạng cảnh báo về loại mã độc mới có thể truy cập vào dữ liệu nhạy cảm...',
+      title: 'PhÃ¡t hiá»‡n mÃ£ Ä‘á»™c má»›i cÃ³ kháº£ nÄƒng Ä‘Ã¡nh cáº¯p thÃ´ng tin cÃ¡ nhÃ¢n',
+      summary: 'ChuyÃªn gia an ninh máº¡ng cáº£nh bÃ¡o vá» loáº¡i mÃ£ Ä‘á»™c má»›i cÃ³ thá»ƒ truy cáº­p vÃ o dá»¯ liá»‡u nháº¡y cáº£m...',
       url: 'https://example.com/news/2',
       publishedAt: new Date(Date.now() - 1000 * 60 * 60).toISOString(), // 1 hour ago
-      source: 'Tuổi Trẻ',
-      category: 'An ninh mạng',
+      source: 'Tuá»•i Tráº»',
+      category: 'An ninh máº¡ng',
       credibilityScore: 92
     },
     {
       id: '3',
-      title: 'Cách nhận biết và tránh các trang web giả mạo',
-      summary: 'Hướng dẫn chi tiết giúp người dùng internet nhận biết và tránh xa các trang web lừa đảo...',
+      title: 'CÃ¡ch nháº­n biáº¿t vÃ  trÃ¡nh cÃ¡c trang web giáº£ máº¡o',
+      summary: 'HÆ°á»›ng dáº«n chi tiáº¿t giÃºp ngÆ°á»i dÃ¹ng internet nháº­n biáº¿t vÃ  trÃ¡nh xa cÃ¡c trang web lá»«a Ä‘áº£o...',
       url: 'https://example.com/news/3',
       publishedAt: new Date(Date.now() - 1000 * 60 * 90).toISOString(), // 1.5 hours ago
-      source: 'Thanh Niên',
-      category: 'Giáo dục',
+      source: 'Thanh NiÃªn',
+      category: 'GiÃ¡o dá»¥c',
       credibilityScore: 88
     },
     {
       id: '4',
-      title: 'Tin tức giả lan truyền nhanh trên mạng xã hội',
-      summary: 'Nghiên cứu mới cho thấy tin tức giả lan truyền nhanh gấp 6 lần tin tức thật trên các nền tảng mạng xã hội...',
+      title: 'Tin tá»©c giáº£ lan truyá»n nhanh trÃªn máº¡ng xÃ£ há»™i',
+      summary: 'NghiÃªn cá»©u má»›i cho tháº¥y tin tá»©c giáº£ lan truyá»n nhanh gáº¥p 6 láº§n tin tá»©c tháº­t trÃªn cÃ¡c ná»n táº£ng máº¡ng xÃ£ há»™i...',
       url: 'https://example.com/news/4',
       publishedAt: new Date(Date.now() - 1000 * 60 * 120).toISOString(), // 2 hours ago
-      source: 'Dân Trí',
-      category: 'Xã hội',
+      source: 'DÃ¢n TrÃ­',
+      category: 'XÃ£ há»™i',
       credibilityScore: 90
     },
     {
       id: '5',
-      title: 'Công nghệ AI giúp phát hiện tin tức giả',
-      summary: 'Các công ty công nghệ đang phát triển hệ thống AI tiên tiến để tự động phát hiện và gắn cờ tin tức giả...',
+      title: 'CÃ´ng nghá»‡ AI giÃºp phÃ¡t hiá»‡n tin tá»©c giáº£',
+      summary: 'CÃ¡c cÃ´ng ty cÃ´ng nghá»‡ Ä‘ang phÃ¡t triá»ƒn há»‡ thá»‘ng AI tiÃªn tiáº¿n Ä‘á»ƒ tá»± Ä‘á»™ng phÃ¡t hiá»‡n vÃ  gáº¯n cá» tin tá»©c giáº£...',
       url: 'https://example.com/news/5',
       publishedAt: new Date(Date.now() - 1000 * 60 * 180).toISOString(), // 3 hours ago
       source: 'VietnamNet',
-      category: 'Công nghệ',
+      category: 'CÃ´ng nghá»‡',
       credibilityScore: 94
     }
   ];
@@ -223,7 +273,7 @@ process.on('SIGINT', () => {
 
 // Start server
 const server = app.listen(PORT, () => {
-  logger.info(`🚀 News Service started on port ${PORT}`, {
+  logger.info(`ðŸš€ News Service started on port ${PORT}`, {
     service: SERVICE_NAME,
     port: PORT,
     environment: process.env.NODE_ENV
@@ -239,3 +289,4 @@ process.on('unhandledRejection', (err) => {
 });
 
 module.exports = app;
+

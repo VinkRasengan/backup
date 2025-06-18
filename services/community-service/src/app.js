@@ -1,4 +1,5 @@
-const express = require('express');
+﻿const express = require('express');
+const promClient = require('prom-client');
 const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
@@ -18,6 +19,23 @@ const firebaseConfig = require('./config/firebase');
 const errorHandler = require('./middleware/errorHandler');
 
 const app = express();
+// Prometheus metrics setup
+const collectDefaultMetrics = promClient.collectDefaultMetrics;
+collectDefaultMetrics({ timeout: 5000 });
+
+// Custom metrics
+const httpRequestsTotal = new promClient.Counter({
+  name: 'http_requests_total',
+  help: 'Total number of HTTP requests',
+  labelNames: ['method', 'route', 'status_code']
+});
+
+const httpRequestDuration = new promClient.Histogram({
+  name: 'http_request_duration_seconds',
+  help: 'Duration of HTTP requests in seconds',
+  labelNames: ['method', 'route']
+});
+
 const PORT = process.env.PORT || 3003;
 const SERVICE_NAME = 'community-service';
 
@@ -66,6 +84,26 @@ app.use(limiter);
 
 // Body parsing middleware
 app.use(express.json({ limit: '10mb' }));
+// Metrics middleware
+app.use((req, res, next) => {
+  const start = Date.now();
+  
+  res.on('finish', () => {
+    const duration = (Date.now() - start) / 1000;
+    httpRequestsTotal.inc({
+      method: req.method,
+      route: req.route ? req.route.path : req.path,
+      status_code: res.statusCode
+    });
+    httpRequestDuration.observe({
+      method: req.method,
+      route: req.route ? req.route.path : req.path
+    }, duration);
+  });
+  
+  next();
+});
+
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Logging middleware
@@ -75,6 +113,18 @@ app.use(morgan('combined', {
 }));
 
 // Health check endpoints
+
+// Prometheus metrics endpoint
+app.get('/metrics', async (req, res) => {
+  try {
+    const metrics = await promClient.register.metrics();
+    res.set('Content-Type', promClient.register.contentType);
+    res.end(metrics);
+  } catch (error) {
+    console.error('Error generating metrics:', error);
+    res.status(500).end('Error generating metrics');
+  }
+});
 app.get('/health', healthCheck.middleware());
 app.get('/health/live', healthCheck.liveness());
 app.get('/health/ready', healthCheck.readiness());
@@ -129,7 +179,7 @@ process.on('SIGINT', () => {
 
 // Start server
 const server = app.listen(PORT, () => {
-  logger.info(`🚀 Community Service started on port ${PORT}`, {
+  logger.info(`ðŸš€ Community Service started on port ${PORT}`, {
     service: SERVICE_NAME,
     port: PORT,
     environment: process.env.NODE_ENV
@@ -145,3 +195,4 @@ process.on('unhandledRejection', (err) => {
 });
 
 module.exports = app;
+

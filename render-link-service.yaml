@@ -1,0 +1,23 @@
+services:
+  - type: web
+    name: factcheck-link
+    env: node
+    buildCommand: cd services/link-service && npm install
+    startCommand: cd services/link-service && npm start
+    envVars:
+      - key: PORT
+        value: "10000"
+      - key: NODE_ENV
+        value: production
+      - key: VIRUSTOTAL_API_KEY
+        sync: false
+      - key: SCAMADVISER_API_KEY
+        sync: false
+      - key: PHISHTANK_API_KEY
+        sync: false
+      - key: CRIMINALIP_API_KEY
+        sync: false
+      - key: FIREBASE_PROJECT_ID
+        sync: false
+      - key: REDIS_URL
+        sync: false

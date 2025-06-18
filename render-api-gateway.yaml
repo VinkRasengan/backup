@@ -1,0 +1,27 @@
+services:
+  - type: web
+    name: factcheck-api-gateway
+    env: node
+    buildCommand: cd services/api-gateway && npm install
+    startCommand: cd services/api-gateway && npm start
+    envVars:
+      - key: PORT
+        value: "10000"
+      - key: NODE_ENV
+        value: production
+      - key: AUTH_SERVICE_URL
+        value: https://factcheck-auth.onrender.com
+      - key: LINK_SERVICE_URL
+        value: https://factcheck-link.onrender.com
+      - key: COMMUNITY_SERVICE_URL
+        value: https://factcheck-community.onrender.com
+      - key: CHAT_SERVICE_URL
+        value: https://factcheck-chat.onrender.com
+      - key: NEWS_SERVICE_URL
+        value: https://factcheck-news.onrender.com
+      - key: ADMIN_SERVICE_URL
+        value: https://factcheck-admin.onrender.com
+      - key: REDIS_URL
+        sync: false
+      - key: FIREBASE_PROJECT_ID
+        sync: false

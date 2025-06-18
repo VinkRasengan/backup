@@ -91,7 +91,7 @@ jspm_packages/
 *.swo
 *~
 
-# OS generated files
+# OS generated files and platform-specific files
 .DS_Store
 .DS_Store?
 ._*
@@ -99,6 +99,31 @@ jspm_packages/
 .Trashes
 ehthumbs.db
 Thumbs.db
+
+# Windows specific
+*.lnk
+desktop.ini
+$RECYCLE.BIN/
+
+# macOS specific
+.AppleDouble
+.LSOverride
+.DocumentRevisions-V100
+.fseventsd
+.TemporaryItems
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+
+# Linux specific
+*~
+.directory
+.Trash-*
+
+# Cross-platform editor backup files
+*.bak
+*.backup
+*.tmp
+*.temp
 
 # Logs
 logs
@@ -109,8 +134,14 @@ logs
 firebase-debug.log
 firestore-debug.log
 
-# Docker
-.dockerignore
+# Docker - Keep .dockerignore files (they define Docker build context)
+# .dockerignore files should be version controlled for consistent builds
+
+# But keep docker-compose files and Dockerfiles
+!Dockerfile*
+!docker-compose*.yml
+!docker-compose*.yaml
+!.dockerignore
 
 # Temporary files
 tmp/
@@ -123,17 +154,38 @@ temp/
 *_DEPLOYMENT*.md
 *_INTEGRATION.md
 *_SOLUTION*.md
+
+# Generated test files (not deployment scripts)
 test-*.js
 test-*.html
-deploy-*.sh
-!scripts/deploy-microservices.sh
-!scripts/deploy-firebase-rules.js
-!scripts/deploy-*.bat
-setup-*.sh
-!scripts/setup-*.bat
 *-debug.js
 *-test.js
 check-*.js
+
+# Keep all deployment scripts - they are needed for cross-platform compatibility
+# All deployment scripts should be version controlled
+!deploy-*.sh
+!deploy-*.bat
+!deploy-*.ps1
+!setup-*.sh
+!setup-*.bat
+!setup-*.ps1
+
+# Keep all essential scripts in scripts/ directory
+!scripts/deploy-*.sh
+!scripts/deploy-*.bat
+!scripts/deploy-*.ps1
+!scripts/setup-*.sh
+!scripts/setup-*.bat
+!scripts/setup-*.ps1
+!scripts/deploy-firebase-rules.js
+!scripts/deploy-optimization-indexes.js
+
+# Keep Kubernetes deployment scripts
+!k8s/deploy-*.sh
+!k8s/deploy-*.bat
+!k8s/deploy-*.ps1
+!k8s/cleanup.sh
 
 # API keys and sensitive data
 *.key
@@ -146,18 +198,61 @@ services/criminalip-service/data/*.json
 *.database.json
 *-database.json
 
-# Build artifacts
+# Build artifacts and generated files (keep these ignored)
 *.zip
 *.tar
 *.rar
+*.tgz
+*.tar.gz
+
+# Build outputs
+build/
+dist/
+out/
+target/
+
+# But keep essential build and monitoring scripts
+!build-*.sh
+!build-*.bat
+!build-*.ps1
+!start-monitoring*.sh
+!start-monitoring*.bat
+!start-monitoring*.ps1
+!stop-*.sh
+!stop-*.bat
+!stop-*.ps1
+!check-*.sh
+!check-*.bat
+!check-*.ps1
+!fix-*.sh
+!fix-*.bat
+!fix-*.ps1
+!install-*.sh
+!install-*.bat
+!install-*.ps1
+!prepare-*.sh
+!prepare-*.bat
+!prepare-*.ps1
 
 # Editor files
 *.sublime-*
 .atom/
 
-# Local development
+# Local development and configuration
 .env.backup
 .env.example.local
+
+# Keep configuration templates for cross-platform setup
+!.env.template
+!.env.example
+!.env.sample
+!docker-compose*.yml
+!nginx.conf
+!Makefile
+
+# Keep render deployment configs
+!render-*.yaml
+!render-*.yml
 
 # Old monolith files (deprecated after microservices migration)
 server/

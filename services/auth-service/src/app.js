@@ -3,6 +3,7 @@ const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
 const rateLimit = require('express-rate-limit');
+const promClient = require('prom-client');
 require('dotenv').config();
 
 // Import shared utilities
@@ -24,6 +25,23 @@ const logger = new Logger(SERVICE_NAME);
 
 // Initialize health check
 const healthCheck = new HealthCheck(SERVICE_NAME);
+
+// Prometheus metrics setup
+const collectDefaultMetrics = promClient.collectDefaultMetrics;
+collectDefaultMetrics({ timeout: 5000 });
+
+// Custom metrics
+const httpRequestsTotal = new promClient.Counter({
+  name: 'http_requests_total',
+  help: 'Total number of HTTP requests',
+  labelNames: ['method', 'route', 'status_code']
+});
+
+const httpRequestDuration = new promClient.Histogram({
+  name: 'http_request_duration_seconds',
+  help: 'Duration of HTTP requests in seconds',
+  labelNames: ['method', 'route']
+});
 
 // Add health checks
 healthCheck.addCheck('database', commonChecks.database(firebaseConfig.db));
@@ -66,6 +84,26 @@ app.use(limiter);
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
+// Metrics middleware
+app.use((req, res, next) => {
+  const start = Date.now();
+  
+  res.on('finish', () => {
+    const duration = (Date.now() - start) / 1000;
+    httpRequestsTotal.inc({
+      method: req.method,
+      route: req.route ? req.route.path : req.path,
+      status_code: res.statusCode
+    });
+    httpRequestDuration.observe({
+      method: req.method,
+      route: req.route ? req.route.path : req.path
+    }, duration);
+  });
+  
+  next();
+});
+
 // Logging middleware
 app.use(logger.logRequest.bind(logger));
 
@@ -80,6 +118,18 @@ app.use(morgan('combined', {
 app.get('/health', healthCheck.middleware());
 app.get('/health/live', healthCheck.liveness());
 app.get('/health/ready', healthCheck.readiness());
+
+// Prometheus metrics endpoint
+app.get('/metrics', async (req, res) => {
+  try {
+    const metrics = await promClient.register.metrics();
+    res.set('Content-Type', promClient.register.contentType);
+    res.end(metrics);
+  } catch (error) {
+    logger.error('Error generating metrics', { error: error.message });
+    res.status(500).end('Error generating metrics');
+  }
+});
 
 // Service info endpoint
 app.get('/info', (req, res) => {

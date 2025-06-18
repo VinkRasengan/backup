@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: factcheck-news
+    env: node
+    buildCommand: cd services/news-service && npm install
+    startCommand: cd services/news-service && npm start
+    envVars:
+      - key: PORT
+        value: "10000"
+      - key: NODE_ENV
+        value: production
+      - key: NEWS_API_KEY
+        sync: false
+      - key: FIREBASE_PROJECT_ID
+        sync: false
+      - key: REDIS_URL
+        sync: false

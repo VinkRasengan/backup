@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: factcheck-chat
+    env: node
+    buildCommand: cd services/chat-service && npm install
+    startCommand: cd services/chat-service && npm start
+    envVars:
+      - key: PORT
+        value: "10000"
+      - key: NODE_ENV
+        value: production
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: FIREBASE_PROJECT_ID
+        sync: false
+      - key: REDIS_URL
+        sync: false
+      - key: AUTH_SERVICE_URL
+        value: https://factcheck-auth.onrender.com
