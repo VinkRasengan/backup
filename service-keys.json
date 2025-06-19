@@ -1,0 +1,11 @@
+{
+  "admin-service": "394caf248a63700e7deade80b8b198595ed876b4c730fb6e0dd49a38d8b65686",
+  "api-gateway": "e5d17d6ae1c442326b16646fd8e83d0a12c7bba753ecc14c7f4d9c35f7f196a1",
+  "auth-service": "0bbcba2c042aa5d4cd111c52d1a49901b0f1eace7f7975834b375a395f962def",
+  "chat-service": "f5fcd2b804d558be0edb9c4a3bf2fcfbc2d20a4732b9cf0ea5efdc8291059ced",
+  "community-service": "e67b74b2cff7c1379caed3cdfa5be1eb666b449fc66dec26b0b64aecab622a34",
+  "criminalip-service": "488cb8db745e319fcd7f0a34956d0fb820b74cfac58ffa43aafa9d30f1683dc7",
+  "link-service": "b4f668f86878d1dd25d3fb33c696f3af38f605d6c28bc536429300ea3fe23a69",
+  "news-service": "42f197ed220c9f99cd5017db682bc540d0b8e31204647d99bcb0bf308557b42d",
+  "phishtank-service": "f99d27e2d8b84f2046627200a839edbf91102265db556fe0fbd8c20d236b405c"
+}

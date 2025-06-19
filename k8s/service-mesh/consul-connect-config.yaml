@@ -1,0 +1,460 @@
+# Consul Connect Service Mesh Configuration
+# Lightweight alternative to Istio for smaller deployments
+
+---
+# Consul Server Configuration
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: consul-config
+  namespace: antifraud
+data:
+  consul.hcl: |
+    datacenter = "antifraud-dc"
+    data_dir = "/consul/data"
+    log_level = "INFO"
+    server = true
+    bootstrap_expect = 1
+    ui_config {
+      enabled = true
+    }
+    connect {
+      enabled = true
+    }
+    ports {
+      grpc = 8502
+    }
+    acl = {
+      enabled = true
+      default_policy = "deny"
+      enable_token_persistence = true
+    }
+
+---
+# Consul Server Deployment
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: consul-server
+  namespace: antifraud
+spec:
+  serviceName: consul-server
+  replicas: 1
+  selector:
+    matchLabels:
+      app: consul-server
+  template:
+    metadata:
+      labels:
+        app: consul-server
+    spec:
+      containers:
+      - name: consul
+        image: consul:1.16
+        ports:
+        - containerPort: 8500
+          name: http
+        - containerPort: 8502
+          name: grpc
+        - containerPort: 8300
+          name: server
+        volumeMounts:
+        - name: consul-config
+          mountPath: /consul/config
+        - name: consul-data
+          mountPath: /consul/data
+        command:
+        - consul
+        - agent
+        - -config-dir=/consul/config
+        env:
+        - name: CONSUL_LOCAL_CONFIG
+          value: '{"leave_on_terminate": true}'
+      volumes:
+      - name: consul-config
+        configMap:
+          name: consul-config
+  volumeClaimTemplates:
+  - metadata:
+      name: consul-data
+    spec:
+      accessModes: ["ReadWriteOnce"]
+      resources:
+        requests:
+          storage: 1Gi
+
+---
+# Consul Server Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: consul-server
+  namespace: antifraud
+spec:
+  selector:
+    app: consul-server
+  ports:
+  - name: http
+    port: 8500
+    targetPort: 8500
+  - name: grpc
+    port: 8502
+    targetPort: 8502
+  - name: server
+    port: 8300
+    targetPort: 8300
+
+---
+# Service Mesh Proxy Configuration for Auth Service
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: auth-service-proxy-config
+  namespace: antifraud
+data:
+  proxy.hcl: |
+    service {
+      name = "auth-service"
+      port = 3001
+      connect {
+        sidecar_service {
+          port = 20000
+          check {
+            name = "Connect Envoy Sidecar"
+            tcp = "127.0.0.1:20000"
+            interval = "10s"
+          }
+          proxy {
+            upstreams = [
+              {
+                destination_name = "redis"
+                local_bind_port = 6379
+              }
+            ]
+          }
+        }
+      }
+    }
+
+---
+# Service Mesh Proxy Configuration for Link Service
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: link-service-proxy-config
+  namespace: antifraud
+data:
+  proxy.hcl: |
+    service {
+      name = "link-service"
+      port = 3002
+      connect {
+        sidecar_service {
+          port = 20001
+          check {
+            name = "Connect Envoy Sidecar"
+            tcp = "127.0.0.1:20001"
+            interval = "10s"
+          }
+          proxy {
+            upstreams = [
+              {
+                destination_name = "auth-service"
+                local_bind_port = 3001
+              }
+            ]
+          }
+        }
+      }
+    }
+
+---
+# Service Mesh Proxy Configuration for Community Service
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: community-service-proxy-config
+  namespace: antifraud
+data:
+  proxy.hcl: |
+    service {
+      name = "community-service"
+      port = 3003
+      connect {
+        sidecar_service {
+          port = 20002
+          check {
+            name = "Connect Envoy Sidecar"
+            tcp = "127.0.0.1:20002"
+            interval = "10s"
+          }
+          proxy {
+            upstreams = [
+              {
+                destination_name = "auth-service"
+                local_bind_port = 3001
+              }
+            ]
+          }
+        }
+      }
+    }
+
+---
+# Service Intentions for Security
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: service-intentions
+  namespace: antifraud
+data:
+  intentions.hcl: |
+    # Allow API Gateway to communicate with all services
+    service_intentions "auth-service" {
+      source "api-gateway" {
+        action = "allow"
+      }
+      source "admin-service" {
+        action = "allow"
+      }
+      source "*" {
+        action = "deny"
+      }
+    }
+    
+    service_intentions "link-service" {
+      source "api-gateway" {
+        action = "allow"
+      }
+      source "admin-service" {
+        action = "allow"
+      }
+      source "*" {
+        action = "deny"
+      }
+    }
+    
+    service_intentions "community-service" {
+      source "api-gateway" {
+        action = "allow"
+      }
+      source "admin-service" {
+        action = "allow"
+      }
+      source "*" {
+        action = "deny"
+      }
+    }
+
+---
+# Traffic Splitting Configuration
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: traffic-splitting
+  namespace: antifraud
+data:
+  splitter.hcl: |
+    service_splitter "auth-service" {
+      splits = [
+        {
+          weight = 90
+          service_subset = "v1"
+        },
+        {
+          weight = 10
+          service_subset = "v2"
+        }
+      ]
+    }
+    
+    service_resolver "auth-service" {
+      subsets = {
+        v1 = {
+          filter = "Service.Meta.version == v1"
+        }
+        v2 = {
+          filter = "Service.Meta.version == v2"
+        }
+      }
+    }
+
+---
+# Rate Limiting Configuration
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: rate-limiting
+  namespace: antifraud
+data:
+  rate-limit.hcl: |
+    service_router "api-gateway" {
+      routes = [
+        {
+          match {
+            http {
+              path_prefix = "/auth/"
+            }
+          }
+          destination {
+            service = "auth-service"
+            request_headers {
+              add = {
+                "x-rate-limit" = "100"
+              }
+            }
+          }
+        },
+        {
+          match {
+            http {
+              path_prefix = "/links/"
+            }
+          }
+          destination {
+            service = "link-service"
+            request_headers {
+              add = {
+                "x-rate-limit" = "50"
+              }
+            }
+          }
+        }
+      ]
+    }
+
+---
+# Observability Configuration
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: observability-config
+  namespace: antifraud
+data:
+  telemetry.hcl: |
+    telemetry {
+      prometheus_retention_time = "24h"
+      disable_hostname = true
+      metrics_prefix = "consul_"
+    }
+
+---
+# Consul Connect Injector
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: consul-connect-injector
+  namespace: antifraud
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: consul-connect-injector
+rules:
+- apiGroups: [""]
+  resources: ["pods"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+- apiGroups: ["apps"]
+  resources: ["deployments", "replicasets"]
+  verbs: ["get", "list", "watch"]
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: consul-connect-injector
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: consul-connect-injector
+subjects:
+- kind: ServiceAccount
+  name: consul-connect-injector
+  namespace: antifraud
+
+---
+# Monitoring Service for Consul
+apiVersion: v1
+kind: Service
+metadata:
+  name: consul-monitoring
+  namespace: antifraud
+  labels:
+    app: consul-server
+    monitoring: enabled
+spec:
+  selector:
+    app: consul-server
+  ports:
+  - name: metrics
+    port: 8500
+    targetPort: 8500
+  - name: grpc
+    port: 8502
+    targetPort: 8502
+
+---
+# Service Monitor for Prometheus
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: consul-metrics
+  namespace: antifraud
+spec:
+  selector:
+    matchLabels:
+      app: consul-server
+  endpoints:
+  - port: metrics
+    interval: 30s
+    path: /v1/agent/metrics?format=prometheus
+
+---
+# Example Service with Consul Connect
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: auth-service-with-connect
+  namespace: antifraud
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: auth-service
+      version: v1
+  template:
+    metadata:
+      labels:
+        app: auth-service
+        version: v1
+      annotations:
+        consul.hashicorp.com/connect-inject: "true"
+        consul.hashicorp.com/connect-service: "auth-service"
+        consul.hashicorp.com/connect-service-port: "3001"
+        consul.hashicorp.com/connect-service-upstreams: "redis:6379"
+    spec:
+      containers:
+      - name: auth-service
+        image: antifraud/auth-service:latest
+        ports:
+        - containerPort: 3001
+        env:
+        - name: PORT
+          value: "3001"
+        - name: REDIS_HOST
+          value: "127.0.0.1"
+        - name: REDIS_PORT
+          value: "6379"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 3001
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 3001
+          initialDelaySeconds: 5
+          periodSeconds: 5

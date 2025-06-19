@@ -1,0 +1,6 @@
+{
+  "pactDir": "./pacts",
+  "logDir": "./logs/pact",
+  "brokerUrl": "",
+  "brokerToken": ""
+}

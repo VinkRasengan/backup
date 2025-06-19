@@ -1,0 +1,16 @@
+{
+  "instances": [
+    {
+      "url": "http://localhost:3001",
+      "priority": 1,
+      "healthy": true
+    },
+    {
+      "url": "http://localhost:3011",
+      "priority": 2,
+      "healthy": true
+    }
+  ],
+  "healthCheckInterval": 30000,
+  "failoverTimeout": 5000
+}

@@ -1,0 +1,111 @@
+{
+  "version": "2.0.0",
+  "components": {
+    "circuitBreaker": {
+      "name": "Circuit Breaker Pattern",
+      "dependencies": [
+        "opossum"
+      ],
+      "services": [
+        "api-gateway"
+      ],
+      "status": true
+    },
+    "eventBus": {
+      "name": "Event-Driven Architecture",
+      "dependencies": [
+        "redis"
+      ],
+      "services": [
+        "all"
+      ],
+      "status": true
+    },
+    "saga": {
+      "name": "Saga Pattern",
+      "dependencies": [
+        "uuid"
+      ],
+      "services": [
+        "all"
+      ],
+      "status": true
+    },
+    "serviceAuth": {
+      "name": "Service Authentication",
+      "dependencies": [
+        "jsonwebtoken",
+        "crypto"
+      ],
+      "services": [
+        "all"
+      ],
+      "status": true
+    },
+    "authRedundancy": {
+      "name": "Auth Service Redundancy",
+      "dependencies": [
+        "redis"
+      ],
+      "services": [
+        "api-gateway",
+        "auth-service"
+      ],
+      "status": true
+    },
+    "contractTesting": {
+      "name": "Contract Testing",
+      "dependencies": [
+        "@pact-foundation/pact",
+        "@pact-foundation/pact-node"
+      ],
+      "services": [
+        "all"
+      ],
+      "dev": true,
+      "status": true
+    },
+    "integrationTesting": {
+      "name": "Integration Testing",
+      "dependencies": [
+        "jest",
+        "supertest"
+      ],
+      "services": [
+        "all"
+      ],
+      "dev": true,
+      "status": true
+    },
+    "monitoring": {
+      "name": "Enhanced Monitoring",
+      "dependencies": [
+        "prom-client"
+      ],
+      "services": [
+        "all"
+      ],
+      "status": true
+    }
+  },
+  "deployment": {
+    "defaultMode": "local",
+    "supportedModes": [
+      "local",
+      "docker",
+      "k8s",
+      "k8s-istio",
+      "k8s-consul"
+    ]
+  },
+  "features": {
+    "circuitBreaker": true,
+    "eventBus": true,
+    "saga": true,
+    "serviceAuth": true,
+    "authRedundancy": true,
+    "contractTesting": true,
+    "integrationTesting": true,
+    "serviceMesh": false
+  }
+}

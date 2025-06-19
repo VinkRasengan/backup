@@ -1,0 +1,382 @@
+name: Test Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  workflow_dispatch:
+    inputs:
+      test_type:
+        description: 'Type of tests to run'
+        required: true
+        default: 'all'
+        type: choice
+        options:
+        - all
+        - contracts
+        - integration
+        - unit
+
+env:
+  NODE_VERSION: '18'
+  DOCKER_BUILDKIT: 1
+  COMPOSE_DOCKER_CLI_BUILD: 1
+
+jobs:
+  # Unit Tests
+  unit-tests:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    if: github.event.inputs.test_type == 'unit' || github.event.inputs.test_type == 'all' || github.event.inputs.test_type == ''
+    
+    strategy:
+      matrix:
+        service: [
+          'api-gateway',
+          'auth-service',
+          'link-service',
+          'community-service',
+          'chat-service',
+          'news-service',
+          'admin-service'
+        ]
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+        cache-dependency-path: services/${{ matrix.service }}/package-lock.json
+    
+    - name: Install dependencies
+      run: |
+        cd services/${{ matrix.service }}
+        npm ci
+    
+    - name: Run unit tests
+      run: |
+        cd services/${{ matrix.service }}
+        npm test
+    
+    - name: Upload test results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: unit-test-results-${{ matrix.service }}
+        path: services/${{ matrix.service }}/coverage/
+
+  # Contract Tests
+  contract-tests:
+    name: Contract Tests
+    runs-on: ubuntu-latest
+    if: github.event.inputs.test_type == 'contracts' || github.event.inputs.test_type == 'all' || github.event.inputs.test_type == ''
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: |
+        # Install dependencies for all services
+        for service in services/*/; do
+          if [ -f "$service/package.json" ]; then
+            echo "Installing dependencies for $service"
+            cd "$service"
+            npm ci
+            cd - > /dev/null
+          fi
+        done
+    
+    - name: Run contract tests
+      run: |
+        node scripts/run-integration-tests.js contracts
+    
+    - name: Upload contract test results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: contract-test-results
+        path: |
+          test-reports/contract-*.json
+          services/*/pacts/
+    
+    - name: Publish Pact contracts
+      if: github.ref == 'refs/heads/main'
+      env:
+        PACT_BROKER_URL: ${{ secrets.PACT_BROKER_URL }}
+        PACT_BROKER_TOKEN: ${{ secrets.PACT_BROKER_TOKEN }}
+      run: |
+        # Publish contracts to Pact Broker if configured
+        if [ -n "$PACT_BROKER_URL" ]; then
+          echo "Publishing contracts to Pact Broker"
+          # Implementation would depend on Pact Broker setup
+        fi
+
+  # Integration Tests
+  integration-tests:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+    if: github.event.inputs.test_type == 'integration' || github.event.inputs.test_type == 'all' || github.event.inputs.test_type == ''
+    
+    services:
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+    
+    - name: Setup Docker Buildx
+      uses: docker/setup-buildx-action@v3
+    
+    - name: Install dependencies
+      run: |
+        # Install dependencies for all services
+        for service in services/*/; do
+          if [ -f "$service/package.json" ]; then
+            echo "Installing dependencies for $service"
+            cd "$service"
+            npm ci
+            cd - > /dev/null
+          fi
+        done
+    
+    - name: Build Docker images
+      run: |
+        # Build all service images
+        for service in services/*/; do
+          service_name=$(basename "$service")
+          if [ -f "$service/Dockerfile" ]; then
+            echo "Building Docker image for $service_name"
+            docker build -t "antifraud-$service_name:test" "$service"
+          fi
+        done
+    
+    - name: Run integration tests
+      env:
+        REDIS_HOST: localhost
+        REDIS_PORT: 6379
+        NODE_ENV: test
+      run: |
+        node scripts/run-integration-tests.js integration
+    
+    - name: Upload integration test results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: integration-test-results
+        path: test-reports/integration-*.json
+    
+    - name: Upload Docker logs
+      uses: actions/upload-artifact@v4
+      if: failure()
+      with:
+        name: docker-logs
+        path: |
+          docker-compose.test.yml
+          /tmp/docker-*.log
+
+  # End-to-End Tests
+  e2e-tests:
+    name: End-to-End Tests
+    runs-on: ubuntu-latest
+    if: github.event.inputs.test_type == 'all' || github.event.inputs.test_type == ''
+    needs: [unit-tests, contract-tests]
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+    
+    - name: Setup Docker Buildx
+      uses: docker/setup-buildx-action@v3
+    
+    - name: Install dependencies
+      run: |
+        # Install dependencies for all services
+        for service in services/*/; do
+          if [ -f "$service/package.json" ]; then
+            echo "Installing dependencies for $service"
+            cd "$service"
+            npm ci
+            cd - > /dev/null
+          fi
+        done
+    
+    - name: Run complete test pipeline
+      env:
+        NODE_ENV: test
+        REDIS_HOST: localhost
+        REDIS_PORT: 6379
+      run: |
+        node scripts/run-integration-tests.js all
+    
+    - name: Upload complete test results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: complete-test-results
+        path: test-reports/
+
+  # Security Tests
+  security-tests:
+    name: Security Tests
+    runs-on: ubuntu-latest
+    if: github.event.inputs.test_type == 'all' || github.event.inputs.test_type == ''
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Run Trivy vulnerability scanner
+      uses: aquasecurity/trivy-action@master
+      with:
+        scan-type: 'fs'
+        scan-ref: '.'
+        format: 'sarif'
+        output: 'trivy-results.sarif'
+    
+    - name: Upload Trivy scan results
+      uses: github/codeql-action/upload-sarif@v3
+      if: always()
+      with:
+        sarif_file: 'trivy-results.sarif'
+    
+    - name: Run npm audit
+      run: |
+        for service in services/*/; do
+          if [ -f "$service/package.json" ]; then
+            echo "Running npm audit for $service"
+            cd "$service"
+            npm audit --audit-level=moderate || true
+            cd - > /dev/null
+          fi
+        done
+
+  # Performance Tests
+  performance-tests:
+    name: Performance Tests
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && (github.event.inputs.test_type == 'all' || github.event.inputs.test_type == '')
+    needs: [integration-tests]
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+    
+    - name: Install k6
+      run: |
+        sudo gpg -k
+        sudo gpg --no-default-keyring --keyring /usr/share/keyrings/k6-archive-keyring.gpg --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys C5AD17C747E3415A3642D57D77C6C491D6AC1D69
+        echo "deb [signed-by=/usr/share/keyrings/k6-archive-keyring.gpg] https://dl.k6.io/deb stable main" | sudo tee /etc/apt/sources.list.d/k6.list
+        sudo apt-get update
+        sudo apt-get install k6
+    
+    - name: Run performance tests
+      run: |
+        # Run basic performance tests
+        echo "Performance tests would run here"
+        # k6 run tests/performance/load-test.js
+
+  # Test Report
+  test-report:
+    name: Generate Test Report
+    runs-on: ubuntu-latest
+    if: always()
+    needs: [unit-tests, contract-tests, integration-tests, e2e-tests]
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Download all test artifacts
+      uses: actions/download-artifact@v4
+      with:
+        path: test-artifacts/
+    
+    - name: Generate test report
+      run: |
+        echo "# Test Pipeline Report" > test-report.md
+        echo "" >> test-report.md
+        echo "## Summary" >> test-report.md
+        echo "- **Workflow**: ${{ github.workflow }}" >> test-report.md
+        echo "- **Run ID**: ${{ github.run_id }}" >> test-report.md
+        echo "- **Commit**: ${{ github.sha }}" >> test-report.md
+        echo "- **Branch**: ${{ github.ref_name }}" >> test-report.md
+        echo "- **Triggered by**: ${{ github.event_name }}" >> test-report.md
+        echo "" >> test-report.md
+        
+        # Add test results summary
+        if [ -d "test-artifacts/complete-test-results" ]; then
+          echo "## Test Results" >> test-report.md
+          echo "Complete test results available in artifacts." >> test-report.md
+        fi
+    
+    - name: Upload test report
+      uses: actions/upload-artifact@v4
+      with:
+        name: test-report
+        path: test-report.md
+    
+    - name: Comment PR with test results
+      if: github.event_name == 'pull_request'
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const fs = require('fs');
+          if (fs.existsSync('test-report.md')) {
+            const report = fs.readFileSync('test-report.md', 'utf8');
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: report
+            });
+          }
+
+  # Cleanup
+  cleanup:
+    name: Cleanup
+    runs-on: ubuntu-latest
+    if: always()
+    needs: [unit-tests, contract-tests, integration-tests, e2e-tests, test-report]
+    
+    steps:
+    - name: Cleanup Docker resources
+      run: |
+        docker system prune -f
+        docker volume prune -f

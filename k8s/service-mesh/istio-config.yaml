@@ -1,0 +1,440 @@
+# Istio Service Mesh Configuration for Anti-Fraud Platform
+# This file contains the complete Istio configuration for microservices
+
+---
+# Namespace for the application
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: antifraud
+  labels:
+    istio-injection: enabled
+
+---
+# Gateway for external traffic
+apiVersion: networking.istio.io/v1beta1
+kind: Gateway
+metadata:
+  name: antifraud-gateway
+  namespace: antifraud
+spec:
+  selector:
+    istio: ingressgateway
+  servers:
+  - port:
+      number: 80
+      name: http
+      protocol: HTTP
+    hosts:
+    - "antifraud.local"
+    - "api.antifraud.local"
+  - port:
+      number: 443
+      name: https
+      protocol: HTTPS
+    tls:
+      mode: SIMPLE
+      credentialName: antifraud-tls
+    hosts:
+    - "antifraud.local"
+    - "api.antifraud.local"
+
+---
+# Virtual Service for API Gateway routing
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: api-gateway-vs
+  namespace: antifraud
+spec:
+  hosts:
+  - "api.antifraud.local"
+  gateways:
+  - antifraud-gateway
+  http:
+  - match:
+    - uri:
+        prefix: "/auth/"
+    route:
+    - destination:
+        host: auth-service
+        port:
+          number: 3001
+    timeout: 30s
+    retries:
+      attempts: 3
+      perTryTimeout: 10s
+  - match:
+    - uri:
+        prefix: "/links/"
+    route:
+    - destination:
+        host: link-service
+        port:
+          number: 3002
+    timeout: 60s
+    retries:
+      attempts: 2
+      perTryTimeout: 20s
+  - match:
+    - uri:
+        prefix: "/community/"
+    route:
+    - destination:
+        host: community-service
+        port:
+          number: 3003
+    timeout: 30s
+  - match:
+    - uri:
+        prefix: "/chat/"
+    route:
+    - destination:
+        host: chat-service
+        port:
+          number: 3004
+    timeout: 45s
+  - match:
+    - uri:
+        prefix: "/news/"
+    route:
+    - destination:
+        host: news-service
+        port:
+          number: 3005
+    timeout: 30s
+  - match:
+    - uri:
+        prefix: "/admin/"
+    route:
+    - destination:
+        host: admin-service
+        port:
+          number: 3006
+    timeout: 30s
+  - route:
+    - destination:
+        host: api-gateway
+        port:
+          number: 8080
+
+---
+# Destination Rules for traffic policies
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: auth-service-dr
+  namespace: antifraud
+spec:
+  host: auth-service
+  trafficPolicy:
+    connectionPool:
+      tcp:
+        maxConnections: 100
+      http:
+        http1MaxPendingRequests: 50
+        maxRequestsPerConnection: 10
+    loadBalancer:
+      simple: LEAST_CONN
+    circuitBreaker:
+      consecutiveErrors: 3
+      interval: 30s
+      baseEjectionTime: 30s
+      maxEjectionPercent: 50
+  subsets:
+  - name: v1
+    labels:
+      version: v1
+  - name: v2
+    labels:
+      version: v2
+
+---
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: link-service-dr
+  namespace: antifraud
+spec:
+  host: link-service
+  trafficPolicy:
+    connectionPool:
+      tcp:
+        maxConnections: 50
+      http:
+        http1MaxPendingRequests: 30
+        maxRequestsPerConnection: 5
+    loadBalancer:
+      simple: ROUND_ROBIN
+    circuitBreaker:
+      consecutiveErrors: 5
+      interval: 60s
+      baseEjectionTime: 60s
+      maxEjectionPercent: 30
+
+---
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: community-service-dr
+  namespace: antifraud
+spec:
+  host: community-service
+  trafficPolicy:
+    connectionPool:
+      tcp:
+        maxConnections: 75
+      http:
+        http1MaxPendingRequests: 40
+        maxRequestsPerConnection: 8
+    loadBalancer:
+      simple: LEAST_CONN
+
+---
+# Security Policies
+apiVersion: security.istio.io/v1beta1
+kind: PeerAuthentication
+metadata:
+  name: default
+  namespace: antifraud
+spec:
+  mtls:
+    mode: STRICT
+
+---
+# Authorization Policy for Auth Service
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: auth-service-policy
+  namespace: antifraud
+spec:
+  selector:
+    matchLabels:
+      app: auth-service
+  rules:
+  - from:
+    - source:
+        principals: ["cluster.local/ns/antifraud/sa/api-gateway"]
+    - source:
+        principals: ["cluster.local/ns/antifraud/sa/admin-service"]
+  - to:
+    - operation:
+        methods: ["GET", "POST"]
+        paths: ["/auth/*", "/users/*", "/health"]
+
+---
+# Authorization Policy for Link Service
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: link-service-policy
+  namespace: antifraud
+spec:
+  selector:
+    matchLabels:
+      app: link-service
+  rules:
+  - from:
+    - source:
+        principals: ["cluster.local/ns/antifraud/sa/api-gateway"]
+    - source:
+        principals: ["cluster.local/ns/antifraud/sa/admin-service"]
+  - to:
+    - operation:
+        methods: ["GET", "POST"]
+        paths: ["/links/*", "/scan/*", "/health"]
+
+---
+# Rate Limiting for API Gateway
+apiVersion: networking.istio.io/v1alpha3
+kind: EnvoyFilter
+metadata:
+  name: rate-limit-filter
+  namespace: antifraud
+spec:
+  workloadSelector:
+    labels:
+      app: api-gateway
+  configPatches:
+  - applyTo: HTTP_FILTER
+    match:
+      context: SIDECAR_INBOUND
+      listener:
+        filterChain:
+          filter:
+            name: "envoy.filters.network.http_connection_manager"
+    patch:
+      operation: INSERT_BEFORE
+      value:
+        name: envoy.filters.http.local_ratelimit
+        typed_config:
+          "@type": type.googleapis.com/udpa.type.v1.TypedStruct
+          type_url: type.googleapis.com/envoy.extensions.filters.http.local_ratelimit.v3.LocalRateLimit
+          value:
+            stat_prefix: rate_limiter
+            token_bucket:
+              max_tokens: 1000
+              tokens_per_fill: 100
+              fill_interval: 60s
+            filter_enabled:
+              runtime_key: rate_limit_enabled
+              default_value:
+                numerator: 100
+                denominator: HUNDRED
+            filter_enforced:
+              runtime_key: rate_limit_enforced
+              default_value:
+                numerator: 100
+                denominator: HUNDRED
+
+---
+# Telemetry Configuration
+apiVersion: telemetry.istio.io/v1alpha1
+kind: Telemetry
+metadata:
+  name: default
+  namespace: antifraud
+spec:
+  metrics:
+  - providers:
+    - name: prometheus
+  - overrides:
+    - match:
+        metric: ALL_METRICS
+      tagOverrides:
+        request_id:
+          operation: UPSERT
+          value: "%REQ(x-request-id)%"
+  accessLogging:
+  - providers:
+    - name: otel
+  tracing:
+  - providers:
+    - name: jaeger
+
+---
+# Service Monitor for Prometheus
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: antifraud-services
+  namespace: antifraud
+spec:
+  selector:
+    matchLabels:
+      monitoring: enabled
+  endpoints:
+  - port: metrics
+    interval: 30s
+    path: /metrics
+
+---
+# Fault Injection for Testing
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: fault-injection-vs
+  namespace: antifraud
+spec:
+  hosts:
+  - link-service
+  http:
+  - match:
+    - headers:
+        x-test-fault:
+          exact: "delay"
+    fault:
+      delay:
+        percentage:
+          value: 50
+        fixedDelay: 5s
+    route:
+    - destination:
+        host: link-service
+  - match:
+    - headers:
+        x-test-fault:
+          exact: "abort"
+    fault:
+      abort:
+        percentage:
+          value: 10
+        httpStatus: 503
+    route:
+    - destination:
+        host: link-service
+  - route:
+    - destination:
+        host: link-service
+
+---
+# Canary Deployment Configuration
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: auth-service-canary
+  namespace: antifraud
+spec:
+  hosts:
+  - auth-service
+  http:
+  - match:
+    - headers:
+        x-canary:
+          exact: "true"
+    route:
+    - destination:
+        host: auth-service
+        subset: v2
+      weight: 100
+  - route:
+    - destination:
+        host: auth-service
+        subset: v1
+      weight: 90
+    - destination:
+        host: auth-service
+        subset: v2
+      weight: 10
+
+---
+# Network Policy for additional security
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: antifraud-network-policy
+  namespace: antifraud
+spec:
+  podSelector: {}
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: istio-system
+    - namespaceSelector:
+        matchLabels:
+          name: antifraud
+  egress:
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          name: istio-system
+    - namespaceSelector:
+        matchLabels:
+          name: antifraud
+  - to: []
+    ports:
+    - protocol: TCP
+      port: 53
+    - protocol: UDP
+      port: 53
+  - to: []
+    ports:
+    - protocol: TCP
+      port: 443
+    - protocol: TCP
+      port: 80
