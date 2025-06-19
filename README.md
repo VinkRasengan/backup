@@ -1,132 +1,246 @@
-diff --git a/README.md b/README.md
-index 41d8cd9..e69de29 100644
---- a/README.md
-+++ b/README.md
-@@ -1,127 +0,0 @@
--# Anti-Fraud Platform
--
--## 🚀 One Command Does Everything
--
--```bash
--# First time setup
--npm run setup
--
--# Start development
--npm start
--
--# Deploy with Docker  
--npm run docker
--
--# Deploy to Kubernetes
--npm run deploy:k8s
--
--# Run all tests
--npm test
--
--# Check status
--npm run status
--
--# Get help
--npm run help
--```
--
--## 📋 All Available Commands
--
--| Command | Description |
--|---------|-------------|
--| `npm run setup` | Complete setup and installation |
--| `npm start` | Start all services locally |
--| `npm run dev` | Start in development mode |
--| `npm stop` | Stop all services |
--| `npm restart` | Restart all services |
--| `npm run docker` | Deploy with Docker Compose |
--| `npm run deploy:k8s` | Deploy to Kubernetes |
--| `npm test` | Run all tests |
--| `npm run status` | Show system status |
--| `npm run health` | Health check |
--| `npm run logs` | Show logs |
--| `npm run fix-ports` | Fix port conflicts |
--| `npm run clean` | Clean up everything |
--| `npm run help` | Show detailed help |
--
--## 🏗️ Architecture
--
--- **Frontend**: React (port 3000)
--- **API Gateway**: Express.js (port 8080) 
--- **Auth Service**: Node.js (port 3001)
--- **Link Service**: Node.js (port 3002)
--- **Community Service**: Node.js (port 3003)
--- **Chat Service**: Node.js (port 3004)
--- **News Service**: Node.js (port 3005)
--- **Admin Service**: Node.js (port 3006)
--
--## 🔧 Tech Stack Features
--
--✅ **Circuit Breaker Pattern** - Prevents cascade failures  
--✅ **Event-Driven Architecture** - Redis pub/sub  
--✅ **Service Authentication** - Individual service keys  
--✅ **Auth Service Redundancy** - Multiple auth instances  
--✅ **Contract Testing** - Pact framework  
--✅ **Integration Testing** - E2E pipeline  
--✅ **Monitoring** - Prometheus + Grafana  
--✅ **Service Mesh Ready** - Istio/Consul support  
--
--## 🚀 Quick Start
--
--```bash
--# Clone and setup
--git clone <repo-url>
--cd backup
--npm run setup
--
--# Start development
--npm start
--
--# Open browser
--open http://localhost:3000
--```
--
--## 📊 Monitoring
--
--- **Application**: http://localhost:3000
--- **API Gateway**: http://localhost:8080  
--- **Monitoring**: http://localhost:9090
--- **Status**: `npm run status`
--
--## 🧪 Testing
--
--```bash
--npm test              # All tests
--npm run test:unit     # Unit tests only
--npm run test:contract # Contract tests only
--npm run test:integration # Integration tests only
--```
--
--## 🐳 Docker Deployment
--
--```bash
--npm run docker        # Start with Docker
--npm run logs          # View logs
--npm stop              # Stop everything
--```
--
--## ☸️ Kubernetes Deployment
--
--```bash
--npm run deploy:k8s           # Basic K8s
--npm run deploy:k8s:istio     # With Istio service mesh
--npm run deploy:k8s:consul    # With Consul Connect
--```
--
--## 🛠️ Troubleshooting
--
--```bash
--npm run fix-ports     # Fix port conflicts
--npm run clean         # Clean everything
--npm run status        # Check what's running
--npm run health        # Health check
--```
--
--## 📄 License
--
--MIT License
+# 🛡️ Anti-Fraud Platform
+
+A comprehensive microservices-based platform for detecting and preventing online fraud, fake news, and malicious links.
+
+## 🚀 Quick Start
+
+```bash
+# First time setup
+npm run setup
+
+# Start all services
+npm start
+
+# Check status
+npm run status
+
+# Stop all services
+npm stop
+```
+
+## 📋 Available Commands
+
+| Command | Description |
+|---------|-------------|
+| `npm run setup` | Complete setup and installation |
+| `npm start` | Start all services locally |
+| `npm run dev` | Start in development mode |
+| `npm stop` | Stop all services |
+| `npm restart` | Restart all services |
+| `npm run status` | Check service status |
+| `npm run health` | Health check all services |
+| `npm test` | Run all tests |
+| `npm run docker` | Deploy with Docker |
+| `npm run deploy:k8s` | Deploy to Kubernetes |
+| `npm run help` | Show help information |
+
+## 🏗️ Architecture
+
+### Core Services
+- **Frontend** (3000) - React web interface
+- **API Gateway** (8080) - Single entry point for all requests
+- **Auth Service** (3001) - User authentication and authorization
+- **Link Service** (3002) - URL verification and security analysis
+- **Community Service** (3003) - Posts, comments, and community features
+- **Chat Service** (3004) - Real-time messaging and AI chat
+- **News Service** (3005) - News aggregation and fact-checking
+- **Admin Service** (3006) - Administrative dashboard
+
+### Infrastructure
+- **Redis** (6379) - Caching and session storage
+- **Prometheus** (9090) - Metrics collection
+- **Grafana** (3010) - Monitoring dashboards
+
+## 🔧 Configuration
+
+### Environment Variables
+Copy `.env.example` to `.env` and configure:
+
+```bash
+# Core Configuration
+NODE_ENV=development
+REACT_APP_API_URL=http://localhost:8080
+
+# Firebase Configuration
+FIREBASE_PROJECT_ID=your-project-id
+FIREBASE_CLIENT_EMAIL=your-client-email
+FIREBASE_PRIVATE_KEY="your-private-key"
+
+# API Keys (Optional)
+GEMINI_API_KEY=your-gemini-api-key
+VIRUSTOTAL_API_KEY=your-virustotal-api-key
+NEWSAPI_API_KEY=your-newsapi-api-key
+```
+
+### Service URLs
+```bash
+AUTH_SERVICE_URL=http://localhost:3001
+LINK_SERVICE_URL=http://localhost:3002
+COMMUNITY_SERVICE_URL=http://localhost:3003
+CHAT_SERVICE_URL=http://localhost:3004
+NEWS_SERVICE_URL=http://localhost:3005
+ADMIN_SERVICE_URL=http://localhost:3006
+```
+
+## 🌐 Access URLs
+
+- **Frontend**: http://localhost:3000
+- **API Gateway**: http://localhost:8080
+- **Prometheus**: http://localhost:9090
+- **Grafana**: http://localhost:3010
+
+## 🔍 Features
+
+### Link Verification
+- Real-time URL security analysis
+- Multiple security API integrations
+- Threat detection and scoring
+- Historical scan results
+
+### Community Platform
+- User-generated content sharing
+- Voting and commenting system
+- Fact-checking collaboration
+- Community moderation
+
+### AI-Powered Chat
+- Google Gemini AI integration
+- Real-time assistance
+- Security recommendations
+- Educational content
+
+### News Monitoring
+- Automated news aggregation
+- Fact-checking alerts
+- Trending topic analysis
+- Source credibility scoring
+
+## 🛠️ Development
+
+### Prerequisites
+- Node.js 18+
+- npm or yarn
+- Docker (optional)
+- Git
+
+### Local Development
+```bash
+# Clone repository
+git clone <repository-url>
+cd anti-fraud-platform
+
+# Install dependencies
+npm run setup
+
+# Start development environment
+npm run dev
+
+# Run tests
+npm test
+```
+
+### Docker Deployment
+```bash
+# Build and start with Docker
+npm run docker
+
+# Stop Docker services
+npm run docker:stop
+```
+
+### Kubernetes Deployment
+```bash
+# Deploy to Kubernetes
+npm run deploy:k8s
+
+# Check deployment status
+kubectl get pods -n anti-fraud-platform
+```
+
+## 📊 Monitoring
+
+### Health Checks
+- Service health endpoints: `/health/live` and `/health/ready`
+- Prometheus metrics: `/metrics`
+- Status dashboard: `npm run status`
+
+### Logging
+- Centralized logging with correlation IDs
+- Error tracking and alerting
+- Performance monitoring
+
+## 🔒 Security
+
+### Authentication
+- Firebase Authentication integration
+- JWT token management
+- Role-based access control
+
+### API Security
+- Rate limiting
+- CORS configuration
+- Input validation
+- Security headers
+
+### Data Protection
+- Encrypted data transmission
+- Secure API key management
+- Privacy compliance
+
+## 🧪 Testing
+
+```bash
+# Run all tests
+npm test
+
+# Run specific service tests
+npm run test:auth
+npm run test:link
+npm run test:community
+
+# Run integration tests
+npm run test:integration
+
+# Run end-to-end tests
+npm run test:e2e
+```
+
+## 📚 API Documentation
+
+### Authentication Endpoints
+- `POST /api/auth/login` - User login
+- `POST /api/auth/register` - User registration
+- `GET /api/auth/profile` - Get user profile
+
+### Link Verification Endpoints
+- `POST /api/links/check` - Verify URL security
+- `GET /api/links/history` - Get scan history
+- `POST /api/links/report` - Report malicious link
+
+### Community Endpoints
+- `GET /api/community/posts` - Get community posts
+- `POST /api/community/posts` - Create new post
+- `POST /api/community/vote` - Vote on post
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Add tests
+5. Submit a pull request
+
+## 📄 License
+
+This project is licensed under the MIT License.
+
+## 🆘 Support
+
+For support and questions:
+- Check the documentation
+- Run `npm run help`
+- Create an issue on GitHub
+
+---
+
+**Built with ❤️ for a safer internet**
