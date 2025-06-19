@@ -104,9 +104,9 @@ npm run start:fixed
 ## 📝 Files to Update
 
 ### Docker Compose Files
-- `docker-compose.dev.yml` - Line 11: Change 8080 to 8082
-- `docker-compose.microservices.yml` - Line 10: Change 8080 to 8082
-- `docker-compose.monitoring.yml` - Already correct
+- `docker-compose.dev.yml` - Line 11: Uses port 8080 (standardized)
+- `docker-compose.yml` - Line 10: Uses port 8080 (standardized)
+- `docker-compose.optimized.yml` - Uses port 8080 (standardized)
 
 ### Prometheus Config
 - `monitoring/prometheus/prometheus.yml` - Fix service ports

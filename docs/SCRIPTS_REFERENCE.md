@@ -173,7 +173,7 @@ node client/scripts/kill-dev-servers.js  # Kill common dev ports
 - **3004**: Chat Service
 - **3005**: News Service
 - **3006**: Admin Service
-- **8082**: API Gateway
+- **8080**: API Gateway
 
 ### Optional Services
 - **3007**: CriminalIP Service
@@ -202,7 +202,7 @@ node client/scripts/kill-dev-servers.js  # Kill common dev ports
 3. `npm run kill:all` - Force kill conflicting processes
 
 ### Frontend Won't Connect
-1. Check API Gateway is on port 8082
+1. Check API Gateway is on port 8080
 2. Verify proxy config in `client/src/setupProxy.js`
 3. `npm run health` - Check API Gateway health
 
