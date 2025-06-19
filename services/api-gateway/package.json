@@ -11,6 +11,11 @@
     "test:coverage": "jest --coverage",
     "lint": "eslint src/",
     "lint:fix": "eslint src/ --fix",
+    "test:contracts": "jest tests/contracts/",
+    "test:contracts:auth": "jest tests/contracts/auth-service.contract.test.js",
+    "test:contracts:link": "jest tests/contracts/link-service.contract.test.js",
+    "test:contracts:community": "jest tests/contracts/community-service.contract.test.js",
+    "test:contracts:all": "node ../shared/testing/contractTestRunner.js",
     "build": "echo 'No build step required for Node.js service'"
   },
   "dependencies": {
@@ -27,6 +32,7 @@
     "redis": "^4.6.10",
     "http-proxy-middleware": "^2.0.6",
     "express-http-proxy": "^2.0.0",
+    "opossum": "^8.0.0",
     "prom-client": "^15.1.0"
   },
   "devDependencies": {
@@ -34,7 +40,9 @@
     "jest": "^29.7.0",
     "supertest": "^6.3.3",
     "eslint": "^8.55.0",
-    "@types/jest": "^29.5.8"
+    "@types/jest": "^29.5.8",
+    "@pact-foundation/pact": "^12.1.0",
+    "@pact-foundation/pact-node": "^10.17.7"
   },
   "engines": {
     "node": ">=18.0.0"

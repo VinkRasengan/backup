@@ -245,7 +245,6 @@ target/
 .env.example.local
 
 # Keep configuration templates for cross-platform setup
-!.env.template
 !.env.example
 !.env.sample
 !docker-compose*.yml

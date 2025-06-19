@@ -39,21 +39,68 @@ const healthHandler = (req, res) => {
   });
 };
 
-// Import local modules (simplified for now)
-// const authMiddleware = require('./middleware/auth');
-// const routingConfig = require('./config/routing');
-// const loadBalancer = require('./services/loadBalancer');
+// Import local modules
+const circuitBreakerService = require('./services/circuitBreaker');
+const fallbackStrategies = require('./services/fallbackStrategies');
+const ServiceAuthMiddleware = require('../../shared/security/serviceAuthMiddleware');
+const MTLSManager = require('../../shared/security/mtlsManager');
+const AuthRedundancyManager = require('../../shared/auth/authRedundancyManager');
 
-// Simple circuit breaker implementation
-const circuitBreaker = {
-  call: async (serviceName, fn) => {
-    try {
-      return await fn();
-    } catch (error) {
-      throw error;
+// Initialize circuit breakers with fallback strategies
+const initializeCircuitBreakers = () => {
+  const strategies = fallbackStrategies.getAllStrategies();
+
+  Object.keys(strategies).forEach(serviceName => {
+    circuitBreakerService.registerFallback(serviceName, strategies[serviceName]);
+  });
+
+  logger.info('Circuit breakers initialized with fallback strategies');
+};
+
+// Initialize security components
+const serviceAuth = new ServiceAuthMiddleware({
+  redis: {
+    host: process.env.REDIS_HOST,
+    port: process.env.REDIS_PORT,
+    password: process.env.REDIS_PASSWORD
+  }
+});
+
+const mtlsManager = new MTLSManager({
+  certDir: process.env.CERT_DIR || './certs'
+});
+
+const authRedundancy = new AuthRedundancyManager({
+  authInstances: [
+    { url: process.env.AUTH_SERVICE_URL || 'http://localhost:3001', priority: 1, healthy: true },
+    { url: process.env.AUTH_SERVICE_URL_BACKUP || 'http://localhost:3011', priority: 2, healthy: true }
+  ],
+  localValidator: {
+    jwtSecret: process.env.JWT_SECRET,
+    cache: {
+      redis: {
+        host: process.env.REDIS_HOST,
+        port: process.env.REDIS_PORT,
+        password: process.env.REDIS_PASSWORD
+      }
     }
   }
-};
+});
+
+// Initialize circuit breakers on startup
+initializeCircuitBreakers();
+
+// Initialize security components
+async function initializeSecurity() {
+  try {
+    await mtlsManager.initializeAllServiceCertificates();
+    logger.info('Security components initialized');
+  } catch (error) {
+    logger.error('Failed to initialize security components', { error: error.message });
+  }
+}
+
+initializeSecurity();
 
 const app = express();
 const PORT = process.env.PORT || 8080;
@@ -157,17 +204,144 @@ app.get('/info', (req, res) => {
   });
 });
 
+// Circuit breaker status endpoint
+app.get('/circuit-breaker/status', (req, res) => {
+  try {
+    const status = circuitBreakerService.getStatus();
+    res.json({
+      timestamp: new Date().toISOString(),
+      circuitBreakers: status
+    });
+  } catch (error) {
+    logger.error('Error getting circuit breaker status', { error: error.message });
+    res.status(500).json({
+      error: 'Failed to get circuit breaker status',
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+// Circuit breaker health check endpoint
+app.get('/circuit-breaker/health', async (req, res) => {
+  try {
+    const health = await circuitBreakerService.healthCheck();
+    res.json({
+      timestamp: new Date().toISOString(),
+      services: health
+    });
+  } catch (error) {
+    logger.error('Error performing circuit breaker health check', { error: error.message });
+    res.status(500).json({
+      error: 'Failed to perform health check',
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+// Security status endpoints
+app.get('/security/status', serviceAuth.authenticate(), (req, res) => {
+  try {
+    const status = {
+      serviceAuth: serviceAuth.getStatus(),
+      mtls: mtlsManager.getStatus(),
+      authRedundancy: authRedundancy.getStatus(),
+      timestamp: new Date().toISOString()
+    };
+    res.json(status);
+  } catch (error) {
+    logger.error('Error getting security status', { error: error.message });
+    res.status(500).json({
+      error: 'Failed to get security status',
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+// Auth redundancy status endpoint
+app.get('/auth/redundancy/status', serviceAuth.authenticate(), async (req, res) => {
+  try {
+    const status = await authRedundancy.healthCheck();
+    res.json(status);
+  } catch (error) {
+    logger.error('Error getting auth redundancy status', { error: error.message });
+    res.status(500).json({
+      error: 'Failed to get auth redundancy status',
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+// Force auth failover endpoint
+app.post('/auth/redundancy/failover', serviceAuth.adminOnly(), (req, res) => {
+  try {
+    authRedundancy.forceFailover();
+    res.json({
+      message: 'Auth failover completed',
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    logger.error('Error forcing auth failover', { error: error.message });
+    res.status(500).json({
+      error: 'Failed to force auth failover',
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+// Service credentials endpoint (for service initialization)
+app.post('/security/credentials/:serviceName', serviceAuth.adminOnly(), async (req, res) => {
+  try {
+    const { serviceName } = req.params;
+    const credentials = await serviceAuth.getServiceCredentials(serviceName);
+    const cert = await mtlsManager.getServiceCertificate(serviceName);
+
+    res.json({
+      credentials,
+      certificate: {
+        cert: cert.cert,
+        key: cert.key,
+        ca: cert.caCert
+      },
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    logger.error('Error getting service credentials', { error: error.message });
+    res.status(500).json({
+      error: 'Failed to get service credentials',
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+// Force key rotation endpoint
+app.post('/security/rotate-keys', serviceAuth.adminOnly(), async (req, res) => {
+  try {
+    await serviceAuth.forceKeyRotation();
+    res.json({
+      message: 'Key rotation completed',
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    logger.error('Error rotating keys', { error: error.message });
+    res.status(500).json({
+      error: 'Failed to rotate keys',
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
 // Service status endpoint
 app.get('/services/status', async (req, res) => {
   try {
     const serviceStatuses = await Promise.allSettled(
       services.map(async (service) => {
         try {
-          const status = await circuitBreaker.call(service.name, async () => {
-            const response = await fetch(`${service.url}/health/live`, { timeout: 5000 });
-            return response.ok;
+          const response = await circuitBreakerService.execute(service.name, {
+            method: 'GET',
+            url: `${service.url}/health/live`,
+            timeout: 5000
           });
-          return { name: service.name, status: 'healthy', available: status };
+          return { name: service.name, status: 'healthy', available: true };
         } catch (error) {
           return { name: service.name, status: 'unhealthy', error: error.message };
         }
