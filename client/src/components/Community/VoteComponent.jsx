@@ -20,6 +20,14 @@ const VoteComponent = ({ linkId, postData, className = '' }) => {
   const { user } = useAuth();
   const { isDarkMode } = useTheme();
 
+  // Debug user state
+  console.log('🔍 VoteComponent render:', {
+    linkId,
+    hasUser: !!user,
+    userEmail: user?.email,
+    userId: user?.id || user?.uid
+  });
+
   // Use optimized batch voting hook
   const { votes: batchVoteStats, userVote: batchUserVote, loading: batchLoading, submitVote } = usePostVote(linkId);
 
@@ -223,26 +231,40 @@ const VoteComponent = ({ linkId, postData, className = '' }) => {
   };
 
   const handleVote = async (voteType) => {
+    console.log('🗳️ VoteComponent.handleVote called:', { voteType, linkId, user: !!user });
+
     if (!user) {
+      console.log('❌ No user logged in');
       alert('Vui lòng đăng nhập để vote');
       return;
     }
 
+    console.log('🚀 Attempting to vote with batch system...');
     // Try to use optimized batch voting first
     if (submitVote) {
       try {
+        console.log('📡 Calling submitVote...');
         await submitVote(voteType);
+        console.log('✅ Batch vote successful - UI should update automatically');
+
+        // Force a small delay to let the UI update
+        setTimeout(() => {
+          console.log('🔄 Vote UI update completed');
+        }, 500);
+
         return;
       } catch (error) {
-        console.error('Batch vote failed, falling back to legacy:', error);
+        console.error('❌ Batch vote failed, falling back to legacy:', error);
       }
     }
 
     // Fallback to legacy voting
+    console.log('🔄 Using legacy voting system...');
     try {
       setLegacyLoading(true);
       const isUnvote = userVote === voteType;
       const oldVote = userVote;
+      console.log('📊 Vote state:', { isUnvote, oldVote, newVote: voteType });
 
       // Add vote animation effect
       const buttonRef = voteType === 'upvote' ? safeButtonRef : unsafeButtonRef;
@@ -287,9 +309,11 @@ const VoteComponent = ({ linkId, postData, className = '' }) => {
       }
 
       // Send to API
+      console.log('📡 Sending API request...');
       let response;
       if (isUnvote) {
         // Delete vote
+        console.log('🗑️ Deleting vote...');
         response = await fetch(`/api/votes/${linkId}`, {
           method: 'DELETE',
           headers: {
@@ -299,27 +323,49 @@ const VoteComponent = ({ linkId, postData, className = '' }) => {
         });
       } else {
         // Submit new vote
+        console.log('➕ Creating new vote...');
+        const requestBody = {
+          voteType,
+          userId: user?.id || user?.uid,
+          userEmail: user?.email
+        };
+        console.log('📤 Request body:', requestBody);
+
+        // Create AbortController for timeout
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+
         response = await fetch(`/api/votes/${linkId}`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${localStorage.getItem('authToken') || localStorage.getItem('backendToken')}`
           },
-          body: JSON.stringify({
-            voteType,
-            userId: user?.id || user?.uid,
-            userEmail: user?.email
-          })
+          body: JSON.stringify(requestBody),
+          signal: controller.signal
         });
+
+        clearTimeout(timeoutId);
       }
 
       // Check if API call was successful
+      console.log('📥 API response:', { status: response.status, ok: response.ok });
       if (!response.ok) {
-        throw new Error('Vote API call failed');
+        const errorText = await response.text();
+        console.error('❌ API error response:', errorText);
+        throw new Error(`Vote API call failed: ${response.status} - ${errorText}`);
       }
 
+      const responseData = await response.json();
+      console.log('✅ Vote API success:', responseData);
+
     } catch (error) {
-      console.error('Vote error:', error);
+      if (error.name === 'AbortError') {
+        console.error('❌ Vote request timed out after 10 seconds');
+        alert('Request timed out. Please try again.');
+      } else {
+        console.error('Vote error:', error);
+      }
       // Revert changes on error
       if (postData && postData.voteStats) {
         setLegacyVoteStats({
@@ -359,7 +405,10 @@ const VoteComponent = ({ linkId, postData, className = '' }) => {
       {/* Upvote Button */}
       <button
         ref={safeButtonRef}
-        onClick={() => handleVote('upvote')}
+        onClick={() => {
+          console.log('🔴 UPVOTE BUTTON CLICKED!', { linkId, user: !!user });
+          handleVote('upvote');
+        }}
         disabled={loading || !user}
         className={`p-1 rounded transition-colors ${
           userVote === 'upvote'
@@ -392,7 +441,10 @@ const VoteComponent = ({ linkId, postData, className = '' }) => {
       {/* Downvote Button */}
       <button
         ref={unsafeButtonRef}
-        onClick={() => handleVote('downvote')}
+        onClick={() => {
+          console.log('🔵 DOWNVOTE BUTTON CLICKED!', { linkId, user: !!user });
+          handleVote('downvote');
+        }}
         disabled={loading || !user}
         className={`p-1 rounded transition-colors ${
           userVote === 'downvote'

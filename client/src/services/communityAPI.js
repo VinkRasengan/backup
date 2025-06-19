@@ -138,12 +138,21 @@ class CommunityAPI {
   // Get comments for a link with pagination
   async getComments(linkId, page = 1, limit = 10, sortBy = 'newest') {
     try {
-      const params = new URLSearchParams({ page, limit, sortBy });
+      // Convert page to offset for backend compatibility
+      const offset = (page - 1) * limit;
+      const params = new URLSearchParams({ limit, offset });
+
+      console.log('🔍 Getting comments for linkId:', linkId, 'with params:', { limit, offset });
+
       const response = await fetch(`${this.baseURL}/api/comments/${linkId}?${params}`, {
         method: 'GET',
         headers: this.getAuthHeaders()
       });
-      return await this.handleResponse(response);
+
+      const result = await this.handleResponse(response);
+      console.log('📝 Comments response:', result);
+
+      return result;
     } catch (error) {
       console.error('Get comments error:', error);
       throw error;

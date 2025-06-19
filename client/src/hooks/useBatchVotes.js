@@ -174,7 +174,12 @@ export const usePostVote = (postId) => {
     const userVote = getUserVoteForPost(postId);
 
     const submitVote = useCallback(async (voteType) => {
-        if (!postId) return;
+        console.log('🗳️ useBatchVotes.submitVote called:', { postId, voteType });
+
+        if (!postId) {
+            console.log('❌ No postId provided');
+            return;
+        }
 
         setLocalLoading(true);
         try {
@@ -186,27 +191,63 @@ export const usePostVote = (postId) => {
             // Get user info
             const user = JSON.parse(localStorage.getItem('user') || '{}');
 
-            const response = await fetch(`http://localhost:8080/api/votes/${postId}`, {
+            console.log('🔑 Auth info:', { hasToken: !!token, userId: user.uid || user.id, userEmail: user.email });
+
+            const requestBody = {
+                voteType,
+                userId: user.uid || user.id,
+                userEmail: user.email
+            };
+
+            console.log('📤 Batch vote request:', {
+                url: `http://localhost:8080/api/votes/${postId}`,
+                body: requestBody
+            });
+
+            // Try direct community service first for debugging
+            console.log('🔧 Trying direct community service...');
+            const directUrl = `http://localhost:3003/votes/${postId}`;
+            console.log('📤 Direct request URL:', directUrl);
+
+            // Create AbortController for timeout
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+
+            // Try direct community service first for debugging
+            const response = await fetch(`http://localhost:3003/votes/${postId}`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     ...(token && { 'Authorization': `Bearer ${token}` })
                 },
-                body: JSON.stringify({
-                    voteType,
-                    userId: user.uid || user.id,
-                    userEmail: user.email
-                }),
+                body: JSON.stringify(requestBody),
+                signal: controller.signal
             });
 
+            clearTimeout(timeoutId);
+
+            console.log('📥 Batch vote response:', { status: response.status, ok: response.ok });
+
             if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
+                const errorText = await response.text();
+                console.error('❌ Batch vote error response:', errorText);
+                throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
             }
 
+            const responseData = await response.json();
+            console.log('✅ Batch vote success:', responseData);
+
             // Refresh votes after successful vote
+            console.log('🔄 Refreshing votes...');
             await fetchBatchVotes([postId]);
+
+            console.log('✅ Vote process completed successfully');
         } catch (error) {
-            console.error('Error submitting vote:', error);
+            if (error.name === 'AbortError') {
+                console.error('❌ Batch vote request timed out after 10 seconds');
+                throw new Error('Request timed out. Please try again.');
+            }
+            console.error('❌ Error submitting batch vote:', error);
             throw error;
         } finally {
             setLocalLoading(false);

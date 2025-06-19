@@ -14,24 +14,28 @@ router.get('/:postId', async (req, res) => {
 
     logger.info('Get comments request', { postId, limit, offset, loadMore });
 
-    // Get comments for the post
-    let query = db.collection(collections.COMMENTS)
+    // Get comments for the post (workaround for missing composite index)
+    const snapshot = await db.collection(collections.COMMENTS)
       .where('postId', '==', postId)
-      .orderBy('createdAt', 'desc');
+      .get();
+
+    // Sort and paginate in memory (temporary workaround)
+    const allComments = snapshot.docs
+      .map(doc => ({ id: doc.id, ...doc.data() }))
+      .sort((a, b) => {
+        const aTime = a.createdAt?.toDate?.() || new Date(a.createdAt);
+        const bTime = b.createdAt?.toDate?.() || new Date(b.createdAt);
+        return bTime - aTime; // desc order
+      });
 
     // Apply pagination
-    if (offset > 0) {
-      query = query.offset(parseInt(offset));
-    }
+    const startIndex = parseInt(offset);
+    const endIndex = startIndex + parseInt(limit);
+    const paginatedComments = allComments.slice(startIndex, endIndex);
 
-    query = query.limit(parseInt(limit));
-
-    const snapshot = await query.get();
-
-    const comments = snapshot.docs.map(doc => {
-      const data = doc.data();
+    const comments = paginatedComments.map(data => {
       return {
-        id: doc.id,
+        id: data.id,
         postId: data.postId,
         content: data.content,
         author: {
@@ -49,12 +53,8 @@ router.get('/:postId', async (req, res) => {
       };
     });
 
-    // Get total count for pagination
-    const totalSnapshot = await db.collection(collections.COMMENTS)
-      .where('postId', '==', postId)
-      .get();
-
-    const total = totalSnapshot.size;
+    // Use already fetched data for total count
+    const total = allComments.length;
     const hasMore = (parseInt(offset) + parseInt(limit)) < total;
 
     res.json({

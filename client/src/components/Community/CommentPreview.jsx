@@ -12,6 +12,10 @@ import CommentVoteButton from './CommentVoteButton';
 const CommentPreview = ({ linkId, onToggleFullComments }) => {
   const { user } = useAuth();
   const { isDarkMode } = useTheme();
+
+  // Debug user state
+  console.log('🔍 CommentPreview - User state:', user);
+  console.log('🔍 CommentPreview - LinkId:', linkId);
   const [comments, setComments] = useState([]);
   const [totalComments, setTotalComments] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -66,13 +70,19 @@ const CommentPreview = ({ linkId, onToggleFullComments }) => {
 
   const handleSubmitComment = async (e) => {
     e.preventDefault();
-    
+
+    console.log('🔍 Comment submission - User state:', user);
+    console.log('🔍 Comment submission - User from localStorage:', localStorage.getItem('user'));
+    console.log('🔍 Comment submission - Token from localStorage:', localStorage.getItem('token'));
+
     if (!user) {
+      console.log('❌ No user found, showing login prompt');
       toast.error('Vui lòng đăng nhập để bình luận');
       return;
     }
 
     if (!newComment.trim()) {
+      console.log('❌ Empty comment, returning');
       return;
     }
 
@@ -83,8 +93,15 @@ const CommentPreview = ({ linkId, onToggleFullComments }) => {
       if (response.data && response.data.success) {
         setNewComment('');
         setShowCommentForm(false);
-        // Reload preview to show new comment
-        await loadPreviewComments();
+
+        // Add new comment to preview immediately
+        const newCommentData = response.data.comment;
+        setComments(prev => [newCommentData, ...prev.slice(0, 1)]); // Keep only 2 comments in preview
+        setTotalComments(prev => prev + 1);
+
+        // Also reload to ensure sync
+        setTimeout(() => loadPreviewComments(), 1000);
+
         toast.success('Đã thêm bình luận');
       }
     } catch (error) {
@@ -124,7 +141,7 @@ const CommentPreview = ({ linkId, onToggleFullComments }) => {
           isDarkMode ? 'bg-gray-700' : 'bg-gray-100'
         }`}>
           <p className={`text-sm font-medium ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-            {comment.user_name || comment.user_email || 'Người dùng'}
+            {comment.author?.displayName || comment.author?.email || comment.user_name || comment.user_email || 'Người dùng'}
           </p>
           <p className={`text-sm ${isDarkMode ? 'text-gray-200' : 'text-gray-800'}`}>
             {comment.content}
@@ -132,7 +149,7 @@ const CommentPreview = ({ linkId, onToggleFullComments }) => {
         </div>
         <div className="flex items-center justify-between mt-1 ml-3">
           <p className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-            {formatTimeAgo(comment.created_at)}
+            {formatTimeAgo(comment.createdAt || comment.created_at)}
           </p>
           <div className="flex items-center space-x-2">
             <CommentVoteButton
@@ -169,7 +186,11 @@ const CommentPreview = ({ linkId, onToggleFullComments }) => {
         </button>
 
         <button
-          onClick={() => setShowCommentForm(!showCommentForm)}
+          onClick={() => {
+            console.log('🔍 Comment button clicked - User:', user);
+            console.log('🔍 Comment button clicked - ShowForm:', showCommentForm);
+            setShowCommentForm(!showCommentForm);
+          }}
           className={`text-sm px-4 py-1.5 rounded-full font-medium transition-all duration-200 ${
             showCommentForm
               ? isDarkMode

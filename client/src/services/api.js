@@ -312,11 +312,23 @@ export const communityAPI = {
 
   // Comments API
   getComments: (linkId, page = 1, limit = 10, sortBy = 'newest') => {
-    const params = new URLSearchParams({ page, limit, sortBy });
-    return api.get(`/comments/${linkId}?${params}`);
+    // Convert page to offset for backend compatibility
+    const offset = (page - 1) * limit;
+    const params = new URLSearchParams({ limit, offset });
+    return api.get(`/api/comments/${linkId}?${params}`);
   },
 
-  addComment: (linkId, content) => api.post(`/comments/${linkId}`, { content }),
+  addComment: (linkId, content) => {
+    // Get user info from auth context
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    return api.post('/api/comments', {
+      postId: linkId,
+      content,
+      userId: user.id || user.uid,
+      userEmail: user.email,
+      displayName: user.displayName || user.email?.split('@')[0] || 'Anonymous'
+    });
+  },
 
   updateComment: (commentId, content) => api.put(`/comments/comment/${commentId}`, { content }),
 

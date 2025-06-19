@@ -93,9 +93,59 @@ const CommentsSection = ({ postId, linkId, initialCommentCount = 0, onClose }) =
   };
 
   useEffect(() => {
-    // Load demo comments based on post ID
-    const demoComments = generateDemoComments(id);
-    setComments(demoComments);
+    // Load real comments from API
+    const loadComments = async () => {
+      if (!id) return;
+
+      try {
+        setLoading(true);
+        console.log('📡 Loading comments for post:', id);
+
+        const response = await fetch(`/api/comments/${id}?limit=10&offset=0`);
+        if (response.ok) {
+          const data = await response.json();
+          console.log('✅ Comments loaded:', data);
+
+          if (data.success && data.data?.comments) {
+            // Transform API comments to component format
+            const transformedComments = data.data.comments.map(comment => ({
+              id: comment.id,
+              author: {
+                name: comment.author?.displayName || comment.author?.email || 'Anonymous',
+                avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(comment.author?.displayName || 'User')}&background=6366f1&color=fff`,
+                verified: false
+              },
+              content: comment.content,
+              timestamp: new Date(comment.createdAt),
+              likes: comment.voteScore || 0,
+              liked: false,
+              replies: []
+            }));
+
+            setComments(transformedComments);
+          } else {
+            console.log('📝 No comments found, using demo comments');
+            // Fallback to demo comments if no real comments
+            const demoComments = generateDemoComments(id);
+            setComments(demoComments);
+          }
+        } else {
+          console.error('❌ Failed to load comments:', response.status);
+          // Fallback to demo comments
+          const demoComments = generateDemoComments(id);
+          setComments(demoComments);
+        }
+      } catch (error) {
+        console.error('❌ Error loading comments:', error);
+        // Fallback to demo comments
+        const demoComments = generateDemoComments(id);
+        setComments(demoComments);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadComments();
   }, [id]);
 
   const formatTimeAgo = (date) => {
@@ -134,25 +184,67 @@ const CommentsSection = ({ postId, linkId, initialCommentCount = 0, onClose }) =
     }));
   };
 
-  const handleSubmitComment = (e) => {
+  const handleSubmitComment = async (e) => {
     e.preventDefault();
     if (!newComment.trim()) return;
 
-    const comment = {
-      id: `new_${Date.now()}`,
-      author: {
-        name: 'Bạn',
-        avatar: 'https://ui-avatars.com/api/?name=You&background=6366f1&color=fff'
-      },
-      content: newComment,
-      timestamp: new Date(),
-      likes: 0,
-      liked: false,
-      replies: []
-    };
+    setLoading(true);
+    try {
+      console.log('💬 Submitting comment to API...', { postId: id, content: newComment });
 
-    setComments(prev => [comment, ...prev]);
-    setNewComment('');
+      // Get user info
+      const user = JSON.parse(localStorage.getItem('user') || '{}');
+      if (!user.uid && !user.id) {
+        alert('Vui lòng đăng nhập để comment');
+        setLoading(false);
+        return;
+      }
+
+      const response = await fetch('/api/comments', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('authToken') || localStorage.getItem('backendToken')}`
+        },
+        body: JSON.stringify({
+          postId: id,
+          content: newComment.trim(),
+          userId: user.uid || user.id,
+          userEmail: user.email,
+          displayName: user.displayName || user.name || user.email || 'Anonymous'
+        })
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        console.log('✅ Comment API success:', result);
+
+        // Add the new comment to local state
+        const comment = {
+          id: result.comment?.id || `new_${Date.now()}`,
+          author: {
+            name: user.displayName || user.name || user.email || 'Bạn',
+            avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(user.displayName || 'You')}&background=6366f1&color=fff`
+          },
+          content: newComment,
+          timestamp: new Date(),
+          likes: 0,
+          liked: false,
+          replies: []
+        };
+
+        setComments(prev => [comment, ...prev]);
+        setNewComment('');
+      } else {
+        console.error('❌ Comment API failed:', response.status);
+        alert('Không thể thêm comment. Vui lòng thử lại.');
+      }
+    } catch (error) {
+      console.error('❌ Error submitting comment:', error);
+      alert('Lỗi khi thêm comment. Vui lòng thử lại.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const CommentItem = ({ comment, isReply = false, parentId = null }) => (

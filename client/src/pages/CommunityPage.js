@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import NavigationLayout from '../components/navigation/NavigationLayout';
 import UnifiedPostCard from '../components/Community/UnifiedPostCard';
+import { useAuth } from '../context/AuthContext';
 
 const CommunityPage = () => {
   console.log('🎯 CommunityPage component rendering...');
+  const { user } = useAuth();
 
   // Simple state management instead of complex hook
   const [posts, setPosts] = useState([]);
@@ -14,22 +16,88 @@ const CommunityPage = () => {
   const handleVote = async (postId, voteType) => {
     try {
       console.log(`🗳️ Voting ${voteType} on post ${postId}`);
-      // TODO: Implement vote API call
-      // await voteOnPost(postId, voteType);
-      // fetchData(); // Refresh data after voting
+
+      // Get user info
+      const user = JSON.parse(localStorage.getItem('user') || '{}');
+      if (!user.uid && !user.id) {
+        alert('Vui lòng đăng nhập để vote');
+        return;
+      }
+
+      const response = await fetch('/api/posts/vote', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('authToken') || localStorage.getItem('backendToken')}`
+        },
+        body: JSON.stringify({
+          postId,
+          voteType,
+          userId: user.uid || user.id
+        })
+      });
+
+      if (response.ok) {
+        console.log('✅ Vote successful');
+        fetchPosts(); // Refresh data after voting
+      } else {
+        console.error('❌ Vote failed:', response.status);
+      }
     } catch (error) {
       console.error('❌ Error voting:', error);
     }
   };
 
-  const handleComment = async (postId, commentText) => {
+  // Toggle comments section (just show/hide)
+  const handleToggleComments = (postId) => {
+    console.log(`💬 Toggling comments for post ${postId}`);
+    // This is just for toggling comment visibility
+    // The actual comment adding is handled by CommentsSection component
+  };
+
+  // Add comment function (called by CommentsSection)
+  const handleAddComment = async (postId, commentText) => {
     try {
       console.log(`💬 Adding comment to post ${postId}:`, commentText);
-      // TODO: Implement comment API call
-      // await addComment(postId, commentText);
-      // fetchData(); // Refresh data after commenting
+
+      // Get user info
+      const user = JSON.parse(localStorage.getItem('user') || '{}');
+      if (!user.uid && !user.id) {
+        alert('Vui lòng đăng nhập để comment');
+        return;
+      }
+
+      if (!commentText || !commentText.trim()) {
+        alert('Vui lòng nhập nội dung comment');
+        return;
+      }
+
+      const response = await fetch('/api/comments', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('authToken') || localStorage.getItem('backendToken')}`
+        },
+        body: JSON.stringify({
+          postId,
+          content: commentText.trim(),
+          userId: user.uid || user.id,
+          userEmail: user.email,
+          displayName: user.displayName || user.name || user.email || 'Anonymous'
+        })
+      });
+
+      if (response.ok) {
+        console.log('✅ Comment successful');
+        fetchPosts(); // Refresh data after commenting
+        return true;
+      } else {
+        console.error('❌ Comment failed:', response.status);
+        return false;
+      }
     } catch (error) {
       console.error('❌ Error adding comment:', error);
+      return false;
     }
   };
 
@@ -58,6 +126,8 @@ const CommunityPage = () => {
       setLoading(true);
       setError(null);
       console.log('📡 Fetching posts...');
+      console.log('🔍 Current URL:', window.location.href);
+      console.log('🔍 Posts state:', posts?.length || 0);
 
       const response = await fetch('/api/community/posts?page=1&sort=newest&limit=10&newsOnly=false&includeNews=true');
       const data = await response.json();
@@ -101,6 +171,10 @@ const CommunityPage = () => {
           <p>📡 API calls successful</p>
           <p>🔥 Firebase emulator connected</p>
           <p>🎯 Posts: {posts.length} | Loading: {loading ? 'true' : 'false'} | Error: {error || 'none'}</p>
+          <p>👤 User: {user ? `${user.email} (${user.id || user.uid})` : 'Not logged in'}</p>
+          {!user && (
+            <p className="text-red-600 font-bold">⚠️ You need to login to vote on posts!</p>
+          )}
         </div>
 
         {/* Posts */}
@@ -129,7 +203,7 @@ const CommunityPage = () => {
                     key={post.id || index}
                     post={post}
                     onVote={handleVote}
-                    onToggleComments={handleComment}
+                    onToggleComments={handleToggleComments}
                     onSave={handleShare}
                     layout="feed"
                   />
