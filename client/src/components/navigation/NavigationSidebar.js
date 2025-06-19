@@ -57,8 +57,7 @@ const NavigationSidebar = ({ isOpen, onToggle }) => {
       path: '/community',
       color: 'purple',
       submenu: [
-        { label: 'Thảo luận', path: '/community' },
-        { label: 'Bảng tin', path: '/community/feed' },
+        { label: 'Bảng tin', path: '/community' },
         { label: 'Đóng góp', path: '/submit' }
       ]
     },

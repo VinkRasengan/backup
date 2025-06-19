@@ -107,12 +107,24 @@ export const useFirestoreStats = () => {
         });
 
       } catch (error) {
-        console.error('Error fetching Firestore stats:', error);
-        setStats(prev => ({
-          ...prev,
-          loading: false,
-          error: error.message
-        }));
+        // Silently handle permission errors for stats
+        if (error.code === 'permission-denied' || error.message.includes('Missing or insufficient permissions')) {
+          console.warn('Firestore stats disabled due to permissions');
+          setStats({
+            totalLinks: 0,
+            totalComments: 0,
+            totalUsers: 0,
+            loading: false,
+            error: null
+          });
+        } else {
+          console.error('Error fetching Firestore stats:', error);
+          setStats(prev => ({
+            ...prev,
+            loading: false,
+            error: error.message
+          }));
+        }
       }
     };
 
@@ -191,7 +203,12 @@ export const useRealtimeNotifications = () => {
         });
 
       } catch (error) {
-        console.error('Error fetching notifications:', error);
+        // Silently handle permission/index errors for notifications
+        if (error.code === 'permission-denied' || error.message.includes('requires an index') || error.message.includes('Missing or insufficient permissions')) {
+          console.warn('Notifications disabled due to permissions or missing index');
+        } else {
+          console.error('Error fetching notifications:', error);
+        }
         setNotifications({ count: 0, items: [], loading: false });
       }
     });

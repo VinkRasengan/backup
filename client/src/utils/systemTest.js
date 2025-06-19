@@ -11,7 +11,7 @@ const getApiBaseUrl = () => {
     return '/api';
   }
 
-  return 'http://localhost:5000/api';
+  return 'http://localhost:8080/api';
 };
 
 class SystemTest {

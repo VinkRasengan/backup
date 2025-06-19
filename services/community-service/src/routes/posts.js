@@ -2,8 +2,22 @@ const express = require('express');
 const router = express.Router();
 const { db, collections } = require('../config/firebase');
 const Logger = require('../../shared/utils/logger');
+const { createSampleData, clearSampleData } = require('../utils/sampleData');
 
 const logger = new Logger('community-service');
+
+// Helper function to calculate time ago
+function getTimeAgo(date) {
+  const now = new Date();
+  const diffInSeconds = Math.floor((now - date) / 1000);
+
+  if (diffInSeconds < 60) return 'vừa xong';
+  if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)} phút trước`;
+  if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)} giờ trước`;
+  if (diffInSeconds < 604800) return `${Math.floor(diffInSeconds / 86400)} ngày trước`;
+
+  return date.toLocaleDateString('vi-VN');
+}
 
 // Get posts from Firestore
 router.get('/', async (req, res) => {
@@ -54,14 +68,100 @@ router.get('/', async (req, res) => {
     let total = 0;
 
     try {
-      // Skip Firestore for now, go directly to fallback
-      throw new Error('Using fallback mock data for testing');
+      // Build Firestore query
+      let query = db.collection(collections.POSTS);
+
+      // Apply content type filter
+      if (contentTypeFilter) {
+        // For links collection, check if documents have 'type' field
+        // If not, we'll filter in memory after fetching
+        query = query.where('type', '==', contentTypeFilter);
+      }
+
+      // Apply category filter
+      if (category !== 'all') {
+        query = query.where('category', '==', category);
+      }
+
+      // Apply search filter
+      if (search.trim()) {
+        // Simple text search (Firestore doesn't support full-text search natively)
+        // This is a basic implementation - for production, consider using Algolia or similar
+        query = query.where('title', '>=', search.trim())
+                    .where('title', '<=', search.trim() + '\uf8ff');
+      }
+
+      // Apply sorting - use fields that exist in links collection
+      if (sort === 'newest') {
+        query = query.orderBy('createdAt', 'desc');
+      } else if (sort === 'trending') {
+        // Use voteCount or similar field that exists in links collection
+        query = query.orderBy('voteCount', 'desc').orderBy('createdAt', 'desc');
+      } else {
+        query = query.orderBy('createdAt', 'desc'); // Default sort
+      }
+
+      // Apply pagination
+      const offset = (parseInt(page) - 1) * parseInt(limit);
+      query = query.offset(offset).limit(parseInt(limit));
+
+      // Execute query with timeout
+      const queryPromise = query.get();
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Query timeout')), queryTimeout);
+      });
+
+      const snapshot = await Promise.race([queryPromise, timeoutPromise]);
+
+      // Process results
+      postsData = snapshot.docs.map(doc => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          ...data,
+          createdAt: data.createdAt?.toDate?.()?.toISOString() || data.createdAt,
+          updatedAt: data.updatedAt?.toDate?.()?.toISOString() || data.updatedAt
+        };
+      });
+
+      // Get total count (simplified - in production, use a separate count query or maintain counters)
+      total = postsData.length;
+
+      logger.info('Firestore query successful', {
+        count: postsData.length,
+        contentTypeFilter,
+        category,
+        search: search.trim()
+      });
 
     } catch (firestoreError) {
-      logger.warn('Firestore query failed, using fallback', {
+      logger.warn('Firestore query failed, trying simplified query', {
         error: firestoreError.message
       });
-      throw firestoreError; // Let it fall through to catch block
+
+      // Try a simplified query without filters
+      try {
+        let simpleQuery = db.collection(collections.POSTS)
+          .orderBy('createdAt', 'desc')
+          .limit(parseInt(limit));
+
+        const simpleSnapshot = await simpleQuery.get();
+        postsData = simpleSnapshot.docs.map(doc => {
+          const data = doc.data();
+          return {
+            id: doc.id,
+            ...data,
+            createdAt: data.createdAt?.toDate?.()?.toISOString() || data.createdAt,
+            updatedAt: data.updatedAt?.toDate?.()?.toISOString() || data.updatedAt
+          };
+        });
+
+        total = postsData.length;
+        logger.info('Simplified query successful', { count: postsData.length });
+      } catch (simpleError) {
+        logger.error('Even simplified query failed', { error: simpleError.message });
+        throw simpleError;
+      }
     }
 
     // Calculate pagination info
@@ -92,146 +192,28 @@ router.get('/', async (req, res) => {
     });
 
   } catch (error) {
-    logger.error('Error fetching posts', { error: error.message });
+    logger.error('Error fetching posts from Firestore', {
+      error: error.message,
+      stack: error.stack,
+      query: { page, limit, sort, category, search }
+    });
 
-    // Generate filtered mock data based on contentTypeFilter
-    let mockPosts = [];
-
-    // User posts mock data
-    const userPosts = [
-      {
-        id: 'user-post-1',
-        title: 'Cảnh báo: Trang web lừa đảo mới được phát hiện',
-        content: 'Một trang web giả mạo ngân hàng đã được phát hiện. Hãy cẩn thận khi nhập thông tin cá nhân...',
-        author: {
-          email: 'user@example.com',
-          displayName: 'Người dùng ẩn danh'
-        },
-        type: 'user_post',
-        category: 'phishing',
-        voteStats: {
-          safe: 2,
-          unsafe: 15,
-          suspicious: 3,
-          total: 20
-        },
-        voteScore: 10,
-        commentCount: 5,
-        createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-        updatedAt: new Date().toISOString(),
-        tags: ['phishing', 'banking', 'scam'],
-        url: 'https://suspicious-bank-site.com',
-        verified: false
-      },
-      {
-        id: 'user-post-2',
-        title: 'Chia sẻ: Cách nhận biết email lừa đảo',
-        content: 'Dựa trên kinh nghiệm cá nhân, tôi muốn chia sẻ một số dấu hiệu nhận biết email lừa đảo...',
-        author: {
-          email: 'expert@security.com',
-          displayName: 'Chuyên gia bảo mật'
-        },
-        type: 'user_post',
-        category: 'education',
-        voteStats: {
-          safe: 25,
-          unsafe: 1,
-          suspicious: 2,
-          total: 28
-        },
-        voteScore: 22,
-        commentCount: 12,
-        createdAt: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString(),
-        updatedAt: new Date().toISOString(),
-        tags: ['education', 'email', 'tips'],
-        verified: true
-      }
-    ];
-
-    // News posts mock data
-    const newsPosts = [
-      {
-        id: 'news-1',
-        title: 'Cảnh báo từ Bộ TT&TT: Xuất hiện chiêu thức lừa đảo mới qua tin nhắn',
-        content: 'Bộ Thông tin và Truyền thông vừa phát đi cảnh báo về chiêu thức lừa đảo mới thông qua tin nhắn SMS...',
-        author: {
-          email: 'news@vnexpress.net',
-          displayName: 'VnExpress'
-        },
-        type: 'news',
-        category: 'official_warning',
-        source: 'VnExpress',
-        voteStats: {
-          safe: 45,
-          unsafe: 2,
-          suspicious: 1,
-          total: 48
-        },
-        voteScore: 42,
-        commentCount: 8,
-        createdAt: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(),
-        updatedAt: new Date().toISOString(),
-        tags: ['official', 'sms', 'warning'],
-        url: 'https://vnexpress.net/canh-bao-lua-dao-moi',
-        verified: true,
-        trustScore: 95
-      },
-      {
-        id: 'news-2',
-        title: 'Ngân hàng Nhà nước cảnh báo website giả mạo các ngân hàng',
-        content: 'Ngân hàng Nhà nước Việt Nam đã phát hiện nhiều website giả mạo các ngân hàng thương mại...',
-        author: {
-          email: 'news@tuoitre.vn',
-          displayName: 'Tuổi Trẻ Online'
-        },
-        type: 'news',
-        category: 'banking_security',
-        source: 'Tuổi Trẻ',
-        voteStats: {
-          safe: 38,
-          unsafe: 1,
-          suspicious: 0,
-          total: 39
-        },
-        voteScore: 37,
-        commentCount: 15,
-        createdAt: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(),
-        updatedAt: new Date().toISOString(),
-        tags: ['banking', 'official', 'website'],
-        url: 'https://tuoitre.vn/ngan-hang-gia-mao',
-        verified: true,
-        trustScore: 92
-      }
-    ];
-
-    // Filter posts based on contentTypeFilter
-    if (contentTypeFilter === 'user_post') {
-      mockPosts = userPosts;
-      logger.info('Returning user posts only');
-    } else if (contentTypeFilter === 'news') {
-      mockPosts = newsPosts;
-      logger.info('Returning news posts only');
-    } else {
-      mockPosts = [...userPosts, ...newsPosts];
-      logger.info('Returning all posts');
-    }
-
-    // Fallback to filtered mock data
-    res.json({
-      success: true,
+    // Return error response instead of mock data
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch posts from database',
+      details: error.message,
       data: {
-        posts: mockPosts,
+        posts: [],
         pagination: {
-          page: 1,
-          limit: 10,
-          total: mockPosts.length,
-          totalPages: Math.ceil(mockPosts.length / parseInt(limit)),
+          page: parseInt(page),
+          limit: parseInt(limit),
+          total: 0,
+          totalPages: 0,
           hasNext: false,
           hasPrev: false
         }
-      },
-      fallback: true,
-      error: error.message
+      }
     });
   }
 });
@@ -314,19 +296,81 @@ router.post('/', async (req, res) => {
   }
 });
 
-router.get('/:id', (req, res) => {
-  res.json({
-    success: true,
-    post: {
-      id: req.params.id,
-      title: 'Suspicious website reported',
-      content: 'Found this suspicious website that looks like a phishing attempt...',
-      author: 'user@example.com',
-      votes: 5,
-      comments: 2,
-      createdAt: new Date().toISOString()
+// Get single post by ID
+router.get('/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const postDoc = await db.collection(collections.POSTS).doc(id).get();
+
+    if (!postDoc.exists) {
+      return res.status(404).json({
+        success: false,
+        error: 'Post not found'
+      });
+    }
+
+    const postData = postDoc.data();
+    const post = {
+      id: postDoc.id,
+      ...postData,
+      createdAt: postData.createdAt?.toDate?.()?.toISOString() || postData.createdAt,
+      updatedAt: postData.updatedAt?.toDate?.()?.toISOString() || postData.updatedAt
+    };
+
+    res.json({
+      success: true,
+      data: { post }
+    });
+
+  } catch (error) {
+    logger.error('Error fetching post', { error: error.message, postId: req.params.id });
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch post'
+    });
+  }
+});
+
+// Development routes for sample data (always available for testing)
+if (process.env.NODE_ENV === 'development' || process.env.NODE_ENV !== 'production') {
+  // Create sample data
+  router.post('/dev/sample-data', async (req, res) => {
+    try {
+      const result = await createSampleData();
+      res.json({
+        success: true,
+        message: 'Sample data created successfully',
+        data: result
+      });
+    } catch (error) {
+      logger.error('Error creating sample data', { error: error.message });
+      res.status(500).json({
+        success: false,
+        error: 'Failed to create sample data',
+        details: error.message
+      });
     }
   });
-});
+
+  // Clear sample data
+  router.delete('/dev/sample-data', async (req, res) => {
+    try {
+      const result = await clearSampleData();
+      res.json({
+        success: true,
+        message: 'Sample data cleared successfully',
+        data: result
+      });
+    } catch (error) {
+      logger.error('Error clearing sample data', { error: error.message });
+      res.status(500).json({
+        success: false,
+        error: 'Failed to clear sample data',
+        details: error.message
+      });
+    }
+  });
+}
 
 module.exports = router;

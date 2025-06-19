@@ -18,7 +18,7 @@ import CheckLinkPage from './pages/CheckLinkPage';
 import ChatPage from './pages/ChatPage';
 import AdminDashboard from './pages/AdminDashboard';
 import CommunityPage from './pages/CommunityPage';
-import CommunityFeedPage from './pages/CommunityFeedPage';
+
 import SubmitArticlePage from './pages/SubmitArticlePage';
 import KnowledgeBasePage from './pages/KnowledgeBasePage';
 import MySubmissionsPage from './pages/MySubmissionsPage';
@@ -128,19 +128,11 @@ function App() {
             }
           />          <Route
             path="/community"
-            element={
-              <ProtectedRoute>
-                <CommunityPage />
-              </ProtectedRoute>
-            }
+            element={<CommunityPage />}
           />
           <Route
             path="/community/feed"
-            element={
-              <ProtectedRoute>
-                <CommunityFeedPage />
-              </ProtectedRoute>
-            }
+            element={<Navigate to="/community?tab=news" replace />}
           />
           <Route
             path="/submit"

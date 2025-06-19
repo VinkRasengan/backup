@@ -26,7 +26,7 @@ try {
       });
       
       // Configure for emulator
-      process.env.FIRESTORE_EMULATOR_HOST = '127.0.0.1:8084';
+      process.env.FIRESTORE_EMULATOR_HOST = '127.0.0.1:8081';
       console.log('🔥 Firebase Admin initialized for emulator');
     }
   }

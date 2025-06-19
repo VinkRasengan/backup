@@ -1,41 +1,35 @@
 const admin = require('firebase-admin');
+const path = require('path');
+
+// Load environment variables
+require('dotenv').config();
 
 let db, collections;
 
 try {
   // Initialize Firebase Admin SDK
   if (!admin.apps.length) {
-    if (process.env.NODE_ENV === 'production') {
-      // Production: Use service account from environment variables
-      const serviceAccount = {
-        projectId: process.env.FIREBASE_PROJECT_ID,
-        clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-        privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n')
-      };
+    // Use production Firebase with service account credentials
+    const serviceAccount = {
+      type: "service_account",
+      project_id: process.env.FIREBASE_PROJECT_ID,
+      client_email: process.env.FIREBASE_CLIENT_EMAIL,
+      private_key: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n')
+    };
 
-      admin.initializeApp({
-        credential: admin.credential.cert(serviceAccount),
-        projectId: process.env.FIREBASE_PROJECT_ID
-      });
+    admin.initializeApp({
+      credential: admin.credential.cert(serviceAccount),
+      projectId: process.env.FIREBASE_PROJECT_ID
+    });
 
-      console.log('🔥 Firebase Admin initialized for production');
-    } else {
-      // Development: Use emulator
-      admin.initializeApp({
-        projectId: process.env.FIREBASE_PROJECT_ID || 'factcheck-1d6e8'
-      });
-      
-      // Configure for emulator
-      process.env.FIRESTORE_EMULATOR_HOST = '127.0.0.1:8084';
-      console.log('🔥 Firebase Admin initialized for emulator');
-    }
+    console.log('🔥 Firebase Admin initialized for production');
   }
 
   db = admin.firestore();
 
   // Firestore collections for Community Service
   collections = {
-    POSTS: 'posts',
+    POSTS: 'posts', // Use 'posts' collection where the actual data is stored
     COMMENTS: 'comments',
     VOTES: 'votes',
     REPORTS: 'reports',

@@ -191,6 +191,8 @@ check-*.js
 *.key
 *.pem
 service-account-*.json
+config/firebase-service-account.json
+firebase-service-account.json
 
 # Security - Database files that may contain secrets
 services/phishtank-service/data/phishtank-database.json

@@ -5,7 +5,7 @@ module.exports = function(app) {
   app.use(
     '/api',
     createProxyMiddleware({
-      target: 'http://localhost:8082',
+      target: 'http://localhost:8080',
       changeOrigin: true,
       timeout: 15000,
       logLevel: 'debug',
@@ -14,12 +14,12 @@ module.exports = function(app) {
         console.log('Request URL:', req.url);
         res.status(503).json({
           error: 'API Gateway unavailable',
-          message: 'Please ensure API Gateway is running on port 8082',
+          message: 'Please ensure API Gateway is running on port 8080',
           requestedUrl: req.url
         });
       },
       onProxyReq: (proxyReq, req, res) => {
-        console.log(`🔄 Proxying ${req.method} ${req.url} to API Gateway (8082)`);
+        console.log(`🔄 Proxying ${req.method} ${req.url} to API Gateway (8080)`);
       },
       onProxyRes: (proxyRes, req, res) => {
         console.log(`✅ Response ${proxyRes.statusCode} for ${req.url}`);
@@ -31,7 +31,7 @@ module.exports = function(app) {
   app.use(
     '/auth',
     createProxyMiddleware({
-      target: 'http://localhost:8082',
+      target: 'http://localhost:8080',
       changeOrigin: true,
       timeout: 15000,
       onError: (err, req, res) => {
@@ -50,7 +50,7 @@ module.exports = function(app) {
   app.use(
     '/users',
     createProxyMiddleware({
-      target: 'http://localhost:8082',
+      target: 'http://localhost:8080',
       changeOrigin: true,
       timeout: 15000,
       onError: (err, req, res) => {
@@ -69,7 +69,7 @@ module.exports = function(app) {
   app.use(
     '/chat',
     createProxyMiddleware({
-      target: 'http://localhost:8082',
+      target: 'http://localhost:8080',
       changeOrigin: true,
       timeout: 15000,
       onError: (err, req, res) => {
@@ -88,7 +88,7 @@ module.exports = function(app) {
   app.use(
     '/news',
     createProxyMiddleware({
-      target: 'http://localhost:8082',
+      target: 'http://localhost:8080',
       changeOrigin: true,
       timeout: 15000,
       onError: (err, req, res) => {
@@ -103,30 +103,13 @@ module.exports = function(app) {
     })
   );
 
-  // Proxy community routes
-  app.use(
-    '/community',
-    createProxyMiddleware({
-      target: 'http://localhost:8082',
-      changeOrigin: true,
-      timeout: 15000,
-      onError: (err, req, res) => {
-        console.log('Community Proxy Error:', err.message);
-        res.status(503).json({
-          error: 'Community service unavailable'
-        });
-      },
-      onProxyReq: (proxyReq, req, res) => {
-        console.log(`👥 Proxying community ${req.method} ${req.url} to API Gateway`);
-      }
-    })
-  );
+
 
   // Proxy links routes
   app.use(
     '/links',
     createProxyMiddleware({
-      target: 'http://localhost:8082',
+      target: 'http://localhost:8080',
       changeOrigin: true,
       timeout: 15000,
       onError: (err, req, res) => {
@@ -145,7 +128,7 @@ module.exports = function(app) {
   app.use(
     '/admin',
     createProxyMiddleware({
-      target: 'http://localhost:8082',
+      target: 'http://localhost:8080',
       changeOrigin: true,
       timeout: 15000,
       onError: (err, req, res) => {

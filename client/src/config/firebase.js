@@ -40,7 +40,7 @@ auth.onAuthStateChanged((user) => {
 if (process.env.NODE_ENV === 'development' && process.env.REACT_APP_USE_EMULATOR === 'true') {
   // Connect to Firestore emulator
   if (!db._delegate._databaseId.projectId.includes('localhost')) {
-    connectFirestoreEmulator(db, 'localhost', 8084);
+    connectFirestoreEmulator(db, 'localhost', 8081);
   }
 
   // Connect to Auth emulator

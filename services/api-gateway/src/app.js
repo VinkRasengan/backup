@@ -26,7 +26,7 @@ const metricsHandler = (req, res) => {
 http_requests_total{method="GET",status="200"} 1
 # HELP up Service status
 # TYPE up gauge
-up{job="api-gateway",instance="localhost:8082"} 1
+up{job="api-gateway",instance="localhost:8080"} 1
 `);
 };
 
@@ -56,7 +56,7 @@ const circuitBreaker = {
 };
 
 const app = express();
-const PORT = process.env.PORT || 8082;
+const PORT = process.env.PORT || 8080;
 const SERVICE_NAME = 'api-gateway';
 
 // Initialize logger
@@ -101,7 +101,7 @@ app.use(cors({
   origin: process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:3000'],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'x-correlation-id']
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-correlation-id', 'X-Request-ID', 'Cache-Control']
 }));
 
 // Global rate limiting
@@ -314,6 +314,36 @@ app.use('/api/votes', createProxyMiddleware({
   }
 }));
 
+// Posts routes (proxy to community service)
+app.use('/api/posts', createProxyMiddleware({
+  target: process.env.COMMUNITY_SERVICE_URL || 'http://localhost:3003',
+  changeOrigin: true,
+  timeout: 30000, // 30 seconds
+  proxyTimeout: 30000,
+  pathRewrite: { '^/api/posts': '/posts' },
+  onProxyReq: (proxyReq, req, res) => {
+    logger.info('Proxying posts request', {
+      method: req.method,
+      url: req.url,
+      target: process.env.COMMUNITY_SERVICE_URL || 'http://localhost:3003'
+    });
+  },
+  onProxyRes: (proxyRes, req, res) => {
+    logger.info('Posts proxy response', {
+      method: req.method,
+      status: proxyRes.statusCode,
+      url: req.url
+    });
+  },
+  onError: (err, req, res) => {
+    logger.error('Community service proxy error (posts)', { error: err.message });
+    res.status(503).json({
+      error: 'Community service unavailable',
+      code: 'SERVICE_UNAVAILABLE'
+    });
+  }
+}));
+
 // Comments routes (proxy to community service)
 app.use('/api/comments', createProxyMiddleware({
   target: process.env.COMMUNITY_SERVICE_URL || 'http://localhost:3003',
@@ -384,19 +414,7 @@ app.use('/security', createProxyMiddleware({
   }
 }));
 
-// Community routes (proxy to community service)
-app.use('/community', createProxyMiddleware({
-  target: process.env.COMMUNITY_SERVICE_URL || "http://localhost:3003",
-  changeOrigin: true,
-  pathRewrite: { '^/community': '' },
-  onError: (err, req, res) => {
-    logger.error('Community service proxy error', { error: err.message });
-    res.status(503).json({
-      error: 'Community service unavailable',
-      code: 'SERVICE_UNAVAILABLE'
-    });
-  }
-}));
+
 
 // Chat routes (proxy to chat service)
 app.use('/chat', createProxyMiddleware({

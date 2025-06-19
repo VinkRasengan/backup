@@ -18,7 +18,7 @@ const services = [
   { name: 'Chat Service', port: 3004, path: 'services/chat-service', command: 'npm start' },
   { name: 'News Service', port: 3005, path: 'services/news-service', command: 'npm start' },
   { name: 'Admin Service', port: 3006, path: 'services/admin-service', command: 'npm start' },
-  { name: 'API Gateway', port: 8082, path: 'services/api-gateway', command: 'npm start' }
+  { name: 'API Gateway', port: 8080, path: 'services/api-gateway', command: 'npm start' }
 ];
 
 const monitoringServices = [
@@ -184,7 +184,7 @@ async function showAccessUrls() {
   console.log('================');
   console.log('🎯 Main Application:');
   console.log('   Frontend:        http://localhost:3000');
-  console.log('   API Gateway:     http://localhost:8082');
+  console.log('   API Gateway:     http://localhost:8080');
   console.log('');
   console.log('📊 Monitoring:');
   console.log('   Grafana:         http://localhost:3010 (admin/admin123)');
@@ -192,9 +192,9 @@ async function showAccessUrls() {
   console.log('   Alertmanager:    http://localhost:9093');
   console.log('');
   console.log('🔧 Health Checks:');
-  console.log('   API Gateway:     http://localhost:8082/health');
-  console.log('   Services Status: http://localhost:8082/services/status');
-  console.log('   Metrics:         http://localhost:8082/metrics');
+  console.log('   API Gateway:     http://localhost:8080/health');
+  console.log('   Services Status: http://localhost:8080/services/status');
+  console.log('   Metrics:         http://localhost:8080/metrics');
   console.log('');
   console.log('🚨 Alerts:');
   console.log('   Webhook Service: http://localhost:5001/alerts');

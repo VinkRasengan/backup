@@ -12,7 +12,7 @@ import {
 } from 'lucide-react';
 import { gsap } from '../../utils/gsap';
 import { useIntersectionObserver } from '../../hooks/useIntersectionObserver';
-import CommentsSection from './CommentsSection';
+import CommentSection from './CommentSection';
 import CommentPreview from './CommentPreview';
 
 const LazyPostCard = ({ 
@@ -279,9 +279,9 @@ const LazyPostCard = ({
           exit={{ opacity: 0, height: 0 }}
           className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700"
         >
-          <CommentsSection
-            linkId={post.id}
-            className="border-0 rounded-none bg-transparent"
+          <CommentSection
+            postId={post.id}
+            initialCommentCount={post.commentCount || 0}
           />
         </motion.div>
       )}

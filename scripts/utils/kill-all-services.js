@@ -21,7 +21,7 @@ const allPorts = [
   { port: 3006, name: 'Admin Service' },
   { port: 3007, name: 'CriminalIP Service' },
   { port: 3008, name: 'PhishTank Service' },
-  { port: 8082, name: 'API Gateway' },
+  { port: 8080, name: 'API Gateway' },
   
   // Monitoring Stack
   { port: 3010, name: 'Grafana' },
@@ -37,7 +37,7 @@ const allPorts = [
   { port: 3009, name: 'Dev Server' },
   { port: 3011, name: 'Dev Server' },
   { port: 3012, name: 'Dev Server' },
-  { port: 8080, name: 'Legacy API Gateway' },
+  { port: 8082, name: 'Legacy API Gateway' },
   { port: 8000, name: 'Dev Server' },
   { port: 8001, name: 'Dev Server' }
 ];

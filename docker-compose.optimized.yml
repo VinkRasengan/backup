@@ -1,0 +1,252 @@
+version: '3.8'
+
+# =============================================================================
+# Optimized Docker Compose Configuration
+# =============================================================================
+
+x-common-variables: &common-variables
+  NODE_ENV: ${NODE_ENV:-production}
+  REDIS_URL: redis://redis:6379
+  LOG_LEVEL: ${LOG_LEVEL:-info}
+
+x-service-defaults: &service-defaults
+  restart: unless-stopped
+  networks:
+    - app-network
+  environment:
+    <<: *common-variables
+  deploy:
+    resources:
+      limits:
+        memory: 512M
+        cpus: '0.5'
+      reservations:
+        memory: 256M
+        cpus: '0.25'
+  logging:
+    driver: "json-file"
+    options:
+      max-size: "10m"
+      max-file: "3"
+
+x-healthcheck-defaults: &healthcheck-defaults
+  interval: 30s
+  timeout: 10s
+  retries: 3
+  start_period: 40s
+
+networks:
+  app-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+
+volumes:
+  redis-data:
+    driver: local
+  postgres-data:
+    driver: local
+
+services:
+  # Redis for caching
+  redis:
+    image: redis:7-alpine
+    container_name: anti-fraud-redis
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis-data:/data
+    networks:
+      - app-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      <<: *healthcheck-defaults
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.25'
+
+  # Database (if needed)
+  postgres:
+    image: postgres:15-alpine
+    container_name: anti-fraud-db
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-antifraud}
+      POSTGRES_USER: ${POSTGRES_USER:-antifraud}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - app-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-antifraud}"]
+      <<: *healthcheck-defaults
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+
+  # API Gateway
+  api-gateway:
+    build:
+      context: .
+      dockerfile: services/api-gateway/Dockerfile
+      cache_from:
+        - ${REGISTRY:-}api-gateway:latest
+    image: ${REGISTRY:-}api-gateway:${TAG:-latest}
+    container_name: anti-fraud-api-gateway
+    ports:
+      - "8080:8080"
+    depends_on:
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      <<: *healthcheck-defaults
+    <<: *service-defaults
+
+  # Authentication Service
+  auth-service:
+    build:
+      context: .
+      dockerfile: services/auth-service/Dockerfile
+      cache_from:
+        - ${REGISTRY:-}auth-service:latest
+    image: ${REGISTRY:-}auth-service:${TAG:-latest}
+    container_name: anti-fraud-auth
+    ports:
+      - "3001:3001"
+    depends_on:
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3001/health/live"]
+      <<: *healthcheck-defaults
+    <<: *service-defaults
+
+  # Link Verification Service
+  link-service:
+    build:
+      context: .
+      dockerfile: services/link-service/Dockerfile
+      cache_from:
+        - ${REGISTRY:-}link-service:latest
+    image: ${REGISTRY:-}link-service:${TAG:-latest}
+    container_name: anti-fraud-link
+    ports:
+      - "3002:3002"
+    depends_on:
+      auth-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3002/health"]
+      <<: *healthcheck-defaults
+    <<: *service-defaults
+
+  # News Service
+  news-service:
+    build:
+      context: .
+      dockerfile: services/news-service/Dockerfile
+      cache_from:
+        - ${REGISTRY:-}news-service:latest
+    image: ${REGISTRY:-}news-service:${TAG:-latest}
+    container_name: anti-fraud-news
+    ports:
+      - "3003:3003"
+    depends_on:
+      auth-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3003/health"]
+      <<: *healthcheck-defaults
+    <<: *service-defaults
+
+  # Chat Service
+  chat-service:
+    build:
+      context: .
+      dockerfile: services/chat-service/Dockerfile
+      cache_from:
+        - ${REGISTRY:-}chat-service:latest
+    image: ${REGISTRY:-}chat-service:${TAG:-latest}
+    container_name: anti-fraud-chat
+    ports:
+      - "3004:3004"
+    depends_on:
+      auth-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3004/health"]
+      <<: *healthcheck-defaults
+    <<: *service-defaults
+
+  # Community Service
+  community-service:
+    build:
+      context: .
+      dockerfile: services/community-service/Dockerfile
+      cache_from:
+        - ${REGISTRY:-}community-service:latest
+    image: ${REGISTRY:-}community-service:${TAG:-latest}
+    container_name: anti-fraud-community
+    ports:
+      - "3005:3005"
+    depends_on:
+      auth-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3005/health"]
+      <<: *healthcheck-defaults
+    <<: *service-defaults
+
+  # Admin Service
+  admin-service:
+    build:
+      context: .
+      dockerfile: services/admin-service/Dockerfile
+      cache_from:
+        - ${REGISTRY:-}admin-service:latest
+    image: ${REGISTRY:-}admin-service:${TAG:-latest}
+    container_name: anti-fraud-admin
+    ports:
+      - "3006:3006"
+    depends_on:
+      auth-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3006/health"]
+      <<: *healthcheck-defaults
+    <<: *service-defaults
+
+  # Frontend Client
+  client:
+    build:
+      context: .
+      dockerfile: client/Dockerfile
+      cache_from:
+        - ${REGISTRY:-}client:latest
+    image: ${REGISTRY:-}client:${TAG:-latest}
+    container_name: anti-fraud-client
+    ports:
+      - "3000:3000"
+    depends_on:
+      api-gateway:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/"]
+      <<: *healthcheck-defaults
+    restart: unless-stopped
+    networks:
+      - app-network
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.25'

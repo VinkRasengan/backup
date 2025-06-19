@@ -76,12 +76,13 @@ class CommunityDataManager {
   async fetchData(params) {
     const key = this.getCacheKey(params);
 
-    // Check cache first
-    const cached = this.getFromCache(params);
-    if (cached) {
-      console.log('📦 Using cached data:', key);
-      return cached;
-    }
+    // Temporarily disable cache for debugging
+    console.log('🚫 Cache disabled for debugging');
+    // const cached = this.getFromCache(params);
+    // if (cached) {
+    //   console.log('📦 Using cached data:', key);
+    //   return cached;
+    // }
 
     // Debounce requests to prevent spam
     if (this.debounceMap.has(key)) {
@@ -185,6 +186,14 @@ class CommunityDataManager {
     }
 
     const data = await response.json();
+    console.log('🔍 API Response structure:', data);
+    console.log('🔍 API Response data field:', data.data);
+    console.log('🔍 API Response success field:', data.success);
+
+    if (!data.success) {
+      throw new Error(data.error || 'API returned unsuccessful response');
+    }
+
     return data.data;
   }
 
@@ -249,19 +258,25 @@ export const useCommunityData = () => {
 
       setLoading(true);
       setError(null);
+      console.log('🔄 Loading set to true, error cleared');
 
       console.log('📡 Calling dataManager.fetchData...');
       const result = await dataManager.fetchData(params);
       console.log('✅ dataManager.fetchData result:', result);
+      console.log('✅ Result posts count:', result?.posts?.length || 0);
+      console.log('✅ Result pagination:', result?.pagination);
 
       setData(result);
+      console.log('✅ Data set successfully');
     } catch (err) {
       if (err.name !== 'AbortError') {
         setError(err.message);
         console.error('❌ Data fetch error:', err);
+        console.error('❌ Error details:', err.stack);
       }
     } finally {
       setLoading(false);
+      console.log('🔄 Loading set to false');
     }
   }, []);
 

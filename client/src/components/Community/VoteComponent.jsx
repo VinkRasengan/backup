@@ -23,11 +23,11 @@ const VoteComponent = ({ linkId, postData, className = '' }) => {
   // Use optimized batch voting hook
   const { votes: batchVoteStats, userVote: batchUserVote, loading: batchLoading, submitVote } = usePostVote(linkId);
 
-  // Legacy state for fallback
+  // Legacy state for fallback (Reddit-style)
   const [legacyVoteStats, setLegacyVoteStats] = useState({
-    safe: 0,
-    unsafe: 0,
-    suspicious: 0,
+    upvotes: 0,
+    downvotes: 0,
+    score: 0,
     total: 0
   });
   const [legacyUserVote, setLegacyUserVote] = useState(null);
@@ -125,9 +125,9 @@ const VoteComponent = ({ linkId, postData, className = '' }) => {
       if (response.ok) {
         const data = await response.json();
         const newStats = {
-          safe: data.statistics?.safe || 0,
-          unsafe: data.statistics?.unsafe || 0,
-          suspicious: data.statistics?.suspicious || 0,
+          upvotes: data.statistics?.upvotes || 0,
+          downvotes: data.statistics?.downvotes || 0,
+          score: data.statistics?.score || 0,
           total: data.statistics?.total || 0
         };
         setLegacyVoteStats(newStats);
@@ -245,9 +245,7 @@ const VoteComponent = ({ linkId, postData, className = '' }) => {
       const oldVote = userVote;
 
       // Add vote animation effect
-      const buttonRef = voteType === 'safe' ? safeButtonRef :
-                       voteType === 'suspicious' ? suspiciousButtonRef :
-                       unsafeButtonRef;
+      const buttonRef = voteType === 'upvote' ? safeButtonRef : unsafeButtonRef;
 
       if (buttonRef.current) {
         gsap.to(buttonRef.current, {
@@ -321,9 +319,9 @@ const VoteComponent = ({ linkId, postData, className = '' }) => {
       // Revert changes on error
       if (postData && postData.voteStats) {
         setLegacyVoteStats({
-          safe: postData.voteStats.safe || 0,
-          unsafe: postData.voteStats.unsafe || 0,
-          suspicious: postData.voteStats.suspicious || 0,
+          upvotes: postData.voteStats.upvotes || 0,
+          downvotes: postData.voteStats.downvotes || 0,
+          score: postData.voteStats.score || 0,
           total: postData.voteStats.total || 0
         });
         setLegacyUserVote(postData.userVote || null);
@@ -354,68 +352,55 @@ const VoteComponent = ({ linkId, postData, className = '' }) => {
 
   return (
     <div className="flex flex-col items-center space-y-1 relative">
-      {/* Safe Vote Button */}
+      {/* Upvote Button */}
       <button
         ref={safeButtonRef}
-        onClick={() => handleVote('safe')}
+        onClick={() => handleVote('upvote')}
         disabled={loading || !user}
         className={`p-1 rounded transition-colors ${
-          userVote === 'safe'
-            ? 'text-green-600 bg-green-100 dark:bg-green-900/30'
+          userVote === 'upvote'
+            ? 'text-orange-600 bg-orange-100 dark:bg-orange-900/30'
             : isDarkMode
-            ? 'text-gray-400 hover:text-green-500'
-            : 'text-gray-500 hover:text-green-500'
+            ? 'text-gray-400 hover:text-orange-500'
+            : 'text-gray-500 hover:text-orange-500'
         } ${!user ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}
-        title={!user ? 'Đăng nhập để vote' : 'Đáng tin cậy'}
+        title={!user ? 'Đăng nhập để vote' : 'Upvote'}
       >
         <ChevronUp
-          className={`w-5 h-5 ${userVote === 'safe' ? 'fill-current' : ''}`}
+          className={`w-5 h-5 ${userVote === 'upvote' ? 'fill-current' : ''}`}
         />
       </button>
 
-      {/* Vote Count */}
+      {/* Vote Score (Reddit-style) */}
       <div
         ref={counterRef}
         className={`text-xs font-bold px-1 min-w-[24px] text-center ${
-          isDarkMode ? 'text-gray-300' : 'text-gray-700'
+          voteStats.score > 0
+            ? 'text-orange-600'
+            : voteStats.score < 0
+            ? 'text-blue-600'
+            : isDarkMode ? 'text-gray-300' : 'text-gray-700'
         }`}
       >
-        {formatNumber(voteStats.total)}
+        {formatNumber(voteStats.score || 0)}
       </div>
 
-      {/* Suspicious Vote Button */}
-      <button
-        ref={suspiciousButtonRef}
-        onClick={() => handleVote('suspicious')}
-        disabled={loading || !user}
-        className={`p-1 rounded transition-colors ${
-          userVote === 'suspicious'
-            ? 'text-yellow-600 bg-yellow-100 dark:bg-yellow-900/30'
-            : isDarkMode
-            ? 'text-gray-400 hover:text-yellow-500'
-            : 'text-gray-500 hover:text-yellow-500'
-        } ${!user ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}
-        title={!user ? 'Đăng nhập để vote' : 'Nghi ngờ'}
-      >
-        <span className="text-sm">⚠</span>
-      </button>
-
-      {/* Unsafe Vote Button */}
+      {/* Downvote Button */}
       <button
         ref={unsafeButtonRef}
-        onClick={() => handleVote('unsafe')}
+        onClick={() => handleVote('downvote')}
         disabled={loading || !user}
         className={`p-1 rounded transition-colors ${
-          userVote === 'unsafe'
-            ? 'text-red-600 bg-red-100 dark:bg-red-900/30'
+          userVote === 'downvote'
+            ? 'text-blue-600 bg-blue-100 dark:bg-blue-900/30'
             : isDarkMode
-            ? 'text-gray-400 hover:text-red-500'
-            : 'text-gray-500 hover:text-red-500'
+            ? 'text-gray-400 hover:text-blue-500'
+            : 'text-gray-500 hover:text-blue-500'
         } ${!user ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}
-        title={!user ? 'Đăng nhập để vote' : 'Không đáng tin'}
+        title={!user ? 'Đăng nhập để vote' : 'Downvote'}
       >
         <ChevronDown
-          className={`w-5 h-5 ${userVote === 'unsafe' ? 'fill-current' : ''}`}
+          className={`w-5 h-5 ${userVote === 'downvote' ? 'fill-current' : ''}`}
         />
       </button>
 

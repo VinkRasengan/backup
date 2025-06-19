@@ -77,7 +77,6 @@ const FeatureMenu = ({ className = '' }) => {
       description: 'Tham gia cộng đồng kiểm chứng',
       color: 'purple',
       submenu: [
-        { label: 'Thảo luận', path: '/community/discussions', icon: MessageCircle },
         { label: 'Đóng góp', path: '/community/contribute', icon: Users },
         { label: 'Báo cáo', path: '/community/reports', icon: Shield }
       ]

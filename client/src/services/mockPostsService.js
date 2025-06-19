@@ -256,8 +256,8 @@ class MockPostsService {
 
   // Check if we should use mock data
   shouldUseMockData() {
-    // Use mock data for testing when API is not available
-    return true; // For now, always use mock data for testing
+    // Use real API now that it's working
+    return false; // Use real API instead of mock data
   }
 }
 
