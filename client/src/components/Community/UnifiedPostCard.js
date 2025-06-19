@@ -227,11 +227,13 @@ const UnifiedPostCard = ({
           </div>
         </div>
 
-        {/* Comment Preview */}
-        <CommentPreview
-          linkId={post.id}
-          onToggleFullComments={() => setShowFullComments(!showFullComments)}
-        />
+        {/* Comment Preview - Only show when not showing full comments */}
+        {!showFullComments && (
+          <CommentPreview
+            linkId={post.id}
+            onToggleFullComments={() => setShowFullComments(true)}
+          />
+        )}
 
         {/* Full Comments Section */}
         <AnimatePresence>
@@ -242,7 +244,12 @@ const UnifiedPostCard = ({
               exit={{ opacity: 0, height: 0 }}
               className="border-t border-gray-200 dark:border-gray-700"
             >
-              <CommentsSection linkId={post.id} />
+              <CommentsSection
+                postId={post.id}
+                linkId={post.id}
+                initialCommentCount={post.commentCount || 0}
+                onClose={() => setShowFullComments(false)}
+              />
             </motion.div>
           )}
         </AnimatePresence>
@@ -445,11 +452,13 @@ const UnifiedPostCard = ({
         </div>
       </div>
 
-      {/* Comment Preview */}
-      <CommentPreview
-        linkId={post.id}
-        onToggleFullComments={() => setShowFullComments(!showFullComments)}
-      />
+      {/* Comment Preview - Only show when not showing full comments */}
+      {!showFullComments && (
+        <CommentPreview
+          linkId={post.id}
+          onToggleFullComments={() => setShowFullComments(true)}
+        />
+      )}
 
       {/* Full Comments Section */}
       <AnimatePresence>
@@ -460,7 +469,12 @@ const UnifiedPostCard = ({
             exit={{ opacity: 0, height: 0 }}
             className="border-t border-gray-200 dark:border-gray-700"
           >
-            <CommentsSection postId={post.id} initialCommentCount={post.commentCount || 0} />
+            <CommentsSection
+              postId={post.id}
+              linkId={post.id}
+              initialCommentCount={post.commentCount || 0}
+              onClose={() => setShowFullComments(false)}
+            />
           </motion.div>
         )}
       </AnimatePresence>
