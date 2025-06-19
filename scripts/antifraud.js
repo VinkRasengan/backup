@@ -31,10 +31,10 @@ class AntiFraudManager {
       'setup': 'Complete setup: install dependencies, configure tech stack',
       'install': 'Install all dependencies',
       'clean': 'Clean up all resources and processes',
-      
+
       // Development
-      'start': 'Start all services locally',
-      'dev': 'Start in development mode with hot reload',
+      'start': 'Start full stack (all services + client) - like old start:full',
+      'dev': 'Start services only in development mode (no client)',
       'stop': 'Stop all running services',
       'restart': 'Restart all services',
       
@@ -62,6 +62,13 @@ class AntiFraudManager {
       'restore': 'Restore from backup',
       'help': 'Show this help message'
     };
+  }
+
+  /**
+   * Helper function for delays
+   */
+  async delay(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
   }
 
   /**
@@ -282,54 +289,137 @@ services:
   }
 
   /**
-   * Start all services locally
+   * Start all services locally (equivalent to old start:full)
    */
   async start(options) {
-    console.log('🚀 Starting all services...');
-    
-    // Kill existing processes
-    await this.stop({ silent: true });
-    
-    // Start Redis if not running
-    await this.startRedis();
-    
-    // Start services
-    const promises = this.services.map(service => this.startService(service));
-    
-    // Start client
-    promises.push(this.startClient());
-    
-    await Promise.all(promises);
-    
-    // Show access info
-    this.showAccessInfo();
+    try {
+      console.log('🚀 Starting full stack application...');
+
+      // Kill existing processes first
+      console.log('🛑 Stopping existing processes...');
+      await this.stop({ silent: true });
+
+      // Wait a moment for processes to fully stop
+      console.log('⏳ Waiting for processes to stop...');
+      await this.delay(2000);
+
+      // Start Redis if not running
+      console.log('🔴 Setting up Redis...');
+      const redisStarted = await this.startRedis();
+
+      if (redisStarted) {
+        // Wait for Redis to be ready
+        console.log('⏳ Waiting for Redis to be ready...');
+        await this.delay(3000);
+      }
+
+      console.log('📦 Starting backend services...');
+
+      // Start services one by one with delays to avoid port conflicts
+      for (const service of this.services) {
+        console.log(`🚀 Starting ${service.name}...`);
+        await this.startService(service);
+        await this.delay(2000); // Wait between service starts
+      }
+
+      // Wait for services to be ready
+      console.log('⏳ Waiting for services to be ready...');
+      await this.delay(5000); // Reduced from 10s
+
+      // Start client last
+      console.log('🌐 Starting React client...');
+      await this.startClient();
+
+      // Wait for client to start
+      console.log('⏳ Waiting for client to start...');
+      await this.delay(3000); // Reduced from 5s
+
+      // Show access info
+      this.showAccessInfo();
+
+      console.log('✅ Full stack application started successfully!');
+
+    } catch (error) {
+      console.error('❌ Failed to start application:', error.message);
+      console.log('🔧 Try running: npm run fix-ports && npm start');
+      throw error;
+    }
   }
 
   /**
-   * Start in development mode
+   * Start in development mode (services only, no client)
    */
   async dev(options) {
-    console.log('🔧 Starting in development mode...');
+    console.log('🔧 Starting in development mode (services only)...');
     process.env.NODE_ENV = 'development';
-    await this.start(options);
+
+    // Kill existing processes first
+    await this.stop({ silent: true });
+    await this.delay(2000);
+
+    // Start Redis
+    await this.startRedis();
+    await this.delay(3000);
+
+    console.log('📦 Starting backend services in dev mode...');
+
+    // Start services with nodemon for hot reload
+    for (const service of this.services) {
+      await this.startServiceDev(service);
+      await this.delay(2000);
+    }
+
+    console.log('✅ Development services started!');
+    console.log('💡 Start client separately with: cd client && npm start');
+
+    // Show service info
+    console.log('\n🌐 Service URLs:');
+    this.services.forEach(service => {
+      console.log(`  ${service.name}: http://localhost:${service.port}`);
+    });
   }
 
   /**
    * Stop all services
    */
   async stop(options) {
-    console.log('🛑 Stopping all services...');
-    
-    if (this.isWindows) {
-      try {
-        await this.runCommand('taskkill', ['/F', '/IM', 'node.exe'], { silent: true });
-      } catch {}
-    } else {
-      try {
-        await this.runCommand('pkill', ['-f', 'node'], { silent: true });
-      } catch {}
+    if (!options?.silent) {
+      console.log('🛑 Stopping all services...');
     }
-    
+
+    // Kill processes by port (more reliable)
+    const ports = [3000, 3001, 3002, 3003, 3004, 3005, 3006, 8080];
+
+    for (const port of ports) {
+      try {
+        const pid = await this.getPortPid(port);
+        if (pid) {
+          if (!options?.silent) {
+            console.log(`  🛑 Stopping process on port ${port} (PID: ${pid})`);
+          }
+
+          if (this.isWindows) {
+            await this.runCommand('taskkill', ['/F', '/PID', pid], { silent: true });
+          } else {
+            await this.runCommand('kill', ['-9', pid], { silent: true });
+          }
+        }
+      } catch (error) {
+        // Port not in use or couldn't kill - that's fine
+      }
+    }
+
+    // Also try to kill by process name as backup
+    try {
+      if (this.isWindows) {
+        await this.runCommand('taskkill', ['/F', '/IM', 'node.exe'], { silent: true });
+      } else {
+        await this.runCommand('pkill', ['-f', 'node'], { silent: true });
+      }
+    } catch {
+      // Process might not exist
+    }
+
     if (!options?.silent) {
       console.log('✅ All services stopped');
     }
@@ -468,25 +558,104 @@ services:
     const servicePath = path.join(this.projectRoot, 'services', service.name);
     try {
       await fs.access(servicePath);
-      console.log(`Starting ${service.name}...`);
-      
+      console.log(`  🚀 Starting ${service.name} on port ${service.port}...`);
+
       const env = {
         ...process.env,
         PORT: service.port,
         NODE_ENV: process.env.NODE_ENV || 'development',
         REDIS_HOST: 'localhost',
+        REDIS_PORT: '6379',
         CIRCUIT_BREAKER_ENABLED: 'true',
-        EVENT_BUS_ENABLED: 'true'
+        EVENT_BUS_ENABLED: 'true',
+        SERVICE_AUTH_ENABLED: 'true'
       };
-      
-      spawn('npm', ['start'], {
+
+      // Use full path to npm on Windows to avoid ENOENT
+      const npmCommand = this.isWindows ? 'npm.cmd' : 'npm';
+
+      const child = spawn(npmCommand, ['start'], {
         cwd: servicePath,
         env,
         detached: true,
-        stdio: 'ignore'
+        stdio: ['ignore', 'pipe', 'pipe'],
+        shell: true // Important for Windows
       });
-    } catch {
-      console.warn(`⚠️  Could not start ${service.name}`);
+
+      // Handle startup errors
+      child.on('error', (error) => {
+        console.warn(`    [${service.name}] Start error: ${error.message}`);
+      });
+
+      // Log service startup (but don't wait for it)
+      child.stdout?.on('data', (data) => {
+        const output = data.toString().trim();
+        if (output && !output.includes('webpack') && !output.includes('compiled')) {
+          console.log(`    [${service.name}] ${output}`);
+        }
+      });
+
+      child.stderr?.on('data', (data) => {
+        const output = data.toString().trim();
+        if (output && !output.includes('ExperimentalWarning') && !output.includes('DeprecationWarning')) {
+          console.log(`    [${service.name}] ${output}`);
+        }
+      });
+
+      console.log(`  ✅ ${service.name} started`);
+    } catch (error) {
+      console.warn(`  ⚠️  Could not start ${service.name}: ${error.message}`);
+    }
+  }
+
+  async startServiceDev(service) {
+    const servicePath = path.join(this.projectRoot, 'services', service.name);
+    try {
+      await fs.access(servicePath);
+      console.log(`  🔧 Starting ${service.name} in dev mode on port ${service.port}...`);
+
+      const env = {
+        ...process.env,
+        PORT: service.port,
+        NODE_ENV: 'development',
+        REDIS_HOST: 'localhost',
+        REDIS_PORT: '6379',
+        CIRCUIT_BREAKER_ENABLED: 'true',
+        EVENT_BUS_ENABLED: 'true',
+        SERVICE_AUTH_ENABLED: 'true'
+      };
+
+      // Try to use nodemon if available, otherwise use npm start
+      let command = 'npm';
+      let args = ['run', 'dev'];
+
+      try {
+        await fs.access(path.join(servicePath, 'package.json'));
+        const packageJson = JSON.parse(await fs.readFile(path.join(servicePath, 'package.json'), 'utf8'));
+        if (!packageJson.scripts?.dev) {
+          args = ['start'];
+        }
+      } catch {
+        args = ['start'];
+      }
+
+      const child = spawn(command, args, {
+        cwd: servicePath,
+        env,
+        detached: true,
+        stdio: ['ignore', 'pipe', 'pipe']
+      });
+
+      child.stdout?.on('data', (data) => {
+        const output = data.toString().trim();
+        if (output) {
+          console.log(`    [${service.name}] ${output}`);
+        }
+      });
+
+      console.log(`  ✅ ${service.name} started in dev mode`);
+    } catch (error) {
+      console.warn(`  ⚠️  Could not start ${service.name} in dev mode: ${error.message}`);
     }
   }
 
@@ -494,25 +663,101 @@ services:
     const clientPath = path.join(this.projectRoot, 'client');
     try {
       await fs.access(clientPath);
-      console.log('Starting React client...');
-      
-      spawn('npm', ['start'], {
+      console.log('  🌐 Starting React client on port 3000...');
+
+      const env = {
+        ...process.env,
+        REACT_APP_API_URL: 'http://localhost:8080',
+        BROWSER: 'none' // Prevent auto-opening browser
+      };
+
+      // Use full path to npm on Windows
+      const npmCommand = this.isWindows ? 'npm.cmd' : 'npm';
+
+      const child = spawn(npmCommand, ['start'], {
         cwd: clientPath,
+        env,
         detached: true,
-        stdio: 'ignore'
+        stdio: ['ignore', 'pipe', 'pipe'],
+        shell: true
       });
-    } catch {
-      console.warn('⚠️  Could not start client');
+
+      child.on('error', (error) => {
+        console.warn(`    [client] Start error: ${error.message}`);
+      });
+
+      child.stdout?.on('data', (data) => {
+        const output = data.toString().trim();
+        if (output && !output.includes('webpack compiled') && !output.includes('Compiled successfully')) {
+          console.log(`    [client] ${output}`);
+        }
+      });
+
+      console.log('  ✅ React client started');
+    } catch (error) {
+      console.warn(`  ⚠️  Could not start client: ${error.message}`);
     }
   }
 
   async startRedis() {
     try {
       await this.runCommand('redis-cli', ['ping'], { silent: true });
-      console.log('✅ Redis already running');
+      console.log('  ✅ Redis already running');
+      return true;
     } catch {
-      console.log('Starting Redis with Docker...');
-      await this.runCommand('docker', ['run', '-d', '--name', 'antifraud-redis', '-p', '6379:6379', 'redis:7-alpine']);
+      console.log('  🔴 Redis not running, attempting to start...');
+
+      // Try to start with Docker first
+      try {
+        // Check if Docker is available
+        await this.runCommand('docker', ['--version'], { silent: true });
+
+        // Remove existing container if any
+        await this.runCommand('docker', ['rm', '-f', 'antifraud-redis'], { silent: true });
+
+        // Start new Redis container
+        await this.runCommand('docker', [
+          'run', '-d',
+          '--name', 'antifraud-redis',
+          '-p', '6379:6379',
+          '--restart', 'unless-stopped',
+          'redis:7-alpine',
+          'redis-server'
+        ], { silent: true });
+
+        // Wait for Redis to start
+        await this.delay(3000);
+
+        // Test if Redis is working
+        await this.runCommand('redis-cli', ['ping'], { silent: true });
+        console.log('  ✅ Redis started with Docker');
+        return true;
+
+      } catch (dockerError) {
+        console.log('  ⚠️  Docker not available, trying local Redis...');
+
+        // Try to start local Redis service
+        try {
+          if (this.isWindows) {
+            await this.runCommand('net', ['start', 'redis'], { silent: true });
+          } else {
+            await this.runCommand('sudo', ['service', 'redis-server', 'start'], { silent: true });
+          }
+
+          await this.delay(2000);
+          await this.runCommand('redis-cli', ['ping'], { silent: true });
+          console.log('  ✅ Local Redis service started');
+          return true;
+
+        } catch (localError) {
+          console.warn('  ❌ Could not start Redis automatically');
+          console.warn('     Please install Redis or Docker manually:');
+          console.warn('     - Redis: https://redis.io/download');
+          console.warn('     - Docker: https://docker.com/get-started');
+          console.warn('     Services will continue without Redis (some features disabled)');
+          return false;
+        }
+      }
     }
   }
 
@@ -555,17 +800,15 @@ services:
   async getPortPid(port) {
     try {
       if (this.isWindows) {
-        const result = await this.runCommand('netstat', ['-ano'], { silent: true, capture: true });
-        const lines = result.split('\n');
-        for (const line of lines) {
-          if (line.includes(`:${port}`) && line.includes('LISTENING')) {
-            const parts = line.trim().split(/\s+/);
-            return parts[parts.length - 1];
-          }
-        }
+        // Use PowerShell for more reliable results on Windows
+        const command = `Get-NetTCPConnection -LocalPort ${port} -State Listen | Select-Object -ExpandProperty OwningProcess`;
+        const result = await this.runCommand('powershell', ['-Command', command], { silent: true, capture: true });
+        const pid = result.trim();
+        return pid && pid !== '' ? pid : null;
       } else {
         const result = await this.runCommand('lsof', ['-ti', `:${port}`], { silent: true, capture: true });
-        return result.trim();
+        const pid = result.trim();
+        return pid && pid !== '' ? pid : null;
       }
     } catch {
       return null;
@@ -583,28 +826,58 @@ services:
 
   async runCommand(command, args = [], options = {}) {
     return new Promise((resolve, reject) => {
+      // Fix npm command for Windows
+      if (command === 'npm' && this.isWindows) {
+        command = 'npm.cmd';
+      }
+
+      // Determine stdio configuration
+      let stdio;
+      if (options.capture) {
+        stdio = 'pipe';
+      } else if (options.silent) {
+        stdio = 'pipe';
+      } else {
+        stdio = 'inherit';
+      }
+
       const child = spawn(command, args, {
-        stdio: options.silent ? 'pipe' : 'inherit',
-        shell: this.isWindows,
+        stdio: stdio,
+        shell: true, // Always use shell for better compatibility
         cwd: options.cwd || this.projectRoot
       });
 
       let output = '';
-      if (options.capture) {
+      let errorOutput = '';
+
+      if (options.capture || options.silent) {
         child.stdout?.on('data', (data) => {
           output += data.toString();
+        });
+
+        child.stderr?.on('data', (data) => {
+          errorOutput += data.toString();
         });
       }
 
       child.on('close', (code) => {
-        if (code === 0) {
+        if (code === 0 || options.silent) {
           resolve(options.capture ? output : undefined);
         } else {
-          reject(new Error(`Command failed with code ${code}`));
+          const error = new Error(`Command failed with code ${code}`);
+          error.stderr = errorOutput;
+          error.stdout = output;
+          reject(error);
         }
       });
 
-      child.on('error', reject);
+      child.on('error', (error) => {
+        if (options.silent) {
+          resolve('');
+        } else {
+          reject(error);
+        }
+      });
 
       if (options.input) {
         child.stdin?.write(options.input);
@@ -642,9 +915,26 @@ services:
     console.log('  node scripts/antifraud.js status    # Check system status');
   }
 
+
+
   // Placeholder methods for brevity
-  async clean(options) { console.log('🧹 Cleaning up...'); }
-  async restart(options) { await this.stop(); await this.start(options); }
+  async clean(options) {
+    console.log('🧹 Cleaning up...');
+    await this.stop();
+    try {
+      await this.runCommand('docker', ['rm', '-f', 'antifraud-redis'], { silent: true });
+      await this.runCommand('docker', ['system', 'prune', '-f'], { silent: true });
+    } catch {}
+    console.log('✅ Cleanup completed');
+  }
+
+  async restart(options) {
+    console.log('🔄 Restarting all services...');
+    await this.stop();
+    await this.delay(3000);
+    await this.start(options);
+  }
+
   async deployK8sIstio(options) { console.log('☸️🕸️  Deploying K8s + Istio...'); }
   async deployK8sConsul(options) { console.log('☸️🔗 Deploying K8s + Consul...'); }
   async testUnit(options) { console.log('🧪 Running unit tests...'); }

@@ -11,10 +11,10 @@ const getApiBaseUrl = () => {
 
   // Fallback based on environment
   if (process.env.NODE_ENV === 'production') {
-    return '/api'; // Use relative URL for production (handled by _redirects)
+    return '/'; // Use relative URL for production (handled by _redirects)
   }
 
-  return 'http://localhost:8080/api'; // Development fallback (API Gateway port)
+  return 'http://localhost:8080'; // Development fallback (API Gateway port)
 };
 
 const api = axios.create({
