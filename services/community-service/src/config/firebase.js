@@ -32,6 +32,7 @@ try {
     POSTS: 'posts', // Use 'posts' collection where the actual data is stored
     COMMENTS: 'comments',
     VOTES: 'votes',
+    COMMENT_VOTES: 'comment_votes', // For comment voting
     REPORTS: 'reports',
     USERS: 'users' // For user stats
   };

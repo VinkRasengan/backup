@@ -64,7 +64,80 @@ app.use('/community', createProxyMiddleware({
   }
 }));
 
-// API routes with /api prefix (for frontend compatibility)
+// Specific API routes for community service (MUST come before general /api/community)
+app.use('/api/votes', createProxyMiddleware({
+  target: 'http://localhost:3003',
+  changeOrigin: true,
+  pathRewrite: {
+    '^/api/votes': '/votes' // Remove /api prefix, keep /votes
+  },
+  onProxyReq: (proxyReq, req, res) => {
+    console.log(`🔄 Proxying to votes: ${req.method} ${req.url} -> ${proxyReq.path}`);
+    console.log(`📦 Request body:`, req.body);
+
+    // Forward request body for POST/PUT/PATCH requests
+    if (req.body && (req.method === 'POST' || req.method === 'PUT' || req.method === 'PATCH')) {
+      const bodyData = JSON.stringify(req.body);
+      console.log(`📤 Forwarding body:`, bodyData);
+      proxyReq.setHeader('Content-Type', 'application/json');
+      proxyReq.setHeader('Content-Length', Buffer.byteLength(bodyData));
+      proxyReq.write(bodyData);
+    }
+  },
+  onError: (err, req, res) => {
+    console.error('❌ Votes service proxy error:', err.message);
+    res.status(503).json({
+      error: 'Community service unavailable',
+      code: 'SERVICE_UNAVAILABLE'
+    });
+  }
+}));
+
+app.use('/api/comments', createProxyMiddleware({
+  target: 'http://localhost:3003',
+  changeOrigin: true,
+  pathRewrite: {
+    '^/api/comments': '/comments' // Remove /api prefix, keep /comments
+  },
+  onProxyReq: (proxyReq, req, res) => {
+    console.log(`🔄 Proxying to comments: ${req.method} ${req.url} -> ${proxyReq.path}`);
+
+    // Forward request body for POST/PUT/PATCH requests
+    if (req.body && (req.method === 'POST' || req.method === 'PUT' || req.method === 'PATCH')) {
+      const bodyData = JSON.stringify(req.body);
+      proxyReq.setHeader('Content-Type', 'application/json');
+      proxyReq.setHeader('Content-Length', Buffer.byteLength(bodyData));
+      proxyReq.write(bodyData);
+    }
+  },
+  onError: (err, req, res) => {
+    console.error('❌ Comments service proxy error:', err.message);
+    res.status(503).json({
+      error: 'Community service unavailable',
+      code: 'SERVICE_UNAVAILABLE'
+    });
+  }
+}));
+
+app.use('/api/posts', createProxyMiddleware({
+  target: 'http://localhost:3003',
+  changeOrigin: true,
+  pathRewrite: {
+    '^/api/posts': '/posts' // Remove /api prefix, keep /posts
+  },
+  onProxyReq: (proxyReq, req, res) => {
+    console.log(`🔄 Proxying to posts: ${req.method} ${req.url} -> ${proxyReq.path}`);
+  },
+  onError: (err, req, res) => {
+    console.error('❌ Posts service proxy error:', err.message);
+    res.status(503).json({
+      error: 'Community service unavailable',
+      code: 'SERVICE_UNAVAILABLE'
+    });
+  }
+}));
+
+// General API routes with /api prefix (for frontend compatibility) - AFTER specific routes
 app.use('/api/community', createProxyMiddleware({
   target: 'http://localhost:3003',
   changeOrigin: true,

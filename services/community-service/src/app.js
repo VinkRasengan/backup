@@ -17,6 +17,7 @@ const votesRoutes = require('./routes/votes');
 const reportsRoutes = require('./routes/reports');
 const firebaseConfig = require('./config/firebase');
 const errorHandler = require('./middleware/errorHandler');
+const { authMiddleware } = require('./middleware/auth');
 
 const app = express();
 // Prometheus metrics setup
@@ -105,6 +106,9 @@ app.use((req, res, next) => {
 });
 
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// Authentication middleware
+app.use(authMiddleware);
 
 // Logging middleware
 app.use(logger.logRequest.bind(logger));

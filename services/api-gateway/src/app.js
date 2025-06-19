@@ -407,6 +407,80 @@ app.use('/api/links', createProxyMiddleware({
   }
 }));
 
+// Votes routes (proxy to community service) - MOVED BEFORE /api/community
+app.use('/api/votes', createProxyMiddleware({
+  target: process.env.COMMUNITY_SERVICE_URL || 'http://localhost:3003',
+  changeOrigin: true,
+  timeout: 30000, // 30 seconds
+  proxyTimeout: 30000,
+  pathRewrite: { '^/api/votes': '/votes' },
+  onProxyReq: (proxyReq, req, res) => {
+    logger.info('Proxying votes request', {
+      method: req.method,
+      url: req.url,
+      target: proxyReq.path
+    });
+  },
+  onProxyRes: (proxyRes, req, res) => {
+    logger.info('Votes proxy response', {
+      status: proxyRes.statusCode,
+      url: req.url
+    });
+  },
+  onError: (err, req, res) => {
+    logger.error('Community service proxy error (votes)', { error: err.message });
+    res.status(503).json({
+      error: 'Community service unavailable',
+      code: 'SERVICE_UNAVAILABLE'
+    });
+  }
+}));
+
+// Posts routes (proxy to community service) - MOVED BEFORE /api/community
+app.use('/api/posts', createProxyMiddleware({
+  target: process.env.COMMUNITY_SERVICE_URL || 'http://localhost:3003',
+  changeOrigin: true,
+  timeout: 30000, // 30 seconds
+  proxyTimeout: 30000,
+  pathRewrite: { '^/api/posts': '/posts' },
+  onProxyReq: (proxyReq, req, res) => {
+    logger.info('Proxying posts request', {
+      method: req.method,
+      url: req.url,
+      target: process.env.COMMUNITY_SERVICE_URL || 'http://localhost:3003'
+    });
+  },
+  onProxyRes: (proxyRes, req, res) => {
+    logger.info('Posts proxy response', {
+      method: req.method,
+      status: proxyRes.statusCode,
+      url: req.url
+    });
+  },
+  onError: (err, req, res) => {
+    logger.error('Community service proxy error (posts)', { error: err.message });
+    res.status(503).json({
+      error: 'Community service unavailable',
+      code: 'SERVICE_UNAVAILABLE'
+    });
+  }
+}));
+
+// Comments routes (proxy to community service) - MOVED BEFORE /api/community
+app.use('/api/comments', createProxyMiddleware({
+  target: process.env.COMMUNITY_SERVICE_URL || 'http://localhost:3003',
+  changeOrigin: true,
+  pathRewrite: { '^/api/comments': '/comments' },
+  onError: (err, req, res) => {
+    logger.error('Community service proxy error (comments)', { error: err.message });
+    res.status(503).json({
+      error: 'Community service unavailable',
+      code: 'SERVICE_UNAVAILABLE'
+    });
+  }
+}));
+
+// General community routes (proxy to community service) - MOVED AFTER specific routes
 app.use('/api/community', createProxyMiddleware({
   target: process.env.COMMUNITY_SERVICE_URL || 'http://localhost:3003',
   changeOrigin: true,
@@ -454,79 +528,6 @@ app.use('/api/admin', createProxyMiddleware({
     logger.error('Admin service proxy error', { error: err.message });
     res.status(503).json({
       error: 'Admin service unavailable',
-      code: 'SERVICE_UNAVAILABLE'
-    });
-  }
-}));
-
-// Votes routes (proxy to community service)
-app.use('/api/votes', createProxyMiddleware({
-  target: process.env.COMMUNITY_SERVICE_URL || 'http://localhost:3003',
-  changeOrigin: true,
-  timeout: 30000, // 30 seconds
-  proxyTimeout: 30000,
-  pathRewrite: { '^/api/votes': '/votes' },
-  onProxyReq: (proxyReq, req, res) => {
-    logger.info('Proxying votes request', {
-      method: req.method,
-      url: req.url,
-      target: proxyReq.path
-    });
-  },
-  onProxyRes: (proxyRes, req, res) => {
-    logger.info('Votes proxy response', {
-      status: proxyRes.statusCode,
-      url: req.url
-    });
-  },
-  onError: (err, req, res) => {
-    logger.error('Community service proxy error (votes)', { error: err.message });
-    res.status(503).json({
-      error: 'Community service unavailable',
-      code: 'SERVICE_UNAVAILABLE'
-    });
-  }
-}));
-
-// Posts routes (proxy to community service)
-app.use('/api/posts', createProxyMiddleware({
-  target: process.env.COMMUNITY_SERVICE_URL || 'http://localhost:3003',
-  changeOrigin: true,
-  timeout: 30000, // 30 seconds
-  proxyTimeout: 30000,
-  pathRewrite: { '^/api/posts': '/posts' },
-  onProxyReq: (proxyReq, req, res) => {
-    logger.info('Proxying posts request', {
-      method: req.method,
-      url: req.url,
-      target: process.env.COMMUNITY_SERVICE_URL || 'http://localhost:3003'
-    });
-  },
-  onProxyRes: (proxyRes, req, res) => {
-    logger.info('Posts proxy response', {
-      method: req.method,
-      status: proxyRes.statusCode,
-      url: req.url
-    });
-  },
-  onError: (err, req, res) => {
-    logger.error('Community service proxy error (posts)', { error: err.message });
-    res.status(503).json({
-      error: 'Community service unavailable',
-      code: 'SERVICE_UNAVAILABLE'
-    });
-  }
-}));
-
-// Comments routes (proxy to community service)
-app.use('/api/comments', createProxyMiddleware({
-  target: process.env.COMMUNITY_SERVICE_URL || 'http://localhost:3003',
-  changeOrigin: true,
-  pathRewrite: { '^/api/comments': '/comments' },
-  onError: (err, req, res) => {
-    logger.error('Community service proxy error (comments)', { error: err.message });
-    res.status(503).json({
-      error: 'Community service unavailable',
       code: 'SERVICE_UNAVAILABLE'
     });
   }

@@ -1,14 +1,7 @@
 // Community API Service - Voting, Comments, Reports
 const getApiBaseUrl = () => {
-  if (process.env.REACT_APP_API_URL) {
-    return process.env.REACT_APP_API_URL.replace('/api', ''); // Remove /api suffix if present
-  }
-
-  if (process.env.NODE_ENV === 'production') {
-    return ''; // Use relative URL for production
-  }
-
-  return 'http://localhost:8080'; // Development fallback (API Gateway)
+  // Always use relative URLs to leverage React dev server proxy
+  return '';
 };
 
 const API_BASE_URL = getApiBaseUrl();
@@ -44,12 +37,24 @@ class CommunityAPI {
   // VOTING ENDPOINTS
   
   // Submit or update vote for a link
-  async submitVote(linkId, voteType) {
+  async submitVote(linkId, voteType, userId = null, userEmail = null) {
     try {
+      // Get user info from auth context if not provided
+      const authToken = this.getAuthToken();
+      if (!userId && authToken) {
+        // Try to extract user info from token or get from auth context
+        userId = this.getCurrentUserId();
+        userEmail = this.getCurrentUserEmail();
+      }
+
       const response = await fetch(`${this.baseURL}/api/votes/${linkId}`, {
         method: 'POST',
         headers: this.getAuthHeaders(),
-        body: JSON.stringify({ voteType }) // 'safe', 'unsafe', 'suspicious'
+        body: JSON.stringify({
+          voteType, // 'upvote', 'downvote' (Reddit-style)
+          userId,
+          userEmail
+        })
       });
       return await this.handleResponse(response);
     } catch (error) {
@@ -103,12 +108,25 @@ class CommunityAPI {
   // COMMENTS ENDPOINTS
 
   // Add comment to a link
-  async addComment(linkId, content) {
+  async addComment(linkId, content, userId = null, userEmail = null, displayName = null) {
     try {
-      const response = await fetch(`${this.baseURL}/api/comments/${linkId}`, {
+      // Get user info from auth context if not provided
+      if (!userId) {
+        userId = this.getCurrentUserId();
+        userEmail = this.getCurrentUserEmail();
+        displayName = this.getCurrentUserDisplayName();
+      }
+
+      const response = await fetch(`${this.baseURL}/api/comments`, {
         method: 'POST',
         headers: this.getAuthHeaders(),
-        body: JSON.stringify({ content })
+        body: JSON.stringify({
+          postId: linkId,
+          content,
+          userId,
+          userEmail,
+          displayName: displayName || 'Anonymous User'
+        })
       });
       return await this.handleResponse(response);
     } catch (error) {
@@ -306,11 +324,79 @@ class CommunityAPI {
     return !!this.getAuthToken();
   }
 
+  // Get current user ID from auth context
+  getCurrentUserId() {
+    try {
+      // Try to get from Firebase auth
+      if (window.firebase && window.firebase.auth && window.firebase.auth().currentUser) {
+        return window.firebase.auth().currentUser.uid;
+      }
+
+      // Try to get from localStorage
+      const user = localStorage.getItem('user');
+      if (user) {
+        const userData = JSON.parse(user);
+        return userData.uid || userData.id;
+      }
+
+      return null;
+    } catch (error) {
+      console.error('Error getting current user ID:', error);
+      return null;
+    }
+  }
+
+  // Get current user email from auth context
+  getCurrentUserEmail() {
+    try {
+      // Try to get from Firebase auth
+      if (window.firebase && window.firebase.auth && window.firebase.auth().currentUser) {
+        return window.firebase.auth().currentUser.email;
+      }
+
+      // Try to get from localStorage
+      const user = localStorage.getItem('user');
+      if (user) {
+        const userData = JSON.parse(user);
+        return userData.email;
+      }
+
+      return null;
+    } catch (error) {
+      console.error('Error getting current user email:', error);
+      return null;
+    }
+  }
+
+  // Get current user display name from auth context
+  getCurrentUserDisplayName() {
+    try {
+      // Try to get from Firebase auth
+      if (window.firebase && window.firebase.auth && window.firebase.auth().currentUser) {
+        return window.firebase.auth().currentUser.displayName;
+      }
+
+      // Try to get from localStorage
+      const user = localStorage.getItem('user');
+      if (user) {
+        const userData = JSON.parse(user);
+        return userData.displayName || userData.email?.split('@')[0];
+      }
+
+      return null;
+    } catch (error) {
+      console.error('Error getting current user display name:', error);
+      return null;
+    }
+  }
+
   // Get vote type display name
   getVoteTypeDisplay(voteType) {
     const displays = {
+      upvote: 'Upvote',
+      downvote: 'Downvote',
       safe: 'An toàn',
-      unsafe: 'Nguy hiểm', 
+      unsafe: 'Nguy hiểm',
       suspicious: 'Đáng ngờ'
     };
     return displays[voteType] || voteType;

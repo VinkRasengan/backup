@@ -6,8 +6,8 @@ import { MessageCircle, ChevronDown, Send, User, Heart } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 import CommentVoteButton from './CommentVoteButton';
-// Import mock service to enable mock data
-import '../../services/mockCommentsService';
+// Mock service disabled - using real API
+// import '../../services/mockCommentsService';
 
 const CommentPreview = ({ linkId, onToggleFullComments }) => {
   const { user } = useAuth();

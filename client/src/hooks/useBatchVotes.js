@@ -183,13 +183,20 @@ export const usePostVote = (postId) => {
                          localStorage.getItem('backendToken') ||
                          localStorage.getItem('token');
 
+            // Get user info
+            const user = JSON.parse(localStorage.getItem('user') || '{}');
+
             const response = await fetch(`http://localhost:8080/api/votes/${postId}`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     ...(token && { 'Authorization': `Bearer ${token}` })
                 },
-                body: JSON.stringify({ voteType }),
+                body: JSON.stringify({
+                    voteType,
+                    userId: user.uid || user.id,
+                    userEmail: user.email
+                }),
             });
 
             if (!response.ok) {

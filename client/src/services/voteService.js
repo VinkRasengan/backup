@@ -2,7 +2,7 @@
 class VoteService {
   constructor() {
     this.storageKey = 'factcheck_votes';
-    this.apiBaseUrl = '/api/community';
+    this.apiBaseUrl = '/api';
   }
 
   // Get user's vote history from localStorage

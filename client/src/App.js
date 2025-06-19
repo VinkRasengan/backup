@@ -34,6 +34,7 @@ import NotificationsPage from './pages/NotificationsPage';
 import FavoritesPage from './pages/FavoritesPage';
 import AchievementsPage from './pages/AchievementsPage';
 import HelpPage from './pages/HelpPage';
+import TestIntegrationPage from './pages/TestIntegrationPage';
 import FirestoreTestPanel from './components/admin/FirestoreTestPanel';
 
 // Components - organized imports
@@ -205,6 +206,10 @@ function App() {
                 <FirestoreTestPanel />
               </ProtectedRoute>
             }
+          />
+          <Route
+            path="/test-integration"
+            element={<TestIntegrationPage />}
           />
           {/* Catch all route */}
           <Route path="*" element={<Navigate to="/" />} />

@@ -1,0 +1,7 @@
+{
+  "postId": "test-post-id-7",
+  "content": "This is a test comment from the API Gateway",
+  "userId": "test-user-6",
+  "userEmail": "test@example.com",
+  "displayName": "Test User"
+}

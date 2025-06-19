@@ -27,7 +27,7 @@ const CommentSection = ({ postId, initialCommentCount = 0 }) => {
       setLoading(true);
       
       const response = await fetch(
-        `http://localhost:8080/api/comments/${postId}?limit=${pagination.limit}&offset=${offset}`,
+        `/api/comments/${postId}?limit=${pagination.limit}&offset=${offset}`,
         {
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('authToken') || localStorage.getItem('backendToken')}`
@@ -65,7 +65,7 @@ const CommentSection = ({ postId, initialCommentCount = 0 }) => {
     try {
       setSubmitting(true);
       
-      const response = await fetch('http://localhost:8080/api/comments', {
+      const response = await fetch('/api/comments', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -74,7 +74,7 @@ const CommentSection = ({ postId, initialCommentCount = 0 }) => {
         body: JSON.stringify({
           postId,
           content: newComment.trim(),
-          userId: user.uid || user.id,
+          userId: user.id || user.uid,
           userEmail: user.email,
           displayName: user.displayName || user.email?.split('@')[0] || 'Anonymous'
         })

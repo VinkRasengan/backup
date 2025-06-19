@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { db, collections } = require('../config/firebase');
 const Logger = require('../../shared/utils/logger');
+const { getUserId, getUserEmail, getUserDisplayName } = require('../middleware/auth');
 
 const logger = new Logger('community-service');
 
@@ -81,7 +82,12 @@ router.get('/:postId', async (req, res) => {
 // Create a new comment (Facebook-style)
 router.post('/', async (req, res) => {
   try {
-    const { postId, content, userId, userEmail, displayName, parentId } = req.body;
+    const { postId, content, parentId } = req.body;
+
+    // Get user info from auth middleware or request body
+    const userId = getUserId(req);
+    const userEmail = getUserEmail(req);
+    const displayName = getUserDisplayName(req);
 
     logger.info('Create comment request', { postId, userId, parentId });
 
@@ -100,7 +106,7 @@ router.post('/', async (req, res) => {
       author: {
         uid: userId,
         email: userEmail || null,
-        displayName: displayName || 'Anonymous User',
+        displayName: displayName,
         photoURL: null
       },
       parentId: parentId || null, // For replies
@@ -438,7 +444,7 @@ router.post('/:commentId/vote', async (req, res) => {
     }
 
     // Check if user already voted on this comment
-    const existingVoteQuery = await db.collection('comment_votes')
+    const existingVoteQuery = await db.collection(collections.COMMENT_VOTES)
       .where('commentId', '==', commentId)
       .where('userId', '==', userId)
       .get();
@@ -464,7 +470,7 @@ router.post('/:commentId/vote', async (req, res) => {
       }
     } else {
       // Create new vote
-      await db.collection('comment_votes').add({
+      await db.collection(collections.COMMENT_VOTES).add({
         commentId,
         userId,
         voteType,
@@ -474,7 +480,7 @@ router.post('/:commentId/vote', async (req, res) => {
     }
 
     // Update comment vote statistics
-    const votesSnapshot = await db.collection('comment_votes')
+    const votesSnapshot = await db.collection(collections.COMMENT_VOTES)
       .where('commentId', '==', commentId)
       .get();
 
@@ -530,7 +536,7 @@ router.get('/:commentId/votes', async (req, res) => {
     const userId = req.query.userId;
 
     // Get vote statistics
-    const votesSnapshot = await db.collection('comment_votes')
+    const votesSnapshot = await db.collection(collections.COMMENT_VOTES)
       .where('commentId', '==', commentId)
       .get();
 
@@ -556,7 +562,7 @@ router.get('/:commentId/votes', async (req, res) => {
     // Get user's vote if userId provided
     let userVote = null;
     if (userId) {
-      const userVoteQuery = await db.collection('comment_votes')
+      const userVoteQuery = await db.collection(collections.COMMENT_VOTES)
         .where('commentId', '==', commentId)
         .where('userId', '==', userId)
         .get();

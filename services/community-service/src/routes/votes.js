@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { db, collections } = require('../config/firebase');
 const Logger = require('../../shared/utils/logger');
+const { getUserId, getUserEmail } = require('../middleware/auth');
 
 const logger = new Logger('community-service');
 
@@ -79,7 +80,11 @@ async function updatePostVoteCount(linkId) {
 router.post('/:linkId', async (req, res) => {
   try {
     const { linkId } = req.params;
-    const { voteType, userId, userEmail } = req.body; // 'upvote', 'downvote'
+    const { voteType } = req.body; // 'upvote', 'downvote'
+
+    // Get user info from auth middleware or request body
+    const userId = getUserId(req);
+    const userEmail = getUserEmail(req);
 
     logger.info('Vote submission request', { linkId, voteType, userId });
 
@@ -142,8 +147,10 @@ router.post('/:linkId', async (req, res) => {
       logger.info('New vote created', { linkId, userId, voteType });
     }
 
-    // Update vote count on the post
-    await updatePostVoteCount(linkId);
+    // Update vote count on the post (async, don't wait)
+    updatePostVoteCount(linkId).catch(error => {
+      logger.error('Background vote count update failed', { error: error.message, linkId });
+    });
 
     // Prepare response based on action
     const response = {
@@ -228,7 +235,7 @@ router.get('/:linkId/stats', async (req, res) => {
 router.get('/:linkId/user', async (req, res) => {
   try {
     const { linkId } = req.params;
-    const userId = req.query.userId || req.headers['x-user-id'];
+    const userId = getUserId(req);
 
     if (!userId) {
       return res.status(400).json({
@@ -275,7 +282,7 @@ router.get('/:linkId/user', async (req, res) => {
 router.get('/:linkId/optimized', async (req, res) => {
   try {
     const { linkId } = req.params;
-    const userId = req.query.userId || req.headers['x-user-id'];
+    const userId = getUserId(req);
 
     // Get vote statistics
     const votesSnapshot = await db.collection(collections.VOTES)
@@ -346,7 +353,7 @@ router.get('/:linkId/optimized', async (req, res) => {
 router.delete('/:linkId', async (req, res) => {
   try {
     const { linkId } = req.params;
-    const userId = req.body.userId || req.query.userId || req.headers['x-user-id'];
+    const userId = getUserId(req);
 
     if (!userId) {
       return res.status(400).json({
@@ -363,8 +370,10 @@ router.delete('/:linkId', async (req, res) => {
     if (!userVoteQuery.empty) {
       await userVoteQuery.docs[0].ref.delete();
 
-      // Update vote count on the post
-      await updatePostVoteCount(linkId);
+      // Update vote count on the post (async, don't wait)
+      updatePostVoteCount(linkId).catch(error => {
+        logger.error('Background vote count update failed', { error: error.message, linkId });
+      });
 
       logger.info('Vote deleted', { linkId, userId });
     }
