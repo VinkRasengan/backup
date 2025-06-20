@@ -4,6 +4,7 @@ A comprehensive microservices-based platform for detecting and preventing online
 
 ## 🚀 Quick Start
 
+### Local Development
 ```bash
 # First time setup
 npm run setup
@@ -17,6 +18,28 @@ npm run status
 # Stop all services
 npm stop
 ```
+
+### 🐳 Production Deployment (Render Docker)
+```bash
+# Run deployment helper
+.\deploy-render-docker.ps1
+
+# Follow the step-by-step guide
+# See: RENDER_DOCKER_DEPLOYMENT_GUIDE.md
+```
+
+## 📚 Documentation
+
+### 📖 Deployment Guides
+- **[Render Docker Deployment Guide](RENDER_DOCKER_DEPLOYMENT_GUIDE.md)** - Complete step-by-step deployment
+- **[Deployment Checklist](DEPLOYMENT_CHECKLIST.md)** - Track your deployment progress  
+- **[Quick Reference](RENDER_QUICK_REFERENCE.md)** - Copy-paste configurations
+- **[Docker Instructions](RENDER_DOCKER_INSTRUCTIONS.md)** - Technical Docker details
+
+### 🛠️ Development Docs
+- **[API Documentation](docs/)** - API endpoints and usage
+- **[Architecture Guide](docs/architecture.md)** - System architecture overview
+- **[Security Guide](SECURITY.md)** - Security best practices
 
 ## 📋 Available Commands
 
