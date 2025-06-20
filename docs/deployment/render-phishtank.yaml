@@ -1,0 +1,23 @@
+# Render deployment configuration for factcheck-phishtank
+# Generated automatically - do not edit manually
+
+services:
+  - type: web
+    name: factcheck-phishtank
+    env: node
+    plan: free
+    region: oregon
+    buildCommand: cd services/phishtank-service && npm install
+    startCommand: cd services/phishtank-service && npm start
+    healthCheckPath: /health
+    envVars:
+      - key: PORT
+        value: 3007
+      - key: NODE_ENV
+        value: production
+      - key: JWT_SECRET
+        generateValue: true
+      - key: AUTH_SERVICE_URL
+        value: https://factcheck-auth.onrender.com
+      - key: PHISHTANK_API_KEY
+        sync: false

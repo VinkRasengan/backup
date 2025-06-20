@@ -18,6 +18,7 @@
     "docker": "node scripts/antifraud.js docker",
     "docker:logs": "node scripts/antifraud.js logs",
     "deploy": "node scripts/antifraud.js docker",
+    "deploy:render": "node scripts/deploy-render.js",
     "deploy:k8s": "node scripts/antifraud.js k8s",
     "deploy:k8s:istio": "node scripts/antifraud.js k8s-istio",
     "deploy:k8s:consul": "node scripts/antifraud.js k8s-consul",

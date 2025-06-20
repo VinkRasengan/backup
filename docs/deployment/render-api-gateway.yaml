@@ -1,14 +1,22 @@
+# Render deployment configuration for factcheck-api-gateway
+# Generated automatically - do not edit manually
+
 services:
   - type: web
     name: factcheck-api-gateway
     env: node
+    plan: free
+    region: oregon
     buildCommand: cd services/api-gateway && npm install
     startCommand: cd services/api-gateway && npm start
+    healthCheckPath: /health
     envVars:
       - key: PORT
-        value: "10000"
+        value: 8080
       - key: NODE_ENV
         value: production
+      - key: JWT_SECRET
+        generateValue: true
       - key: AUTH_SERVICE_URL
         value: https://factcheck-auth.onrender.com
       - key: LINK_SERVICE_URL
@@ -21,7 +29,7 @@ services:
         value: https://factcheck-news.onrender.com
       - key: ADMIN_SERVICE_URL
         value: https://factcheck-admin.onrender.com
-      - key: REDIS_URL
-        sync: false
-      - key: FIREBASE_PROJECT_ID
-        sync: false
+      - key: PHISHTANK_SERVICE_URL
+        value: https://factcheck-phishtank.onrender.com
+      - key: CRIMINALIP_SERVICE_URL
+        value: https://factcheck-criminalip.onrender.com

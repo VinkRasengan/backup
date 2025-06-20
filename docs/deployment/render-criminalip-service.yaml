@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: factcheck-criminalip
+    env: node
+    plan: free
+    region: oregon
+    buildCommand: cd services/criminalip-service && npm install
+    startCommand: cd services/criminalip-service && npm start
+    healthCheckPath: /health
+    envVars:
+      - key: PORT
+        value: 3008
+      - key: NODE_ENV
+        value: production
+      - key: AUTH_SERVICE_URL
+        value: https://factcheck-auth.onrender.com
+      - key: CRIMINALIP_API_KEY
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true

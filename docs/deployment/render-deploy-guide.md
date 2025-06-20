@@ -8,13 +8,15 @@ OnRender deployment strategy for microservices architecture. Each service will b
 | Service | Type | Port | Priority |
 |---------|------|------|----------|
 | Frontend | Static Site | 3000 | High |
-| API Gateway | Web Service | 8082 | High |
+| API Gateway | Web Service | 8080 | High |
 | Auth Service | Web Service | 3001 | High |
 | Link Service | Web Service | 3002 | Medium |
 | Community Service | Web Service | 3003 | Medium |
 | Chat Service | Web Service | 3004 | Medium |
 | News Service | Web Service | 3005 | Low |
 | Admin Service | Web Service | 3006 | Low |
+| PhishTank Service | Web Service | 3007 | Low |
+| CriminalIP Service | Web Service | 3008 | Low |
 
 ## 🔧 Step 1: Repository Structure
 

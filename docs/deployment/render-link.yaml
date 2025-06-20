@@ -1,0 +1,27 @@
+# Render deployment configuration for factcheck-link
+# Generated automatically - do not edit manually
+
+services:
+  - type: web
+    name: factcheck-link
+    env: node
+    plan: free
+    region: oregon
+    buildCommand: cd services/link-service && npm install
+    startCommand: cd services/link-service && npm start
+    healthCheckPath: /health
+    envVars:
+      - key: PORT
+        value: 3002
+      - key: NODE_ENV
+        value: production
+      - key: JWT_SECRET
+        generateValue: true
+      - key: AUTH_SERVICE_URL
+        value: https://factcheck-auth.onrender.com
+      - key: VIRUSTOTAL_API_KEY
+        sync: false
+      - key: SCAMADVISER_API_KEY
+        sync: false
+      - key: IPQUALITYSCORE_API_KEY
+        sync: false

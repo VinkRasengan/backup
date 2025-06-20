@@ -1,9 +1,14 @@
+# Render deployment configuration for factcheck-frontend
+# Generated automatically - do not edit manually
+
 services:
-  - type: web
+  - type: static
     name: factcheck-frontend
     env: static
-    buildCommand: cd client && npm install && npm run build
-    staticPublishPath: ./client/build
+    plan: free
+    region: oregon
+    buildCommand: npm install && npm run build
+    staticPublishPath: ./build
     envVars:
       - key: REACT_APP_API_URL
         value: https://factcheck-api-gateway.onrender.com
@@ -19,3 +24,5 @@ services:
         sync: false
       - key: REACT_APP_FIREBASE_APP_ID
         sync: false
+      - key: GENERATE_SOURCEMAP
+        value: false

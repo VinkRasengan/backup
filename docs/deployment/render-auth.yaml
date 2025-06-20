@@ -1,0 +1,27 @@
+# Render deployment configuration for factcheck-auth
+# Generated automatically - do not edit manually
+
+services:
+  - type: web
+    name: factcheck-auth
+    env: node
+    plan: free
+    region: oregon
+    buildCommand: cd services/auth-service && npm install
+    startCommand: cd services/auth-service && npm start
+    healthCheckPath: /health
+    envVars:
+      - key: PORT
+        value: 3001
+      - key: NODE_ENV
+        value: production
+      - key: JWT_SECRET
+        generateValue: true
+      - key: AUTH_SERVICE_URL
+        value: https://factcheck-auth.onrender.com
+      - key: FIREBASE_PROJECT_ID
+        sync: false
+      - key: FIREBASE_PRIVATE_KEY
+        sync: false
+      - key: FIREBASE_CLIENT_EMAIL
+        sync: false
