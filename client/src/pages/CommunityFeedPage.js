@@ -18,7 +18,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import VoteComponent from '../components/Community/VoteComponent';
-import CommentsSection from '../components/Community/CommentsSection';
+import CommentSection from '../components/Community/CommentSection';
 import CommentPreview from '../components/Community/CommentPreview';
 import ReportModal from '../components/Community/ReportModal';
 import RequestMonitor from '../components/Community/RequestMonitor';
@@ -390,7 +390,7 @@ const CommunityFeedPage = () => {
             exit={{ opacity: 0, height: 0 }}
             className="mt-4 border-t pt-4"
           >
-            <CommentsSection linkId={article.id} />
+            <CommentSection postId={article.id} />
           </motion.div>
         )}
       </AnimatePresence>

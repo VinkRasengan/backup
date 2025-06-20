@@ -11,6 +11,7 @@ import { useTheme } from '../../context/ThemeContext';
 import { useCounterAnimation, useHoverAnimation } from '../../hooks/useGSAP';
 import { gsap } from '../../utils/gsap';
 import { usePostVote } from '../../hooks/useBatchVotes';
+import toast from 'react-hot-toast';
 
 // Simple cache to prevent duplicate requests
 const voteDataCache = new Map();
@@ -235,7 +236,7 @@ const VoteComponent = ({ linkId, postData, className = '' }) => {
 
     if (!user) {
       console.log('❌ No user logged in');
-      alert('Vui lòng đăng nhập để vote');
+      toast.error('Vui lòng đăng nhập để vote');
       return;
     }
 
@@ -362,9 +363,10 @@ const VoteComponent = ({ linkId, postData, className = '' }) => {
     } catch (error) {
       if (error.name === 'AbortError') {
         console.error('❌ Vote request timed out after 10 seconds');
-        alert('Request timed out. Please try again.');
+        toast.error('Yêu cầu hết thời gian. Vui lòng thử lại.');
       } else {
         console.error('Vote error:', error);
+        toast.error('Không thể vote. Vui lòng thử lại.');
       }
       // Revert changes on error
       if (postData && postData.voteStats) {

@@ -7,27 +7,36 @@ import toast from 'react-hot-toast';
 
 const CommentVoteButton = ({ commentId, initialVotes = 0, initialUserVote = null }) => {
   const { isDarkMode } = useTheme();
-  const { user } = useAuth();
+  const { user, getAuthHeaders } = useAuth();
   const [votes, setVotes] = useState(initialVotes);
   const [userVote, setUserVote] = useState(initialUserVote); // 'up', 'down', or null
   const [isVoting, setIsVoting] = useState(false);
 
-  // Mock vote data storage
-  const getVoteKey = () => `comment_vote_${commentId}`;
-  const getVoteCountKey = () => `comment_votes_${commentId}`;
-
-  // Load saved vote data
+  // Load vote data from API
   useEffect(() => {
-    const savedVote = localStorage.getItem(getVoteKey());
-    const savedVoteCount = localStorage.getItem(getVoteCountKey());
-    
-    if (savedVote) {
-      setUserVote(savedVote === 'null' ? null : savedVote);
-    }
-    if (savedVoteCount) {
-      setVotes(parseInt(savedVoteCount));
-    }
-  }, [commentId]);
+    const loadVoteData = async () => {
+      if (!commentId || !user) return;
+
+      try {
+        const response = await fetch(`/api/comments/${commentId}/votes?userId=${user.id || user.uid}`, {
+          headers: getAuthHeaders()
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success) {
+            setVotes(data.data.statistics.score);
+            setUserVote(data.data.userVote?.voteType === 'upvote' ? 'up' :
+                       data.data.userVote?.voteType === 'downvote' ? 'down' : null);
+          }
+        }
+      } catch (error) {
+        console.error('Load vote data error:', error);
+      }
+    };
+
+    loadVoteData();
+  }, [commentId, user]);
 
   const handleVote = async (voteType) => {
     if (!user) {
@@ -37,54 +46,76 @@ const CommentVoteButton = ({ commentId, initialVotes = 0, initialUserVote = null
 
     if (isVoting) return;
 
+    const previousVote = userVote;
+    const previousVotes = votes;
+
+    // Optimistic UI update
+    let newUserVote = userVote;
+    let newVotes = votes;
+
+    // Calculate new vote state
+    if (userVote === voteType) {
+      // Remove vote
+      newUserVote = null;
+      newVotes = voteType === 'up' ? votes - 1 : votes + 1;
+    } else if (userVote === null) {
+      // Add new vote
+      newUserVote = voteType;
+      newVotes = voteType === 'up' ? votes + 1 : votes - 1;
+    } else {
+      // Change vote
+      newUserVote = voteType;
+      newVotes = voteType === 'up' ? votes + 2 : votes - 2;
+    }
+
+    // Update UI immediately
+    setUserVote(newUserVote);
+    setVotes(newVotes);
     setIsVoting(true);
 
     try {
-      let newVotes = votes;
-      let newUserVote = userVote;
+      // Call real API
+      const apiVoteType = voteType === 'up' ? 'upvote' : 'downvote';
+      const response = await fetch(`/api/comments/${commentId}/vote`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...getAuthHeaders()
+        },
+        body: JSON.stringify({
+          voteType: apiVoteType,
+          userId: user.id || user.uid
+        })
+      });
 
-      // Calculate new vote state
-      if (userVote === voteType) {
-        // Remove vote
-        newUserVote = null;
-        newVotes = voteType === 'up' ? votes - 1 : votes + 1;
-      } else if (userVote === null) {
-        // Add new vote
-        newUserVote = voteType;
-        newVotes = voteType === 'up' ? votes + 1 : votes - 1;
-      } else {
-        // Change vote
-        newUserVote = voteType;
-        newVotes = voteType === 'up' ? votes + 2 : votes - 2;
+      if (!response.ok) {
+        throw new Error('Vote API failed');
       }
 
-      // Update state
-      setUserVote(newUserVote);
-      setVotes(newVotes);
+      const data = await response.json();
+      if (data.success) {
+        // Update with real data from server
+        setVotes(data.data.voteStats.score);
 
-      // Save to localStorage (mock persistence)
-      localStorage.setItem(getVoteKey(), newUserVote || 'null');
-      localStorage.setItem(getVoteCountKey(), newVotes.toString());
-
-      // Show feedback
-      if (newUserVote === 'up') {
-        toast.success('Đã upvote comment');
-      } else if (newUserVote === 'down') {
-        toast.success('Đã downvote comment');
+        // Show feedback
+        if (data.action === 'removed') {
+          toast.success('Đã hủy vote');
+        } else if (apiVoteType === 'upvote') {
+          toast.success('Đã upvote comment');
+        } else {
+          toast.success('Đã downvote comment');
+        }
       } else {
-        toast.success('Đã hủy vote');
+        throw new Error(data.error || 'Vote failed');
       }
-
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 200));
 
     } catch (error) {
       console.error('Vote error:', error);
       toast.error('Không thể vote. Vui lòng thử lại.');
-      
-      // Revert on error
-      setUserVote(userVote);
-      setVotes(votes);
+
+      // Revert optimistic update
+      setUserVote(previousVote);
+      setVotes(previousVotes);
     } finally {
       setIsVoting(false);
     }

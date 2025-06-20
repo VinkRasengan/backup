@@ -18,6 +18,8 @@ const reportsRoutes = require('./routes/reports');
 const firebaseConfig = require('./config/firebase');
 const errorHandler = require('./middleware/errorHandler');
 const { authMiddleware } = require('./middleware/auth');
+const { cacheManager } = require('./utils/cache');
+const ResponseFormatter = require('../shared/utils/response');
 
 const app = express();
 // Prometheus metrics setup
@@ -50,9 +52,37 @@ const healthCheck = new HealthCheck(SERVICE_NAME);
 healthCheck.addCheck('database', commonChecks.database(firebaseConfig.db));
 healthCheck.addCheck('memory', commonChecks.memory(512));
 healthCheck.addCheck('auth-service', commonChecks.externalService('auth-service', process.env.AUTH_SERVICE_URL + '/health/live'));
+healthCheck.addCheck('cache', async () => {
+  const cacheHealth = await cacheManager.healthCheck();
+  if (cacheHealth.status === 'connected') {
+    return { status: 'healthy', details: cacheHealth };
+  } else {
+    return { status: 'unhealthy', details: cacheHealth };
+  }
+});
 
-// Security middleware
-app.use(helmet());
+// Security middleware with enhanced configuration
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      scriptSrc: ["'self'"],
+      imgSrc: ["'self'", "data:", "https:"],
+      connectSrc: ["'self'", "https:"],
+      fontSrc: ["'self'", "https:", "data:"],
+      objectSrc: ["'none'"],
+      mediaSrc: ["'self'"],
+      frameSrc: ["'none'"],
+    },
+  },
+  crossOriginEmbedderPolicy: false, // Allow embedding for API service
+  hsts: {
+    maxAge: 31536000,
+    includeSubDomains: true,
+    preload: true
+  }
+}));
 
 // CORS configuration
 app.use(cors({
@@ -85,6 +115,9 @@ app.use(limiter);
 
 // Body parsing middleware
 app.use(express.json({ limit: '10mb' }));
+
+// Response formatter middleware
+app.use(ResponseFormatter.middleware(SERVICE_NAME));
 // Metrics middleware
 app.use((req, res, next) => {
   const start = Date.now();
@@ -179,6 +212,11 @@ process.on('SIGTERM', () => {
 process.on('SIGINT', () => {
   logger.info('SIGINT received, shutting down gracefully');
   process.exit(0);
+});
+
+// Initialize cache manager
+cacheManager.connect().catch(error => {
+  logger.error('Failed to initialize cache manager', { error: error.message });
 });
 
 // Start server

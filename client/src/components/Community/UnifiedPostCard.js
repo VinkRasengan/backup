@@ -13,7 +13,7 @@ import {
 } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
 import VoteComponent from './VoteComponent';
-import CommentsSection from './CommentsSection';
+import CommentSection from './CommentSection';
 import CommentPreview from './CommentPreview';
 
 const UnifiedPostCard = ({
@@ -244,12 +244,23 @@ const UnifiedPostCard = ({
               exit={{ opacity: 0, height: 0 }}
               className="border-t border-gray-200 dark:border-gray-700"
             >
-              <CommentsSection
-                postId={post.id}
-                linkId={post.id}
-                initialCommentCount={post.commentCount || 0}
-                onClose={() => setShowFullComments(false)}
-              />
+              <div className="p-4">
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="font-semibold text-gray-900 dark:text-white">
+                    Bình luận ({post.commentCount || 0})
+                  </h3>
+                  <button
+                    onClick={() => setShowFullComments(false)}
+                    className="text-sm font-medium text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
+                  >
+                    Ẩn bình luận
+                  </button>
+                </div>
+                <CommentSection
+                  postId={post.id}
+                  initialCommentCount={post.commentCount || 0}
+                />
+              </div>
             </motion.div>
           )}
         </AnimatePresence>
@@ -469,12 +480,23 @@ const UnifiedPostCard = ({
             exit={{ opacity: 0, height: 0 }}
             className="border-t border-gray-200 dark:border-gray-700"
           >
-            <CommentsSection
-              postId={post.id}
-              linkId={post.id}
-              initialCommentCount={post.commentCount || 0}
-              onClose={() => setShowFullComments(false)}
-            />
+            <div className="p-4">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="font-semibold text-gray-900 dark:text-white">
+                  Bình luận ({post.commentCount || 0})
+                </h3>
+                <button
+                  onClick={() => setShowFullComments(false)}
+                  className="text-sm font-medium text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
+                >
+                  Ẩn bình luận
+                </button>
+              </div>
+              <CommentSection
+                postId={post.id}
+                initialCommentCount={post.commentCount || 0}
+              />
+            </div>
           </motion.div>
         )}
       </AnimatePresence>

@@ -71,10 +71,6 @@ const CommentPreview = ({ linkId, onToggleFullComments }) => {
   const handleSubmitComment = async (e) => {
     e.preventDefault();
 
-    console.log('🔍 Comment submission - User state:', user);
-    console.log('🔍 Comment submission - User from localStorage:', localStorage.getItem('user'));
-    console.log('🔍 Comment submission - Token from localStorage:', localStorage.getItem('token'));
-
     if (!user) {
       console.log('❌ No user found, showing login prompt');
       toast.error('Vui lòng đăng nhập để bình luận');
@@ -86,26 +82,56 @@ const CommentPreview = ({ linkId, onToggleFullComments }) => {
       return;
     }
 
-    try {
-      setSubmitting(true);
-      const response = await communityAPI.addComment(linkId, newComment.trim());
-      
-      if (response.data && response.data.success) {
-        setNewComment('');
-        setShowCommentForm(false);
+    const commentContent = newComment.trim();
+    const tempId = `temp_${Date.now()}`;
 
-        // Add new comment to preview immediately
+    // Create optimistic comment
+    const optimisticComment = {
+      id: tempId,
+      content: commentContent,
+      author: {
+        uid: user.id || user.uid,
+        email: user.email,
+        displayName: user.displayName || user.email?.split('@')[0] || 'Anonymous'
+      },
+      createdAt: new Date().toISOString(),
+      voteScore: 0,
+      isOptimistic: true
+    };
+
+    // Optimistic UI update
+    setComments(prev => [optimisticComment, ...prev.slice(0, 1)]); // Keep only 2 comments in preview
+    setTotalComments(prev => prev + 1);
+    setNewComment('');
+    setShowCommentForm(false);
+    setSubmitting(true);
+
+    try {
+      const response = await communityAPI.addComment(linkId, commentContent);
+
+      if (response.data && response.data.success) {
+        // Replace optimistic comment with real comment
         const newCommentData = response.data.comment;
-        setComments(prev => [newCommentData, ...prev.slice(0, 1)]); // Keep only 2 comments in preview
-        setTotalComments(prev => prev + 1);
+        setComments(prev => prev.map(comment =>
+          comment.id === tempId ? { ...newCommentData, isOptimistic: false } : comment
+        ));
 
         // Also reload to ensure sync
         setTimeout(() => loadPreviewComments(), 1000);
 
         toast.success('Đã thêm bình luận');
+      } else {
+        throw new Error('Failed to submit comment');
       }
     } catch (error) {
       console.error('Submit comment error:', error);
+
+      // Rollback optimistic update
+      setComments(prev => prev.filter(comment => comment.id !== tempId));
+      setTotalComments(prev => prev - 1);
+      setNewComment(commentContent); // Restore comment text
+      setShowCommentForm(true); // Reopen form
+
       toast.error('Không thể gửi bình luận. Vui lòng thử lại.');
     } finally {
       setSubmitting(false);
@@ -127,7 +153,7 @@ const CommentPreview = ({ linkId, onToggleFullComments }) => {
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      className="flex space-x-3 py-2"
+      className={`flex space-x-3 py-2 ${comment.isOptimistic ? 'opacity-70' : ''}`}
     >
       <div className="flex-shrink-0">
         <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
@@ -139,33 +165,40 @@ const CommentPreview = ({ linkId, onToggleFullComments }) => {
       <div className="flex-1 min-w-0">
         <div className={`inline-block px-3 py-2 rounded-2xl ${
           isDarkMode ? 'bg-gray-700' : 'bg-gray-100'
-        }`}>
-          <p className={`text-sm font-medium ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-            {comment.author?.displayName || comment.author?.email || comment.user_name || comment.user_email || 'Người dùng'}
-          </p>
+        } ${comment.isOptimistic ? 'border border-dashed border-gray-400' : ''}`}>
+          <div className="flex items-center space-x-2">
+            <p className={`text-sm font-medium ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+              {comment.author?.displayName || comment.author?.email || comment.user_name || comment.user_email || 'Người dùng'}
+            </p>
+            {comment.isOptimistic && (
+              <div className="w-3 h-3 border border-gray-400 border-t-transparent rounded-full animate-spin"></div>
+            )}
+          </div>
           <p className={`text-sm ${isDarkMode ? 'text-gray-200' : 'text-gray-800'}`}>
             {comment.content}
           </p>
         </div>
         <div className="flex items-center justify-between mt-1 ml-3">
           <p className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-            {formatTimeAgo(comment.createdAt || comment.created_at)}
+            {comment.isOptimistic ? 'Đang gửi...' : formatTimeAgo(comment.createdAt || comment.created_at)}
           </p>
-          <div className="flex items-center space-x-2">
-            <CommentVoteButton
-              commentId={comment.id}
-              initialVotes={comment.votes || Math.floor(Math.random() * 10) - 2}
-              initialUserVote={null}
-            />
-            <button className={`flex items-center space-x-1 text-xs px-2 py-1 rounded-full transition-colors ${
-              isDarkMode
-                ? 'text-gray-400 hover:text-red-400 hover:bg-red-900/20'
-                : 'text-gray-500 hover:text-red-600 hover:bg-red-50'
-            }`}>
-              <Heart size={12} />
-              <span>{comment.likes || Math.floor(Math.random() * 5)}</span>
-            </button>
-          </div>
+          {!comment.isOptimistic && (
+            <div className="flex items-center space-x-2">
+              <CommentVoteButton
+                commentId={comment.id}
+                initialVotes={comment.voteScore || 0}
+                initialUserVote={null}
+              />
+              <button className={`flex items-center space-x-1 text-xs px-2 py-1 rounded-full transition-colors ${
+                isDarkMode
+                  ? 'text-gray-400 hover:text-red-400 hover:bg-red-900/20'
+                  : 'text-gray-500 hover:text-red-600 hover:bg-red-50'
+              }`}>
+                <Heart size={12} />
+                <span>{comment.likes || 0}</span>
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </motion.div>

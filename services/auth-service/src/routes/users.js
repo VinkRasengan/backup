@@ -34,18 +34,9 @@ router.get('/stats',
 
 // @route   GET /users/dashboard
 // @desc    Get user dashboard data
-// @access  Private (temporarily bypassed for testing)
+// @access  Private
 router.get('/dashboard',
-  // authMiddleware.authenticate, // Temporarily disabled for testing
-  (req, res, next) => {
-    // Mock user for testing
-    req.user = {
-      userId: 'test-user-123',
-      email: 'test@example.com',
-      roles: ['user']
-    };
-    next();
-  },
+  authMiddleware.authenticate,
   userController.getDashboard
 );
 

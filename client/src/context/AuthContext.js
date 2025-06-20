@@ -544,6 +544,17 @@ export const AuthProvider = ({ children }) => {
 
 
 
+  // Get auth token for API calls
+  const getAuthToken = () => {
+    return localStorage.getItem('authToken') || localStorage.getItem('backendToken') || localStorage.getItem('token');
+  };
+
+  // Get auth headers for API calls
+  const getAuthHeaders = () => {
+    const token = getAuthToken();
+    return token ? { 'Authorization': `Bearer ${token}` } : {};
+  };
+
   const value = {
     user,
     loading,
@@ -557,7 +568,9 @@ export const AuthProvider = ({ children }) => {
     updateProfile,
     changePassword,
     sendPasswordResetEmail: forgotPassword, // Alias for consistency
-    refreshToken
+    refreshToken,
+    getAuthToken,
+    getAuthHeaders
   };
 
   return (

@@ -292,9 +292,9 @@ show_access_info() {
     FRONTEND_IP=$(kubectl get service frontend -n $NAMESPACE -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null || echo "pending")
     
     if [ "$API_GATEWAY_IP" != "pending" ] && [ -n "$API_GATEWAY_IP" ]; then
-        echo "   API Gateway:   http://$API_GATEWAY_IP:8082"
+        echo "   API Gateway:   http://$API_GATEWAY_IP:8080"
     else
-        echo "   API Gateway:   kubectl port-forward service/api-gateway 8082:8082 -n $NAMESPACE"
+        echo "   API Gateway:   kubectl port-forward service/api-gateway 8080:8080 -n $NAMESPACE"
     fi
     
     if [ "$FRONTEND_IP" != "pending" ] && [ -n "$FRONTEND_IP" ]; then

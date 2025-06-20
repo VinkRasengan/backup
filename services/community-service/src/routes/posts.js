@@ -3,8 +3,37 @@ const router = express.Router();
 const { db, collections } = require('../config/firebase');
 const Logger = require('../../shared/utils/logger');
 const { createSampleData, clearSampleData } = require('../utils/sampleData');
+const {
+  validateCreatePost,
+  validateQueryParams,
+  validateContent,
+  validateRateLimit
+} = require('../middleware/validation');
+const { cacheManager, cacheMiddleware } = require('../utils/cache');
+const QueryOptimizer = require('../../shared/utils/queryOptimizer');
 
 const logger = new Logger('community-service');
+const queryOptimizer = new QueryOptimizer('community-service');
+
+// Input sanitization functions
+const sanitizeInput = (input) => {
+  if (typeof input !== 'string') return '';
+  return input
+    .trim()
+    .replace(/[^\w\s-]/gi, '') // Remove special characters except spaces and hyphens
+    .substring(0, 100); // Limit length
+};
+
+const validateSearchInput = (search) => {
+  const sanitized = sanitizeInput(search);
+  if (sanitized.length < 2) {
+    throw new Error('Search term must be at least 2 characters long');
+  }
+  if (sanitized.length > 100) {
+    throw new Error('Search term too long');
+  }
+  return sanitized;
+};
 
 // Helper function to calculate time ago
 function getTimeAgo(date) {
@@ -19,8 +48,18 @@ function getTimeAgo(date) {
   return date.toLocaleDateString('vi-VN');
 }
 
+// Cache key generator for posts
+const generatePostsCacheKey = (req) => {
+  const { page, limit, sort, category, search, includeNews, userPostsOnly } = req.query;
+  return `posts:${page}:${limit}:${sort}:${category}:${search || 'none'}:${includeNews}:${userPostsOnly}`;
+};
+
 // Get posts from Firestore
-router.get('/', async (req, res) => {
+router.get('/',
+  validateQueryParams,
+  validateRateLimit,
+  cacheMiddleware('posts', generatePostsCacheKey, 180), // Cache for 3 minutes
+  async (req, res) => {
   // Extract query parameters outside try block for access in catch
   const {
     page = 1,
@@ -83,12 +122,18 @@ router.get('/', async (req, res) => {
         query = query.where('category', '==', category);
       }
 
-      // Apply search filter
+      // Apply search filter with sanitization
       if (search.trim()) {
-        // Simple text search (Firestore doesn't support full-text search natively)
-        // This is a basic implementation - for production, consider using Algolia or similar
-        query = query.where('title', '>=', search.trim())
-                    .where('title', '<=', search.trim() + '\uf8ff');
+        try {
+          const sanitizedSearch = validateSearchInput(search);
+          // Simple text search (Firestore doesn't support full-text search natively)
+          // This is a basic implementation - for production, consider using Algolia or similar
+          query = query.where('title', '>=', sanitizedSearch)
+                      .where('title', '<=', sanitizedSearch + '\uf8ff');
+        } catch (searchError) {
+          logger.warn('Invalid search input', { search, error: searchError.message });
+          // Skip search filter if input is invalid
+        }
       }
 
       // Apply sorting - use fields that exist in links collection
@@ -101,9 +146,10 @@ router.get('/', async (req, res) => {
         query = query.orderBy('createdAt', 'desc'); // Default sort
       }
 
-      // Apply pagination
-      const offset = (parseInt(page) - 1) * parseInt(limit);
-      query = query.offset(offset).limit(parseInt(limit));
+      // Apply pagination - use limit only (cursor-based pagination is more efficient)
+      // For now, we'll use a reasonable limit to prevent memory issues
+      const maxLimit = Math.min(parseInt(limit), 50); // Cap at 50 items per page
+      query = query.limit(maxLimit);
 
       // Execute query with timeout
       const queryPromise = query.get();
@@ -124,7 +170,8 @@ router.get('/', async (req, res) => {
         };
       });
 
-      // Get total count (simplified - in production, use a separate count query or maintain counters)
+      // For total count, we'll use the returned data length for now
+      // In production, consider maintaining separate counters or using aggregation queries
       total = postsData.length;
 
       logger.info('Firestore query successful', {
@@ -166,7 +213,7 @@ router.get('/', async (req, res) => {
 
     // Calculate pagination info
     const totalPages = Math.ceil(total / parseInt(limit));
-    const hasNext = parseInt(page) < totalPages;
+    const hasNext = postsData.length === Math.min(parseInt(limit), 50); // Has more if we got full page
     const hasPrev = parseInt(page) > 1;
 
     logger.info('Posts fetched successfully', {
@@ -176,20 +223,16 @@ router.get('/', async (req, res) => {
       totalPages
     });
 
-    res.json({
-      success: true,
-      data: {
-        posts: postsData,
-        pagination: {
-          page: parseInt(page),
-          limit: parseInt(limit),
-          total,
-          totalPages,
-          hasNext,
-          hasPrev
-        }
-      }
-    });
+    const response = res.formatter.paginated({ posts: postsData }, {
+      page: parseInt(page),
+      limit: parseInt(limit),
+      total,
+      totalPages,
+      hasNext,
+      hasPrev
+    }, 'Posts retrieved successfully');
+
+    return res.status(200).json(response);
 
   } catch (error) {
     logger.error('Error fetching posts from Firestore', {
@@ -199,36 +242,21 @@ router.get('/', async (req, res) => {
     });
 
     // Return error response instead of mock data
-    res.status(500).json({
-      success: false,
-      error: 'Failed to fetch posts from database',
-      details: error.message,
-      data: {
-        posts: [],
-        pagination: {
-          page: parseInt(page),
-          limit: parseInt(limit),
-          total: 0,
-          totalPages: 0,
-          hasNext: false,
-          hasPrev: false
-        }
-      }
-    });
+    return res.formatter.error(res, 'Failed to fetch posts from database', 500, 'DATABASE_ERROR', error.message);
   }
 });
 
 // Create new post
-router.post('/', async (req, res) => {
+router.post('/', validateCreatePost, validateContent, validateRateLimit, async (req, res) => {
   try {
     const { title, content, category = 'general', url, tags = [] } = req.body;
 
-    // Basic validation
+    // Basic validation (this should be handled by validation middleware, but keeping as fallback)
     if (!title || !content) {
-      return res.status(400).json({
-        success: false,
-        error: 'Title and content are required'
-      });
+      return res.formatter.validationError([
+        { field: 'title', message: 'Title is required' },
+        { field: 'content', message: 'Content is required' }
+      ]);
     }
 
     // Get user info from auth middleware (if implemented)
@@ -265,6 +293,11 @@ router.post('/', async (req, res) => {
     // Save to Firestore
     const docRef = await db.collection(collections.POSTS).add(postData);
 
+    // Invalidate posts cache
+    cacheManager.invalidatePostsCache().catch(error => {
+      logger.error('Failed to invalidate posts cache', { error: error.message });
+    });
+
     logger.info('Post created successfully', {
       postId: docRef.id,
       userId,
@@ -272,18 +305,14 @@ router.post('/', async (req, res) => {
     });
 
     // Return created post
-    res.status(201).json({
-      success: true,
-      message: 'Post created successfully',
-      data: {
-        post: {
-          id: docRef.id,
-          ...postData,
-          createdAt: postData.createdAt.toISOString(),
-          updatedAt: postData.updatedAt.toISOString()
-        }
+    return res.formatter.created({
+      post: {
+        id: docRef.id,
+        ...postData,
+        createdAt: postData.createdAt.toISOString(),
+        updatedAt: postData.updatedAt.toISOString()
       }
-    });
+    }, 'Post created successfully');
 
   } catch (error) {
     logger.error('Error creating post', { error: error.message });

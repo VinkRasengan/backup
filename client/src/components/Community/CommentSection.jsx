@@ -4,7 +4,7 @@ import { useTheme } from '../../context/ThemeContext';
 import { MessageCircle, Send, MoreHorizontal, Heart, Reply } from 'lucide-react';
 
 const CommentSection = ({ postId, initialCommentCount = 0 }) => {
-  const { user } = useAuth();
+  const { user, getAuthHeaders } = useAuth();
   const { isDarkMode } = useTheme();
   
   const [comments, setComments] = useState([]);
@@ -12,6 +12,7 @@ const CommentSection = ({ postId, initialCommentCount = 0 }) => {
   const [submitting, setSubmitting] = useState(false);
   const [newComment, setNewComment] = useState('');
   const [showComments, setShowComments] = useState(false);
+  const [error, setError] = useState(null);
   const [pagination, setPagination] = useState({
     total: initialCommentCount,
     limit: 10,
@@ -19,61 +20,109 @@ const CommentSection = ({ postId, initialCommentCount = 0 }) => {
     hasMore: false
   });
 
-  // Load comments
+  // Retry mechanism for API calls
+  const retryApiCall = async (apiCall, maxRetries = 3) => {
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      try {
+        return await apiCall();
+      } catch (error) {
+        if (attempt === maxRetries) {
+          throw error;
+        }
+        // Exponential backoff: 1s, 2s, 4s
+        const delay = Math.pow(2, attempt) * 1000;
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
+    }
+  };
+
+  // Load comments with retry mechanism
   const loadComments = async (offset = 0, append = false) => {
     if (!postId) return;
-    
+
+    setLoading(true);
+    setError(null);
+
     try {
-      setLoading(true);
-      
-      const response = await fetch(
-        `/api/comments/${postId}?limit=${pagination.limit}&offset=${offset}`,
-        {
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('authToken') || localStorage.getItem('backendToken')}`
+      const result = await retryApiCall(async () => {
+        const response = await fetch(
+          `/api/comments/${postId}?limit=${pagination.limit}&offset=${offset}`,
+          {
+            headers: getAuthHeaders()
           }
-        }
-      );
+        );
 
-      if (!response.ok) {
-        throw new Error('Failed to load comments');
-      }
-
-      const data = await response.json();
-      
-      if (data.success) {
-        if (append) {
-          setComments(prev => [...prev, ...data.data.comments]);
-        } else {
-          setComments(data.data.comments);
+        if (!response.ok) {
+          throw new Error(`Failed to load comments: ${response.status}`);
         }
-        setPagination(data.data.pagination);
+
+        const data = await response.json();
+
+        if (!data.success) {
+          throw new Error(data.error || 'Failed to load comments');
+        }
+
+        return data;
+      });
+
+      if (append) {
+        setComments(prev => [...prev, ...result.data.comments]);
+      } else {
+        setComments(result.data.comments);
       }
+      setPagination(result.data.pagination);
+
     } catch (error) {
       console.error('Load comments error:', error);
+      setError('Không thể tải bình luận. Vui lòng thử lại.');
     } finally {
       setLoading(false);
     }
   };
 
-  // Submit new comment
+  // Submit new comment with optimistic UI updates
   const handleSubmitComment = async (e) => {
     e.preventDefault();
-    
+
     if (!newComment.trim() || !user || submitting) return;
-    
+
+    const commentContent = newComment.trim();
+    const tempId = `temp_${Date.now()}`;
+
+    // Create optimistic comment
+    const optimisticComment = {
+      id: tempId,
+      content: commentContent,
+      author: {
+        uid: user.id || user.uid,
+        email: user.email,
+        displayName: user.displayName || user.email?.split('@')[0] || 'Anonymous'
+      },
+      createdAt: new Date().toISOString(),
+      voteScore: 0,
+      isOptimistic: true // Flag to identify optimistic updates
+    };
+
+    // Optimistic UI update
+    setComments(prev => [optimisticComment, ...prev]);
+    setNewComment('');
+    setPagination(prev => ({
+      ...prev,
+      total: prev.total + 1
+    }));
+    setSubmitting(true);
+    setError(null);
+
     try {
-      setSubmitting(true);
-      
       const response = await fetch('/api/comments', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('authToken') || localStorage.getItem('backendToken')}`
+          ...getAuthHeaders()
         },
         body: JSON.stringify({
           postId,
-          content: newComment.trim(),
+          content: commentContent,
           userId: user.id || user.uid,
           userEmail: user.email,
           displayName: user.displayName || user.email?.split('@')[0] || 'Anonymous'
@@ -81,22 +130,30 @@ const CommentSection = ({ postId, initialCommentCount = 0 }) => {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to submit comment');
+        throw new Error(`Failed to submit comment: ${response.status}`);
       }
 
       const data = await response.json();
-      
+
       if (data.success) {
-        // Add new comment to the top (Facebook style)
-        setComments(prev => [data.comment, ...prev]);
-        setNewComment('');
-        setPagination(prev => ({
-          ...prev,
-          total: prev.total + 1
-        }));
+        // Replace optimistic comment with real comment
+        setComments(prev => prev.map(comment =>
+          comment.id === tempId ? { ...data.comment, isOptimistic: false } : comment
+        ));
+      } else {
+        throw new Error(data.error || 'Failed to submit comment');
       }
     } catch (error) {
       console.error('Submit comment error:', error);
+
+      // Rollback optimistic update
+      setComments(prev => prev.filter(comment => comment.id !== tempId));
+      setPagination(prev => ({
+        ...prev,
+        total: prev.total - 1
+      }));
+      setNewComment(commentContent); // Restore comment text
+      setError('Không thể gửi bình luận. Vui lòng thử lại.');
     } finally {
       setSubmitting(false);
     }
@@ -211,7 +268,9 @@ const CommentSection = ({ postId, initialCommentCount = 0 }) => {
           ) : (
             <div className="space-y-4">
               {comments.map((comment) => (
-                <div key={comment.id} className="flex space-x-3">
+                <div key={comment.id} className={`flex space-x-3 ${
+                  comment.isOptimistic ? 'opacity-70' : ''
+                }`}>
                   <div className="flex-shrink-0">
                     <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
                       isDarkMode ? 'bg-gray-600' : 'bg-gray-300'
@@ -224,9 +283,12 @@ const CommentSection = ({ postId, initialCommentCount = 0 }) => {
                   <div className="flex-1">
                     <div className={`inline-block px-3 py-2 rounded-2xl ${
                       isDarkMode ? 'bg-gray-700' : 'bg-gray-100'
-                    }`}>
-                      <div className="text-sm font-medium mb-1">
-                        {comment.author?.displayName || comment.author?.email || 'Anonymous'}
+                    } ${comment.isOptimistic ? 'border border-dashed border-gray-400' : ''}`}>
+                      <div className="text-sm font-medium mb-1 flex items-center space-x-2">
+                        <span>{comment.author?.displayName || comment.author?.email || 'Anonymous'}</span>
+                        {comment.isOptimistic && (
+                          <div className="w-3 h-3 border border-gray-400 border-t-transparent rounded-full animate-spin"></div>
+                        )}
                       </div>
                       <div className={`text-sm ${
                         isDarkMode ? 'text-gray-200' : 'text-gray-800'
@@ -238,18 +300,22 @@ const CommentSection = ({ postId, initialCommentCount = 0 }) => {
                       <span className={`text-xs ${
                         isDarkMode ? 'text-gray-400' : 'text-gray-500'
                       }`}>
-                        {formatTimeAgo(comment.createdAt)}
+                        {comment.isOptimistic ? 'Đang gửi...' : formatTimeAgo(comment.createdAt)}
                       </span>
-                      <button className={`text-xs font-medium ${
-                        isDarkMode ? 'text-gray-400 hover:text-white' : 'text-gray-500 hover:text-gray-900'
-                      }`}>
-                        Thích
-                      </button>
-                      <button className={`text-xs font-medium ${
-                        isDarkMode ? 'text-gray-400 hover:text-white' : 'text-gray-500 hover:text-gray-900'
-                      }`}>
-                        Phản hồi
-                      </button>
+                      {!comment.isOptimistic && (
+                        <>
+                          <button className={`text-xs font-medium ${
+                            isDarkMode ? 'text-gray-400 hover:text-white' : 'text-gray-500 hover:text-gray-900'
+                          }`}>
+                            Thích
+                          </button>
+                          <button className={`text-xs font-medium ${
+                            isDarkMode ? 'text-gray-400 hover:text-white' : 'text-gray-500 hover:text-gray-900'
+                          }`}>
+                            Phản hồi
+                          </button>
+                        </>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -273,11 +339,33 @@ const CommentSection = ({ postId, initialCommentCount = 0 }) => {
           )}
 
           {/* No comments message */}
-          {!loading && comments.length === 0 && (
+          {!loading && comments.length === 0 && !error && (
             <div className={`text-center py-4 text-sm ${
               isDarkMode ? 'text-gray-400' : 'text-gray-500'
             }`}>
               Chưa có bình luận nào. Hãy là người đầu tiên bình luận!
+            </div>
+          )}
+
+          {/* Error message */}
+          {error && (
+            <div className={`text-center py-4 text-sm ${
+              isDarkMode ? 'text-red-400' : 'text-red-600'
+            }`}>
+              <p>{error}</p>
+              <button
+                onClick={() => {
+                  setError(null);
+                  loadComments();
+                }}
+                className={`mt-2 px-3 py-1 text-xs rounded-full transition-colors ${
+                  isDarkMode
+                    ? 'bg-red-900/20 text-red-400 hover:bg-red-900/30'
+                    : 'bg-red-50 text-red-600 hover:bg-red-100'
+                }`}
+              >
+                Thử lại
+              </button>
             </div>
           )}
         </div>

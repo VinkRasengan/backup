@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import NavigationLayout from '../components/navigation/NavigationLayout';
 import UnifiedPostCard from '../components/Community/UnifiedPostCard';
 import { useAuth } from '../context/AuthContext';
+import toast from 'react-hot-toast';
 
 const CommunityPage = () => {
   console.log('🎯 CommunityPage component rendering...');
@@ -20,7 +21,7 @@ const CommunityPage = () => {
       // Get user info
       const user = JSON.parse(localStorage.getItem('user') || '{}');
       if (!user.uid && !user.id) {
-        alert('Vui lòng đăng nhập để vote');
+        toast.error('Vui lòng đăng nhập để vote');
         return;
       }
 
@@ -63,12 +64,12 @@ const CommunityPage = () => {
       // Get user info
       const user = JSON.parse(localStorage.getItem('user') || '{}');
       if (!user.uid && !user.id) {
-        alert('Vui lòng đăng nhập để comment');
+        toast.error('Vui lòng đăng nhập để comment');
         return;
       }
 
       if (!commentText || !commentText.trim()) {
-        alert('Vui lòng nhập nội dung comment');
+        toast.error('Vui lòng nhập nội dung comment');
         return;
       }
 
@@ -113,7 +114,7 @@ const CommunityPage = () => {
       } else {
         // Fallback: copy to clipboard
         navigator.clipboard.writeText(post.url || window.location.href);
-        alert('Link copied to clipboard!');
+        toast.success('Link copied to clipboard!');
       }
     } catch (error) {
       console.error('❌ Error sharing:', error);

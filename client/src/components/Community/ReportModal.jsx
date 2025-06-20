@@ -6,6 +6,7 @@ import {
 } from '@heroicons/react/24/outline';
 import communityAPI from '../../services/communityAPI';
 import { useAuth } from '../../context/AuthContext';
+import toast from 'react-hot-toast';
 
 const ReportModal = ({ isOpen, onClose, linkId, linkUrl }) => {
   const { user } = useAuth();
@@ -28,7 +29,7 @@ const ReportModal = ({ isOpen, onClose, linkId, linkUrl }) => {
     e.preventDefault();
     
     if (!user) {
-      alert('Vui lòng đăng nhập để báo cáo');
+      toast.error('Vui lòng đăng nhập để báo cáo');
       return;
     }
 

@@ -173,7 +173,7 @@ JWT_SECRET=your-super-secret-jwt-key-minimum-32-characters-long
 JWT_EXPIRE=7d
 
 # API Keys (Optional - will use mock data if not provided)
-GEMINI_API_KEY=AIzaSyDszcx_S3Wm65ACIprlmJLDu5FPmDfX1nE
+GEMINI_API_KEY=your-gemini-api-key
 VIRUSTOTAL_API_KEY=your-virustotal-api-key
 SCAMADVISER_API_KEY=your-scamadviser-api-key
 SCREENSHOTLAYER_API_KEY=your-screenshotlayer-api-key
@@ -279,8 +279,8 @@ check_service_health() {
     local retries=0
     local max_retries=6
     while [ $retries -lt $max_retries ]; do
-        if curl -s http://localhost:8082/health >/dev/null 2>&1; then
-            print_success "API Gateway is running on http://localhost:8082"
+        if curl -s http://localhost:8080/health >/dev/null 2>&1; then
+            print_success "API Gateway is running on http://localhost:8080"
             break
         else
             retries=$((retries + 1))
@@ -343,7 +343,7 @@ main() {
     
     # Check ports
     print_status "Checking port availability..."
-    PORTS=(3000 3001 3002 3003 3004 3005 3006 8082)
+    PORTS=(3000 3001 3002 3003 3004 3005 3006 8080)
     OCCUPIED_PORTS=()
     
     for port in "${PORTS[@]}"; do

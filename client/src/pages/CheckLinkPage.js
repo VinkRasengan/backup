@@ -10,7 +10,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../co
 import PageLayout from '../components/layout/PageLayout';
 import { linkAPI } from '../services/api';
 import VoteComponent from '../components/Community/VoteComponent';
-import CommentsSection from '../components/Community/CommentsSection';
+import CommentSection from '../components/Community/CommentSection';
 import ReportModal from '../components/Community/ReportModal';
 import toast from 'react-hot-toast';
 import { useFadeIn, useCounterAnimation, useLoadingAnimation } from '../hooks/useGSAP';
@@ -1089,10 +1089,9 @@ const CheckLinkPage = () => {
             </div>
 
             {/* Comments Section */}
-            <CommentsSection
-              linkId={result.id}
-              className="shadow-xl border-0 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm"
-            />
+            <div className="shadow-xl border-0 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-lg p-4">
+              <CommentSection postId={result.id} />
+            </div>
           </motion.div>
         )}
 

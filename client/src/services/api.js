@@ -329,12 +329,11 @@ export const communityAPI = {
       displayName: user.displayName || user.email?.split('@')[0] || 'Anonymous'
     });
   },
+  updateComment: (commentId, content) => api.put(`/api/comments/${commentId}`, { content }),
 
-  updateComment: (commentId, content) => api.put(`/comments/comment/${commentId}`, { content }),
+  deleteComment: (commentId) => api.delete(`/api/comments/${commentId}`),
 
-  deleteComment: (commentId) => api.delete(`/comments/comment/${commentId}`),
-
-  getCommentStats: (linkId) => api.get(`/comments/${linkId}/stats`)
+  getCommentStats: (commentId) => api.get(`/api/comments/${commentId}/votes`)
 };
 
 // Main API service object

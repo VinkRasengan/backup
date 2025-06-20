@@ -6,72 +6,78 @@ const { getUserId, getUserEmail } = require('../middleware/auth');
 
 const logger = new Logger('community-service');
 
-// Helper function to update post vote count and score
+// Helper function to update post vote count and score using atomic transaction
 async function updatePostVoteCount(linkId) {
   try {
-    const votesSnapshot = await db.collection(collections.VOTES)
-      .where('linkId', '==', linkId)
-      .get();
+    // Use Firestore transaction for atomic updates
+    return await db.runTransaction(async (transaction) => {
+      // Get all votes for this link
+      const votesSnapshot = await transaction.get(
+        db.collection(collections.VOTES).where('linkId', '==', linkId)
+      );
 
-    // Calculate vote statistics
-    const stats = {
-      total: 0,
-      upvotes: 0,
-      downvotes: 0,
-      score: 0
-    };
+      // Calculate vote statistics
+      const stats = {
+        total: 0,
+        upvotes: 0,
+        downvotes: 0,
+        score: 0
+      };
 
-    votesSnapshot.forEach((doc) => {
-      const voteType = doc.data().voteType;
-      stats.total++;
+      votesSnapshot.forEach((doc) => {
+        const voteType = doc.data().voteType;
+        stats.total++;
 
-      if (voteType === 'upvote') {
-        stats.upvotes++;
-      } else if (voteType === 'downvote') {
-        stats.downvotes++;
-      }
-    });
-
-    // Calculate Reddit-style score
-    stats.score = stats.upvotes - stats.downvotes;
-
-    // Update post with vote statistics
-    const postsQuery = await db.collection(collections.POSTS)
-      .where('id', '==', linkId)
-      .get();
-
-    if (!postsQuery.empty) {
-      await postsQuery.docs[0].ref.update({
-        voteCount: stats.total,
-        voteScore: stats.score,
-        voteStats: {
-          upvotes: stats.upvotes,
-          downvotes: stats.downvotes,
-          total: stats.total,
-          score: stats.score
+        if (voteType === 'upvote') {
+          stats.upvotes++;
+        } else if (voteType === 'downvote') {
+          stats.downvotes++;
         }
       });
-    }
 
-    // Also try links collection (for backward compatibility)
-    try {
-      const linkRef = db.collection('links').doc(linkId);
-      const linkDoc = await linkRef.get();
-      if (linkDoc.exists) {
-        await linkRef.update({
+      // Calculate Reddit-style score
+      stats.score = stats.upvotes - stats.downvotes;
+
+      // Update post with vote statistics atomically
+      const postsQuery = await transaction.get(
+        db.collection(collections.POSTS).where('id', '==', linkId)
+      );
+
+      if (!postsQuery.empty) {
+        transaction.update(postsQuery.docs[0].ref, {
           voteCount: stats.total,
-          voteScore: stats.score
+          voteScore: stats.score,
+          voteStats: {
+            upvotes: stats.upvotes,
+            downvotes: stats.downvotes,
+            total: stats.total,
+            score: stats.score
+          },
+          updatedAt: new Date()
         });
       }
-    } catch (error) {
-      // Ignore if links collection doesn't exist
-      logger.debug('Links collection update failed (expected if not using links collection)', { linkId });
-    }
 
-    logger.info('Vote statistics updated', { linkId, stats });
-    return stats;
+      // Also try links collection (for backward compatibility)
+      try {
+        const linkRef = db.collection('links').doc(linkId);
+        const linkDoc = await transaction.get(linkRef);
+        if (linkDoc.exists) {
+          transaction.update(linkRef, {
+            voteCount: stats.total,
+            voteScore: stats.score,
+            updatedAt: new Date()
+          });
+        }
+      } catch (error) {
+        // Ignore if links collection doesn't exist
+        logger.debug('Links collection update failed (expected if not using links collection)', { linkId });
+      }
+
+      logger.info('Vote statistics updated atomically', { linkId, stats });
+      return stats;
+    });
   } catch (error) {
-    logger.error('Update vote count error', { error: error.message, linkId });
+    logger.error('Atomic vote count update error', { error: error.message, linkId });
     throw error;
   }
 }
@@ -104,53 +110,63 @@ router.post('/:linkId', async (req, res) => {
       });
     }
 
-    // Check if user already voted
-    const existingVoteQuery = await db.collection(collections.VOTES)
-      .where('linkId', '==', linkId)
-      .where('userId', '==', userId)
-      .get();
+    // Use atomic transaction for vote submission and count update
+    const result = await db.runTransaction(async (transaction) => {
+      // Check if user already voted
+      const existingVoteQuery = await transaction.get(
+        db.collection(collections.VOTES)
+          .where('linkId', '==', linkId)
+          .where('userId', '==', userId)
+      );
 
-    let voteDoc;
-    let action = 'created';
+      let voteDoc;
+      let action = 'created';
 
-    if (!existingVoteQuery.empty) {
-      // User already voted
-      voteDoc = existingVoteQuery.docs[0];
-      const existingVote = voteDoc.data();
+      if (!existingVoteQuery.empty) {
+        // User already voted
+        voteDoc = existingVoteQuery.docs[0];
+        const existingVote = voteDoc.data();
 
-      if (existingVote.voteType === voteType) {
-        // Same vote type - remove vote (toggle off)
-        await voteDoc.ref.delete();
-        action = 'removed';
-        logger.info('Vote removed (toggle off)', { linkId, userId, voteType });
+        if (existingVote.voteType === voteType) {
+          // Same vote type - remove vote (toggle off)
+          transaction.delete(voteDoc.ref);
+          action = 'removed';
+          logger.info('Vote removed (toggle off)', { linkId, userId, voteType });
+        } else {
+          // Different vote type - update vote
+          transaction.update(voteDoc.ref, {
+            voteType,
+            updatedAt: new Date()
+          });
+          action = 'updated';
+          logger.info('Vote updated', { linkId, userId, oldType: existingVote.voteType, newType: voteType });
+        }
       } else {
-        // Different vote type - update vote
-        await voteDoc.ref.update({
+        // Create new vote
+        const newVoteRef = db.collection(collections.VOTES).doc();
+        const newVote = {
+          linkId,
+          userId,
+          userEmail: userEmail || null,
           voteType,
+          createdAt: new Date(),
           updatedAt: new Date()
-        });
-        action = 'updated';
-        logger.info('Vote updated', { linkId, userId, oldType: existingVote.voteType, newType: voteType });
+        };
+
+        transaction.set(newVoteRef, newVote);
+        voteDoc = { id: newVoteRef.id, ref: newVoteRef };
+        logger.info('New vote created', { linkId, userId, voteType });
       }
-    } else {
-      // Create new vote
-      const newVote = {
-        linkId,
-        userId,
-        userEmail: userEmail || null,
-        voteType,
-        createdAt: new Date(),
-        updatedAt: new Date()
-      };
 
-      voteDoc = await db.collection(collections.VOTES).add(newVote);
-      logger.info('New vote created', { linkId, userId, voteType });
-    }
+      return { voteDoc, action };
+    });
 
-    // Update vote count on the post (async, don't wait)
+    // Update vote count on the post (async, don't wait for better performance)
     updatePostVoteCount(linkId).catch(error => {
       logger.error('Background vote count update failed', { error: error.message, linkId });
     });
+
+    const { voteDoc, action } = result;
 
     // Prepare response based on action
     const response = {
