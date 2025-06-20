@@ -6,17 +6,18 @@ services:
     name: factcheck-community
     env: node
     plan: free
-    region: oregon
-    buildCommand: cd services/community-service && npm install
-    startCommand: cd services/community-service && npm start
+    region: singapore
+    rootDir: services/community-service
+    buildCommand: npm install
+    startCommand: npm start
     healthCheckPath: /health
     envVars:
       - key: PORT
-        value: 3003
+        value: "10000"
       - key: NODE_ENV
         value: production
       - key: JWT_SECRET
-        generateValue: true
+        sync: false
       - key: AUTH_SERVICE_URL
         value: https://factcheck-auth.onrender.com
       - key: FIREBASE_PROJECT_ID

@@ -6,17 +6,18 @@ services:
     name: factcheck-chat
     env: node
     plan: free
-    region: oregon
-    buildCommand: cd services/chat-service && npm install
-    startCommand: cd services/chat-service && npm start
+    region: singapore
+    rootDir: services/chat-service
+    buildCommand: npm install
+    startCommand: npm start
     healthCheckPath: /health
     envVars:
       - key: PORT
-        value: 3004
+        value: "10000"
       - key: NODE_ENV
         value: production
       - key: JWT_SECRET
-        generateValue: true
+        sync: false
       - key: AUTH_SERVICE_URL
         value: https://factcheck-auth.onrender.com
       - key: FIREBASE_PROJECT_ID

@@ -6,17 +6,18 @@ services:
     name: factcheck-api-gateway
     env: node
     plan: free
-    region: oregon
-    buildCommand: cd services/api-gateway && npm install
-    startCommand: cd services/api-gateway && npm start
+    region: singapore
+    rootDir: services/api-gateway
+    buildCommand: npm install
+    startCommand: npm start
     healthCheckPath: /health
     envVars:
       - key: PORT
-        value: 8080
+        value: "10000"
       - key: NODE_ENV
         value: production
       - key: JWT_SECRET
-        generateValue: true
+        sync: false
       - key: AUTH_SERVICE_URL
         value: https://factcheck-auth.onrender.com
       - key: LINK_SERVICE_URL

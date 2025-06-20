@@ -6,17 +6,18 @@ services:
     name: factcheck-link
     env: node
     plan: free
-    region: oregon
-    buildCommand: cd services/link-service && npm install
-    startCommand: cd services/link-service && npm start
+    region: singapore
+    rootDir: services/link-service
+    buildCommand: npm install
+    startCommand: npm start
     healthCheckPath: /health
     envVars:
       - key: PORT
-        value: 3002
+        value: "10000"
       - key: NODE_ENV
         value: production
       - key: JWT_SECRET
-        generateValue: true
+        sync: false
       - key: AUTH_SERVICE_URL
         value: https://factcheck-auth.onrender.com
       - key: VIRUSTOTAL_API_KEY

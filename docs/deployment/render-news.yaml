@@ -6,17 +6,18 @@ services:
     name: factcheck-news
     env: node
     plan: free
-    region: oregon
-    buildCommand: cd services/news-service && npm install
-    startCommand: cd services/news-service && npm start
+    region: singapore
+    rootDir: services/news-service
+    buildCommand: npm install
+    startCommand: npm start
     healthCheckPath: /health
     envVars:
       - key: PORT
-        value: 3005
+        value: "10000"
       - key: NODE_ENV
         value: production
       - key: JWT_SECRET
-        generateValue: true
+        sync: false
       - key: AUTH_SERVICE_URL
         value: https://factcheck-auth.onrender.com
       - key: FIREBASE_PROJECT_ID

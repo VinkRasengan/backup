@@ -6,7 +6,8 @@ services:
     name: factcheck-frontend
     env: static
     plan: free
-    region: oregon
+    region: singapore
+    rootDir: client
     buildCommand: npm install && npm run build
     staticPublishPath: ./build
     envVars:

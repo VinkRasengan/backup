@@ -1,0 +1,240 @@
+services:
+  - type: web
+    name: factcheck-auth-docker
+    env: docker
+    plan: free
+    region: oregon
+    dockerfilePath: ./services/auth-service/Dockerfile
+    dockerContext: .
+    healthCheckPath: /health
+    envVars:
+      - key: PORT
+        value: 10000
+      - key: NODE_ENV
+        value: production
+      - key: JWT_SECRET
+        generateValue: true
+      - key: FIREBASE_PROJECT_ID
+        sync: false
+      - key: FIREBASE_PRIVATE_KEY
+        sync: false
+      - key: FIREBASE_CLIENT_EMAIL
+        sync: false
+      - key: FIREBASE_DATABASE_URL
+        sync: false
+
+  - type: web
+    name: factcheck-link-docker
+    env: docker
+    plan: free
+    region: oregon
+    dockerfilePath: ./services/link-service/Dockerfile
+    dockerContext: .
+    healthCheckPath: /health
+    envVars:
+      - key: PORT
+        value: 10000
+      - key: NODE_ENV
+        value: production
+      - key: JWT_SECRET
+        generateValue: true
+      - key: AUTH_SERVICE_URL
+        value: https://factcheck-auth-docker.onrender.com
+      - key: VIRUSTOTAL_API_KEY
+        sync: false
+      - key: SCAMADVISER_API_KEY
+        sync: false
+      - key: IPQUALITYSCORE_API_KEY
+        sync: false
+
+  - type: web
+    name: factcheck-community-docker
+    env: docker
+    plan: free
+    region: oregon
+    dockerfilePath: ./services/community-service/Dockerfile
+    dockerContext: .
+    healthCheckPath: /health
+    envVars:
+      - key: PORT
+        value: 10000
+      - key: NODE_ENV
+        value: production
+      - key: JWT_SECRET
+        generateValue: true
+      - key: AUTH_SERVICE_URL
+        value: https://factcheck-auth-docker.onrender.com
+      - key: FIREBASE_PROJECT_ID
+        sync: false
+      - key: FIREBASE_PRIVATE_KEY
+        sync: false
+      - key: FIREBASE_CLIENT_EMAIL
+        sync: false
+
+  - type: web
+    name: factcheck-chat-docker
+    env: docker
+    plan: free
+    region: oregon
+    dockerfilePath: ./services/chat-service/Dockerfile
+    dockerContext: .
+    healthCheckPath: /health
+    envVars:
+      - key: PORT
+        value: 10000
+      - key: NODE_ENV
+        value: production
+      - key: JWT_SECRET
+        generateValue: true
+      - key: AUTH_SERVICE_URL
+        value: https://factcheck-auth-docker.onrender.com
+      - key: GEMINI_API_KEY
+        sync: false
+
+  - type: web
+    name: factcheck-news-docker
+    env: docker
+    plan: free
+    region: oregon
+    dockerfilePath: ./services/news-service/Dockerfile
+    dockerContext: .
+    healthCheckPath: /health
+    envVars:
+      - key: PORT
+        value: 10000
+      - key: NODE_ENV
+        value: production
+      - key: JWT_SECRET
+        generateValue: true
+      - key: AUTH_SERVICE_URL
+        value: https://factcheck-auth-docker.onrender.com
+      - key: NEWSAPI_API_KEY
+        sync: false
+      - key: NEWSDATA_API_KEY
+        sync: false
+
+  - type: web
+    name: factcheck-admin-docker
+    env: docker
+    plan: free
+    region: oregon
+    dockerfilePath: ./services/admin-service/Dockerfile
+    dockerContext: .
+    healthCheckPath: /health
+    envVars:
+      - key: PORT
+        value: 10000
+      - key: NODE_ENV
+        value: production
+      - key: JWT_SECRET
+        generateValue: true
+      - key: AUTH_SERVICE_URL
+        value: https://factcheck-auth-docker.onrender.com
+      - key: COMMUNITY_SERVICE_URL
+        value: https://factcheck-community-docker.onrender.com
+      - key: LINK_SERVICE_URL
+        value: https://factcheck-link-docker.onrender.com
+      - key: FIREBASE_PROJECT_ID
+        sync: false
+      - key: FIREBASE_PRIVATE_KEY
+        sync: false
+      - key: FIREBASE_CLIENT_EMAIL
+        sync: false
+
+  - type: web
+    name: factcheck-phishtank-docker
+    env: docker
+    plan: free
+    region: oregon
+    dockerfilePath: ./services/phishtank-service/Dockerfile
+    dockerContext: .
+    healthCheckPath: /health
+    envVars:
+      - key: PORT
+        value: 10000
+      - key: NODE_ENV
+        value: production
+      - key: JWT_SECRET
+        generateValue: true
+      - key: AUTH_SERVICE_URL
+        value: https://factcheck-auth-docker.onrender.com
+      - key: PHISHTANK_API_KEY
+        sync: false
+
+  - type: web
+    name: factcheck-criminalip-docker
+    env: docker
+    plan: free
+    region: oregon
+    dockerfilePath: ./services/criminalip-service/Dockerfile
+    dockerContext: .
+    healthCheckPath: /health
+    envVars:
+      - key: PORT
+        value: 10000
+      - key: NODE_ENV
+        value: production
+      - key: JWT_SECRET
+        generateValue: true
+      - key: AUTH_SERVICE_URL
+        value: https://factcheck-auth-docker.onrender.com
+      - key: CRIMINALIP_API_KEY
+        sync: false
+
+  - type: web
+    name: factcheck-api-gateway-docker
+    env: docker
+    plan: free
+    region: oregon
+    dockerfilePath: ./services/api-gateway/Dockerfile
+    dockerContext: .
+    healthCheckPath: /health
+    envVars:
+      - key: PORT
+        value: 10000
+      - key: NODE_ENV
+        value: production
+      - key: JWT_SECRET
+        generateValue: true
+      - key: AUTH_SERVICE_URL
+        value: https://factcheck-auth-docker.onrender.com
+      - key: LINK_SERVICE_URL
+        value: https://factcheck-link-docker.onrender.com
+      - key: COMMUNITY_SERVICE_URL
+        value: https://factcheck-community-docker.onrender.com
+      - key: CHAT_SERVICE_URL
+        value: https://factcheck-chat-docker.onrender.com
+      - key: NEWS_SERVICE_URL
+        value: https://factcheck-news-docker.onrender.com
+      - key: ADMIN_SERVICE_URL
+        value: https://factcheck-admin-docker.onrender.com
+      - key: PHISHTANK_SERVICE_URL
+        value: https://factcheck-phishtank-docker.onrender.com
+      - key: CRIMINALIP_SERVICE_URL
+        value: https://factcheck-criminalip-docker.onrender.com
+
+  - type: static
+    name: factcheck-frontend-docker
+    env: docker
+    plan: free
+    region: oregon
+    dockerfilePath: ./client/Dockerfile
+    dockerContext: .
+    envVars:
+      - key: REACT_APP_API_URL
+        value: https://factcheck-api-gateway-docker.onrender.com
+      - key: REACT_APP_FIREBASE_API_KEY
+        sync: false
+      - key: REACT_APP_FIREBASE_AUTH_DOMAIN
+        sync: false
+      - key: REACT_APP_FIREBASE_PROJECT_ID
+        sync: false
+      - key: REACT_APP_FIREBASE_STORAGE_BUCKET
+        sync: false
+      - key: REACT_APP_FIREBASE_MESSAGING_SENDER_ID
+        sync: false
+      - key: REACT_APP_FIREBASE_APP_ID
+        sync: false
+      - key: GENERATE_SOURCEMAP
+        value: false
+
