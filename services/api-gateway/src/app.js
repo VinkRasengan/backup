@@ -6,10 +6,41 @@ const rateLimit = require('express-rate-limit');
 const { createProxyMiddleware } = require('http-proxy-middleware');
 require('dotenv').config();
 
-// Import shared utilities
-const Logger = require('../shared/utils/logger');
-const { HealthCheck, commonChecks } = require('../shared/utils/health-check');
-// Temporary metrics implementation until shared module is properly set up
+// Simple logger implementation
+const logger = {
+  info: (message, meta = {}) => console.log(`[INFO] ${message}`, meta),
+  error: (message, meta = {}) => console.error(`[ERROR] ${message}`, meta),
+  warn: (message, meta = {}) => console.warn(`[WARN] ${message}`, meta),
+  logRequest: (req, res, next) => {
+    console.log(`${new Date().toISOString()} - ${req.method} ${req.url}`);
+    next();
+  },
+  errorHandler: () => (err, req, res, next) => {
+    console.error('Error:', err);
+    next(err);
+  }
+};
+
+// Simple health check implementation
+const healthCheck = {
+  middleware: () => (req, res) => {
+    res.json({
+      status: 'healthy',
+      service: 'api-gateway',
+      uptime: process.uptime(),
+      timestamp: new Date().toISOString()
+    });
+  },
+  liveness: () => (req, res) => {
+    res.json({ status: 'alive', timestamp: new Date().toISOString() });
+  },
+  readiness: () => (req, res) => {
+    res.json({ status: 'ready', timestamp: new Date().toISOString() });
+  },
+  addCheck: () => {} // No-op for now
+};
+
+// Metrics implementation
 const metricsMiddleware = (req, res, next) => {
   const start = Date.now();
   res.on('finish', () => {
@@ -30,105 +61,76 @@ up{job="api-gateway",instance="localhost:8080"} 1
 `);
 };
 
-const healthHandler = (req, res) => {
-  res.json({
-    status: 'healthy',
-    service: 'api-gateway',
-    uptime: process.uptime(),
-    timestamp: new Date().toISOString()
-  });
-};
+// Import local modules (simplified)
+// const circuitBreakerService = require('./services/circuitBreaker');
+// const fallbackStrategies = require('./services/fallbackStrategies');
+// const ServiceAuthMiddleware = require('../../shared/security/serviceAuthMiddleware');
+// const MTLSManager = require('../../shared/security/mtlsManager');
+// const AuthRedundancyManager = require('../../shared/auth/authRedundancyManager');
 
-// Import local modules
-const circuitBreakerService = require('./services/circuitBreaker');
-const fallbackStrategies = require('./services/fallbackStrategies');
-const ServiceAuthMiddleware = require('../../shared/security/serviceAuthMiddleware');
-const MTLSManager = require('../../shared/security/mtlsManager');
-const AuthRedundancyManager = require('../../shared/auth/authRedundancyManager');
+// Simplified initialization (complex features disabled for now)
+// const initializeCircuitBreakers = () => {
+//   const strategies = fallbackStrategies.getAllStrategies();
+//   Object.keys(strategies).forEach(serviceName => {
+//     circuitBreakerService.registerFallback(serviceName, strategies[serviceName]);
+//   });
+//   logger.info('Circuit breakers initialized with fallback strategies');
+// };
 
-// Initialize circuit breakers with fallback strategies
-const initializeCircuitBreakers = () => {
-  const strategies = fallbackStrategies.getAllStrategies();
+// const serviceAuth = new ServiceAuthMiddleware({
+//   redis: {
+//     host: process.env.REDIS_HOST,
+//     port: process.env.REDIS_PORT,
+//     password: process.env.REDIS_PASSWORD
+//   }
+// });
 
-  Object.keys(strategies).forEach(serviceName => {
-    circuitBreakerService.registerFallback(serviceName, strategies[serviceName]);
-  });
+// const mtlsManager = new MTLSManager({
+//   certDir: process.env.CERT_DIR || './certs'
+// });
 
-  logger.info('Circuit breakers initialized with fallback strategies');
-};
+// const authRedundancy = new AuthRedundancyManager({
+//   authInstances: [
+//     { url: process.env.AUTH_SERVICE_URL || 'http://localhost:3001', priority: 1, healthy: true },
+//     { url: process.env.AUTH_SERVICE_URL_BACKUP || 'http://localhost:3011', priority: 2, healthy: true }
+//   ],
+//   localValidator: {
+//     jwtSecret: process.env.JWT_SECRET,
+//     cache: {
+//       redis: {
+//         host: process.env.REDIS_HOST,
+//         port: process.env.REDIS_PORT,
+//         password: process.env.REDIS_PASSWORD
+//       }
+//     }
+//   }
+// });
 
-// Initialize security components
-const serviceAuth = new ServiceAuthMiddleware({
-  redis: {
-    host: process.env.REDIS_HOST,
-    port: process.env.REDIS_PORT,
-    password: process.env.REDIS_PASSWORD
-  }
-});
+// initializeCircuitBreakers();
 
-const mtlsManager = new MTLSManager({
-  certDir: process.env.CERT_DIR || './certs'
-});
-
-const authRedundancy = new AuthRedundancyManager({
-  authInstances: [
-    { url: process.env.AUTH_SERVICE_URL || 'http://localhost:3001', priority: 1, healthy: true },
-    { url: process.env.AUTH_SERVICE_URL_BACKUP || 'http://localhost:3011', priority: 2, healthy: true }
-  ],
-  localValidator: {
-    jwtSecret: process.env.JWT_SECRET,
-    cache: {
-      redis: {
-        host: process.env.REDIS_HOST,
-        port: process.env.REDIS_PORT,
-        password: process.env.REDIS_PASSWORD
-      }
-    }
-  }
-});
-
-// Initialize circuit breakers on startup
-initializeCircuitBreakers();
-
-// Initialize security components
-async function initializeSecurity() {
-  try {
-    await mtlsManager.initializeAllServiceCertificates();
-    logger.info('Security components initialized');
-  } catch (error) {
-    logger.error('Failed to initialize security components', { error: error.message });
-  }
-}
-
-initializeSecurity();
+// async function initializeSecurity() {
+//   try {
+//     await mtlsManager.initializeAllServiceCertificates();
+//     logger.info('Security components initialized');
+//   } catch (error) {
+//     logger.error('Failed to initialize security components', { error: error.message });
+//   }
+// }
+// initializeSecurity();
 
 const app = express();
 const PORT = process.env.PORT || 8080;
 const SERVICE_NAME = 'api-gateway';
 
-// Initialize logger
-const logger = new Logger(SERVICE_NAME);
-
-// Initialize health check
-const healthCheck = new HealthCheck(SERVICE_NAME);
-
-// Add health checks for all services
+// Service configuration
 const services = [
-  { name: 'auth-service', url: process.env.AUTH_SERVICE_URL },
-  { name: 'link-service', url: process.env.LINK_SERVICE_URL },
-  { name: 'community-service', url: process.env.COMMUNITY_SERVICE_URL },
-  { name: 'chat-service', url: process.env.CHAT_SERVICE_URL },
-  { name: 'news-service', url: process.env.NEWS_SERVICE_URL },
-  { name: 'admin-service', url: process.env.ADMIN_SERVICE_URL }
+  { name: 'auth-service', url: process.env.AUTH_SERVICE_URL || 'http://localhost:3001' },
+  { name: 'link-service', url: process.env.LINK_SERVICE_URL || 'http://localhost:3002' },
+  { name: 'community-service', url: process.env.COMMUNITY_SERVICE_URL || 'http://localhost:3003' },
+  { name: 'chat-service', url: process.env.CHAT_SERVICE_URL || 'http://localhost:3004' },
+  { name: 'news-service', url: process.env.NEWS_SERVICE_URL || 'http://localhost:3005' },
+  { name: 'admin-service', url: process.env.ADMIN_SERVICE_URL || 'http://localhost:3006' }
 ];
-
-services.forEach(service => {
-  if (service.url) {
-    healthCheck.addCheck(service.name, commonChecks.externalService(service.name, `${service.url}/health/live`));
-  }
-});
-
-healthCheck.addCheck('memory', commonChecks.memory(256));
 
 // Security middleware
 app.use(helmet({
@@ -181,7 +183,7 @@ app.use(morgan('combined', {
 app.get('/metrics', metricsHandler);
 
 // Health check endpoints
-app.get('/health', healthHandler);
+app.get('/health', healthCheck.middleware());
 app.get('/health/live', healthCheck.liveness());
 app.get('/health/ready', healthCheck.readiness());
 
@@ -204,168 +206,47 @@ app.get('/info', (req, res) => {
   });
 });
 
-// Circuit breaker status endpoint
-app.get('/circuit-breaker/status', (req, res) => {
-  try {
-    const status = circuitBreakerService.getStatus();
-    res.json({
-      timestamp: new Date().toISOString(),
-      circuitBreakers: status
-    });
-  } catch (error) {
-    logger.error('Error getting circuit breaker status', { error: error.message });
-    res.status(500).json({
-      error: 'Failed to get circuit breaker status',
-      timestamp: new Date().toISOString()
-    });
-  }
-});
+// Circuit breaker status endpoint (disabled)
+// app.get('/circuit-breaker/status', (req, res) => {
+//   try {
+//     const status = circuitBreakerService.getStatus();
+//     res.json({
+//       timestamp: new Date().toISOString(),
+//       circuitBreakers: status
+//     });
+//   } catch (error) {
+//     logger.error('Error getting circuit breaker status', { error: error.message });
+//     res.status(500).json({
+//       error: 'Failed to get circuit breaker status',
+//       timestamp: new Date().toISOString()
+//     });
+//   }
+// });
 
-// Circuit breaker health check endpoint
-app.get('/circuit-breaker/health', async (req, res) => {
-  try {
-    const health = await circuitBreakerService.healthCheck();
-    res.json({
-      timestamp: new Date().toISOString(),
-      services: health
-    });
-  } catch (error) {
-    logger.error('Error performing circuit breaker health check', { error: error.message });
-    res.status(500).json({
-      error: 'Failed to perform health check',
-      timestamp: new Date().toISOString()
-    });
-  }
-});
+// Circuit breaker health check endpoint (disabled)
+// app.get('/circuit-breaker/health', async (req, res) => {
+//   try {
+//     const health = await circuitBreakerService.healthCheck();
+//     res.json({
+//       timestamp: new Date().toISOString(),
+//       services: health
+//     });
+//   } catch (error) {
+//     logger.error('Error performing circuit breaker health check', { error: error.message });
+//     res.status(500).json({
+//       error: 'Failed to perform health check',
+//       timestamp: new Date().toISOString()
+//     });
+//   }
+// });
 
-// Security status endpoints
-app.get('/security/status', serviceAuth.authenticate(), (req, res) => {
-  try {
-    const status = {
-      serviceAuth: serviceAuth.getStatus(),
-      mtls: mtlsManager.getStatus(),
-      authRedundancy: authRedundancy.getStatus(),
-      timestamp: new Date().toISOString()
-    };
-    res.json(status);
-  } catch (error) {
-    logger.error('Error getting security status', { error: error.message });
-    res.status(500).json({
-      error: 'Failed to get security status',
-      timestamp: new Date().toISOString()
-    });
-  }
-});
-
-// Auth redundancy status endpoint
-app.get('/auth/redundancy/status', serviceAuth.authenticate(), async (req, res) => {
-  try {
-    const status = await authRedundancy.healthCheck();
-    res.json(status);
-  } catch (error) {
-    logger.error('Error getting auth redundancy status', { error: error.message });
-    res.status(500).json({
-      error: 'Failed to get auth redundancy status',
-      timestamp: new Date().toISOString()
-    });
-  }
-});
-
-// Force auth failover endpoint
-app.post('/auth/redundancy/failover', serviceAuth.adminOnly(), (req, res) => {
-  try {
-    authRedundancy.forceFailover();
-    res.json({
-      message: 'Auth failover completed',
-      timestamp: new Date().toISOString()
-    });
-  } catch (error) {
-    logger.error('Error forcing auth failover', { error: error.message });
-    res.status(500).json({
-      error: 'Failed to force auth failover',
-      timestamp: new Date().toISOString()
-    });
-  }
-});
-
-// Service credentials endpoint (for service initialization)
-app.post('/security/credentials/:serviceName', serviceAuth.adminOnly(), async (req, res) => {
-  try {
-    const { serviceName } = req.params;
-    const credentials = await serviceAuth.getServiceCredentials(serviceName);
-    const cert = await mtlsManager.getServiceCertificate(serviceName);
-
-    res.json({
-      credentials,
-      certificate: {
-        cert: cert.cert,
-        key: cert.key,
-        ca: cert.caCert
-      },
-      timestamp: new Date().toISOString()
-    });
-  } catch (error) {
-    logger.error('Error getting service credentials', { error: error.message });
-    res.status(500).json({
-      error: 'Failed to get service credentials',
-      timestamp: new Date().toISOString()
-    });
-  }
-});
-
-// Force key rotation endpoint
-app.post('/security/rotate-keys', serviceAuth.adminOnly(), async (req, res) => {
-  try {
-    await serviceAuth.forceKeyRotation();
-    res.json({
-      message: 'Key rotation completed',
-      timestamp: new Date().toISOString()
-    });
-  } catch (error) {
-    logger.error('Error rotating keys', { error: error.message });
-    res.status(500).json({
-      error: 'Failed to rotate keys',
-      timestamp: new Date().toISOString()
-    });
-  }
-});
-
-// Service status endpoint
-app.get('/services/status', async (req, res) => {
-  try {
-    const serviceStatuses = await Promise.allSettled(
-      services.map(async (service) => {
-        try {
-          const response = await circuitBreakerService.execute(service.name, {
-            method: 'GET',
-            url: `${service.url}/health/live`,
-            timeout: 5000
-          });
-          return { name: service.name, status: 'healthy', available: true };
-        } catch (error) {
-          return { name: service.name, status: 'unhealthy', error: error.message };
-        }
-      })
-    );
-
-    const results = serviceStatuses.map((result, index) => ({
-      service: services[index].name,
-      ...result.value
-    }));
-
-    res.json({
-      gateway: 'healthy',
-      services: results,
-      timestamp: new Date().toISOString()
-    });
-  } catch (error) {
-    logger.logError(error, req);
-    res.status(500).json({
-      error: 'Failed to check service status',
-      timestamp: new Date().toISOString()
-    });
-  }
-});
+// Complex endpoints disabled for simplicity
+// app.get('/security/status', serviceAuth.authenticate(), (req, res) => { ... });
+// app.get('/auth/redundancy/status', serviceAuth.authenticate(), async (req, res) => { ... });
+// app.post('/auth/redundancy/failover', serviceAuth.adminOnly(), (req, res) => { ... });
+// app.post('/security/credentials/:serviceName', serviceAuth.adminOnly(), async (req, res) => { ... });
+// app.post('/security/rotate-keys', serviceAuth.adminOnly(), async (req, res) => { ... });
+// app.get('/services/status', async (req, res) => { ... });
 
 // API routes with /api prefix
 app.use('/api/users', createProxyMiddleware({
@@ -382,7 +263,7 @@ app.use('/api/users', createProxyMiddleware({
 }));
 
 app.use('/api/auth', createProxyMiddleware({
-  target: process.env.AUTH_SERVICE_URL || "http://localhost:3001" || 'http://localhost:3001',
+  target: process.env.AUTH_SERVICE_URL || 'http://localhost:3001',
   changeOrigin: true,
   pathRewrite: { '^/api/auth': '/auth' },
   onError: (err, req, res) => {
@@ -549,7 +430,7 @@ app.use('/auth', createProxyMiddleware({
 
 // User routes (proxy to auth service)
 app.use('/users', createProxyMiddleware({
-  target: process.env.AUTH_SERVICE_URL || "http://localhost:3001" || 'http://localhost:3001',
+  target: process.env.AUTH_SERVICE_URL || 'http://localhost:3001',
   changeOrigin: true,
   pathRewrite: { '^/users': '/users' },
   onError: (err, req, res) => {
@@ -563,7 +444,7 @@ app.use('/users', createProxyMiddleware({
 
 // Link verification routes (proxy to link service)
 app.use('/links', createProxyMiddleware({
-  target: process.env.LINK_SERVICE_URL || "http://localhost:3002",
+  target: process.env.LINK_SERVICE_URL || 'http://localhost:3002',
   changeOrigin: true,
   pathRewrite: { '^/links': '/links' },
   onError: (err, req, res) => {
@@ -577,7 +458,7 @@ app.use('/links', createProxyMiddleware({
 
 // Security routes (proxy to link service)
 app.use('/security', createProxyMiddleware({
-  target: process.env.LINK_SERVICE_URL || "http://localhost:3002",
+  target: process.env.LINK_SERVICE_URL || 'http://localhost:3002',
   changeOrigin: true,
   pathRewrite: { '^/security': '/security' },
   onError: (err, req, res) => {
@@ -589,11 +470,51 @@ app.use('/security', createProxyMiddleware({
   }
 }));
 
+// Community routes (without /api prefix for frontend compatibility)
+app.use('/community', createProxyMiddleware({
+  target: process.env.COMMUNITY_SERVICE_URL || 'http://localhost:3003',
+  changeOrigin: true,
+  pathRewrite: { '^/community': '' },
+  onError: (err, req, res) => {
+    logger.error('Community service proxy error (direct)', { error: err.message });
+    res.status(503).json({
+      error: 'Community service unavailable',
+      code: 'SERVICE_UNAVAILABLE'
+    });
+  }
+}));
 
+// Posts routes (without /api prefix for frontend compatibility)
+app.use('/posts', createProxyMiddleware({
+  target: process.env.COMMUNITY_SERVICE_URL || 'http://localhost:3003',
+  changeOrigin: true,
+  pathRewrite: { '^/posts': '/posts' },
+  onError: (err, req, res) => {
+    logger.error('Community service proxy error (posts direct)', { error: err.message });
+    res.status(503).json({
+      error: 'Community service unavailable',
+      code: 'SERVICE_UNAVAILABLE'
+    });
+  }
+}));
+
+// Votes routes (without /api prefix for frontend compatibility)
+app.use('/votes', createProxyMiddleware({
+  target: process.env.COMMUNITY_SERVICE_URL || 'http://localhost:3003',
+  changeOrigin: true,
+  pathRewrite: { '^/votes': '/votes' },
+  onError: (err, req, res) => {
+    logger.error('Community service proxy error (votes direct)', { error: err.message });
+    res.status(503).json({
+      error: 'Community service unavailable',
+      code: 'SERVICE_UNAVAILABLE'
+    });
+  }
+}));
 
 // Chat routes (proxy to chat service)
 app.use('/chat', createProxyMiddleware({
-  target: process.env.CHAT_SERVICE_URL || "http://localhost:3004",
+  target: process.env.CHAT_SERVICE_URL || 'http://localhost:3004',
   changeOrigin: true,
   pathRewrite: { '^/chat': '/chat' },
   onError: (err, req, res) => {
@@ -607,7 +528,7 @@ app.use('/chat', createProxyMiddleware({
 
 // Conversations routes (proxy to chat service)
 app.use('/conversations', createProxyMiddleware({
-  target: process.env.CHAT_SERVICE_URL || "http://localhost:3004",
+  target: process.env.CHAT_SERVICE_URL || 'http://localhost:3004',
   changeOrigin: true,
   pathRewrite: { '^/conversations': '/conversations' },
   onError: (err, req, res) => {
@@ -621,7 +542,7 @@ app.use('/conversations', createProxyMiddleware({
 
 // News routes (proxy to news service)
 app.use('/news', createProxyMiddleware({
-  target: process.env.NEWS_SERVICE_URL || "http://localhost:3005",
+  target: process.env.NEWS_SERVICE_URL || 'http://localhost:3005',
   changeOrigin: true,
   pathRewrite: { '^/news': '/news' },
   onError: (err, req, res) => {
@@ -635,7 +556,7 @@ app.use('/news', createProxyMiddleware({
 
 // Admin routes (proxy to admin service)
 app.use('/admin', createProxyMiddleware({
-  target: process.env.ADMIN_SERVICE_URL || "http://localhost:3006",
+  target: process.env.ADMIN_SERVICE_URL || 'http://localhost:3006',
   changeOrigin: true,
   pathRewrite: { '^/admin': '/admin' },
   onError: (err, req, res) => {
@@ -661,8 +582,13 @@ app.use('*', (req, res) => {
 
 // Error handling middleware
 app.use((error, req, res, next) => {
-  logger.logError(error, req);
-  
+  logger.error('Request error', {
+    error: error.message,
+    stack: error.stack,
+    url: req.url,
+    method: req.method
+  });
+
   res.status(error.status || 500).json({
     error: error.message || 'Internal server error',
     code: error.code || 'INTERNAL_ERROR',

@@ -5,12 +5,11 @@ const getApiBaseUrl = () => {
   if (process.env.REACT_APP_API_URL) {
     return process.env.REACT_APP_API_URL;
   }
-
   if (process.env.NODE_ENV === 'production') {
     return '/api';
   }
 
-  // Fixed: Use API Gateway port 8080 instead of 5000
+  // Fixed: Use API Gateway port 8080 
   return 'http://localhost:8080/api';
 };
 

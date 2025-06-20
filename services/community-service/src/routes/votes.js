@@ -500,4 +500,135 @@ router.post('/batch', async (req, res) => {
   }
 });
 
+// Batch get vote statistics for multiple posts
+router.post('/batch/stats', async (req, res) => {
+  try {
+    const { postIds } = req.body;
+
+    if (!Array.isArray(postIds) || postIds.length === 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'postIds array is required'
+      });
+    }
+
+    logger.info('Batch vote stats request', { postCount: postIds.length });
+
+    const results = {};
+
+    // Process each post ID
+    for (const postId of postIds) {
+      try {
+        const votesSnapshot = await db.collection(collections.VOTES)
+          .where('linkId', '==', postId)
+          .get();
+
+        const stats = {
+          total: 0,
+          upvotes: 0,
+          downvotes: 0,
+          score: 0
+        };
+
+        votesSnapshot.forEach((doc) => {
+          const voteType = doc.data().voteType;
+          stats.total++;
+
+          if (voteType === 'upvote') {
+            stats.upvotes++;
+          } else if (voteType === 'downvote') {
+            stats.downvotes++;
+          }
+        });
+
+        stats.score = stats.upvotes - stats.downvotes;
+        results[postId] = stats;
+
+      } catch (error) {
+        logger.error('Error fetching votes for post', { postId, error: error.message });
+        results[postId] = { total: 0, upvotes: 0, downvotes: 0, score: 0 };
+      }
+    }
+
+    res.json({
+      success: true,
+      data: results
+    });
+
+  } catch (error) {
+    logger.error('Batch vote stats error', { error: error.message });
+    res.status(500).json({
+      success: false,
+      error: 'Failed to get batch vote stats'
+    });
+  }
+});
+
+// Batch get user votes for multiple posts
+router.post('/batch/user', async (req, res) => {
+  try {
+    const { postIds } = req.body;
+    const userId = getUserId(req);
+
+    if (!Array.isArray(postIds) || postIds.length === 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'postIds array is required'
+      });
+    }
+
+    if (!userId) {
+      return res.status(400).json({
+        success: false,
+        error: 'User ID required'
+      });
+    }
+
+    logger.info('Batch user votes request', { postCount: postIds.length, userId });
+
+    const results = {};
+
+    // Process each post ID
+    for (const postId of postIds) {
+      try {
+        const userVoteQuery = await db.collection(collections.VOTES)
+          .where('linkId', '==', postId)
+          .where('userId', '==', userId)
+          .get();
+
+        if (!userVoteQuery.empty) {
+          const voteDoc = userVoteQuery.docs[0];
+          const voteData = voteDoc.data();
+
+          results[postId] = {
+            id: voteDoc.id,
+            linkId: postId,
+            userId: voteData.userId,
+            voteType: voteData.voteType,
+            createdAt: voteData.createdAt?.toDate?.()?.toISOString() || voteData.createdAt
+          };
+        } else {
+          results[postId] = null;
+        }
+
+      } catch (error) {
+        logger.error('Error fetching user vote for post', { postId, userId, error: error.message });
+        results[postId] = null;
+      }
+    }
+
+    res.json({
+      success: true,
+      data: results
+    });
+
+  } catch (error) {
+    logger.error('Batch user votes error', { error: error.message });
+    res.status(500).json({
+      success: false,
+      error: 'Failed to get batch user votes'
+    });
+  }
+});
+
 module.exports = router;

@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8080';
 
 export const useBatchVotes = () => {
     const [votesData, setVotesData] = useState({});
@@ -33,7 +33,10 @@ export const useBatchVotes = () => {
             }
 
             const promises = chunks.map(async (chunk) => {
-                const response = await fetch(`${API_BASE_URL}/community/votes/batch`, {
+                const url = `${API_BASE_URL}/api/votes/batch/stats`;
+                console.log('🔍 Batch stats URL:', url);
+                console.log('🔍 API_BASE_URL:', API_BASE_URL);
+                const response = await fetch(url, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -72,32 +75,50 @@ export const useBatchVotes = () => {
         } finally {
             setLoading(false);
         }
-    }, [requestedPostIds, user]);
-
-    const fetchBatchUserVotes = useCallback(async (postIds) => {
+    }, [requestedPostIds, user]);    const fetchBatchUserVotes = useCallback(async (postIds) => {
         if (!user || !postIds || postIds.length === 0) return;
 
         try {
             console.log('🚀 Fetching batch user votes for', postIds.length, 'posts');
 
+            // Get auth token from localStorage (consistent with submitVote)
+            const token = localStorage.getItem('authToken') ||
+                         localStorage.getItem('backendToken') ||
+                         localStorage.getItem('token');            if (!token) {
+                console.log('❌ No auth token found');
+                return;
+            }
+
+            console.log('🔑 Auth token info:', { hasToken: !!token, tokenLength: token?.length });
+
             // Split into chunks of 10
             const chunks = [];
             for (let i = 0; i < postIds.length; i += 10) {
                 chunks.push(postIds.slice(i, i + 10));
-            }
-
-            const promises = chunks.map(async (chunk) => {
-                const response = await fetch(`${API_BASE_URL}/community/votes/batch/user`, {
-                    method: 'POST',
-                    headers: {
+            }            const promises = chunks.map(async (chunk) => {
+                const url = `${API_BASE_URL}/api/votes/batch/user`;
+                console.log('🔍 Batch user votes URL:', url);
+                console.log('🔍 API_BASE_URL:', API_BASE_URL);
+                console.log('🔑 Sending auth token:', token?.substring(0, 50) + '...');
+                
+                const response = await fetch(url, {
+                    method: 'POST',                    headers: {
                         'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${user.token}`,
+                        'Authorization': `Bearer ${token}`,
                     },
                     body: JSON.stringify({ postIds: chunk }),
                 });
 
+                console.log('📥 Batch user votes response:', { 
+                    status: response.status, 
+                    ok: response.ok,
+                    statusText: response.statusText 
+                });
+
                 if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
+                    const errorText = await response.text();
+                    console.error('❌ Batch user votes error:', errorText);
+                    throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
                 }
 
                 return response.json();
@@ -197,24 +218,17 @@ export const usePostVote = (postId) => {
                 voteType,
                 userId: user.uid || user.id,
                 userEmail: user.email
-            };
-
-            console.log('📤 Batch vote request:', {
-                url: `http://localhost:8080/api/votes/${postId}`,
+            };            console.log('📤 Batch vote request:', {
+                url: `${API_BASE_URL}/api/votes/${postId}`,
                 body: requestBody
             });
-
-            // Try direct community service first for debugging
-            console.log('🔧 Trying direct community service...');
-            const directUrl = `http://localhost:3003/votes/${postId}`;
-            console.log('📤 Direct request URL:', directUrl);
 
             // Create AbortController for timeout
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
 
-            // Try direct community service first for debugging
-            const response = await fetch(`http://localhost:3003/votes/${postId}`, {
+            // Use API Gateway for proper routing
+            const response = await fetch(`${API_BASE_URL}/api/votes/${postId}`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
