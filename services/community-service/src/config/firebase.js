@@ -1,12 +1,19 @@
 const admin = require('firebase-admin');
 const path = require('path');
 
-// Load environment variables
-require('dotenv').config();
+// Load environment variables from root .env file
+require('dotenv').config({ path: path.join(__dirname, '../../../.env') });
 
 let db, collections;
 
 try {
+  // Debug environment variables
+  console.log('Firebase Environment Variables:', {
+    FIREBASE_PROJECT_ID: process.env.FIREBASE_PROJECT_ID,
+    FIREBASE_CLIENT_EMAIL: process.env.FIREBASE_CLIENT_EMAIL,
+    FIREBASE_PRIVATE_KEY: process.env.FIREBASE_PRIVATE_KEY ? 'EXISTS' : 'MISSING'
+  });
+
   // Initialize Firebase Admin SDK
   if (!admin.apps.length) {
     // Use production Firebase with service account credentials
