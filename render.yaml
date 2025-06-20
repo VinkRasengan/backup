@@ -1,0 +1,177 @@
+services:
+  # Redis Database
+  - type: redis
+    name: factcheck-redis
+    plan: free
+    
+  # Auth Service
+  - type: web
+    name: factcheck-auth-service
+    buildCommand: npm ci
+    startCommand: npm start
+    rootDir: ./services/auth-service
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3001
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: factcheck-redis
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+      - key: FIREBASE_PROJECT_ID
+        value: factcheck-1d6e8
+    
+  # API Gateway
+  - type: web
+    name: factcheck-api-gateway
+    buildCommand: npm ci
+    startCommand: npm start
+    rootDir: ./services/api-gateway
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 8080
+      - key: AUTH_SERVICE_URL
+        fromService:
+          type: web
+          name: factcheck-auth-service
+          property: host
+      - key: COMMUNITY_SERVICE_URL
+        fromService:
+          type: web
+          name: factcheck-community-service
+          property: host
+      - key: ADMIN_SERVICE_URL
+        fromService:
+          type: web
+          name: factcheck-admin-service
+          property: host
+      - key: CHAT_SERVICE_URL
+        fromService:
+          type: web
+          name: factcheck-chat-service
+          property: host
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: factcheck-redis
+          property: connectionString
+    
+  # Community Service
+  - type: web
+    name: factcheck-community-service
+    buildCommand: npm ci
+    startCommand: npm start
+    rootDir: ./services/community-service
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3003
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: factcheck-redis
+          property: connectionString
+      - key: FIREBASE_PROJECT_ID
+        value: factcheck-1d6e8
+    
+  # Admin Service
+  - type: web
+    name: factcheck-admin-service
+    buildCommand: npm ci
+    startCommand: npm start
+    rootDir: ./services/admin-service
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3004
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: factcheck-redis
+          property: connectionString
+      - key: FIREBASE_PROJECT_ID
+        value: factcheck-1d6e8
+    
+  # Chat Service
+  - type: web
+    name: factcheck-chat-service
+    buildCommand: npm ci
+    startCommand: npm start
+    rootDir: ./services/chat-service
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3005
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: factcheck-redis
+          property: connectionString
+    
+  # Link Service
+  - type: web
+    name: factcheck-link-service
+    buildCommand: npm ci
+    startCommand: npm start
+    rootDir: ./services/link-service
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3006
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: factcheck-redis
+          property: connectionString
+    
+  # News Service
+  - type: web
+    name: factcheck-news-service
+    buildCommand: npm ci
+    startCommand: npm start
+    rootDir: ./services/news-service
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3007
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: factcheck-redis
+          property: connectionString
+    
+  # Frontend Client
+  - type: static_site
+    name: factcheck-client
+    buildCommand: npm ci && npm run build
+    staticPublishPath: ./build
+    rootDir: ./client
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: REACT_APP_API_URL
+        fromService:
+          type: web
+          name: factcheck-api-gateway
+          property: host
+      - key: REACT_APP_FIREBASE_PROJECT_ID
+        value: factcheck-1d6e8
+      - key: REACT_APP_FIREBASE_API_KEY
+        sync: false  # Set manually in Render dashboard
+      - key: REACT_APP_FIREBASE_AUTH_DOMAIN
+        value: factcheck-1d6e8.firebaseapp.com
+      - key: REACT_APP_FIREBASE_STORAGE_BUCKET
+        value: factcheck-1d6e8.firebasestorage.app
+      - key: GENERATE_SOURCEMAP
+        value: false
