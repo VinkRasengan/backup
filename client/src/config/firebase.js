@@ -2,15 +2,15 @@ import { initializeApp } from 'firebase/app';
 import { getAuth, connectAuthEmulator } from 'firebase/auth';
 import { getFirestore, connectFirestoreEmulator } from 'firebase/firestore';
 
-// Firebase configuration
+// Firebase configuration - Using environment variables
 const firebaseConfig = {
-  apiKey: "AIzaSyCpeeTLujKruzK14siuDzGmpTadzhfvccI",
-  authDomain: "factcheck-1d6e8.firebaseapp.com",
-  projectId: "factcheck-1d6e8",
-  storageBucket: "factcheck-1d6e8.firebasestorage.app",
-  messagingSenderId: "583342362302",
-  appId: "1:583342362302:web:ee97918d159c90e5b8d8ef",
-  measurementId: "G-XBLLPBG4HM"
+  apiKey: process.env.REACT_APP_FIREBASE_API_KEY || "AIzaSyCpeeTLujKruzK14siuDzGmpTadzhfvccI",
+  authDomain: process.env.REACT_APP_FIREBASE_AUTH_DOMAIN || "factcheck-1d6e8.firebaseapp.com",
+  projectId: process.env.REACT_APP_FIREBASE_PROJECT_ID || "factcheck-1d6e8",
+  storageBucket: process.env.REACT_APP_FIREBASE_STORAGE_BUCKET || "factcheck-1d6e8.firebasestorage.app",
+  messagingSenderId: process.env.REACT_APP_FIREBASE_MESSAGING_SENDER_ID || "583342362302",
+  appId: process.env.REACT_APP_FIREBASE_APP_ID || "1:583342362302:web:ee97918d159c90e5b8d8ef",
+  measurementId: process.env.REACT_APP_FIREBASE_MEASUREMENT_ID || "G-XBLLPBG4HM"
 };
 
 // Initialize Firebase
