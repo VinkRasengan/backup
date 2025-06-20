@@ -204,7 +204,7 @@ services:
   phishtank-service:
     build:
       context: ./services/phishtank-service
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.dev
     ports:
       - "3007:3007"
     environment:
@@ -230,7 +230,7 @@ services:
   criminalip-service:
     build:
       context: ./services/criminalip-service
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.dev
     ports:
       - "3008:3008"
     environment:
