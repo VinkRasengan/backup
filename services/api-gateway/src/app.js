@@ -299,21 +299,44 @@ app.use('/api/votes', createProxyMiddleware({
     logger.info('Proxying votes request', {
       method: req.method,
       url: req.url,
-      target: proxyReq.path
+      target: `${process.env.COMMUNITY_SERVICE_URL || 'http://localhost:3003'}${proxyReq.path}`,
+      headers: req.headers,
+      body: req.body
     });
+
+    // Forward authentication headers
+    if (req.headers.authorization) {
+      proxyReq.setHeader('Authorization', req.headers.authorization);
+    }
+
+    // Handle JSON body for POST/PUT requests
+    if (req.body && (req.method === 'POST' || req.method === 'PUT')) {
+      const bodyData = JSON.stringify(req.body);
+      proxyReq.setHeader('Content-Type', 'application/json');
+      proxyReq.setHeader('Content-Length', Buffer.byteLength(bodyData));
+      proxyReq.write(bodyData);
+    }
   },
   onProxyRes: (proxyRes, req, res) => {
     logger.info('Votes proxy response', {
       status: proxyRes.statusCode,
-      url: req.url
+      url: req.url,
+      headers: proxyRes.headers
     });
   },
   onError: (err, req, res) => {
-    logger.error('Community service proxy error (votes)', { error: err.message });
-    res.status(503).json({
-      error: 'Community service unavailable',
-      code: 'SERVICE_UNAVAILABLE'
+    logger.error('Community service proxy error (votes)', {
+      error: err.message,
+      stack: err.stack,
+      url: req.url,
+      method: req.method
     });
+    if (!res.headersSent) {
+      res.status(503).json({
+        error: 'Community service unavailable',
+        code: 'SERVICE_UNAVAILABLE'
+      });
+    }
   }
 }));
 
@@ -366,6 +389,20 @@ app.use('/api/community', createProxyMiddleware({
   target: process.env.COMMUNITY_SERVICE_URL || 'http://localhost:3003',
   changeOrigin: true,
   pathRewrite: { '^/api/community': '' },
+  onError: (err, req, res) => {
+    logger.error('Community service proxy error', { error: err.message });
+    res.status(503).json({
+      error: 'Community service unavailable',
+      code: 'SERVICE_UNAVAILABLE'
+    });
+  }
+}));
+
+// Community routes without /api prefix (for backward compatibility)
+app.use('/community', createProxyMiddleware({
+  target: process.env.COMMUNITY_SERVICE_URL || 'http://localhost:3003',
+  changeOrigin: true,
+  pathRewrite: { '^/community': '' },
   onError: (err, req, res) => {
     logger.error('Community service proxy error', { error: err.message });
     res.status(503).json({
@@ -470,47 +507,8 @@ app.use('/security', createProxyMiddleware({
   }
 }));
 
-// Community routes (without /api prefix for frontend compatibility)
-app.use('/community', createProxyMiddleware({
-  target: process.env.COMMUNITY_SERVICE_URL || 'http://localhost:3003',
-  changeOrigin: true,
-  pathRewrite: { '^/community': '' },
-  onError: (err, req, res) => {
-    logger.error('Community service proxy error (direct)', { error: err.message });
-    res.status(503).json({
-      error: 'Community service unavailable',
-      code: 'SERVICE_UNAVAILABLE'
-    });
-  }
-}));
-
-// Posts routes (without /api prefix for frontend compatibility)
-app.use('/posts', createProxyMiddleware({
-  target: process.env.COMMUNITY_SERVICE_URL || 'http://localhost:3003',
-  changeOrigin: true,
-  pathRewrite: { '^/posts': '/posts' },
-  onError: (err, req, res) => {
-    logger.error('Community service proxy error (posts direct)', { error: err.message });
-    res.status(503).json({
-      error: 'Community service unavailable',
-      code: 'SERVICE_UNAVAILABLE'
-    });
-  }
-}));
-
-// Votes routes (without /api prefix for frontend compatibility)
-app.use('/votes', createProxyMiddleware({
-  target: process.env.COMMUNITY_SERVICE_URL || 'http://localhost:3003',
-  changeOrigin: true,
-  pathRewrite: { '^/votes': '/votes' },
-  onError: (err, req, res) => {
-    logger.error('Community service proxy error (votes direct)', { error: err.message });
-    res.status(503).json({
-      error: 'Community service unavailable',
-      code: 'SERVICE_UNAVAILABLE'
-    });
-  }
-}));
+// REMOVED DUPLICATE ROUTES - Use /api/* routes only for consistency
+// Community, posts, and votes routes are now only available via /api/* prefix
 
 // Chat routes (proxy to chat service)
 app.use('/chat', createProxyMiddleware({

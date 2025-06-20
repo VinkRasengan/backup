@@ -3,6 +3,7 @@ import NavigationLayout from '../components/navigation/NavigationLayout';
 import UnifiedPostCard from '../components/Community/UnifiedPostCard';
 import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
+import { communityAPI } from '../services/api';
 
 const CommunityPage = () => {
   console.log('🎯 CommunityPage component rendering...');
@@ -25,27 +26,24 @@ const CommunityPage = () => {
         return;
       }
 
-      const response = await fetch('/api/posts/vote', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('authToken') || localStorage.getItem('backendToken')}`
-        },
-        body: JSON.stringify({
-          postId,
-          voteType,
-          userId: user.uid || user.id
-        })
-      });
+      // ✅ Use API service instead of direct fetch
+      const response = await communityAPI.submitVote(
+        postId,
+        voteType,
+        user.uid || user.id,
+        user.email
+      );
 
-      if (response.ok) {
+      if (response.success) {
         console.log('✅ Vote successful');
         fetchPosts(); // Refresh data after voting
       } else {
-        console.error('❌ Vote failed:', response.status);
+        console.error('❌ Vote failed:', response.error);
+        toast.error('Failed to vote');
       }
     } catch (error) {
       console.error('❌ Error voting:', error);
+      toast.error('Error voting');
     }
   };
 
@@ -73,31 +71,27 @@ const CommunityPage = () => {
         return;
       }
 
-      const response = await fetch('/api/comments', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('authToken') || localStorage.getItem('backendToken')}`
-        },
-        body: JSON.stringify({
-          postId,
-          content: commentText.trim(),
-          userId: user.uid || user.id,
-          userEmail: user.email,
-          displayName: user.displayName || user.name || user.email || 'Anonymous'
-        })
-      });
+      // ✅ Use API service instead of direct fetch
+      const response = await communityAPI.addComment(
+        postId,
+        commentText.trim(),
+        user.uid || user.id,
+        user.email,
+        user.displayName || user.name || user.email || 'Anonymous'
+      );
 
-      if (response.ok) {
+      if (response.success) {
         console.log('✅ Comment successful');
         fetchPosts(); // Refresh data after commenting
         return true;
       } else {
-        console.error('❌ Comment failed:', response.status);
+        console.error('❌ Comment failed:', response.error);
+        toast.error('Failed to add comment');
         return false;
       }
     } catch (error) {
       console.error('❌ Error adding comment:', error);
+      toast.error('Error adding comment');
       return false;
     }
   };
@@ -121,7 +115,7 @@ const CommunityPage = () => {
     }
   };
 
-  // Simple fetch function
+  // Simple fetch function using API service
   const fetchPosts = async () => {
     try {
       setLoading(true);
@@ -130,18 +124,24 @@ const CommunityPage = () => {
       console.log('🔍 Current URL:', window.location.href);
       console.log('🔍 Posts state:', posts?.length || 0);
 
-      const response = await fetch('/api/community/posts?page=1&sort=newest&limit=10&newsOnly=false&includeNews=true');
-      const data = await response.json();
+      // ✅ Use API service instead of direct fetch
+      const response = await communityAPI.getPosts({
+        page: 1,
+        sort: 'newest',
+        limit: 10,
+        newsOnly: false,
+        includeNews: true
+      });
 
-      console.log('🌐 API response:', data);
-      console.log('🌐 API success:', data?.success);
-      console.log('🌐 API posts count:', data?.data?.posts?.length || 0);
+      console.log('🌐 API response:', response);
+      console.log('🌐 API success:', response?.success);
+      console.log('🌐 API posts count:', response?.data?.posts?.length || 0);
 
-      if (data.success && data.data && data.data.posts) {
-        console.log('✅ Setting posts:', data.data.posts);
-        setPosts(data.data.posts);
+      if (response?.success && response?.data?.posts) {
+        console.log('✅ Setting posts:', response.data.posts);
+        setPosts(response.data.posts);
       } else {
-        console.error('❌ Invalid API response structure:', data);
+        console.error('❌ Invalid API response structure:', response);
         setError('Invalid API response');
       }
     } catch (error) {
@@ -156,7 +156,7 @@ const CommunityPage = () => {
   useEffect(() => {
     console.log('🚀 useEffect [] (mount) triggered');
     fetchPosts();
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   console.log('🎯 CommunityPage rendering JSX...');
   console.log('📊 Current data:', { posts: posts.length, loading, error });

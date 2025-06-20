@@ -34,8 +34,68 @@ class CommunityAPI {
     return response.json();
   }
 
+  // POSTS ENDPOINTS
+
+  // Get community posts
+  async getPosts(params = {}) {
+    try {
+      const queryParams = new URLSearchParams(params);
+      const response = await fetch(`${this.baseURL}/api/posts?${queryParams}`, {
+        method: 'GET',
+        headers: this.getAuthHeaders()
+      });
+      return await this.handleResponse(response);
+    } catch (error) {
+      console.error('Get posts error:', error);
+      throw error;
+    }
+  }
+
+  // Submit to community (create new post)
+  async submitToCommunity(data) {
+    try {
+      const response = await fetch(`${this.baseURL}/api/posts`, {
+        method: 'POST',
+        headers: this.getAuthHeaders(),
+        body: JSON.stringify(data)
+      });
+      return await this.handleResponse(response);
+    } catch (error) {
+      console.error('Submit to community error:', error);
+      throw error;
+    }
+  }
+
+  // Get my submissions (filter posts by user)
+  async getMySubmissions() {
+    try {
+      const response = await fetch(`${this.baseURL}/api/posts?userPostsOnly=true`, {
+        method: 'GET',
+        headers: this.getAuthHeaders()
+      });
+      return await this.handleResponse(response);
+    } catch (error) {
+      console.error('Get my submissions error:', error);
+      throw error;
+    }
+  }
+
+  // Delete submission (delete post)
+  async deleteSubmission(id) {
+    try {
+      const response = await fetch(`${this.baseURL}/api/posts/${id}`, {
+        method: 'DELETE',
+        headers: this.getAuthHeaders()
+      });
+      return await this.handleResponse(response);
+    } catch (error) {
+      console.error('Delete submission error:', error);
+      throw error;
+    }
+  }
+
   // VOTING ENDPOINTS
-  
+
   // Submit or update vote for a link
   async submitVote(linkId, voteType, userId = null, userEmail = null) {
     try {

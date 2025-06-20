@@ -12,6 +12,7 @@ import { useCounterAnimation, useHoverAnimation } from '../../hooks/useGSAP';
 import { gsap } from '../../utils/gsap';
 import { usePostVote } from '../../hooks/useBatchVotes';
 import toast from 'react-hot-toast';
+import { communityAPI } from '../../services/api';
 
 // Simple cache to prevent duplicate requests
 const voteDataCache = new Map();
@@ -42,13 +43,24 @@ const VoteComponent = ({ linkId, postData, className = '' }) => {
   const [legacyUserVote, setLegacyUserVote] = useState(null);
   const [legacyLoading, setLegacyLoading] = useState(false);
 
-  // Use batch data if available, otherwise fallback to legacy
-  const voteStats = batchVoteStats.total > 0 ? batchVoteStats : legacyVoteStats;
+  // Convert batch data (Reddit-style) to legacy format (safety-style) if available
+  const convertedBatchStats = batchVoteStats.total > 0 ? {
+    safe: batchVoteStats.upvotes || 0,
+    unsafe: batchVoteStats.downvotes || 0,
+    suspicious: 0, // Not used in Reddit-style voting
+    total: batchVoteStats.total || 0,
+    score: batchVoteStats.score || 0,
+    upvotes: batchVoteStats.upvotes || 0,
+    downvotes: batchVoteStats.downvotes || 0
+  } : null;
+
+  // Use converted batch data if available, otherwise fallback to legacy
+  const voteStats = convertedBatchStats || legacyVoteStats;
   const userVote = batchUserVote !== null ? batchUserVote : legacyUserVote;
   const loading = batchLoading || legacyLoading;
 
   // GSAP refs and animations
-  const [counterRef, startCounterAnimation] = useCounterAnimation(voteStats.total, {
+  const [counterRef, startCounterAnimation] = useCounterAnimation(voteStats.score || 0, {
     duration: 0.8,
     ease: "power2.out"
   });
@@ -78,14 +90,17 @@ const VoteComponent = ({ linkId, postData, className = '' }) => {
         safe: postData.voteStats.safe || 0,
         unsafe: postData.voteStats.unsafe || 0,
         suspicious: postData.voteStats.suspicious || 0,
-        total: postData.voteStats.total || 0
+        total: postData.voteStats.total || 0,
+        score: (postData.voteStats.upvotes || 0) - (postData.voteStats.downvotes || 0),
+        upvotes: postData.voteStats.upvotes || 0,
+        downvotes: postData.voteStats.downvotes || 0
       };
       setLegacyVoteStats(newStats);
       setLegacyUserVote(postData.userVote || null);
 
       // Trigger counter animation
       setTimeout(() => startCounterAnimation(), 100);
-    } else if (linkId && batchVoteStats.total === 0) {
+    } else if (linkId && (!convertedBatchStats || convertedBatchStats.total === 0)) {
       // Only load legacy data if batch data is not available
       loadVoteData();
     }
@@ -98,10 +113,10 @@ const VoteComponent = ({ linkId, postData, className = '' }) => {
 
   // Animate counter when vote stats change
   useEffect(() => {
-    if (voteStats.total > 0) {
+    if (voteStats.score !== undefined) {
       startCounterAnimation();
     }
-  }, [voteStats.total, startCounterAnimation]);
+  }, [voteStats.score, startCounterAnimation]);
 
   // Debounced version of loadVoteData to prevent spam
   const loadVoteData = useCallback(async () => {
@@ -122,17 +137,11 @@ const VoteComponent = ({ linkId, postData, className = '' }) => {
     try {
       setLegacyLoading(true);
 
-      // Use optimized endpoint with caching
-      const token = localStorage.getItem('authToken') || localStorage.getItem('backendToken') || localStorage.getItem('token');
-      const response = await fetch(`/api/votes/${linkId}/optimized`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Cache-Control': 'max-age=300' // 5 minutes cache
-        }
-      });
+      // ✅ Use API service instead of direct fetch
+      const response = await communityAPI.getVoteStats(linkId);
 
-      if (response.ok) {
-        const data = await response.json();
+      if (response.success) {
+        const data = response.data;
         const newStats = {
           upvotes: data.statistics?.upvotes || 0,
           downvotes: data.statistics?.downvotes || 0,
@@ -166,15 +175,11 @@ const VoteComponent = ({ linkId, postData, className = '' }) => {
 
   const loadVoteDataFallback = async () => {
     try {
-      const token = localStorage.getItem('authToken') || localStorage.getItem('backendToken') || localStorage.getItem('token');
-      const response = await fetch(`/api/votes/${linkId}/stats`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
+      // ✅ Use API service instead of direct fetch
+      const response = await communityAPI.getVoteStats(linkId);
 
-      if (response.ok) {
-        const data = await response.json();
+      if (response.success) {
+        const data = response.data;
         const newStats = {
           safe: data.statistics?.safe || 0,
           unsafe: data.statistics?.unsafe || 0,
@@ -215,16 +220,11 @@ const VoteComponent = ({ linkId, postData, className = '' }) => {
     if (!linkId || !user) return;
 
     try {
-      const token = localStorage.getItem('authToken') || localStorage.getItem('backendToken');
-      const response = await fetch(`/api/votes/${linkId}/user`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
+      // ✅ Use API service instead of direct fetch
+      const response = await communityAPI.getUserVote(linkId);
 
-      if (response.ok) {
-        const data = await response.json();
-        setLegacyUserVote(data.userVote?.voteType || null);
+      if (response.success) {
+        setLegacyUserVote(response.data.userVote?.voteType || null);
       }
     } catch (error) {
       console.error('Error loading user vote:', error);
@@ -315,13 +315,7 @@ const VoteComponent = ({ linkId, postData, className = '' }) => {
       if (isUnvote) {
         // Delete vote
         console.log('🗑️ Deleting vote...');
-        response = await fetch(`/api/votes/${linkId}`, {
-          method: 'DELETE',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${localStorage.getItem('authToken') || localStorage.getItem('backendToken')}`
-          }
-        });
+        response = await communityAPI.deleteVote(linkId);
       } else {
         // Submit new vote
         console.log('➕ Creating new vote...');
@@ -332,33 +326,23 @@ const VoteComponent = ({ linkId, postData, className = '' }) => {
         };
         console.log('📤 Request body:', requestBody);
 
-        // Create AbortController for timeout
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
-
-        response = await fetch(`/api/votes/${linkId}`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${localStorage.getItem('authToken') || localStorage.getItem('backendToken')}`
-          },
-          body: JSON.stringify(requestBody),
-          signal: controller.signal
-        });
-
-        clearTimeout(timeoutId);
+        // ✅ Use API service instead of direct fetch
+        response = await communityAPI.submitVote(
+          linkId,
+          voteType,
+          user?.id || user?.uid,
+          user?.email
+        );
       }
 
       // Check if API call was successful
-      console.log('📥 API response:', { status: response.status, ok: response.ok });
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('❌ API error response:', errorText);
-        throw new Error(`Vote API call failed: ${response.status} - ${errorText}`);
+      console.log('📥 API response:', response);
+      if (!response.success) {
+        console.error('❌ API error response:', response.error);
+        throw new Error(`Vote API call failed: ${response.error}`);
       }
 
-      const responseData = await response.json();
-      console.log('✅ Vote API success:', responseData);
+      console.log('✅ Vote API success:', response.data);
 
     } catch (error) {
       if (error.name === 'AbortError') {

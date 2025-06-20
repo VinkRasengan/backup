@@ -86,19 +86,19 @@ async function updatePostVoteCount(linkId) {
 router.post('/:linkId', async (req, res) => {
   try {
     const { linkId } = req.params;
-    const { voteType } = req.body; // 'upvote', 'downvote'
+    const { voteType, userId } = req.body; // 'upvote', 'downvote'
 
     // Get user info from auth middleware or request body
-    const userId = getUserId(req);
+    const finalUserId = getUserId(req) || userId || 'anonymous';
     const userEmail = getUserEmail(req);
 
-    logger.info('Vote submission request', { linkId, voteType, userId });
+    logger.info('Vote submission request', { linkId, voteType, userId: finalUserId });
 
     // Validate required fields
-    if (!linkId || !voteType || !userId) {
+    if (!linkId || !voteType) {
       return res.status(400).json({
         success: false,
-        error: 'Missing required fields: linkId, voteType, userId'
+        error: 'Missing required fields: linkId, voteType'
       });
     }
 
@@ -116,7 +116,7 @@ router.post('/:linkId', async (req, res) => {
       const existingVoteQuery = await transaction.get(
         db.collection(collections.VOTES)
           .where('linkId', '==', linkId)
-          .where('userId', '==', userId)
+          .where('userId', '==', finalUserId)
       );
 
       let voteDoc;
@@ -146,7 +146,7 @@ router.post('/:linkId', async (req, res) => {
         const newVoteRef = db.collection(collections.VOTES).doc();
         const newVote = {
           linkId,
-          userId,
+          userId: finalUserId,
           userEmail: userEmail || null,
           voteType,
           createdAt: new Date(),
@@ -173,7 +173,7 @@ router.post('/:linkId', async (req, res) => {
       success: true,
       action,
       linkId,
-      userId
+      userId: finalUserId
     };
 
     if (action === 'removed') {
@@ -184,7 +184,7 @@ router.post('/:linkId', async (req, res) => {
       response.vote = {
         id: voteDoc.id,
         linkId,
-        userId,
+        userId: finalUserId,
         voteType,
         createdAt: new Date().toISOString()
       };
@@ -512,16 +512,31 @@ router.post('/batch/stats', async (req, res) => {
       });
     }
 
+    // Limit batch size to prevent timeout
+    if (postIds.length > 50) {
+      return res.status(400).json({
+        success: false,
+        error: 'Too many postIds. Maximum 50 allowed per batch.'
+      });
+    }
+
     logger.info('Batch vote stats request', { postCount: postIds.length });
 
     const results = {};
 
-    // Process each post ID
-    for (const postId of postIds) {
+    // Process each post ID with timeout
+    const promises = postIds.map(async (postId) => {
       try {
-        const votesSnapshot = await db.collection(collections.VOTES)
+        // Add timeout to Firebase query
+        const timeoutPromise = new Promise((_, reject) => {
+          setTimeout(() => reject(new Error('Query timeout')), 5000); // 5 second timeout
+        });
+
+        const queryPromise = db.collection(collections.VOTES)
           .where('linkId', '==', postId)
           .get();
+
+        const votesSnapshot = await Promise.race([queryPromise, timeoutPromise]);
 
         const stats = {
           total: 0,
@@ -542,13 +557,21 @@ router.post('/batch/stats', async (req, res) => {
         });
 
         stats.score = stats.upvotes - stats.downvotes;
-        results[postId] = stats;
+        return { postId, stats };
 
       } catch (error) {
         logger.error('Error fetching votes for post', { postId, error: error.message });
-        results[postId] = { total: 0, upvotes: 0, downvotes: 0, score: 0 };
+        return { postId, stats: { total: 0, upvotes: 0, downvotes: 0, score: 0 } };
       }
-    }
+    });
+
+    // Execute all queries in parallel with overall timeout
+    const allResults = await Promise.all(promises);
+
+    // Convert to results object
+    allResults.forEach(({ postId, stats }) => {
+      results[postId] = stats;
+    });
 
     res.json({
       success: true,
@@ -567,8 +590,8 @@ router.post('/batch/stats', async (req, res) => {
 // Batch get user votes for multiple posts
 router.post('/batch/user', async (req, res) => {
   try {
-    const { postIds } = req.body;
-    const userId = getUserId(req);
+    const { postIds, userId: bodyUserId } = req.body;
+    const userId = getUserId(req) || bodyUserId;
 
     if (!Array.isArray(postIds) || postIds.length === 0) {
       return res.status(400).json({

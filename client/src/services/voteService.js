@@ -54,7 +54,7 @@ class VoteService {
         voteType = null; // Remove vote
       }
 
-      const response = await fetch(`${this.apiBaseUrl}/votes/${postId}`, {
+      const response = await fetch(`${this.apiBaseUrl}/api/votes/${postId}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -118,7 +118,7 @@ class VoteService {
   // Get vote statistics for a post
   async getVoteStats(postId) {
     try {
-      const response = await fetch(`${this.apiBaseUrl}/votes/${postId}/stats`);
+      const response = await fetch(`${this.apiBaseUrl}/api/votes/${postId}/stats`);
       if (!response.ok) {
         throw new Error(`Failed to fetch vote stats: ${response.status}`);
       }
@@ -138,21 +138,26 @@ class VoteService {
   }
 
   // Sync local votes with server (for when user logs in)
+  // NOTE: This endpoint doesn't exist yet in community service
   async syncVotes() {
     try {
       const localVotes = this.getUserVotes();
       const voteEntries = Object.entries(localVotes);
-      
+
       if (voteEntries.length === 0) return { success: true };
 
-      const response = await fetch(`${this.apiBaseUrl}/votes/sync`, {
+      // Use batch voting endpoint instead of sync
+      const response = await fetch(`${this.apiBaseUrl}/api/votes/batch`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          votes: localVotes,
-          userId: this.getUserId()
+          votes: voteEntries.map(([postId, vote]) => ({
+            linkId: postId,
+            voteType: vote.type,
+            userId: this.getUserId()
+          }))
         })
       });
 

@@ -1,6 +1,7 @@
 import axios from 'axios';
 import Cookies from 'js-cookie';
 import mockAPI from './mockAPI';
+import communityAPIService from './communityAPI';
 
 // Create axios instance for Render deployment
 const getApiBaseUrl = () => {
@@ -114,60 +115,26 @@ export const userAPI = {
 // Link API endpoints
 export const linkAPI = {
   checkLink: async (url) => {
-    console.log('🔍 Checking URL with backend API:', url);
+    console.log('🔍 Checking URL with backend API via Gateway:', url);
 
-    // Strategy 1: Try direct Link Service (bypass API Gateway temporarily)
+    // ✅ Strategy 1: Use API Gateway (primary method)
     try {
-      console.log('🔗 Trying direct Link Service at http://localhost:3002/links/check');
-      console.log('🔗 Sending payload:', { url });
-
-      const response = await fetch('http://localhost:3002/links/check', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ url })
-      });
-
-      console.log('🔗 Response status:', response.status, response.statusText);
-
-      if (response.ok) {
-        const data = await response.json();
-        console.log('✅ Direct Link Service success:', data);
-        // Return in the expected format
-        return {
-          data: {
-            result: data.result,
-            success: data.success
-          }
-        };
-      } else {
-        const errorText = await response.text();
-        console.log('🔄 Direct Link Service HTTP error:', response.status, response.statusText, errorText);
-      }
-    } catch (directError) {
-      console.log('🔄 Direct Link Service failed:', directError.message);
-      console.log('🔄 Error details:', directError);
-    }
-
-    // Strategy 2: Try main link check endpoint via API Gateway
-    try {
-      console.log('🔐 Trying main link check API via Gateway');
+      console.log('🔐 Using link check API via Gateway');
       return await api.post('/links/check', { url });
     } catch (authError) {
-      console.log('🔄 Main API failed:', authError.response?.status, authError.message);
+      console.log('🔄 API Gateway failed:', authError.response?.status, authError.message);
     }
 
-    // Strategy 3: Direct VirusTotal API call as fallback (no third party results)
+    // ✅ Strategy 2: VirusTotal via backend service as fallback
     try {
-      console.log('🔄 Using direct VirusTotal API as final fallback...');
+      console.log('🔄 Using VirusTotal via backend service as fallback...');
       const virusTotalService = (await import('./virusTotalService')).default;
       const analysis = await virusTotalService.analyzeUrl(url);
 
       if (analysis.success) {
         return {
           data: {
-            message: 'Link đã được kiểm tra thành công (VirusTotal only)',
+            message: 'Link đã được kiểm tra thành công (VirusTotal via backend)',
             result: {
               id: Date.now().toString(),
               url,
@@ -184,16 +151,16 @@ export const linkAPI = {
               virusTotalAnalysis: analysis.urlAnalysis,
               checkedAt: new Date().toISOString(),
               mockData: analysis.mockData,
-              thirdPartyResults: [] // VirusTotal doesn't provide third party results
+              thirdPartyResults: []
             }
           }
         };
       }
     } catch (vtError) {
-      console.log('🔄 VirusTotal API failed:', vtError.message);
+      console.log('🔄 VirusTotal backend service failed:', vtError.message);
     }
 
-    // Strategy 4: Final fallback to mock
+    // Strategy 3: Final fallback to mock
     console.log('🔄 All APIs failed, using mock data...');
     return await mockAPI.checkLink(url);
   },
@@ -296,44 +263,50 @@ export const chatAPI = {
   getSecurityTips: (params) => api.get('/chat/tips', { params })
 };
 
-// Community API endpoints
+// Community API endpoints - using dedicated service
 export const communityAPI = {
-  // Get community posts
-  getPosts: (params) => api.get('/community/posts', { params }),
+  // Get community posts - delegate to dedicated service
+  getPosts: (params) => communityAPIService.getPosts(params),
 
-  // Submit to community
-  submitToCommunity: (data) => api.post('/community/submit', data),
+  // Submit to community (create new post) - delegate to dedicated service
+  submitToCommunity: (data) => communityAPIService.submitToCommunity(data),
 
-  // Get my submissions
-  getMySubmissions: () => api.get('/community/my-submissions'),
+  // Get my submissions (filter posts by user) - delegate to dedicated service
+  getMySubmissions: () => communityAPIService.getMySubmissions(),
 
-  // Delete submission
-  deleteSubmission: (id) => api.delete(`/community/submissions/${id}`),
+  // Delete submission (delete post) - delegate to dedicated service
+  deleteSubmission: (id) => communityAPIService.deleteSubmission(id),
 
-  // Comments API
-  getComments: (linkId, page = 1, limit = 10, sortBy = 'newest') => {
-    // Convert page to offset for backend compatibility
-    const offset = (page - 1) * limit;
-    const params = new URLSearchParams({ limit, offset });
-    return api.get(`/api/comments/${linkId}?${params}`);
-  },
+  // Voting methods - delegate to dedicated service
+  submitVote: (linkId, voteType, userId, userEmail) =>
+    communityAPIService.submitVote(linkId, voteType, userId, userEmail),
+  getVoteStats: (linkId) => communityAPIService.getVoteStats(linkId),
+  getUserVote: (linkId) => communityAPIService.getUserVote(linkId),
+  deleteVote: (linkId) => communityAPIService.deleteVote(linkId),
 
-  addComment: (linkId, content) => {
-    // Get user info from auth context
-    const user = JSON.parse(localStorage.getItem('user') || '{}');
-    return api.post('/api/comments', {
-      postId: linkId,
-      content,
-      userId: user.id || user.uid,
-      userEmail: user.email,
-      displayName: user.displayName || user.email?.split('@')[0] || 'Anonymous'
-    });
-  },
-  updateComment: (commentId, content) => api.put(`/api/comments/${commentId}`, { content }),
+  // Comments methods - delegate to dedicated service
+  getComments: (linkId, page = 1, limit = 10, sortBy = 'newest') =>
+    communityAPIService.getComments(linkId, page, limit, sortBy),
+  addComment: (linkId, content, userId, userEmail, displayName) =>
+    communityAPIService.addComment(linkId, content, userId, userEmail, displayName),
+  updateComment: (commentId, content) => communityAPIService.updateComment(commentId, content),
+  deleteComment: (commentId) => communityAPIService.deleteComment(commentId),
 
-  deleteComment: (commentId) => api.delete(`/api/comments/${commentId}`),
+  // Reports methods - delegate to dedicated service
+  submitReport: (linkId, reason, description) =>
+    communityAPIService.submitReport(linkId, reason, description),
+  getUserReports: (page, limit) => communityAPIService.getUserReports(page, limit),
 
-  getCommentStats: (commentId) => api.get(`/api/comments/${commentId}/votes`)
+  // Admin methods - delegate to dedicated service
+  getAllReports: (page, limit, status, reason) =>
+    communityAPIService.getAllReports(page, limit, status, reason),
+  updateReportStatus: (reportId, status, adminNotes) =>
+    communityAPIService.updateReportStatus(reportId, status, adminNotes),
+  getReportStatistics: () => communityAPIService.getReportStatistics(),
+  getAdminNotifications: () => communityAPIService.getAdminNotifications(),
+  markNotificationRead: (notificationId) =>
+    communityAPIService.markNotificationRead(notificationId),
+  getAdminDashboardStats: () => communityAPIService.getAdminDashboardStats()
 };
 
 // Main API service object

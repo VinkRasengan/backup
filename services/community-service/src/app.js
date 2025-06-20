@@ -228,6 +228,11 @@ const server = app.listen(PORT, () => {
   });
 });
 
+// Set server timeout to handle long-running requests
+server.timeout = 60000; // 60 seconds
+server.keepAliveTimeout = 65000; // 65 seconds
+server.headersTimeout = 66000; // 66 seconds
+
 // Handle unhandled promise rejections
 process.on('unhandledRejection', (err) => {
   logger.error('Unhandled Promise Rejection', { error: err.message, stack: err.stack });

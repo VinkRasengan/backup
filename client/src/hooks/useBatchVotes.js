@@ -36,19 +36,35 @@ export const useBatchVotes = () => {
                 const url = `${API_BASE_URL}/api/votes/batch/stats`;
                 console.log('🔍 Batch stats URL:', url);
                 console.log('🔍 API_BASE_URL:', API_BASE_URL);
-                const response = await fetch(url, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ postIds: chunk }),
-                });
 
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
+                // Add timeout to prevent hanging
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
+
+                try {
+                    const response = await fetch(url, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ postIds: chunk }),
+                        signal: controller.signal
+                    });
+
+                    clearTimeout(timeoutId);
+
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+
+                    return response.json();
+                } catch (error) {
+                    clearTimeout(timeoutId);
+                    if (error.name === 'AbortError') {
+                        throw new Error('Request timeout - server took too long to respond');
+                    }
+                    throw error;
                 }
-
-                return response.json();
             });
 
             const results = await Promise.all(promises);
@@ -102,11 +118,15 @@ export const useBatchVotes = () => {
                 console.log('🔑 Sending auth token:', token?.substring(0, 50) + '...');
                 
                 const response = await fetch(url, {
-                    method: 'POST',                    headers: {
+                    method: 'POST',
+                    headers: {
                         'Content-Type': 'application/json',
                         'Authorization': `Bearer ${token}`,
                     },
-                    body: JSON.stringify({ postIds: chunk }),
+                    body: JSON.stringify({
+                        postIds: chunk,
+                        userId: user?.id || user?.uid // Fallback for when token verification fails
+                    }),
                 });
 
                 console.log('📥 Batch user votes response:', { 

@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
-import { MessageCircle, Send, MoreHorizontal, Heart, Reply } from 'lucide-react';
+import { MessageCircle, Send } from 'lucide-react';
+import { communityAPI } from '../../services/api';
 
 const CommentSection = ({ postId, initialCommentCount = 0 }) => {
-  const { user, getAuthHeaders } = useAuth();
+  const { user } = useAuth();
   const { isDarkMode } = useTheme();
   
   const [comments, setComments] = useState([]);
@@ -45,24 +46,18 @@ const CommentSection = ({ postId, initialCommentCount = 0 }) => {
 
     try {
       const result = await retryApiCall(async () => {
-        const response = await fetch(
-          `/api/comments/${postId}?limit=${pagination.limit}&offset=${offset}`,
-          {
-            headers: getAuthHeaders()
-          }
+        // ✅ Use API service instead of direct fetch
+        const response = await communityAPI.getComments(
+          postId,
+          Math.floor(offset / pagination.limit) + 1, // Convert offset to page
+          pagination.limit
         );
 
-        if (!response.ok) {
-          throw new Error(`Failed to load comments: ${response.status}`);
+        if (!response.success) {
+          throw new Error(response.error || 'Failed to load comments');
         }
 
-        const data = await response.json();
-
-        if (!data.success) {
-          throw new Error(data.error || 'Failed to load comments');
-        }
-
-        return data;
+        return response;
       });
 
       if (append) {
@@ -114,34 +109,22 @@ const CommentSection = ({ postId, initialCommentCount = 0 }) => {
     setError(null);
 
     try {
-      const response = await fetch('/api/comments', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...getAuthHeaders()
-        },
-        body: JSON.stringify({
-          postId,
-          content: commentContent,
-          userId: user.id || user.uid,
-          userEmail: user.email,
-          displayName: user.displayName || user.email?.split('@')[0] || 'Anonymous'
-        })
-      });
+      // ✅ Use API service instead of direct fetch
+      const response = await communityAPI.addComment(
+        postId,
+        commentContent,
+        user.id || user.uid,
+        user.email,
+        user.displayName || user.email?.split('@')[0] || 'Anonymous'
+      );
 
-      if (!response.ok) {
-        throw new Error(`Failed to submit comment: ${response.status}`);
-      }
-
-      const data = await response.json();
-
-      if (data.success) {
+      if (response.success) {
         // Replace optimistic comment with real comment
         setComments(prev => prev.map(comment =>
-          comment.id === tempId ? { ...data.comment, isOptimistic: false } : comment
+          comment.id === tempId ? { ...response.data.comment, isOptimistic: false } : comment
         ));
       } else {
-        throw new Error(data.error || 'Failed to submit comment');
+        throw new Error(response.error || 'Failed to submit comment');
       }
     } catch (error) {
       console.error('Submit comment error:', error);

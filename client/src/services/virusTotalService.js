@@ -1,10 +1,10 @@
-// VirusTotal API Service - Direct frontend calls
+// VirusTotal API Service - Via Backend Services (No Direct Calls)
 class VirusTotalService {
   constructor() {
-    this.apiKey = process.env.REACT_APP_VIRUSTOTAL_API_KEY || '6d508f814f7cde6ed5550e13539a161ffda857c85a7a5d7115ddd1d7e092f897';
-    this.apiUrl = 'https://www.virustotal.com/api/v3';
+    // ✅ Remove direct API access - all calls go through backend
+    this.baseURL = process.env.REACT_APP_API_URL || 'http://localhost:8080';
     this.lastRequestTime = 0;
-    this.rateLimitDelay = 15000; // 15 seconds between requests (free tier limit)
+    this.rateLimitDelay = 1000; // Reduced delay since backend handles rate limiting
   }
 
   async enforceRateLimit() {
@@ -27,32 +27,23 @@ class VirusTotalService {
 
   async scanUrl(url) {
     try {
-      if (!this.apiKey) {
-        console.warn('VirusTotal API key not configured');
-        return { success: false, error: 'API key not configured' };
-      }
-
       await this.enforceRateLimit();
 
-      // Use CORS proxy for development/testing
-      const proxyUrl = 'https://cors-anywhere.herokuapp.com/';
-      const targetUrl = `${this.apiUrl}/urls`;
-
-      const response = await fetch(proxyUrl + targetUrl, {
+      // ✅ Use backend service instead of direct API call
+      const response = await fetch(`${this.baseURL}/api/security/virustotal/scan`, {
         method: 'POST',
         headers: {
-          'x-apikey': this.apiKey,
-          'Content-Type': 'application/x-www-form-urlencoded',
-          'X-Requested-With': 'XMLHttpRequest'
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('authToken') || localStorage.getItem('backendToken')}`
         },
-        body: `url=${encodeURIComponent(url)}`
+        body: JSON.stringify({ url })
       });
 
       if (response.ok) {
         const data = await response.json();
         return {
           success: true,
-          analysisId: data.data.id
+          analysisId: data.data?.id || data.analysisId
         };
       } else {
         throw new Error(`HTTP ${response.status}`);
@@ -62,7 +53,7 @@ class VirusTotalService {
       console.error('VirusTotal scan error:', error);
       return {
         success: false,
-        error: 'CORS or API error - using mock data',
+        error: 'Backend service error - using mock data',
         mockData: this.getMockScanResult(url)
       };
     }
@@ -70,38 +61,32 @@ class VirusTotalService {
 
   async getUrlReport(url) {
     try {
-      if (!this.apiKey) {
-        return { success: false, error: 'API key not configured' };
-      }
-
       await this.enforceRateLimit();
 
-      const urlId = this.createUrlId(url);
-      const proxyUrl = 'https://cors-anywhere.herokuapp.com/';
-      const targetUrl = `${this.apiUrl}/urls/${urlId}`;
-
-      const response = await fetch(proxyUrl + targetUrl, {
-        method: 'GET',
+      // ✅ Use backend service instead of direct API call
+      const response = await fetch(`${this.baseURL}/api/security/virustotal/report`, {
+        method: 'POST',
         headers: {
-          'x-apikey': this.apiKey,
-          'X-Requested-With': 'XMLHttpRequest'
-        }
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('authToken') || localStorage.getItem('backendToken')}`
+        },
+        body: JSON.stringify({ url })
       });
 
       if (response.ok) {
         const result = await response.json();
-        const data = result.data.attributes;
-        
+        const data = result.data;
+
         return {
           success: true,
           url: url,
-          scanDate: data.last_analysis_date ? new Date(data.last_analysis_date * 1000).toISOString() : null,
-          stats: data.last_analysis_stats || {},
+          scanDate: data.scanDate || new Date().toISOString(),
+          stats: data.stats || {},
           reputation: data.reputation || 0,
-          malicious: (data.last_analysis_stats?.malicious || 0) > 0,
-          suspicious: (data.last_analysis_stats?.suspicious || 0) > 0,
-          harmless: (data.last_analysis_stats?.harmless || 0) > 0,
-          totalEngines: Object.keys(data.last_analysis_results || {}).length
+          malicious: data.malicious || false,
+          suspicious: data.suspicious || false,
+          harmless: data.harmless || false,
+          totalEngines: data.totalEngines || 0
         };
       } else if (response.status === 404) {
         // URL not in database, trigger scan

@@ -2,7 +2,8 @@ import axios from 'axios';
 
 class ScamAdviserService {
   constructor() {
-    this.apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+    // ✅ Use API Gateway instead of direct backend service
+    this.apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:8080';
   }
 
   /**
@@ -12,11 +13,13 @@ class ScamAdviserService {
     try {
       console.log('Checking URL with ScamAdviser:', url);
       
-      const response = await axios.post(`${this.apiUrl}/scamadviser/check`, {
+      // ✅ Use API Gateway with proper authentication
+      const response = await axios.post(`${this.apiUrl}/api/security/scamadviser/check`, {
         url: url
       }, {
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('authToken') || localStorage.getItem('backendToken')}`
         },
         timeout: 60000 // 60 second timeout for ScamAdviser API
       });

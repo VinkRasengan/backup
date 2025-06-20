@@ -9,8 +9,26 @@ const logger = new Logger('community-service');
  */
 const authMiddleware = async (req, res, next) => {
   try {
-    // Skip auth for health checks and public endpoints
+    // Skip auth for health checks and public endpoints, but allow auth for batch user votes
     if (req.path.includes('/health') || req.path.includes('/metrics') || req.path.includes('/info')) {
+      return next();
+    }
+
+    // Allow auth processing for votes endpoints (but don't require it)
+    const isVotesEndpoint = req.path.includes('/votes');
+    const isBatchUserVotes = req.path.includes('/votes/batch/user');
+
+    // For batch user votes, we need authentication
+    if (isBatchUserVotes && (!authHeader || !authHeader.startsWith('Bearer '))) {
+      return res.status(401).json({
+        success: false,
+        error: 'Authentication required for batch user votes',
+        code: 'AUTH_REQUIRED'
+      });
+    }
+
+    // For other votes endpoints, auth is optional
+    if (isVotesEndpoint && !isBatchUserVotes && (!authHeader || !authHeader.startsWith('Bearer '))) {
       return next();
     }
 
