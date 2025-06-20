@@ -39,7 +39,9 @@ jobs:
           'community-service',
           'chat-service',
           'news-service',
-          'admin-service'
+          'admin-service',
+          'phishtank-service',
+          'criminalip-service'
         ]
     
     steps:

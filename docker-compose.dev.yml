@@ -200,6 +200,56 @@ services:
       - microservices-network
     command: npm run dev
 
+  # PhishTank Service
+  phishtank-service:
+    build:
+      context: ./services/phishtank-service
+      dockerfile: Dockerfile
+    ports:
+      - "3007:3007"
+    environment:
+      - NODE_ENV=development
+      - PORT=3007
+      - AUTH_SERVICE_URL=http://auth-service:3001
+      - REDIS_URL=redis://redis:6379
+    env_file:
+      - .env
+    volumes:
+      - ./shared:/app/shared
+      - ./services/phishtank-service/src:/app/src
+      - ./services/phishtank-service/package.json:/app/package.json
+      - ./services/phishtank-service/data:/app/data
+    depends_on:
+      - auth-service
+      - redis
+    networks:
+      - microservices-network
+    command: npm run dev
+
+  # CriminalIP Service
+  criminalip-service:
+    build:
+      context: ./services/criminalip-service
+      dockerfile: Dockerfile
+    ports:
+      - "3008:3008"
+    environment:
+      - NODE_ENV=development
+      - PORT=3008
+      - AUTH_SERVICE_URL=http://auth-service:3001
+      - CRIMINALIP_API_KEY=${CRIMINALIP_API_KEY}
+    env_file:
+      - .env
+    volumes:
+      - ./shared:/app/shared
+      - ./services/criminalip-service/src:/app/src
+      - ./services/criminalip-service/package.json:/app/package.json
+    depends_on:
+      - auth-service
+    networks:
+      - microservices-network
+    command: npm run dev
+
   # Redis for caching and message queuing
   redis:
     image: redis:7-alpine

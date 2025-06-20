@@ -56,7 +56,8 @@ const VoteComponent = ({ linkId, postData, className = '' }) => {
 
   // Use converted batch data if available, otherwise fallback to legacy
   const voteStats = convertedBatchStats || legacyVoteStats;
-  const userVote = batchUserVote !== null ? batchUserVote : legacyUserVote;
+  // Extract voteType from batch user vote object, or use legacy user vote
+  const userVote = batchUserVote !== null ? batchUserVote?.voteType : legacyUserVote;
   const loading = batchLoading || legacyLoading;
 
   // GSAP refs and animations

@@ -129,7 +129,9 @@ const services = [
   { name: 'community-service', url: process.env.COMMUNITY_SERVICE_URL || 'http://localhost:3003' },
   { name: 'chat-service', url: process.env.CHAT_SERVICE_URL || 'http://localhost:3004' },
   { name: 'news-service', url: process.env.NEWS_SERVICE_URL || 'http://localhost:3005' },
-  { name: 'admin-service', url: process.env.ADMIN_SERVICE_URL || 'http://localhost:3006' }
+  { name: 'admin-service', url: process.env.ADMIN_SERVICE_URL || 'http://localhost:3006' },
+  { name: 'phishtank-service', url: process.env.PHISHTANK_SERVICE_URL || 'http://localhost:3007' },
+  { name: 'criminalip-service', url: process.env.CRIMINALIP_SERVICE_URL || 'http://localhost:3008' }
 ];
 
 // Security middleware
@@ -201,7 +203,9 @@ app.get('/info', (req, res) => {
       'community-service': process.env.COMMUNITY_SERVICE_URL,
       'chat-service': process.env.CHAT_SERVICE_URL,
       'news-service': process.env.NEWS_SERVICE_URL,
-      'admin-service': process.env.ADMIN_SERVICE_URL
+      'admin-service': process.env.ADMIN_SERVICE_URL,
+      'phishtank-service': process.env.PHISHTANK_SERVICE_URL,
+      'criminalip-service': process.env.CRIMINALIP_SERVICE_URL
     }
   });
 });
@@ -446,6 +450,32 @@ app.use('/api/admin', createProxyMiddleware({
     logger.error('Admin service proxy error', { error: err.message });
     res.status(503).json({
       error: 'Admin service unavailable',
+      code: 'SERVICE_UNAVAILABLE'
+    });
+  }
+}));
+
+app.use('/api/phishtank', createProxyMiddleware({
+  target: process.env.PHISHTANK_SERVICE_URL || 'http://localhost:3007',
+  changeOrigin: true,
+  pathRewrite: { '^/api/phishtank': '/phishtank' },
+  onError: (err, req, res) => {
+    logger.error('PhishTank service proxy error', { error: err.message });
+    res.status(503).json({
+      error: 'PhishTank service unavailable',
+      code: 'SERVICE_UNAVAILABLE'
+    });
+  }
+}));
+
+app.use('/api/criminalip', createProxyMiddleware({
+  target: process.env.CRIMINALIP_SERVICE_URL || 'http://localhost:3008',
+  changeOrigin: true,
+  pathRewrite: { '^/api/criminalip': '/criminalip' },
+  onError: (err, req, res) => {
+    logger.error('CriminalIP service proxy error', { error: err.message });
+    res.status(503).json({
+      error: 'CriminalIP service unavailable',
       code: 'SERVICE_UNAVAILABLE'
     });
   }

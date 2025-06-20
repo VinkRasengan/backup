@@ -163,7 +163,7 @@ export const useBatchVotes = () => {
 
     // Get votes for a specific post
     const getVotesForPost = useCallback((postId) => {
-        return votesData[postId] || { safe: 0, unsafe: 0, suspicious: 0, total: 0 };
+        return votesData[postId] || { total: 0, upvotes: 0, downvotes: 0, score: 0 };
     }, [votesData]);
 
     // Get user vote for a specific post

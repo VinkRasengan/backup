@@ -30,6 +30,8 @@ jobs:
       chat-service: ${{ steps.changes.outputs.chat-service }}
       news-service: ${{ steps.changes.outputs.news-service }}
       admin-service: ${{ steps.changes.outputs.admin-service }}
+      phishtank-service: ${{ steps.changes.outputs.phishtank-service }}
+      criminalip-service: ${{ steps.changes.outputs.criminalip-service }}
       frontend: ${{ steps.changes.outputs.frontend }}
     steps:
       - uses: actions/checkout@v4
@@ -51,6 +53,10 @@ jobs:
               - 'services/news-service/**'
             admin-service:
               - 'services/admin-service/**'
+            phishtank-service:
+              - 'services/phishtank-service/**'
+            criminalip-service:
+              - 'services/criminalip-service/**'
             frontend:
               - 'client/**'
 
@@ -60,7 +66,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        service: [api-gateway, auth-service, link-service, community-service, chat-service, news-service, admin-service]
+        service: [api-gateway, auth-service, link-service, community-service, chat-service, news-service, admin-service, phishtank-service, criminalip-service]
     steps:
       - name: Checkout code
         if: needs.detect-changes.outputs[matrix.service] == 'true'
@@ -136,7 +142,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        service: [api-gateway, auth-service, link-service, community-service, chat-service, news-service, admin-service]
+        service: [api-gateway, auth-service, link-service, community-service, chat-service, news-service, admin-service, phishtank-service, criminalip-service]
     steps:
       - name: Checkout code
         if: needs.detect-changes.outputs[matrix.service] == 'true'
