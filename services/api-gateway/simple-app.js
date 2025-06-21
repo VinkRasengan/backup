@@ -80,15 +80,17 @@ app.get('/test-cors', (req, res) => {
 app.get('/community/posts', (req, res) => {
   res.json({
     success: true,
-    data: [
-      {
-        id: '1',
-        title: 'Test Post from API Gateway',
-        content: 'This proves the API Gateway is working',
-        author: 'API Gateway',
-        timestamp: new Date().toISOString()
-      }
-    ],
+    data: {
+      posts: [
+        {
+          id: '1',
+          title: 'Test Post from API Gateway',
+          content: 'This proves the API Gateway is working',
+          author: 'API Gateway',
+          timestamp: new Date().toISOString()
+        }
+      ]
+    },
     message: 'Mock data from simple API Gateway'
   });
 });
@@ -97,15 +99,17 @@ app.get('/community/posts', (req, res) => {
 app.get('/api/posts', (req, res) => {
   res.json({
     success: true,
-    data: [
-      {
-        id: '1',
-        title: 'Test Post from API Gateway',
-        content: 'This proves the API Gateway is working',
-        author: 'API Gateway',
-        timestamp: new Date().toISOString()
-      }
-    ],
+    data: {
+      posts: [
+        {
+          id: '1',
+          title: 'Test Post from API Gateway',
+          content: 'This proves the API Gateway is working',
+          author: 'API Gateway',
+          timestamp: new Date().toISOString()
+        }
+      ]
+    },
     message: 'Mock data from simple API Gateway (/api/posts endpoint)'
   });
 });
