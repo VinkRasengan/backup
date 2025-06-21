@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+const { createProxyMiddleware } = require('http-proxy-middleware');
 require('dotenv').config();
 
 const app = express();
@@ -80,17 +81,15 @@ app.get('/test-cors', (req, res) => {
 app.get('/community/posts', (req, res) => {
   res.json({
     success: true,
-    data: {
-      posts: [
-        {
-          id: '1',
-          title: 'Test Post from API Gateway',
-          content: 'This proves the API Gateway is working',
-          author: 'API Gateway',
-          timestamp: new Date().toISOString()
-        }
-      ]
-    },
+    data: [
+      {
+        id: '1',
+        title: 'Test Post from API Gateway',
+        content: 'This proves the API Gateway is working',
+        author: 'API Gateway',
+        timestamp: new Date().toISOString()
+      }
+    ],
     message: 'Mock data from simple API Gateway'
   });
 });
@@ -99,17 +98,15 @@ app.get('/community/posts', (req, res) => {
 app.get('/api/posts', (req, res) => {
   res.json({
     success: true,
-    data: {
-      posts: [
-        {
-          id: '1',
-          title: 'Test Post from API Gateway',
-          content: 'This proves the API Gateway is working',
-          author: 'API Gateway',
-          timestamp: new Date().toISOString()
-        }
-      ]
-    },
+    data: [
+      {
+        id: '1',
+        title: 'Test Post from API Gateway',
+        content: 'This proves the API Gateway is working',
+        author: 'API Gateway',
+        timestamp: new Date().toISOString()
+      }
+    ],
     message: 'Mock data from simple API Gateway (/api/posts endpoint)'
   });
 });
@@ -131,6 +128,29 @@ app.get('/news/latest', (req, res) => {
   });
 });
 
+// Proxy voting requests to community service (real Firestore data)
+const COMMUNITY_SERVICE_URL = process.env.COMMUNITY_SERVICE_URL || 'https://factcheck-community.onrender.com';
+
+app.use('/api/votes', createProxyMiddleware({
+  target: COMMUNITY_SERVICE_URL,
+  changeOrigin: true,
+  pathRewrite: { '^/api/votes': '/votes' },
+  onProxyReq: (proxyReq, req, res) => {
+    console.log(`🔄 Proxying votes request: ${req.method} ${req.originalUrl} -> ${COMMUNITY_SERVICE_URL}/votes${req.path.replace('/api/votes', '')}`);
+  },
+  onProxyRes: (proxyRes, req, res) => {
+    console.log(`✅ Votes proxy response: ${proxyRes.statusCode} for ${req.originalUrl}`);
+  },
+  onError: (err, req, res) => {
+    console.error(`❌ Votes proxy error:`, err.message);
+    res.status(500).json({
+      error: 'Proxy error',
+      message: 'Failed to reach community service',
+      timestamp: new Date().toISOString()
+    });
+  }
+}));
+
 // Catch all for debugging
 app.use('*', (req, res) => {
   console.log(`404 - Route not found: ${req.method} ${req.originalUrl}`);
@@ -138,14 +158,17 @@ app.use('*', (req, res) => {
     error: 'Route not found',
     method: req.method,
     path: req.originalUrl,
-    timestamp: new Date().toISOString(),
-    availableRoutes: [
+    timestamp: new Date().toISOString(),    availableRoutes: [
       'GET /health',
       'GET /info', 
       'GET /test-cors',
       'GET /community/posts',
       'GET /api/posts',
-      'GET /news/latest'
+      'GET /news/latest',
+      'GET /api/votes/:linkId/stats (proxied to community service)',
+      'GET /api/votes/:linkId/user (proxied to community service)',
+      'POST /api/votes/batch/stats (proxied to community service)',
+      'POST /api/votes/:linkId (proxied to community service)'
     ]
   });
 });
@@ -165,6 +188,7 @@ app.listen(PORT, () => {
   console.log(`🚀 Simple API Gateway running on port ${PORT}`);
   console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log(`CORS Origins: ${process.env.ALLOWED_ORIGINS || 'not-set'}`);
+  console.log(`Community Service: ${COMMUNITY_SERVICE_URL}`);
   console.log(`Available endpoints:`);
   console.log(`  - GET /health`);
   console.log(`  - GET /info`);
@@ -172,6 +196,7 @@ app.listen(PORT, () => {
   console.log(`  - GET /community/posts`);
   console.log(`  - GET /api/posts`);
   console.log(`  - GET /news/latest`);
+  console.log(`  - /api/votes/* (proxied to community service)`);
 });
 
 module.exports = app;
