@@ -11,6 +11,7 @@
     "validate": "node scripts/validate-deployment.js",
     "setup": "npm install && npm run install:all",
     "install:all": "npm install && cd client && npm install && cd ../services/api-gateway && npm install && cd ../auth-service && npm install",
+    "fix:render": "node scripts/fix-render-deployment.js",
     "deploy:cross-platform": "node scripts/cross-platform-deploy.js",
     "stop:cross-platform": "node scripts/cross-platform-stop.js",
     "quick-start": "node scripts/cross-platform-deploy.js",

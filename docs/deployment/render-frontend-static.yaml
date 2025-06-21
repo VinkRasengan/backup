@@ -1,0 +1,76 @@
+# Render deployment configuration for factcheck-frontend (Static Site)
+# Alternative deployment as static site with API redirects
+
+services:
+  - type: static
+    name: factcheck-frontend-static
+    env: static
+    plan: free
+    region: singapore
+    rootDir: client
+    buildCommand: npm install && npm run build
+    staticPublishPath: ./build
+    envVars:
+      - key: REACT_APP_API_URL
+        value: https://factcheck-api-gateway.onrender.com
+      - key: REACT_APP_FIREBASE_API_KEY
+        value: AIzaSyCpeeTLujKruzK14siuDzGmpTadzhfvccI
+      - key: REACT_APP_FIREBASE_AUTH_DOMAIN
+        value: factcheck-1d6e8.firebaseapp.com
+      - key: REACT_APP_FIREBASE_PROJECT_ID
+        value: factcheck-1d6e8
+      - key: REACT_APP_FIREBASE_STORAGE_BUCKET
+        value: factcheck-1d6e8.firebasestorage.app
+      - key: REACT_APP_FIREBASE_MESSAGING_SENDER_ID
+        value: 583342362302
+      - key: REACT_APP_FIREBASE_APP_ID
+        value: 1:583342362302:web:ee97918d159c90e5b8d8ef
+      - key: GENERATE_SOURCEMAP
+        value: false
+    headers:
+      - path: /*
+        headers:
+          X-Frame-Options: DENY
+          X-XSS-Protection: 1; mode=block
+          X-Content-Type-Options: nosniff
+          Referrer-Policy: strict-origin-when-cross-origin
+          Permissions-Policy: camera=(), microphone=(), geolocation=()
+    redirects:
+      # API redirects to API Gateway
+      - source: /api/*
+        destination: https://factcheck-api-gateway.onrender.com/api/:splat
+        status: 200
+      - source: /auth/*
+        destination: https://factcheck-api-gateway.onrender.com/auth/:splat
+        status: 200
+      - source: /users/*
+        destination: https://factcheck-api-gateway.onrender.com/users/:splat
+        status: 200
+      - source: /chat/*
+        destination: https://factcheck-api-gateway.onrender.com/chat/:splat
+        status: 200
+      - source: /news/*
+        destination: https://factcheck-api-gateway.onrender.com/news/:splat
+        status: 200
+      - source: /links/*
+        destination: https://factcheck-api-gateway.onrender.com/links/:splat
+        status: 200
+      - source: /admin/*
+        destination: https://factcheck-api-gateway.onrender.com/admin/:splat
+        status: 200
+      - source: /community/*
+        destination: https://factcheck-api-gateway.onrender.com/community/:splat
+        status: 200
+      - source: /posts/*
+        destination: https://factcheck-api-gateway.onrender.com/posts/:splat
+        status: 200
+      - source: /votes/*
+        destination: https://factcheck-api-gateway.onrender.com/votes/:splat
+        status: 200
+      - source: /comments/*
+        destination: https://factcheck-api-gateway.onrender.com/comments/:splat
+        status: 200
+      # SPA fallback
+      - source: /*
+        destination: /index.html
+        status: 200

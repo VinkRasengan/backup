@@ -5,14 +5,15 @@ import communityAPIService from './communityAPI';
 
 // Create axios instance for Render deployment
 const getApiBaseUrl = () => {
-  // Use environment variable if set, otherwise use production URL
+  // Use environment variable if set
   if (process.env.REACT_APP_API_URL) {
     return process.env.REACT_APP_API_URL;
   }
 
   // Fallback based on environment
   if (process.env.NODE_ENV === 'production') {
-    return '/'; // Use relative URL for production (handled by _redirects)
+    // Use the API Gateway URL for production on Render
+    return 'https://factcheck-api-gateway.onrender.com';
   }
 
   return 'http://localhost:8080'; // Development fallback (API Gateway port)

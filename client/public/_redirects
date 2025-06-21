@@ -1,7 +1,17 @@
 # Render Redirects for FactCheck App
 
-# API calls redirect to backend
-/api/* https://factcheck-backend.onrender.com/api/* 200
+# Redirect all API calls to API Gateway
+/api/* https://factcheck-api-gateway.onrender.com/api/:splat 200
+/auth/* https://factcheck-api-gateway.onrender.com/auth/:splat 200
+/users/* https://factcheck-api-gateway.onrender.com/users/:splat 200
+/chat/* https://factcheck-api-gateway.onrender.com/chat/:splat 200
+/news/* https://factcheck-api-gateway.onrender.com/news/:splat 200
+/links/* https://factcheck-api-gateway.onrender.com/links/:splat 200
+/admin/* https://factcheck-api-gateway.onrender.com/admin/:splat 200
+/community/* https://factcheck-api-gateway.onrender.com/community/:splat 200
+/posts/* https://factcheck-api-gateway.onrender.com/posts/:splat 200
+/votes/* https://factcheck-api-gateway.onrender.com/votes/:splat 200
+/comments/* https://factcheck-api-gateway.onrender.com/comments/:splat 200
 
 # SPA fallback - all other routes serve index.html
 /* /index.html 200
