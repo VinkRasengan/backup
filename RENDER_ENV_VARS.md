@@ -3,7 +3,7 @@
 ## 📋 Copy these EXACT values to API Gateway service on Render:
 
 NODE_ENV=production
-ALLOWED_ORIGINS=https://frontend-eklp.onrender.com,https://backup-zhhs.onrender.com,https://factcheck-frontend.onrender.com
+ALLOWED_ORIGINS=https://frontend-eklp.onrender.com,https://backup-zhhs.onrender.com
 JWT_SECRET=your-super-secret-jwt-key-change-this-in-production-factcheck-microservices-2024
 FIREBASE_PROJECT_ID=factcheck-1d6e8
 FIREBASE_CLIENT_EMAIL=firebase-adminsdk-fbsvc@factcheck-1d6e8.iam.gserviceaccount.com

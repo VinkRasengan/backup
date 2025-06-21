@@ -10,10 +10,9 @@ app.use(cors({
   origin: function (origin, callback) {
     // Allow requests with no origin (mobile apps, etc.)
     if (!origin) return callback(null, true);
-    
-    // Use environment variable or fallback to defaults
+      // Use environment variable or fallback to defaults
     const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',') || [
-      'https://backup-client-frontend.onrender.com',  // Correct frontend URL
+      'https://frontend-eklp.onrender.com',  // Correct frontend URL
       'http://localhost:3000',
       'http://localhost:8080'
     ];
