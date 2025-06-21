@@ -129,7 +129,7 @@ app.get('/news/latest', (req, res) => {
 });
 
 // Proxy voting requests to community service (real Firestore data)
-const COMMUNITY_SERVICE_URL = process.env.COMMUNITY_SERVICE_URL || 'https://factcheck-community.onrender.com';
+const COMMUNITY_SERVICE_URL = process.env.COMMUNITY_SERVICE_URL || 'https://backup-8kfl.onrender.com';
 
 app.use('/api/votes', createProxyMiddleware({
   target: COMMUNITY_SERVICE_URL,
