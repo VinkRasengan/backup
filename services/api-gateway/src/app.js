@@ -323,8 +323,8 @@ app.use('/api/links', createProxyMiddleware({
 app.use('/api/votes', createProxyMiddleware({
   target: process.env.COMMUNITY_SERVICE_URL || 'http://localhost:3003',
   changeOrigin: true,
-  timeout: 30000, // 30 seconds
-  proxyTimeout: 30000,
+  timeout: 60000, // Increased to 60 seconds for batch operations
+  proxyTimeout: 60000,
   pathRewrite: { '^/api/votes': '/votes' },
   onProxyReq: (proxyReq, req, res) => {
     logger.info('Proxying votes request', {
@@ -334,6 +334,10 @@ app.use('/api/votes', createProxyMiddleware({
       headers: req.headers,
       body: req.body
     });
+
+    // Set connection keep-alive to prevent ECONNRESET
+    proxyReq.setHeader('Connection', 'keep-alive');
+    proxyReq.setHeader('Keep-Alive', 'timeout=60, max=1000');
 
     // Forward authentication headers
     if (req.headers.authorization) {

@@ -1,226 +1,150 @@
-# 🛡️ Anti-Fraud Platform
+# FactCheck Platform
 
-A comprehensive microservices-based platform for detecting and preventing online fraud, fake news, and malicious links.
+A comprehensive microservices-based platform for link verification, community discussions, and AI-powered fact-checking.
 
 ## 🚀 Quick Start
 
-```bash
-# First time setup
-npm run setup
+### Local Development
 
-# Start all services
-npm start
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/VinkRasengan/backup.git
+   cd backup
+   ```
 
-# Check status
-npm run status
+2. **Install dependencies**
+   ```bash
+   npm install
+   cd client && npm install && cd ..
+   ```
 
-# Stop all services
-npm stop
-```
+3. **Set up environment variables**
+   ```bash
+   cp .env.example .env
+   # Edit .env with your configuration
+   ```
 
-## 📋 Available Commands
+4. **Start all services**
+   ```bash
+   npm start
+   ```
 
-| Command | Description |
-|---------|-------------|
-| `npm run setup` | Complete setup and installation |
-| `npm start` | Start all services locally |
-| `npm run dev` | Start in development mode |
-| `npm stop` | Stop all services |
-| `npm restart` | Restart all services |
-| `npm run status` | Check service status |
-| `npm run health` | Health check all services |
-| `npm test` | Run all tests |
-| `npm run docker` | Deploy with Docker |
-| `npm run deploy:k8s` | Deploy to Kubernetes |
-| `npm run help` | Show help information |
+### Production Deployment (Render)
+
+1. **Deploy API Gateway**
+   - Service Type: Web Service
+   - Build Command: `npm install`
+   - Start Command: `npm start`
+   - Environment Variables: See [Environment Variables](#environment-variables)
+
+2. **Deploy Frontend**
+   - Service Type: Static Site
+   - Build Command: `npm run build`
+   - Publish Directory: `build`
 
 ## 🏗️ Architecture
 
-### Core Services
-- **Frontend** (3000) - React web interface
-- **API Gateway** (8080) - Single entry point for all requests
-- **Auth Service** (3001) - User authentication and authorization
-- **Link Service** (3002) - URL verification and security analysis
-- **Community Service** (3003) - Posts, comments, and community features
-- **Chat Service** (3004) - Real-time messaging and AI chat
-- **News Service** (3005) - News aggregation and fact-checking
-- **Admin Service** (3006) - Administrative dashboard
+### Microservices
 
-### Infrastructure
-- **Redis** (6379) - Caching and session storage
-- **Prometheus** (9090) - Metrics collection
-- **Grafana** (3010) - Monitoring dashboards
+- **API Gateway** (Port 8080) - Central routing and load balancing
+- **Auth Service** (Port 3001) - User authentication and authorization
+- **Link Service** (Port 3002) - URL analysis and verification
+- **Community Service** (Port 3003) - Posts, comments, and voting
+- **Chat Service** (Port 3004) - AI-powered chat interface
+- **News Service** (Port 3005) - News aggregation and analysis
+- **Admin Service** (Port 3006) - Administrative functions
 
-## 🔧 Configuration
+### Frontend
 
-### Environment Variables
-Copy `.env.example` to `.env` and configure:
+- **React Application** - Modern responsive UI with TailwindCSS
+- **Firebase Auth** - User authentication
+- **Real-time Updates** - Live data synchronization
 
-```bash
-# Core Configuration
-NODE_ENV=development
-REACT_APP_API_URL=http://localhost:8080
+## 🔧 Environment Variables
 
-# Firebase Configuration
-FIREBASE_PROJECT_ID=your-project-id
-FIREBASE_CLIENT_EMAIL=your-client-email
-FIREBASE_PRIVATE_KEY="your-private-key"
+### Required Variables
 
-# API Keys (Optional)
+```env
+# Service URLs
+AUTH_SERVICE_URL=https://your-auth-service.onrender.com
+LINK_SERVICE_URL=https://your-link-service.onrender.com
+COMMUNITY_SERVICE_URL=https://your-community-service.onrender.com
+CHAT_SERVICE_URL=https://your-chat-service.onrender.com
+NEWS_SERVICE_URL=https://your-news-service.onrender.com
+ADMIN_SERVICE_URL=https://your-admin-service.onrender.com
+
+# Frontend Configuration
+REACT_APP_API_GATEWAY_URL=https://your-api-gateway.onrender.com
+REACT_APP_FIREBASE_API_KEY=your-firebase-api-key
+REACT_APP_FIREBASE_AUTH_DOMAIN=your-project.firebaseapp.com
+REACT_APP_FIREBASE_PROJECT_ID=your-project-id
+
+# API Keys
 GEMINI_API_KEY=your-gemini-api-key
-VIRUSTOTAL_API_KEY=your-virustotal-api-key
-NEWSAPI_API_KEY=your-newsapi-api-key
+FIREBASE_PROJECT_ID=your-project-id
+FIREBASE_PRIVATE_KEY=your-firebase-private-key
+JWT_SECRET=your-jwt-secret
 ```
 
-### Service URLs
-```bash
-AUTH_SERVICE_URL=http://localhost:3001
-LINK_SERVICE_URL=http://localhost:3002
-COMMUNITY_SERVICE_URL=http://localhost:3003
-CHAT_SERVICE_URL=http://localhost:3004
-NEWS_SERVICE_URL=http://localhost:3005
-ADMIN_SERVICE_URL=http://localhost:3006
-```
+## 📚 Documentation
 
-## 🌐 Access URLs
-
-- **Frontend**: http://localhost:3000
-- **API Gateway**: http://localhost:8080
-- **Prometheus**: http://localhost:9090
-- **Grafana**: http://localhost:3010
-
-## 🔍 Features
-
-### Link Verification
-- Real-time URL security analysis
-- Multiple security API integrations
-- Threat detection and scoring
-- Historical scan results
-
-### Community Platform
-- User-generated content sharing
-- Voting and commenting system
-- Fact-checking collaboration
-- Community moderation
-
-### AI-Powered Chat
-- Google Gemini AI integration
-- Real-time assistance
-- Security recommendations
-- Educational content
-
-### News Monitoring
-- Automated news aggregation
-- Fact-checking alerts
-- Trending topic analysis
-- Source credibility scoring
+- [Security Guide](docs/SECURITY.md)
+- [Maintenance Guide](docs/MAINTENANCE.md)
+- [Performance Guide](docs/PERFORMANCE.md)
+- [Usage Guide](docs/USAGE-GUIDE.md)
+- [Deployment Checklist](docs/RENDER_DEPLOYMENT_CHECKLIST.md)
 
 ## 🛠️ Development
 
-### Prerequisites
-- Node.js 18+
-- npm or yarn
-- Docker (optional)
-- Git
+### Available Scripts
 
-### Local Development
-```bash
-# Clone repository
-git clone <repository-url>
-cd anti-fraud-platform
+- `npm start` - Start all services in development mode
+- `npm run build` - Build for production
+- `npm test` - Run tests
+- `npm run lint` - Run linting
+- `npm run deploy` - Deploy to production
 
-# Install dependencies
-npm run setup
+### Project Structure
 
-# Start development environment
-npm run dev
-
-# Run tests
-npm test
 ```
-
-### Docker Deployment
-```bash
-# Build and start with Docker
-npm run docker
-
-# Stop Docker services
-npm run docker:stop
+├── client/                 # React frontend
+├── services/              # Microservices
+│   ├── api-gateway/       # API Gateway
+│   ├── auth-service/      # Authentication
+│   ├── link-service/      # Link verification
+│   ├── community-service/ # Community features
+│   ├── chat-service/      # AI Chat
+│   ├── news-service/      # News aggregation
+│   └── admin-service/     # Admin panel
+├── docs/                  # Documentation
+├── scripts/               # Utility scripts
+└── k8s/                   # Kubernetes configs
 ```
-
-### Kubernetes Deployment
-```bash
-# Deploy to Kubernetes
-npm run deploy:k8s
-
-# Check deployment status
-kubectl get pods -n anti-fraud-platform
-```
-
-## 📊 Monitoring
-
-### Health Checks
-- Service health endpoints: `/health/live` and `/health/ready`
-- Prometheus metrics: `/metrics`
-- Status dashboard: `npm run status`
-
-### Logging
-- Centralized logging with correlation IDs
-- Error tracking and alerting
-- Performance monitoring
 
 ## 🔒 Security
 
-### Authentication
-- Firebase Authentication integration
-- JWT token management
-- Role-based access control
-
-### API Security
+- JWT-based authentication
+- Firebase security rules
 - Rate limiting
-- CORS configuration
+- CORS protection
 - Input validation
-- Security headers
+- SQL injection prevention
 
-### Data Protection
-- Encrypted data transmission
-- Secure API key management
-- Privacy compliance
+## 🚀 Features
 
-## 🧪 Testing
+- **Link Verification** - Multi-source security analysis
+- **Community Discussions** - Reddit-style voting and comments
+- **AI Chat** - Powered by Google Gemini
+- **Real-time Updates** - Live data synchronization
+- **Admin Dashboard** - Comprehensive management tools
+- **Mobile Responsive** - Works on all devices
 
-```bash
-# Run all tests
-npm test
+## 📊 Monitoring
 
-# Run specific service tests
-npm run test:auth
-npm run test:link
-npm run test:community
-
-# Run integration tests
-npm run test:integration
-
-# Run end-to-end tests
-npm run test:e2e
-```
-
-## 📚 API Documentation
-
-### Authentication Endpoints
-- `POST /api/auth/login` - User login
-- `POST /api/auth/register` - User registration
-- `GET /api/auth/profile` - Get user profile
-
-### Link Verification Endpoints
-- `POST /api/links/check` - Verify URL security
-- `GET /api/links/history` - Get scan history
-- `POST /api/links/report` - Report malicious link
-
-### Community Endpoints
-- `GET /api/community/posts` - Get community posts
-- `POST /api/community/posts` - Create new post
-- `POST /api/community/vote` - Vote on post
+- Health checks for all services
+- Performance monitoring
+- Error tracking
+- Real-time metrics
 
 ## 🤝 Contributing
 
@@ -236,11 +160,4 @@ This project is licensed under the MIT License.
 
 ## 🆘 Support
 
-For support and questions:
-- Check the documentation
-- Run `npm run help`
-- Create an issue on GitHub
-
----
-
-**Built with ❤️ for a safer internet**
+For support, please check the documentation in the `docs/` folder or create an issue.

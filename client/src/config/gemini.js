@@ -5,7 +5,7 @@ const getApiBaseUrl = () => {
   }
 
   if (process.env.NODE_ENV === 'production') {
-    return '/api';
+    return process.env.REACT_APP_API_GATEWAY_URL || '/api';
   }
 
   return 'http://localhost:8080/api';
