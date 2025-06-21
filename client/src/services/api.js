@@ -12,8 +12,8 @@ const getApiBaseUrl = () => {
 
   // Fallback based on environment
   if (process.env.NODE_ENV === 'production') {
-    // Use the API Gateway URL for production on Render
-    return 'https://factcheck-api-gateway.onrender.com';
+    // Use the ACTUAL API Gateway URL for production on Render
+    return 'https://backup-zhhs.onrender.com';
   }
 
   return 'http://localhost:8080'; // Development fallback (API Gateway port)

@@ -3,7 +3,7 @@
 ## 📋 Copy these EXACT values to API Gateway service on Render:
 
 NODE_ENV=production
-ALLOWED_ORIGINS=https://frontend-eklp.onrender.com,https://factcheck-api-gateway.onrender.com,https://factcheck-frontend.onrender.com
+ALLOWED_ORIGINS=https://frontend-eklp.onrender.com,https://backup-zhhs.onrender.com,https://factcheck-frontend.onrender.com
 JWT_SECRET=your-super-secret-jwt-key-change-this-in-production-factcheck-microservices-2024
 FIREBASE_PROJECT_ID=factcheck-1d6e8
 FIREBASE_CLIENT_EMAIL=firebase-adminsdk-fbsvc@factcheck-1d6e8.iam.gserviceaccount.com
@@ -20,7 +20,7 @@ PHISHTANK_SERVICE_URL=https://factcheck-phishtank.onrender.com
 ## 🌐 For Frontend service on Render:
 
 NODE_ENV=production
-REACT_APP_API_URL=https://factcheck-api-gateway.onrender.com
+REACT_APP_API_URL=https://backup-zhhs.onrender.com
 REACT_APP_FIREBASE_API_KEY=AIzaSyDszcx_S3Wm65ACIprlmJLDu5FPmDfX1nE
 REACT_APP_FIREBASE_AUTH_DOMAIN=factcheck-1d6e8.firebaseapp.com
 REACT_APP_FIREBASE_PROJECT_ID=factcheck-1d6e8
@@ -30,7 +30,7 @@ REACT_APP_FIREBASE_PROJECT_ID=factcheck-1d6e8
 1. **API Gateway Service** - Go to Environment tab and add ALL variables above
 2. **Frontend Service** - Go to Environment tab and add Frontend variables
 3. **Deploy both services** after adding environment variables
-4. **Check API Gateway health**: https://factcheck-api-gateway.onrender.com/health
+4. **Check API Gateway health**: https://backup-zhhs.onrender.com/health
 
 ## ⚠️ IMPORTANT NOTES:
 
@@ -41,5 +41,5 @@ REACT_APP_FIREBASE_PROJECT_ID=factcheck-1d6e8
 ## 🔍 DEBUG STEPS if CORS still fails:
 
 1. Check API Gateway logs on Render for CORS errors
-2. Test API Gateway directly: https://factcheck-api-gateway.onrender.com/info
+2. Test API Gateway directly: https://backup-zhhs.onrender.com/info
 3. Verify environment variables are actually set in Render dashboard

@@ -11,24 +11,36 @@ app.use(cors({
     // Allow requests with no origin (mobile apps, etc.)
     if (!origin) return callback(null, true);
     
-    const allowedOrigins = [
-      'https://frontend-eklp.onrender.com',
-      'https://factcheck-api-gateway.onrender.com',
-      'https://factcheck-frontend.onrender.com',
+    // Use environment variable or fallback to defaults
+    const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',') || [
+      'https://backup-client-frontend.onrender.com',  // Correct frontend URL
       'http://localhost:3000',
       'http://localhost:8080'
     ];
     
-    if (allowedOrigins.indexOf(origin) !== -1) {
+    // Clean up whitespace from origins
+    const cleanOrigins = allowedOrigins.map(o => o.trim());
+    
+    if (cleanOrigins.indexOf(origin) !== -1) {
       callback(null, true);
     } else {
-      console.log(`CORS blocked origin: ${origin}`);
+      console.log(`CORS blocked origin: ${origin}, allowed: ${cleanOrigins.join(', ')}`);
       callback(null, true); // Allow for now to debug
     }
-  },
-  credentials: true,
+  },credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  allowedHeaders: [
+    'Content-Type', 
+    'Authorization', 
+    'Cache-Control',
+    'X-Requested-With',
+    'Accept',
+    'Origin',
+    'User-Agent',
+    'DNT',
+    'Keep-Alive',
+    'X-Requested-With'
+  ]
 }));
 
 app.use(express.json());
