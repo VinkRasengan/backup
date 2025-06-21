@@ -93,6 +93,23 @@ app.get('/community/posts', (req, res) => {
   });
 });
 
+// Also handle /api/posts for compatibility with frontend
+app.get('/api/posts', (req, res) => {
+  res.json({
+    success: true,
+    data: [
+      {
+        id: '1',
+        title: 'Test Post from API Gateway',
+        content: 'This proves the API Gateway is working',
+        author: 'API Gateway',
+        timestamp: new Date().toISOString()
+      }
+    ],
+    message: 'Mock data from simple API Gateway (/api/posts endpoint)'
+  });
+});
+
 // Mock news endpoint for testing
 app.get('/news/latest', (req, res) => {
   res.json({
@@ -123,6 +140,7 @@ app.use('*', (req, res) => {
       'GET /info', 
       'GET /test-cors',
       'GET /community/posts',
+      'GET /api/posts',
       'GET /news/latest'
     ]
   });
@@ -148,6 +166,7 @@ app.listen(PORT, () => {
   console.log(`  - GET /info`);
   console.log(`  - GET /test-cors`);
   console.log(`  - GET /community/posts`);
+  console.log(`  - GET /api/posts`);
   console.log(`  - GET /news/latest`);
 });
 

@@ -1,7 +1,17 @@
 // Community API Service - Voting, Comments, Reports
 const getApiBaseUrl = () => {
-  // Always use relative URLs to leverage React dev server proxy
-  return '';
+  // Use environment variable if set
+  if (process.env.REACT_APP_API_URL) {
+    return process.env.REACT_APP_API_URL;
+  }
+
+  // Fallback based on environment
+  if (process.env.NODE_ENV === 'production') {
+    // Use the ACTUAL API Gateway URL for production on Render
+    return 'https://backup-zhhs.onrender.com';
+  }
+
+  return 'http://localhost:8080'; // Development fallback (API Gateway port)
 };
 
 const API_BASE_URL = getApiBaseUrl();
@@ -35,12 +45,11 @@ class CommunityAPI {
   }
 
   // POSTS ENDPOINTS
-
   // Get community posts
   async getPosts(params = {}) {
     try {
       const queryParams = new URLSearchParams(params);
-      const response = await fetch(`${this.baseURL}/api/posts?${queryParams}`, {
+      const response = await fetch(`${this.baseURL}/community/posts?${queryParams}`, {
         method: 'GET',
         headers: this.getAuthHeaders()
       });
