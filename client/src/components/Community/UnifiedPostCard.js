@@ -14,6 +14,11 @@ import { useTheme } from '../../context/ThemeContext';
 import VoteComponent from './VoteComponent';
 import CommentSection from './CommentSection';
 import CommentPreview from './CommentPreview';
+import {
+  useResponsive,
+  getSmartImageLayout,
+  getSmartSpacing
+} from '../../utils/responsiveDesign';
 
 const UnifiedPostCard = ({
   post,
@@ -28,15 +33,10 @@ const UnifiedPostCard = ({
   const [showFullComments, setShowFullComments] = useState(false);
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [showShareMenu, setShowShareMenu] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
 
-  // Check if mobile on mount and resize
-  React.useEffect(() => {
-    const checkMobile = () => setIsMobile(window.innerWidth < 640);
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
-  }, []);
+  // Enhanced responsive design system
+  const { device, isMobile } = useResponsive();
+  const spacing = getSmartSpacing(device);
 
   // Format time ago
   const formatTimeAgo = useCallback((dateString) => {
@@ -167,82 +167,10 @@ const UnifiedPostCard = ({
             }
             if (post.thumbnailUrl && !allImages.includes(post.thumbnailUrl)) {
               allImages.push(post.thumbnailUrl);
-            }            // Smart Responsive Layout Logic - Auto-scale theo màn hình
-            const getResponsiveImageLayout = (imageCount) => {
-              const baseConfig = {
-                single: {
-                  container: "w-full",
-                  imageClass: "w-full object-cover rounded-lg transition-all duration-300 hover:opacity-95",
-                  heights: {
-                    mobile: "h-48 sm:h-64",
-                    tablet: "md:h-80", 
-                    desktop: "lg:max-h-96"
-                  },
-                  layout: "single"
-                },
-                dual: {
-                  container: "grid grid-cols-2 gap-1 sm:gap-2",
-                  imageClass: "w-full object-cover rounded transition-all duration-300 hover:scale-[1.02]",
-                  heights: {
-                    mobile: "h-32 sm:h-40",
-                    tablet: "md:h-48",
-                    desktop: "lg:h-56"
-                  },
-                  layout: "dual"
-                },
-                triple: {
-                  container: "grid grid-cols-2 gap-1 sm:gap-2",
-                  imageClass: {
-                    first: "w-full object-cover rounded transition-all duration-300 hover:scale-[1.02]",
-                    others: "w-full object-cover rounded transition-all duration-300 hover:scale-[1.02]"
-                  },
-                  heights: {
-                    mobile: "h-40 sm:h-48", 
-                    tablet: "md:h-56",
-                    desktop: "lg:h-64"
-                  },
-                  layout: "triple"
-                },
-                multi: {
-                  container: "grid grid-cols-2 gap-1 sm:gap-2",
-                  imageClass: "w-full object-cover rounded transition-all duration-300 hover:scale-[1.02]",
-                  heights: {
-                    mobile: "h-28 sm:h-32",
-                    tablet: "md:h-40", 
-                    desktop: "lg:h-48"
-                  },
-                  layout: "multi"
-                }
-              };
-
-              // Chọn config dựa trên số lượng ảnh
-              let configKey;
-              switch (imageCount) {
-                case 1: configKey = 'single'; break;
-                case 2: configKey = 'dual'; break; 
-                case 3: configKey = 'triple'; break;
-                default: configKey = 'multi'; break;
-              }
-
-              const config = baseConfig[configKey];
-              
-              // Combine responsive heights
-              const responsiveHeights = `${config.heights.mobile} ${config.heights.tablet} ${config.heights.desktop}`;
-              
-              return {
-                ...config,
-                imageClass: typeof config.imageClass === 'string' 
-                  ? `${config.imageClass} ${responsiveHeights}`
-                  : {
-                      first: `${config.imageClass.first} ${responsiveHeights}`,
-                      others: `${config.imageClass.others} ${config.heights.mobile.replace('h-40', 'h-20')} ${config.heights.tablet.replace('h-56', 'h-28')} ${config.heights.desktop.replace('h-64', 'h-32')}`
-                    }
-              };
-            };
-
+            }            // Enhanced Smart Image Layout (Reddit/Facebook style)
             if (allImages.length === 0) return null;
 
-            const layout = getResponsiveImageLayout(allImages.length);
+            const layout = getSmartImageLayout(allImages.length, device);
             const displayImages = allImages.slice(0, 4);            return (
               <div className="mb-4 relative">
                 <div className={layout.container}>
@@ -472,18 +400,18 @@ const UnifiedPostCard = ({
         </AnimatePresence>
       </motion.div>
     );
-  }  // Feed layout (Reddit-style with responsive design)
+  }  // Enhanced Feed layout (Reddit-style with smart responsive design)
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       className={`${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}
-        border rounded-md shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden 
-        mb-2 sm:mb-3 mx-2 sm:mx-0`}
+        border rounded-md shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden
+        ${spacing.card}`}
     >
       <div className="flex">
-        {/* Left Vote Section - Reddit Style với responsive */}
-        <div className={`w-8 sm:w-10 flex flex-col items-center py-2 sm:py-3 ${isDarkMode ? 'bg-gray-750' : 'bg-gray-50'} border-r border-gray-200 dark:border-gray-700`}>
+        {/* Left Vote Section - Smart responsive sizing */}
+        <div className={`${isMobile ? 'w-8' : 'w-10'} flex flex-col items-center ${spacing.element} ${isDarkMode ? 'bg-gray-750' : 'bg-gray-50'} border-r border-gray-200 dark:border-gray-700`}>
           <VoteComponent linkId={post.id} postData={post} compact={true} vertical={true} />
         </div>
 
@@ -575,42 +503,10 @@ const UnifiedPostCard = ({
               allImages.push(post.image);
             }
 
-            // Enhanced Layout Logic for Feed
-            const getFeedImageLayout = (imageCount) => {
-              switch (imageCount) {
-                case 1:
-                  return {
-                    container: "w-full",
-                    imageClass: "w-full max-h-80 object-cover rounded-lg transition-all duration-300 hover:shadow-lg",
-                    layout: "single"
-                  };
-                case 2:
-                  return {
-                    container: "grid grid-cols-2 gap-1.5",
-                    imageClass: "w-full h-40 object-cover rounded-md transition-all duration-300 hover:scale-[1.02]",
-                    layout: "dual"
-                  };
-                case 3:
-                  return {
-                    container: "grid grid-cols-2 gap-1.5 h-48",
-                    imageClass: {
-                      first: "w-full h-full object-cover rounded-md transition-all duration-300 hover:scale-[1.02]",
-                      others: "w-full h-full object-cover rounded-md transition-all duration-300 hover:scale-[1.02]"
-                    },
-                    layout: "triple"
-                  };
-                default:
-                  return {
-                    container: "grid grid-cols-2 gap-1.5 h-40",
-                    imageClass: "w-full h-full object-cover rounded-md transition-all duration-300 hover:scale-[1.02]",
-                    layout: "multi"
-                  };
-              }
-            };
-
+            // Enhanced Smart Image Layout for Feed (Reddit/Facebook style)
             if (allImages.length === 0) return null;
 
-            const layout = getFeedImageLayout(allImages.length);
+            const layout = getSmartImageLayout(allImages.length, device);
             const displayImages = allImages.slice(0, 4);
 
             return (

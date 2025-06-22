@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import UnifiedPostCard from '../components/Community/UnifiedPostCard';
+import { PostGrid } from '../components/ui/SmartGrid';
+import { useResponsive, getSmartSpacing } from '../utils/responsiveDesign';
 import toast from 'react-hot-toast';
 import { communityAPI } from '../services/api';
 
@@ -8,6 +10,10 @@ const CommunityPage = () => {
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+
+  // Enhanced responsive design
+  const { device } = useResponsive();
+  const spacing = getSmartSpacing(device);
   // Handler functions for LinkCard interactions
   const handleVote = async (linkId, voteType) => {
     try {
@@ -91,7 +97,7 @@ const CommunityPage = () => {
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-8">
+    <div className={`min-h-screen bg-gray-50 dark:bg-gray-900 ${spacing.container}`}>
       <h1 className="text-2xl font-bold mb-4 text-gray-900 dark:text-white">Community Page</h1>
 
         {/* Posts */}
@@ -114,7 +120,7 @@ const CommunityPage = () => {
               <h2 className="text-xl font-semibold mb-6 text-gray-900 dark:text-white">
                 Community Posts ({posts.length})
               </h2>
-              <div className="space-y-6">
+              <PostGrid animate={true} staggerDelay={0.1}>
                 {posts.map((post, index) => (
                   <UnifiedPostCard
                     key={post.id || index}
@@ -125,7 +131,7 @@ const CommunityPage = () => {
                     layout="feed"
                   />
                 ))}
-              </div>
+              </PostGrid>
             </div>
           )}
 
