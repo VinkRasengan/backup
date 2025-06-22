@@ -8,7 +8,7 @@ const path = require('path');
 
 // Load environment variables from root directory with fallback
 const path = require('path');
-const rootEnvPath = path.join(__dirname, '../../../.env');
+const rootEnvPath = path.join(__dirname, '../../../../.env');
 const fs = require('fs');
 
 // Try to load from root first, fallback to local if not found

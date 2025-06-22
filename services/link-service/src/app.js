@@ -7,7 +7,7 @@ const rateLimit = require('express-rate-limit');
 const path = require('path');
 
 // Load environment variables from root directory
-require('dotenv').config({ path: path.join(__dirname, '../../../.env') });
+require('dotenv').config({ path: path.join(__dirname, '../../../../.env') });
 
 // Import shared utilities
 const Logger = require('../shared/utils/logger');

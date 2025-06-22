@@ -7,6 +7,7 @@ import {
   Eye,
   Share2,
   Bookmark,
+  MoreHorizontal,
   Shield,
   TrendingUp
 } from 'lucide-react';
@@ -28,15 +29,6 @@ const UnifiedPostCard = ({
   const [showFullComments, setShowFullComments] = useState(false);
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [showShareMenu, setShowShareMenu] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
-
-  // Check if mobile on mount and resize
-  React.useEffect(() => {
-    const checkMobile = () => setIsMobile(window.innerWidth < 640);
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
-  }, []);
 
   // Format time ago
   const formatTimeAgo = useCallback((dateString) => {
@@ -167,82 +159,48 @@ const UnifiedPostCard = ({
             }
             if (post.thumbnailUrl && !allImages.includes(post.thumbnailUrl)) {
               allImages.push(post.thumbnailUrl);
-            }            // Smart Responsive Layout Logic - Auto-scale theo màn hình
-            const getResponsiveImageLayout = (imageCount) => {
-              const baseConfig = {
-                single: {
-                  container: "w-full",
-                  imageClass: "w-full object-cover rounded-lg transition-all duration-300 hover:opacity-95",
-                  heights: {
-                    mobile: "h-48 sm:h-64",
-                    tablet: "md:h-80", 
-                    desktop: "lg:max-h-96"
-                  },
-                  layout: "single"
-                },
-                dual: {
-                  container: "grid grid-cols-2 gap-1 sm:gap-2",
-                  imageClass: "w-full object-cover rounded transition-all duration-300 hover:scale-[1.02]",
-                  heights: {
-                    mobile: "h-32 sm:h-40",
-                    tablet: "md:h-48",
-                    desktop: "lg:h-56"
-                  },
-                  layout: "dual"
-                },
-                triple: {
-                  container: "grid grid-cols-2 gap-1 sm:gap-2",
-                  imageClass: {
-                    first: "w-full object-cover rounded transition-all duration-300 hover:scale-[1.02]",
-                    others: "w-full object-cover rounded transition-all duration-300 hover:scale-[1.02]"
-                  },
-                  heights: {
-                    mobile: "h-40 sm:h-48", 
-                    tablet: "md:h-56",
-                    desktop: "lg:h-64"
-                  },
-                  layout: "triple"
-                },
-                multi: {
-                  container: "grid grid-cols-2 gap-1 sm:gap-2",
-                  imageClass: "w-full object-cover rounded transition-all duration-300 hover:scale-[1.02]",
-                  heights: {
-                    mobile: "h-28 sm:h-32",
-                    tablet: "md:h-40", 
-                    desktop: "lg:h-48"
-                  },
-                  layout: "multi"
-                }
-              };
-
-              // Chọn config dựa trên số lượng ảnh
-              let configKey;
+            }            // Enhanced Intelligent Layout Logic - Reddit/Facebook Style
+            const getImageLayout = (imageCount) => {
               switch (imageCount) {
-                case 1: configKey = 'single'; break;
-                case 2: configKey = 'dual'; break; 
-                case 3: configKey = 'triple'; break;
-                default: configKey = 'multi'; break;
+                case 1:
+                  return {
+                    container: "w-full",
+                    imageClass: "w-full max-h-96 object-cover rounded-xl transition-all duration-300 hover:shadow-lg",
+                    layout: "single"
+                  };
+                case 2:
+                  return {
+                    container: "grid grid-cols-2 gap-1.5",
+                    imageClass: "w-full h-56 object-cover rounded-lg transition-all duration-300 hover:scale-[1.02]",
+                    layout: "dual"
+                  };
+                case 3:
+                  return {
+                    container: "grid grid-cols-2 gap-1.5 h-72",
+                    imageClass: {
+                      first: "w-full h-full object-cover rounded-lg transition-all duration-300 hover:scale-[1.02]",
+                      others: "w-full h-full object-cover rounded-lg transition-all duration-300 hover:scale-[1.02]"
+                    },
+                    layout: "triple"
+                  };
+                case 4:
+                  return {
+                    container: "grid grid-cols-2 gap-1.5 h-64",
+                    imageClass: "w-full h-full object-cover rounded-lg transition-all duration-300 hover:scale-[1.02]",
+                    layout: "quad"
+                  };
+                default:
+                  return {
+                    container: "grid grid-cols-2 gap-1.5 h-64",
+                    imageClass: "w-full h-full object-cover rounded-lg transition-all duration-300 hover:scale-[1.02]",
+                    layout: "multi"
+                  };
               }
-
-              const config = baseConfig[configKey];
-              
-              // Combine responsive heights
-              const responsiveHeights = `${config.heights.mobile} ${config.heights.tablet} ${config.heights.desktop}`;
-              
-              return {
-                ...config,
-                imageClass: typeof config.imageClass === 'string' 
-                  ? `${config.imageClass} ${responsiveHeights}`
-                  : {
-                      first: `${config.imageClass.first} ${responsiveHeights}`,
-                      others: `${config.imageClass.others} ${config.heights.mobile.replace('h-40', 'h-20')} ${config.heights.tablet.replace('h-56', 'h-28')} ${config.heights.desktop.replace('h-64', 'h-32')}`
-                    }
-              };
             };
 
             if (allImages.length === 0) return null;
 
-            const layout = getResponsiveImageLayout(allImages.length);
+            const layout = getImageLayout(allImages.length);
             const displayImages = allImages.slice(0, 4);            return (
               <div className="mb-4 relative">
                 <div className={layout.container}>
@@ -298,8 +256,9 @@ const UnifiedPostCard = ({
                           style={{ cursor: 'pointer' }}
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-all duration-300" />
-                      </div>                      {/* Right side with 2 stacked images - responsive */}
-                      <div className="grid grid-rows-2 gap-1 sm:gap-2">
+                      </div>
+                      {/* Right side with 2 stacked images */}
+                      <div className="grid grid-rows-2 gap-1.5">
                         {displayImages.slice(1, 3).map((img, index) => (
                           <div key={index + 1} className="relative group overflow-hidden rounded-lg">
                             <img
@@ -472,82 +431,87 @@ const UnifiedPostCard = ({
         </AnimatePresence>
       </motion.div>
     );
-  }  // Feed layout (Reddit-style with responsive design)
+  }
+  // Feed layout (Reddit-style with left voting)
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       className={`${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}
-        border rounded-md shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden 
-        mb-2 sm:mb-3 mx-2 sm:mx-0`}
+        border rounded-md shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden mb-2`}
     >
       <div className="flex">
-        {/* Left Vote Section - Reddit Style với responsive */}
-        <div className={`w-8 sm:w-10 flex flex-col items-center py-2 sm:py-3 ${isDarkMode ? 'bg-gray-750' : 'bg-gray-50'} border-r border-gray-200 dark:border-gray-700`}>
-          <VoteComponent linkId={post.id} postData={post} compact={true} vertical={true} />
+        {/* Left Vote Section - Reddit Style */}
+        <div className={`w-10 flex flex-col items-center py-2 ${isDarkMode ? 'bg-gray-750' : 'bg-gray-50'} border-r border-gray-200 dark:border-gray-700`}>
+          <VoteComponent linkId={post.id} postData={post} compact={true} />
         </div>
 
-        {/* Main Content - Responsive */}
+        {/* Main Content */}
         <div className="flex-1 min-w-0">
-          {/* Post Header - Responsive Reddit Style */}
-          <div className="p-2 sm:p-3 pb-1 sm:pb-2">
-            <div className="flex items-center space-x-1 text-xs sm:text-sm text-gray-500 dark:text-gray-400 mb-1 sm:mb-2">
-              <span className="font-medium text-gray-700 dark:text-gray-300 truncate">{post.source || 'r/community'}</span>
-              <span className="hidden sm:inline">•</span>
-              <span className="hidden sm:inline">Posted by</span>
-              <span className="font-medium hover:underline cursor-pointer truncate">u/{post.author?.displayName || post.author?.name || 'anonymous'}</span>
-              <span className="hidden sm:inline">•</span>
-              <span className="text-xs">{formatTimeAgo(post.createdAt)}</span>
+          {/* Post Header - Ultra Compact Reddit Style */}
+          <div className="p-2 pb-1">
+            <div className="flex items-center space-x-1 text-xs text-gray-500 dark:text-gray-400 mb-1">
+              <span className="font-medium text-gray-700 dark:text-gray-300">{post.source || 'r/community'}</span>
+              <span>•</span>
+              <span>Posted by</span>
+              <span className="font-medium hover:underline cursor-pointer">u/{post.author?.displayName || post.author?.name || 'anonymous'}</span>
+              <span>•</span>
+              <span>{formatTimeAgo(post.createdAt)}</span>
               {post.verified && (
                 <>
-                  <span className="hidden sm:inline">•</span>
-                  <Shield className="w-3 h-3 text-blue-500 flex-shrink-0" />
+                  <span>•</span>
+                  <Shield className="w-3 h-3 text-blue-500" />
                 </>
               )}
-            </div>            {/* Title - Responsive Reddit Style */}
-            <h3 className={`text-sm sm:text-base font-medium mb-1 sm:mb-2 leading-tight hover:text-blue-600 cursor-pointer 
-              ${isDarkMode ? 'text-white' : 'text-gray-900'} line-clamp-2`}>
+            </div>
+
+            {/* Title - Reddit Style */}
+            <h3 className={`text-sm font-medium mb-1 leading-tight hover:text-blue-600 cursor-pointer ${isDarkMode ? 'text-white' : 'text-gray-900'} line-clamp-2`}>
               {post.title}
             </h3>
+
+            {/* Content Preview - Very Compact */}
+            {post.content && (
+              <p className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-600'} mb-2 leading-relaxed line-clamp-2`}>
+                {post.content.length > 150 ? `${post.content.substring(0, 150)}...` : post.content}
+              </p>
+            )}
           </div>
 
-          {/* Post Content - Responsive */}
-          <div className="px-2 sm:px-3 pb-1 sm:pb-2">            {/* Content Preview - Adaptive length based on screen */}
+          {/* Post Content - Compact */}
+          <div className="px-3 pb-2">
+            {/* Content Preview */}
             {post.content && (
-              <p className={`text-xs sm:text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'} 
-                mb-2 leading-relaxed line-clamp-2 sm:line-clamp-3`}>
-                {post.content.length > (isMobile ? 100 : 200) 
-                  ? `${post.content.substring(0, isMobile ? 100 : 200)}...` 
-                  : post.content}
+              <p className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'} mb-2 leading-relaxed line-clamp-3`}>
+                {post.content.length > 200 ? `${post.content.substring(0, 200)}...` : post.content}
               </p>
             )}
 
-            {/* Tags - Responsive */}
+            {/* Tags - Compact */}
             {post.tags && post.tags.length > 0 && (
               <div className="flex flex-wrap gap-1 mb-2">
-                {post.tags.slice(0, isMobile ? 2 : 3).map((tag, index) => (
+                {post.tags.slice(0, 3).map((tag, index) => (
                   <span
                     key={index}
-                    className="px-1.5 sm:px-2 py-0.5 text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full"
+                    className="px-2 py-0.5 text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full"
                   >
                     #{tag}
                   </span>
                 ))}
-                {post.tags.length > (isMobile ? 2 : 3) && (
-                  <span className="text-xs text-gray-500">+{post.tags.length - (isMobile ? 2 : 3)}</span>
+                {post.tags.length > 3 && (
+                  <span className="text-xs text-gray-500">+{post.tags.length - 3} more</span>
                 )}
               </div>
             )}
 
-            {/* Trust Score - Compact responsive */}
+            {/* Trust Score - Compact */}
             {post.trustScore && (
               <div className={`inline-flex items-center space-x-1 px-2 py-1 rounded text-xs font-medium mb-2 ${getTrustScoreColor(post.trustScore)}`}>
                 <TrendingUp className="w-3 h-3" />
-                <span className="hidden sm:inline">{getTrustScoreLabel(post.trustScore)} </span>
-                <span>({post.trustScore}%)</span>
+                <span>{getTrustScoreLabel(post.trustScore)} ({post.trustScore}%)</span>
               </div>
             )}
-          </div>{/* Intelligent Image Layout - Same as sidebar version */}
+          </div>          {/* Intelligent Image Layout - Same as sidebar version */}
           {(() => {
             // Collect all available images from different fields
             const allImages = [];
@@ -739,56 +703,53 @@ const UnifiedPostCard = ({
                 </a>
               </div>
             </div>
-          )}          {/* Action Bar - Responsive Reddit Style */}
-          <div className="px-2 sm:px-3 py-1.5 sm:py-2 border-t border-gray-200 dark:border-gray-700">
-            <div className="flex items-center justify-between text-xs sm:text-sm text-gray-500 dark:text-gray-400">
-              <div className="flex items-center space-x-2 sm:space-x-4">
-                <button
-                  onClick={() => onToggleComments && onToggleComments(post.id)}
-                  className={`flex items-center space-x-1 px-1.5 sm:px-2 py-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors ${
-                    showComments ? 'text-blue-600 dark:text-blue-400' : ''
-                  }`}
-                >
-                  <MessageCircle size={12} className="sm:w-4 sm:h-4" />
-                  <span className="hidden sm:inline">{post.commentCount || 0} Comments</span>
-                  <span className="sm:hidden">{post.commentCount || 0}</span>
-                </button>
+          )}
 
-                <button
-                  onClick={handleShare}
-                  className="flex items-center space-x-1 px-1.5 sm:px-2 py-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                >
-                  <Share2 size={12} className="sm:w-4 sm:h-4" />
-                  <span className="hidden sm:inline">Share</span>
-                </button>
+          {/* Action Bar - Reddit Style */}
+          <div className="px-3 py-2 border-t border-gray-200 dark:border-gray-700">
+            <div className="flex items-center space-x-4 text-xs text-gray-500 dark:text-gray-400">
+              <button
+                onClick={() => onToggleComments && onToggleComments(post.id)}
+                className={`flex items-center space-x-1 px-2 py-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors ${
+                  showComments ? 'text-blue-600 dark:text-blue-400' : ''
+                }`}
+              >
+                <MessageCircle size={14} />
+                <span>{post.commentCount || 0} Comments</span>
+              </button>
 
-                <button
-                  onClick={handleBookmark}
-                  className={`flex items-center space-x-1 px-1.5 sm:px-2 py-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors ${
-                    isBookmarked ? 'text-yellow-600 dark:text-yellow-400' : ''
-                  }`}
-                >
-                  <Bookmark size={12} className={`sm:w-4 sm:h-4 ${isBookmarked ? 'fill-current' : ''}`} />
-                  <span className="hidden sm:inline">Save</span>
-                </button>
+              <button
+                onClick={handleShare}
+                className="flex items-center space-x-1 px-2 py-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+              >
+                <Share2 size={14} />
+                <span>Share</span>
+              </button>
+
+              <button
+                onClick={handleBookmark}
+                className={`flex items-center space-x-1 px-2 py-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors ${
+                  isBookmarked ? 'text-yellow-600 dark:text-yellow-400' : ''
+                }`}
+              >
+                <Bookmark size={14} className={isBookmarked ? 'fill-current' : ''} />
+                <span>Save</span>
+              </button>
+
+              <div className="flex items-center space-x-1">
+                <Eye size={14} />
+                <span>{post.viewCount || 0}</span>
               </div>
 
-              <div className="flex items-center space-x-2 sm:space-x-4">
-                <div className="flex items-center space-x-1">
-                  <Eye size={12} className="sm:w-4 sm:h-4" />
-                  <span>{post.viewCount || 0}</span>
-                </div>
-
-                {onReport && (
-                  <button
-                    onClick={() => onReport(post.id)}
-                    className="p-1 rounded text-red-500 hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors"
-                    title="Report"
-                  >
-                    <AlertTriangle size={12} className="sm:w-4 sm:h-4" />
-                  </button>
-                )}
-              </div>
+              {onReport && (
+                <button
+                  onClick={() => onReport(post.id)}
+                  className="p-1 rounded text-red-500 hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors"
+                  title="Report"
+                >
+                  <AlertTriangle size={14} />
+                </button>
+              )}
             </div>
           </div>
         </div>

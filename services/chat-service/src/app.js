@@ -9,7 +9,7 @@ const rateLimit = require('express-rate-limit');
 const path = require('path');
 
 // Load environment variables from root directory with fallback
-const rootEnvPath = path.join(__dirname, '../../../.env');
+const rootEnvPath = path.join(__dirname, '../../../../.env');
 const fs = require('fs');
 
 // Try to load from root first, fallback to local if not found
