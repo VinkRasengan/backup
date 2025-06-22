@@ -45,7 +45,13 @@ const schemas = {
     }),
     category: Joi.string().valid('general', 'scam', 'phishing', 'malware', 'fraud', 'other').default('general'),
     url: Joi.string().uri().optional().allow('', null),
-    tags: Joi.array().items(Joi.string().max(50)).max(10).default([])
+    tags: Joi.array().items(Joi.string().max(50)).max(10).default([]),
+    // Image fields for frontend compatibility
+    imageUrl: Joi.string().uri().optional().allow('', null),
+    screenshot: Joi.string().uri().optional().allow('', null),
+    images: Joi.array().items(Joi.string().uri()).max(10).optional().default([]),
+    urlToImage: Joi.string().uri().optional().allow('', null), // For news articles
+    thumbnailUrl: Joi.string().uri().optional().allow('', null)
   }),
 
   // Comment creation validation

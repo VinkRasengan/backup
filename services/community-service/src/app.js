@@ -12,7 +12,7 @@ const Logger = require('../shared/utils/logger');
 const { HealthCheck, commonChecks } = require('../shared/utils/health-check');
 
 // Import local modules
-const postsRoutes = require('./routes/posts');
+const linksRoutes = require('./routes/links');
 const commentsRoutes = require('./routes/comments');
 const votesRoutes = require('./routes/votes');
 const reportsRoutes = require('./routes/reports');
@@ -183,7 +183,7 @@ app.get('/info', (req, res) => {
 });
 
 // API routes
-app.use('/posts', postsRoutes);
+app.use('/links', linksRoutes);
 app.use('/comments', commentsRoutes);
 app.use('/votes', votesRoutes);
 app.use('/reports', reportsRoutes);

@@ -267,9 +267,9 @@ const mockPostsService = new MockPostsService();
 // Override fetch function for community posts API
 const originalFetch = window.fetch;
 window.fetch = async (url, options = {}) => {
-  // Check if this is a community posts request
-  if (url.includes('/api/community/posts') && mockPostsService.shouldUseMockData()) {
-    console.log('🎭 Using mock posts data for:', url);
+  // Check if this is a community links request
+  if (url.includes('/api/community/links') && mockPostsService.shouldUseMockData()) {
+    console.log('🎭 Using mock links data for:', url);
     
     // Parse URL parameters
     const urlObj = new URL(url, window.location.origin);

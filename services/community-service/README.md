@@ -13,9 +13,9 @@ Dịch vụ cộng đồng đã được cải thiện với tích hợp databas
 - **Sample data generator** - Tạo dữ liệu mẫu cho development
 - **Comprehensive testing** - Test script cho tất cả functionality
 
-### 📋 Posts Management
-- ✅ Tạo, đọc, cập nhật, xóa posts
-- ✅ Search và filter posts
+### 📋 Links Management
+- ✅ Tạo, đọc, cập nhật, xóa links
+- ✅ Search và filter links
 - ✅ Pagination với performance optimization
 - ✅ Vote statistics tracking
 - ✅ Comment count tracking
@@ -41,9 +41,9 @@ Dịch vụ cộng đồng đã được cải thiện với tích hợp databas
 Community Service
 ├── src/
 │   ├── routes/
-│   │   ├── posts.js          # Posts CRUD + sample data
+│   │   ├── links.js          # Links CRUD + sample data
 │   │   ├── comments.js       # Comments + voting
-│   │   ├── votes.js          # Post voting system
+│   │   ├── votes.js          # Link voting system
 │   │   └── reports.js        # Reporting system
 │   ├── config/
 │   │   └── firebase.js       # Firestore configuration
@@ -56,18 +56,18 @@ Community Service
 
 ## 🔧 API Endpoints
 
-### Posts
+### Links
 ```
-GET    /posts                 # Get posts with filters
-POST   /posts                 # Create new post
-GET    /posts/:id             # Get single post
-POST   /posts/dev/sample-data # Create sample data (dev only)
-DELETE /posts/dev/sample-data # Clear sample data (dev only)
+GET    /links                 # Get links with filters
+POST   /links                 # Create new link
+GET    /links/:id             # Get single link
+POST   /links/dev/sample-data # Create sample data (dev only)
+DELETE /links/dev/sample-data # Clear sample data (dev only)
 ```
 
 ### Comments
 ```
-GET    /comments/:postId      # Get comments for post
+GET    /comments/:linkId      # Get comments for link
 POST   /comments              # Create comment
 GET    /comments/:commentId/replies # Get replies
 PUT    /comments/:commentId   # Update comment
@@ -88,7 +88,7 @@ POST   /votes/batch           # Batch vote operations
 
 ## 🗄️ Database Schema
 
-### Posts Collection
+### Links Collection
 ```javascript
 {
   id: "auto-generated",
@@ -123,7 +123,7 @@ POST   /votes/batch           # Batch vote operations
 ```javascript
 {
   id: "auto-generated",
-  postId: "string",
+  linkId: "string", // Reference to link
   content: "string",
   author: {
     uid: "string",
@@ -196,7 +196,7 @@ npm start
 
 ### 4. Create Sample Data (Development)
 ```bash
-curl -X POST http://localhost:8080/api/posts/dev/sample-data
+curl -X POST http://localhost:8080/api/links/dev/sample-data
 ```
 
 ### 5. Test Service
@@ -220,15 +220,15 @@ testServiceHealth();
 
 ### Manual Testing
 1. **Health Check**: `GET http://localhost:3003/health`
-2. **Create Sample Data**: `POST http://localhost:8080/api/posts/dev/sample-data`
-3. **Get Posts**: `GET http://localhost:8080/api/posts`
-4. **Vote on Post**: `POST http://localhost:8080/api/votes/{postId}`
+2. **Create Sample Data**: `POST http://localhost:8080/api/links/dev/sample-data`
+3. **Get Links**: `GET http://localhost:8080/api/links`
+4. **Vote on Link**: `POST http://localhost:8080/api/votes/{linkId}`
 5. **Add Comment**: `POST http://localhost:8080/api/comments`
 
 ## 🎨 Frontend Integration
 
-### UnifiedPostCard Component
-- Facebook-style post layout
+### UnifiedLinkCard Component
+- Facebook-style link layout
 - Reddit-style voting buttons
 - Comment preview with voting
 - Responsive design
@@ -288,9 +288,9 @@ testServiceHealth();
 2. **Sample Data Creation Failed**
    ```bash
    # Clear existing data first
-   curl -X DELETE http://localhost:8080/api/posts/dev/sample-data
+   curl -X DELETE http://localhost:8080/api/links/dev/sample-data
    # Then create new sample data
-   curl -X POST http://localhost:8080/api/posts/dev/sample-data
+   curl -X POST http://localhost:8080/api/links/dev/sample-data
    ```
 
 3. **Vote System Not Working**

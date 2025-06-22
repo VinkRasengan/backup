@@ -3,8 +3,8 @@ const Logger = require('../../shared/utils/logger');
 
 const logger = new Logger('community-service');
 
-// Sample data for posts and comments
-const samplePosts = [
+// Sample data for links and comments
+const sampleLinks = [
   {
     title: 'Cảnh báo: Trang web lừa đảo mới được phát hiện',
     content: 'Một trang web giả mạo ngân hàng đã được phát hiện. Trang web này có giao diện rất giống với website chính thức của ngân hàng, nhưng có URL khác biệt. Hãy cẩn thận khi nhập thông tin cá nhân và luôn kiểm tra URL trước khi đăng nhập.',
@@ -161,28 +161,28 @@ async function createSampleData() {
   try {
     logger.info('Creating sample data for community service...');
 
-    // Create sample posts
-    const postPromises = samplePosts.map(async (postData) => {
-      const post = {
-        ...postData,
+    // Create sample links
+    const linkPromises = sampleLinks.map(async (linkData) => {
+      const link = {
+        ...linkData,
         createdAt: new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000), // Random time in last 7 days
         updatedAt: new Date()
       };
 
-      const docRef = await db.collection(collections.POSTS).add(post);
-      logger.info('Sample post created', { id: docRef.id, title: post.title });
+      const docRef = await db.collection(collections.POSTS).add(link);
+      logger.info('Sample link created', { id: docRef.id, title: link.title });
 
-      // Create sample comments for this post
+      // Create sample comments for this link
       const commentPromises = sampleComments.map(async (commentData, index) => {
         const comment = {
           ...commentData,
-          postId: docRef.id,
+          linkId: docRef.id,
           createdAt: new Date(Date.now() - Math.random() * 24 * 60 * 60 * 1000), // Random time in last 24 hours
           updatedAt: new Date()
         };
 
         const commentRef = await db.collection(collections.COMMENTS).add(comment);
-        logger.info('Sample comment created', { id: commentRef.id, postId: docRef.id });
+        logger.info('Sample comment created', { id: commentRef.id, linkId: docRef.id });
         return commentRef.id;
       });
 
@@ -190,13 +190,13 @@ async function createSampleData() {
       return docRef.id;
     });
 
-    const postIds = await Promise.all(postPromises);
-    logger.info('Sample data creation completed', { postsCreated: postIds.length });
+    const linkIds = await Promise.all(linkPromises);
+    logger.info('Sample data creation completed', { linksCreated: linkIds.length });
 
     return {
       success: true,
-      postsCreated: postIds.length,
-      commentsCreated: sampleComments.length * postIds.length
+      linksCreated: linkIds.length,
+      commentsCreated: sampleComments.length * linkIds.length
     };
 
   } catch (error) {
@@ -210,10 +210,10 @@ async function clearSampleData() {
   try {
     logger.info('Clearing sample data...');
 
-    // Clear posts
-    const postsSnapshot = await db.collection(collections.POSTS).get();
-    const postDeletePromises = postsSnapshot.docs.map(doc => doc.ref.delete());
-    await Promise.all(postDeletePromises);
+    // Clear links
+    const linksSnapshot = await db.collection(collections.POSTS).get();
+    const linkDeletePromises = linksSnapshot.docs.map(doc => doc.ref.delete());
+    await Promise.all(linkDeletePromises);
 
     // Clear comments
     const commentsSnapshot = await db.collection(collections.COMMENTS).get();
@@ -237,6 +237,6 @@ async function clearSampleData() {
 module.exports = {
   createSampleData,
   clearSampleData,
-  samplePosts,
+  sampleLinks,
   sampleComments
 };

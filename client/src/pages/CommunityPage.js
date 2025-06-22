@@ -14,10 +14,10 @@ const CommunityPage = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // Handler functions for PostCard interactions
-  const handleVote = async (postId, voteType) => {
+  // Handler functions for LinkCard interactions
+  const handleVote = async (linkId, voteType) => {
     try {
-      console.log(`🗳️ Voting ${voteType} on post ${postId}`);
+      console.log(`🗳️ Voting ${voteType} on link ${linkId}`);
 
       // Get user info
       const user = JSON.parse(localStorage.getItem('user') || '{}');
@@ -28,7 +28,7 @@ const CommunityPage = () => {
 
       // ✅ Use API service instead of direct fetch
       const response = await communityAPI.submitVote(
-        postId,
+        linkId,
         voteType,
         user.uid || user.id,
         user.email
@@ -55,9 +55,9 @@ const CommunityPage = () => {
   };
 
   // Add comment function (called by CommentsSection)
-  const handleAddComment = async (postId, commentText) => {
+  const handleAddComment = async (linkId, commentText) => {
     try {
-      console.log(`💬 Adding comment to post ${postId}:`, commentText);
+      console.log(`💬 Adding comment to link ${linkId}:`, commentText);
 
       // Get user info
       const user = JSON.parse(localStorage.getItem('user') || '{}');
@@ -73,7 +73,7 @@ const CommunityPage = () => {
 
       // ✅ Use API service instead of direct fetch
       const response = await communityAPI.addComment(
-        postId,
+        linkId,
         commentText.trim(),
         user.uid || user.id,
         user.email,

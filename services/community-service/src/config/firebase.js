@@ -36,7 +36,7 @@ try {
 
   // Firestore collections for Community Service
   collections = {
-    POSTS: 'posts', // Use 'posts' collection where the actual data is stored
+    POSTS: 'links', // Use 'links' collection to match client-side and link-service
     COMMENTS: 'comments',
     VOTES: 'votes',
     COMMENT_VOTES: 'comment_votes', // For comment voting

@@ -6,8 +6,8 @@ const { getUserId, getUserEmail } = require('../middleware/auth');
 
 const logger = new Logger('community-service');
 
-// Helper function to update post vote count and score using atomic transaction
-async function updatePostVoteCount(linkId) {
+// Helper function to update link vote count and score using atomic transaction
+async function updateLinkVoteCount(linkId) {
   try {
     // Use Firestore transaction for atomic updates
     return await db.runTransaction(async (transaction) => {
@@ -38,13 +38,13 @@ async function updatePostVoteCount(linkId) {
       // Calculate Reddit-style score
       stats.score = stats.upvotes - stats.downvotes;
 
-      // Update post with vote statistics atomically
-      const postsQuery = await transaction.get(
+      // Update link with vote statistics atomically
+      const linksQuery = await transaction.get(
         db.collection(collections.POSTS).where('id', '==', linkId)
       );
 
-      if (!postsQuery.empty) {
-        transaction.update(postsQuery.docs[0].ref, {
+      if (!linksQuery.empty) {
+        transaction.update(linksQuery.docs[0].ref, {
           voteCount: stats.total,
           voteScore: stats.score,
           voteStats: {
@@ -161,8 +161,8 @@ router.post('/:linkId', async (req, res) => {
       return { voteDoc, action };
     });
 
-    // Update vote count on the post (async, don't wait for better performance)
-    updatePostVoteCount(linkId).catch(error => {
+    // Update vote count on the link (async, don't wait for better performance)
+    updateLinkVoteCount(linkId).catch(error => {
       logger.error('Background vote count update failed', { error: error.message, linkId });
     });
 
@@ -386,8 +386,8 @@ router.delete('/:linkId', async (req, res) => {
     if (!userVoteQuery.empty) {
       await userVoteQuery.docs[0].ref.delete();
 
-      // Update vote count on the post (async, don't wait)
-      updatePostVoteCount(linkId).catch(error => {
+      // Update vote count on the link (async, don't wait)
+      updateLinkVoteCount(linkId).catch(error => {
         logger.error('Background vote count update failed', { error: error.message, linkId });
       });
 
@@ -482,9 +482,9 @@ router.post('/batch', async (req, res) => {
     // Commit batch
     await batch.commit();
 
-    // Update vote counts for all affected posts
+    // Update vote counts for all affected links
     const uniqueLinkIds = [...new Set(votes.map(v => v.linkId))];
-    await Promise.all(uniqueLinkIds.map(linkId => updatePostVoteCount(linkId)));
+    await Promise.all(uniqueLinkIds.map(linkId => updateLinkVoteCount(linkId)));
 
     res.json({
       success: true,

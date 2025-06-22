@@ -44,26 +44,26 @@ class CommunityAPI {
     return response.json();
   }
 
-  // POSTS ENDPOINTS
-  // Get community posts
+  // LINKS ENDPOINTS
+  // Get community links
   async getPosts(params = {}) {
     try {
       const queryParams = new URLSearchParams(params);
-      const response = await fetch(`${this.baseURL}/community/posts?${queryParams}`, {
+      const response = await fetch(`${this.baseURL}/community/links?${queryParams}`, {
         method: 'GET',
         headers: this.getAuthHeaders()
       });
       return await this.handleResponse(response);
     } catch (error) {
-      console.error('Get posts error:', error);
+      console.error('Get links error:', error);
       throw error;
     }
   }
 
-  // Submit to community (create new post)
+  // Submit to community (create new link)
   async submitToCommunity(data) {
     try {
-      const response = await fetch(`${this.baseURL}/api/posts`, {
+      const response = await fetch(`${this.baseURL}/api/links`, {
         method: 'POST',
         headers: this.getAuthHeaders(),
         body: JSON.stringify(data)
@@ -75,10 +75,10 @@ class CommunityAPI {
     }
   }
 
-  // Get my submissions (filter posts by user)
+  // Get my submissions (filter links by user)
   async getMySubmissions() {
     try {
-      const response = await fetch(`${this.baseURL}/api/posts?userPostsOnly=true`, {
+      const response = await fetch(`${this.baseURL}/api/links?userPostsOnly=true`, {
         method: 'GET',
         headers: this.getAuthHeaders()
       });
@@ -89,10 +89,10 @@ class CommunityAPI {
     }
   }
 
-  // Delete submission (delete post)
+  // Delete submission (delete link)
   async deleteSubmission(id) {
     try {
-      const response = await fetch(`${this.baseURL}/api/posts/${id}`, {
+      const response = await fetch(`${this.baseURL}/api/links/${id}`, {
         method: 'DELETE',
         headers: this.getAuthHeaders()
       });
@@ -190,7 +190,7 @@ class CommunityAPI {
         method: 'POST',
         headers: this.getAuthHeaders(),
         body: JSON.stringify({
-          postId: linkId,
+          linkId: linkId,
           content,
           userId,
           userEmail,

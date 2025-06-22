@@ -172,7 +172,7 @@ class CommunityDataManager {
                  localStorage.getItem('backendToken') ||
                  localStorage.getItem('firebaseToken');
 
-    const response = await fetch(`${getApiBaseUrl()}/community/posts?${urlParams}`, {
+    const response = await fetch(`${getApiBaseUrl()}/community/links?${urlParams}`, {
       headers: {
         'Authorization': `Bearer ${token}`,
         'Cache-Control': 'max-age=300', // 5 minutes cache
