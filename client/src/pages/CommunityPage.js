@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from 'react';
-import NavigationLayout from '../components/navigation/NavigationLayout';
 import UnifiedPostCard from '../components/Community/UnifiedPostCard';
 import toast from 'react-hot-toast';
 import { communityAPI } from '../services/api';
@@ -92,8 +91,8 @@ const CommunityPage = () => {
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
-    <NavigationLayout>
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-8">        <h1 className="text-2xl font-bold mb-4 text-gray-900 dark:text-white">Community Page</h1>
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-8">
+      <h1 className="text-2xl font-bold mb-4 text-gray-900 dark:text-white">Community Page</h1>
 
         {/* Posts */}
         <div>
@@ -145,8 +144,7 @@ const CommunityPage = () => {
             </div>
           )}
         </div>
-      </div>
-    </NavigationLayout>
+    </div>
   );
 };
 
