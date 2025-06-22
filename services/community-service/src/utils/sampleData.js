@@ -25,8 +25,7 @@ const sampleLinks = [
       'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?w=800&h=400&fit=crop'
     ],
     urlToImage: 'https://images.unsplash.com/photo-1563013544-824ae1b704d3?w=800&h=400&fit=crop',
-    thumbnailUrl: 'https://images.unsplash.com/photo-1563013544-824ae1b704d3?w=300&h=200&fit=crop',
-    voteStats: {
+    thumbnailUrl: 'https://images.unsplash.com/photo-1563013544-824ae1b704d3?w=300&h=200&fit=crop',    voteStats: {
       upvotes: 25,
       downvotes: 3,
       total: 28,
@@ -35,6 +34,7 @@ const sampleLinks = [
     voteScore: 22,
     commentCount: 8,
     verified: true,
+    trustScore: 95, // Add trust score
     searchTerms: ['cảnh', 'báo', 'trang', 'web', 'lừa', 'đảo', 'ngân', 'hàng']
   },
   {
