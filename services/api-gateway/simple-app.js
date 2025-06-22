@@ -1,7 +1,19 @@
 const express = require('express');
 const cors = require('cors');
 const { createProxyMiddleware } = require('http-proxy-middleware');
-require('dotenv').config();
+const path = require('path');
+const fs = require('fs');
+
+// Load environment variables from root directory with fallback
+const rootEnvPath = path.join(__dirname, '../../.env');
+
+// Try to load from root first, fallback to local if not found
+if (fs.existsSync(rootEnvPath)) {
+  require('dotenv').config({ path: rootEnvPath });
+} else {
+  // Fallback for production environments (Render, Docker)
+  require('dotenv').config();
+}
 
 const app = express();
 const PORT = process.env.PORT || 8080;

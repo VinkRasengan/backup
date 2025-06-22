@@ -1,7 +1,17 @@
 const admin = require('firebase-admin');
+const path = require('path');
+const fs = require('fs');
 
-// Load environment variables
-require('dotenv').config();
+// Load environment variables from root directory with fallback
+const rootEnvPath = path.join(__dirname, '../../../../.env');
+
+// Try to load from root first, fallback to local if not found
+if (fs.existsSync(rootEnvPath)) {
+  require('dotenv').config({ path: rootEnvPath });
+} else {
+  // Fallback for production environments (Render, Docker)
+  require('dotenv').config();
+}
 
 let db, collections;
 
