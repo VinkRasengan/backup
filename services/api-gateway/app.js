@@ -360,6 +360,22 @@ app.use('/api/links', createProxyMiddleware({
   }
 }));
 
+// Votes routes (proxy to community service)
+app.use('/api/votes', createProxyMiddleware({
+  target: services['community-service'],
+  changeOrigin: true,
+  pathRewrite: { '^/api/votes': '/votes' },
+  onError: (err, req, res) => {
+    logger.error('Community service proxy error (votes)', { error: err.message });
+    if (!res.headersSent) {
+      res.status(503).json({
+        error: 'Community service unavailable',
+        code: 'SERVICE_UNAVAILABLE'
+      });
+    }
+  }
+}));
+
 // Comments routes (proxy to community service)
 app.use('/api/comments', createProxyMiddleware({
   target: services['community-service'],
@@ -367,6 +383,22 @@ app.use('/api/comments', createProxyMiddleware({
   pathRewrite: { '^/api/comments': '/comments' },
   onError: (err, req, res) => {
     logger.error('Community service proxy error (comments)', { error: err.message });
+    if (!res.headersSent) {
+      res.status(503).json({
+        error: 'Community service unavailable',
+        code: 'SERVICE_UNAVAILABLE'
+      });
+    }
+  }
+}));
+
+// Reports routes (proxy to community service)
+app.use('/api/reports', createProxyMiddleware({
+  target: services['community-service'],
+  changeOrigin: true,
+  pathRewrite: { '^/api/reports': '/reports' },
+  onError: (err, req, res) => {
+    logger.error('Community service proxy error (reports)', { error: err.message });
     if (!res.headersSent) {
       res.status(503).json({
         error: 'Community service unavailable',

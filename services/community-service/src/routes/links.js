@@ -54,12 +54,31 @@ router.get('/', async (req, res) => {
       return {
         id: doc.id,
         ...data,
-        // Ensure image fields exist for frontend compatibility
+        // Ensure all required fields exist for frontend compatibility
+        title: data.title || '',
+        content: data.content || '',
+        url: data.url || null,
+        author: data.author || { uid: 'unknown', email: 'unknown@example.com', displayName: 'Unknown User' },
+        type: data.type || 'user_post',
+        category: data.category || 'general',
+        tags: data.tags || [],
+        // Image fields - ensure all variants are available
         imageUrl: data.imageUrl || null,
         screenshot: data.screenshot || null,
         images: data.images || [],
         urlToImage: data.urlToImage || null,
         thumbnailUrl: data.thumbnailUrl || null,
+        // Vote and engagement fields
+        voteStats: data.voteStats || { upvotes: 0, downvotes: 0, total: 0, score: 0 },
+        voteScore: data.voteScore || 0,
+        commentCount: data.commentCount || 0,
+        viewCount: data.viewCount || 0,
+        // Trust and verification fields
+        verified: data.verified || false,
+        trustScore: data.trustScore || null,
+        // Search and metadata
+        searchTerms: data.searchTerms || [],
+        // Timestamps
         createdAt: data.createdAt?.toDate?.()?.toISOString() || data.createdAt,
         updatedAt: data.updatedAt?.toDate?.()?.toISOString() || data.updatedAt
       };
@@ -178,12 +197,13 @@ router.post('/', async (req, res) => {
       type,
       category: category || 'general',
       tags: tags || [],
-      // Image fields for frontend compatibility
+      // Image fields - support all variants for maximum frontend compatibility
       imageUrl: imageUrl || null,
       screenshot: screenshot || null,
-      images: images || [],
+      images: Array.isArray(images) ? images : [],
       urlToImage: urlToImage || null,
       thumbnailUrl: thumbnailUrl || null,
+      // Vote and engagement stats
       voteStats: {
         upvotes: 0,
         downvotes: 0,
@@ -192,9 +212,13 @@ router.post('/', async (req, res) => {
       },
       voteScore: 0,
       commentCount: 0,
+      viewCount: 0,
+      // Trust and verification
       verified: false,
       trustScore: null,
+      // Search optimization
       searchTerms,
+      // Timestamps
       createdAt: new Date(),
       updatedAt: new Date()
     };
@@ -248,12 +272,31 @@ router.get('/:id', async (req, res) => {
     const linkData = {
       id: doc.id,
       ...data,
-      // Ensure image fields exist for frontend compatibility
+      // Ensure all required fields exist for frontend compatibility
+      title: data.title || '',
+      content: data.content || '',
+      url: data.url || null,
+      author: data.author || { uid: 'unknown', email: 'unknown@example.com', displayName: 'Unknown User' },
+      type: data.type || 'user_post',
+      category: data.category || 'general',
+      tags: data.tags || [],
+      // Image fields - ensure all variants are available
       imageUrl: data.imageUrl || null,
       screenshot: data.screenshot || null,
       images: data.images || [],
       urlToImage: data.urlToImage || null,
       thumbnailUrl: data.thumbnailUrl || null,
+      // Vote and engagement fields
+      voteStats: data.voteStats || { upvotes: 0, downvotes: 0, total: 0, score: 0 },
+      voteScore: data.voteScore || 0,
+      commentCount: data.commentCount || 0,
+      viewCount: data.viewCount || 0,
+      // Trust and verification fields
+      verified: data.verified || false,
+      trustScore: data.trustScore || null,
+      // Search and metadata
+      searchTerms: data.searchTerms || [],
+      // Timestamps
       createdAt: data.createdAt?.toDate?.()?.toISOString() || data.createdAt,
       updatedAt: data.updatedAt?.toDate?.()?.toISOString() || data.updatedAt
     };
@@ -271,6 +314,59 @@ router.get('/:id', async (req, res) => {
       success: false,
       error: 'Failed to retrieve link',
       code: 'GET_LINK_ERROR'
+    });
+  }
+});
+
+// Delete a link by ID
+router.delete('/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = getUserId(req);
+
+    logger.info('Delete link request', { id, userId });
+
+    // Get the link first to check ownership
+    const doc = await db.collection(collections.POSTS).doc(id).get();
+
+    if (!doc.exists) {
+      return res.status(404).json({
+        success: false,
+        error: 'Link not found',
+        code: 'LINK_NOT_FOUND'
+      });
+    }
+
+    const linkData = doc.data();
+
+    // Check if user owns this link
+    if (linkData.author?.uid !== userId) {
+      return res.status(403).json({
+        success: false,
+        error: 'You can only delete your own links',
+        code: 'UNAUTHORIZED_DELETE'
+      });
+    }
+
+    // Delete the link
+    await db.collection(collections.POSTS).doc(id).delete();
+
+    // TODO: Also delete associated comments and votes
+    // This should be done in a transaction for data consistency
+
+    logger.info('Link deleted successfully', { id, userId });
+
+    res.json({
+      success: true,
+      message: 'Link deleted successfully'
+    });
+
+  } catch (error) {
+    logger.error('Delete link error', { error: error.message });
+    res.status(500).json({
+      success: false,
+      error: 'Failed to delete link',
+      code: 'DELETE_LINK_ERROR'
     });
   }
 });

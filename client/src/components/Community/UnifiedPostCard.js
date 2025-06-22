@@ -139,19 +139,67 @@ const UnifiedPostCard = ({
             </div>
           </div>
 
-          {/* Image */}
-          {(post.imageUrl || post.screenshot) && (
-            <div className="mb-4">
-              <img
-                src={post.imageUrl || post.screenshot}
-                alt={post.title}
-                className="w-full h-48 object-cover rounded-lg border border-gray-200 dark:border-gray-700"
-                onError={(e) => {
-                  e.target.style.display = 'none';
-                }}
-              />
-            </div>
-          )}
+          {/* Images - Support all image field variants */}
+          {(() => {
+            // Collect all available images from different fields
+            const allImages = [];
+
+            // Primary images array
+            if (post.images && Array.isArray(post.images) && post.images.length > 0) {
+              allImages.push(...post.images);
+            }
+
+            // Single image fields as fallback
+            if (post.imageUrl && !allImages.includes(post.imageUrl)) {
+              allImages.push(post.imageUrl);
+            }
+            if (post.screenshot && !allImages.includes(post.screenshot)) {
+              allImages.push(post.screenshot);
+            }
+            if (post.urlToImage && !allImages.includes(post.urlToImage)) {
+              allImages.push(post.urlToImage);
+            }
+            if (post.thumbnailUrl && !allImages.includes(post.thumbnailUrl)) {
+              allImages.push(post.thumbnailUrl);
+            }
+
+            return allImages.length > 0 && (
+              <div className="mb-4">
+                {allImages.length === 1 ? (
+                  <img
+                    src={allImages[0]}
+                    alt={post.title}
+                    className="w-full h-48 object-cover rounded-lg border border-gray-200 dark:border-gray-700 cursor-pointer hover:opacity-90 transition-opacity"
+                    onError={(e) => {
+                      e.target.style.display = 'none';
+                    }}
+                    onClick={() => window.open(allImages[0], '_blank')}
+                  />
+                ) : (
+                  <div className={`grid gap-2 ${allImages.length === 2 ? 'grid-cols-2' : 'grid-cols-2'}`}>
+                    {allImages.slice(0, 4).map((img, index) => (
+                      <div key={index} className="relative">
+                        <img
+                          src={img}
+                          alt={`${post.title} ${index + 1}`}
+                          className="w-full h-32 object-cover rounded-lg border border-gray-200 dark:border-gray-700 cursor-pointer hover:opacity-90 transition-opacity"
+                          onError={(e) => {
+                            e.target.style.display = 'none';
+                          }}
+                          onClick={() => window.open(img, '_blank')}
+                        />
+                        {allImages.length > 4 && index === 3 && (
+                          <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center rounded-lg">
+                            <span className="text-white text-sm font-medium">+{allImages.length - 4}</span>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })()}
 
           {/* URL Preview */}
           {post.url && (
@@ -351,39 +399,63 @@ const UnifiedPostCard = ({
             )}
           </div>
 
-          {/* Images - Support multiple formats */}
+          {/* Images - Support all image field variants */}
           {(() => {
-            // Check for different image field names
-            const imageUrl = post.imageUrl || post.screenshot || post.image;
-            const images = post.images || (imageUrl ? [imageUrl] : []);
+            // Collect all available images from different fields
+            const allImages = [];
 
-            if (images.length > 0) {
+            // Primary images array
+            if (post.images && Array.isArray(post.images) && post.images.length > 0) {
+              allImages.push(...post.images);
+            }
+
+            // Single image fields as fallback
+            if (post.imageUrl && !allImages.includes(post.imageUrl)) {
+              allImages.push(post.imageUrl);
+            }
+            if (post.screenshot && !allImages.includes(post.screenshot)) {
+              allImages.push(post.screenshot);
+            }
+            if (post.urlToImage && !allImages.includes(post.urlToImage)) {
+              allImages.push(post.urlToImage);
+            }
+            if (post.thumbnailUrl && !allImages.includes(post.thumbnailUrl)) {
+              allImages.push(post.thumbnailUrl);
+            }
+            // Legacy support
+            if (post.image && !allImages.includes(post.image)) {
+              allImages.push(post.image);
+            }
+
+            if (allImages.length > 0) {
               return (
                 <div className="px-3 pb-2">
-                  {images.length === 1 ? (
+                  {allImages.length === 1 ? (
                     <img
-                      src={images[0]}
+                      src={allImages[0]}
                       alt={post.title}
-                      className="w-full h-48 object-cover rounded border border-gray-200 dark:border-gray-700"
+                      className="w-full h-48 object-cover rounded border border-gray-200 dark:border-gray-700 cursor-pointer hover:opacity-90 transition-opacity"
                       onError={(e) => {
                         e.target.style.display = 'none';
                       }}
+                      onClick={() => window.open(allImages[0], '_blank')}
                     />
                   ) : (
                     <div className="grid grid-cols-2 gap-1">
-                      {images.slice(0, 4).map((img, index) => (
+                      {allImages.slice(0, 4).map((img, index) => (
                         <div key={index} className="relative">
                           <img
                             src={img}
                             alt={`${post.title} ${index + 1}`}
-                            className="w-full h-24 object-cover rounded border border-gray-200 dark:border-gray-700"
+                            className="w-full h-24 object-cover rounded border border-gray-200 dark:border-gray-700 cursor-pointer hover:opacity-90 transition-opacity"
                             onError={(e) => {
                               e.target.style.display = 'none';
                             }}
+                            onClick={() => window.open(img, '_blank')}
                           />
-                          {images.length > 4 && index === 3 && (
+                          {allImages.length > 4 && index === 3 && (
                             <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center rounded">
-                              <span className="text-white text-sm font-medium">+{images.length - 4}</span>
+                              <span className="text-white text-sm font-medium">+{allImages.length - 4}</span>
                             </div>
                           )}
                         </div>

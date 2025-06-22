@@ -45,11 +45,11 @@ class CommunityAPI {
   }
 
   // LINKS ENDPOINTS
-  // Get community links
+  // Get community links - use API Gateway routing
   async getPosts(params = {}) {
     try {
       const queryParams = new URLSearchParams(params);
-      const response = await fetch(`${this.baseURL}/community/links?${queryParams}`, {
+      const response = await fetch(`${this.baseURL}/api/links?${queryParams}`, {
         method: 'GET',
         headers: this.getAuthHeaders()
       });
@@ -60,7 +60,7 @@ class CommunityAPI {
     }
   }
 
-  // Submit to community (create new link)
+  // Submit to community (create new link) - use API Gateway routing
   async submitToCommunity(data) {
     try {
       const response = await fetch(`${this.baseURL}/api/links`, {
@@ -75,7 +75,7 @@ class CommunityAPI {
     }
   }
 
-  // Get my submissions (filter links by user)
+  // Get my submissions (filter links by user) - use API Gateway routing
   async getMySubmissions() {
     try {
       const response = await fetch(`${this.baseURL}/api/links?userPostsOnly=true`, {
@@ -89,7 +89,7 @@ class CommunityAPI {
     }
   }
 
-  // Delete submission (delete link)
+  // Delete submission (delete link) - use API Gateway routing
   async deleteSubmission(id) {
     try {
       const response = await fetch(`${this.baseURL}/api/links/${id}`, {

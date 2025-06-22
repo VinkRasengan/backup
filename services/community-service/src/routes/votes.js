@@ -39,12 +39,11 @@ async function updateLinkVoteCount(linkId) {
       stats.score = stats.upvotes - stats.downvotes;
 
       // Update link with vote statistics atomically
-      const linksQuery = await transaction.get(
-        db.collection(collections.POSTS).where('id', '==', linkId)
-      );
+      const linkRef = db.collection(collections.POSTS).doc(linkId);
+      const linkDoc = await transaction.get(linkRef);
 
-      if (!linksQuery.empty) {
-        transaction.update(linksQuery.docs[0].ref, {
+      if (linkDoc.exists) {
+        transaction.update(linkRef, {
           voteCount: stats.total,
           voteScore: stats.score,
           voteStats: {

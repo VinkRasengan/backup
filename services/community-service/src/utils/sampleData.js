@@ -17,6 +17,15 @@ const sampleLinks = [
     category: 'phishing',
     url: 'https://suspicious-bank-site.com',
     tags: ['phishing', 'banking', 'scam', 'security'],
+    // Image fields for frontend display
+    imageUrl: 'https://images.unsplash.com/photo-1563013544-824ae1b704d3?w=800&h=400&fit=crop',
+    screenshot: 'https://images.unsplash.com/photo-1563013544-824ae1b704d3?w=1200&h=630&fit=crop',
+    images: [
+      'https://images.unsplash.com/photo-1563013544-824ae1b704d3?w=800&h=400&fit=crop',
+      'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?w=800&h=400&fit=crop'
+    ],
+    urlToImage: 'https://images.unsplash.com/photo-1563013544-824ae1b704d3?w=800&h=400&fit=crop',
+    thumbnailUrl: 'https://images.unsplash.com/photo-1563013544-824ae1b704d3?w=300&h=200&fit=crop',
     voteStats: {
       upvotes: 25,
       downvotes: 3,
@@ -39,6 +48,14 @@ const sampleLinks = [
     type: 'user_post',
     category: 'education',
     tags: ['education', 'email', 'tips', 'security'],
+    // Image fields for frontend display
+    imageUrl: 'https://images.unsplash.com/photo-1596526131083-e8c633c948d2?w=800&h=400&fit=crop',
+    screenshot: 'https://images.unsplash.com/photo-1596526131083-e8c633c948d2?w=1200&h=630&fit=crop',
+    images: [
+      'https://images.unsplash.com/photo-1596526131083-e8c633c948d2?w=800&h=400&fit=crop'
+    ],
+    urlToImage: 'https://images.unsplash.com/photo-1596526131083-e8c633c948d2?w=800&h=400&fit=crop',
+    thumbnailUrl: 'https://images.unsplash.com/photo-1596526131083-e8c633c948d2?w=300&h=200&fit=crop',
     voteStats: {
       upvotes: 42,
       downvotes: 2,
@@ -63,6 +80,15 @@ const sampleLinks = [
     source: 'VnExpress',
     url: 'https://vnexpress.net/canh-bao-lua-dao-moi',
     tags: ['official', 'sms', 'warning', 'government'],
+    // Image fields for frontend display
+    imageUrl: 'https://images.unsplash.com/photo-1611224923853-80b023f02d71?w=800&h=400&fit=crop',
+    screenshot: 'https://images.unsplash.com/photo-1611224923853-80b023f02d71?w=1200&h=630&fit=crop',
+    images: [
+      'https://images.unsplash.com/photo-1611224923853-80b023f02d71?w=800&h=400&fit=crop',
+      'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800&h=400&fit=crop'
+    ],
+    urlToImage: 'https://images.unsplash.com/photo-1611224923853-80b023f02d71?w=800&h=400&fit=crop',
+    thumbnailUrl: 'https://images.unsplash.com/photo-1611224923853-80b023f02d71?w=300&h=200&fit=crop',
     voteStats: {
       upvotes: 156,
       downvotes: 4,
@@ -88,6 +114,16 @@ const sampleLinks = [
     source: 'Tuổi Trẻ',
     url: 'https://tuoitre.vn/ngan-hang-gia-mao',
     tags: ['banking', 'official', 'website', 'security'],
+    // Image fields for frontend display
+    imageUrl: 'https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=800&h=400&fit=crop',
+    screenshot: 'https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=1200&h=630&fit=crop',
+    images: [
+      'https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=800&h=400&fit=crop',
+      'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=800&h=400&fit=crop',
+      'https://images.unsplash.com/photo-1563013544-824ae1b704d3?w=800&h=400&fit=crop'
+    ],
+    urlToImage: 'https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=800&h=400&fit=crop',
+    thumbnailUrl: 'https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=300&h=200&fit=crop',
     voteStats: {
       upvotes: 89,
       downvotes: 1,
