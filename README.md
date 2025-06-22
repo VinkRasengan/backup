@@ -14,8 +14,7 @@ A comprehensive microservices-based platform for link verification, community di
 
 2. **Install dependencies**
    ```bash
-   npm install
-   cd client && npm install && cd ..
+   npm run install:all
    ```
 
 3. **Set up environment variables**
