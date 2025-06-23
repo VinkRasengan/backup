@@ -5,11 +5,10 @@ const helmet = require('helmet');
 const morgan = require('morgan');
 const rateLimit = require('express-rate-limit');
 const path = require('path');
+const fs = require('fs');
 
 // Load environment variables from root directory with fallback
-const path = require('path');
 const rootEnvPath = path.join(__dirname, '../../../../.env');
-const fs = require('fs');
 
 // Try to load from root first, fallback to local if not found
 if (fs.existsSync(rootEnvPath)) {
