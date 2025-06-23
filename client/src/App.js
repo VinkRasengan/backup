@@ -22,7 +22,6 @@ import CommunityPage from './pages/CommunityPage';
 import SubmitArticlePage from './pages/SubmitArticlePage';
 import KnowledgeBasePage from './pages/KnowledgeBasePage';
 import MySubmissionsPage from './pages/MySubmissionsPage';
-import VerifyEmailPage from './pages/VerifyEmailPage';
 import EmailVerificationRequiredPage from './pages/EmailVerificationRequiredPage';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
@@ -77,10 +76,7 @@ function App() {
             <Route
               path="/register"
                 element={user ? <Navigate to="/dashboard" /> : <ModernRegisterPage />}
-              />
-
-              <Route path="/registration-success" element={<RegistrationSuccessPage />} />
-              <Route path="/verify-email" element={<VerifyEmailPage />} />
+              />              <Route path="/registration-success" element={<RegistrationSuccessPage />} />
               <Route path="/email-verification-required" element={<EmailVerificationRequiredPage />} />
               <Route path="/forgot-password" element={<ForgotPasswordPage />} />
               <Route path="/reset-password" element={<ResetPasswordPage />} />
