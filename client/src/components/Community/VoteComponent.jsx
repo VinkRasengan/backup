@@ -279,62 +279,23 @@ const VoteComponent = ({ linkId, postData, className = '' }) => {
           repeat: 1,
           ease: "power2.inOut"
         });
-      }
-
-      // Optimistic update for legacy state
-      if (isUnvote) {
-        // Remove vote
-        setLegacyUserVote(null);
-        setLegacyVoteStats(prev => ({
-          ...prev,
-          [voteType]: Math.max(0, prev[voteType] - 1),
-          total: Math.max(0, prev.total - 1)
-        }));
-      } else {
-        // Add/change vote
-        setLegacyUserVote(voteType);
-        setLegacyVoteStats(prev => {
-          let newStats = { ...prev };
-
-          // Remove old vote if exists
-          if (oldVote) {
-            newStats[oldVote] = Math.max(0, newStats[oldVote] - 1);
-            newStats.total = Math.max(0, newStats.total - 1);
-          }
-
-          // Add new vote
-          newStats[voteType] += 1;
-          newStats.total += 1;
-
-          return newStats;
-        });
-      }
-
-      // Send to API
+      }      // Don't do optimistic UI update here - wait for response
+      console.log('📊 Vote state before API call:', { isUnvote, oldVote, newVote: voteType });// Send to API
       console.log('📡 Sending API request...');
-      let response;
-      if (isUnvote) {
-        // Delete vote
-        console.log('🗑️ Deleting vote...');
-        response = await communityAPI.deleteVote(linkId);
-      } else {
-        // Submit new vote
-        console.log('➕ Creating new vote...');
-        const requestBody = {
-          voteType,
-          userId: user?.id || user?.uid,
-          userEmail: user?.email
-        };
-        console.log('📤 Request body:', requestBody);
+      console.log('� Request body:', {
+        voteType,
+        userId: user?.id || user?.uid,
+        userEmail: user?.email,
+        isUnvote
+      });
 
-        // ✅ Use API service instead of direct fetch
-        response = await communityAPI.submitVote(
-          linkId,
-          voteType,
-          user?.id || user?.uid,
-          user?.email
-        );
-      }
+      // ✅ Always use submitVote API - backend handles toggle logic
+      const response = await communityAPI.submitVote(
+        linkId,
+        voteType,
+        user?.id || user?.uid,
+        user?.email
+      );
 
       // Check if API call was successful
       console.log('📥 API response:', response);
@@ -343,7 +304,29 @@ const VoteComponent = ({ linkId, postData, className = '' }) => {
         throw new Error(`Vote API call failed: ${response.error}`);
       }
 
-      console.log('✅ Vote API success:', response.data);
+      console.log('✅ Vote API success:', response);      // Update UI based on actual response action
+      const action = response.action || response.data?.action;
+      console.log('🔄 Response action:', action);
+
+      if (action === 'removed') {
+        // Vote was removed - set userVote to null
+        setLegacyUserVote(null);
+        toast.success('Đã hủy vote!');
+      } else if (action === 'updated') {
+        // Vote was changed to different type
+        setLegacyUserVote(voteType);
+        toast.success(`Đã chuyển sang ${voteType === 'upvote' ? 'upvote' : 'downvote'}!`);
+      } else {
+        // New vote was created
+        setLegacyUserVote(voteType);
+        toast.success(`Đã ${voteType === 'upvote' ? 'upvote' : 'downvote'}!`);
+      }
+
+      // Reload vote data to get updated statistics
+      setTimeout(() => {
+        loadVoteData();
+        loadUserVote();
+      }, 100);
 
     } catch (error) {
       if (error.name === 'AbortError') {
