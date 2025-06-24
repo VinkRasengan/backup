@@ -139,11 +139,9 @@ const UnifiedPostCard = ({
                   {getTrustScoreLabel(post.trustScore)} ({post.trustScore}%)
                 </div>
               )}
-            </div>
-
-            {/* Vote Component - Right side for sidebar layout */}
+            </div>            {/* Vote Component - Right side for sidebar layout */}
             <div className="ml-4">
-              <VoteComponent linkId={post.id} postData={post} />
+              <VoteComponent linkId={post.id} postData={post} onVote={onVote} />
             </div>
           </div>          {/* Intelligent Image Layout - Facebook/Reddit Style */}
           {(() => {
@@ -410,9 +408,8 @@ const UnifiedPostCard = ({
         ${spacing.card}`}
     >
       <div className="flex">
-        {/* Left Vote Section - Smart responsive sizing */}
-        <div className={`${isMobile ? 'w-8' : 'w-10'} flex flex-col items-center ${spacing.element} ${isDarkMode ? 'bg-gray-750' : 'bg-gray-50'} border-r border-gray-200 dark:border-gray-700`}>
-          <VoteComponent linkId={post.id} postData={post} compact={true} vertical={true} />
+        {/* Left Vote Section - Smart responsive sizing */}        <div className={`${isMobile ? 'w-8' : 'w-10'} flex flex-col items-center ${spacing.element} ${isDarkMode ? 'bg-gray-750' : 'bg-gray-50'} border-r border-gray-200 dark:border-gray-700`}>
+          <VoteComponent linkId={post.id} postData={post} compact={true} vertical={true} onVote={onVote} />
         </div>
 
         {/* Main Content - Responsive */}

@@ -14,7 +14,6 @@ const VoteComponent = ({
   const [voteCount, setVoteCount] = useState(
     (postData?.voteStats?.upvotes || 0) - (postData?.voteStats?.downvotes || 0)
   );
-
   const handleVote = useCallback(async (voteType) => {
     try {
       // If clicking the same vote type, remove vote
@@ -29,15 +28,15 @@ const VoteComponent = ({
       else if (userVote === 'up' && newVote === 'down') newCount -= 2;
       else if (userVote === 'down' && newVote === 'up') newCount += 2;
 
+      // Update local state immediately for responsiveness
       setUserVote(newVote);
       setVoteCount(newCount);
 
-      // Call parent vote handler if provided
+      // Call parent vote handler to trigger API call
       if (onVote) {
-        onVote(linkId, voteType);
+        await onVote(linkId, voteType === 'up' ? 'upvote' : 'downvote');
       }
 
-      // TODO: Make API call to update vote on server
     } catch (error) {
       console.error('Error voting:', error);
       // Revert on error
