@@ -1,17 +1,14 @@
 const express = require('express');
 const router = express.Router();
 const userController = require('../controllers/userController');
-const AuthMiddleware = require('../../shared/middleware/auth');
+const firebaseAuth = require('../middleware/firebaseAuth');
 const { validateRequest, schemas } = require('../middleware/validation');
-
-// Initialize auth middleware
-const authMiddleware = new AuthMiddleware();
 
 // @route   GET /users/profile
 // @desc    Get user profile
 // @access  Private
 router.get('/profile',
-  authMiddleware.authenticate,
+  firebaseAuth.authenticate,
   userController.getProfile
 );
 
@@ -19,7 +16,7 @@ router.get('/profile',
 // @desc    Update user profile
 // @access  Private
 router.put('/profile',
-  authMiddleware.authenticate,
+  firebaseAuth.authenticate,
   validateRequest(schemas.updateProfile),
   userController.updateProfile
 );
@@ -28,7 +25,7 @@ router.put('/profile',
 // @desc    Get user statistics
 // @access  Private
 router.get('/stats',
-  authMiddleware.authenticate,
+  firebaseAuth.authenticate,
   userController.getStats
 );
 
@@ -36,7 +33,7 @@ router.get('/stats',
 // @desc    Get user dashboard data
 // @access  Private
 router.get('/dashboard',
-  authMiddleware.authenticate,
+  firebaseAuth.authenticate,
   userController.getDashboard
 );
 
@@ -44,8 +41,8 @@ router.get('/dashboard',
 // @desc    Update user roles (admin only)
 // @access  Private (Admin)
 router.put('/:userId/roles',
-  authMiddleware.authenticate,
-  authMiddleware.requireRole(['admin']),
+  firebaseAuth.authenticate,
+  firebaseAuth.requireRole(['admin']),
   validateRequest(schemas.updateRoles),
   userController.updateRoles
 );
@@ -54,7 +51,7 @@ router.put('/:userId/roles',
 // @desc    Delete user account
 // @access  Private
 router.delete('/account',
-  authMiddleware.authenticate,
+  firebaseAuth.authenticate,
   userController.deleteAccount
 );
 
@@ -62,8 +59,8 @@ router.delete('/account',
 // @desc    List users (admin only)
 // @access  Private (Admin)
 router.get('/',
-  authMiddleware.authenticate,
-  authMiddleware.requireRole(['admin']),
+  firebaseAuth.authenticate,
+  firebaseAuth.requireRole(['admin']),
   userController.listUsers
 );
 
