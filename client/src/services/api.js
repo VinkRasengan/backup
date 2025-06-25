@@ -1,6 +1,5 @@
 import axios from 'axios';
 import Cookies from 'js-cookie';
-import mockAPI from './mockAPI';
 import communityAPIService from './communityAPI';
 
 // Create axios instance for Render deployment
@@ -103,14 +102,8 @@ export const authAPI = {
 
 // User API endpoints
 export const userAPI = {
-  getDashboard: () => apiWithFallback(
-    () => api.get('/users/dashboard'),
-    () => mockAPI.getDashboard()
-  ),
-  deleteAccount: () => apiWithFallback(
-    () => api.delete('/users/account'),
-    () => Promise.resolve({ data: { message: 'Account deleted successfully' } })
-  ),
+  getDashboard: () => api.get('/users/dashboard'),
+  deleteAccount: () => api.delete('/users/account'),
 };
 
 // Link API endpoints
@@ -161,46 +154,23 @@ export const linkAPI = {
       console.log('🔄 VirusTotal backend service failed:', vtError.message);
     }
 
-    // Strategy 3: Final fallback to mock
-    console.log('🔄 All APIs failed, using mock data...');
-    return await mockAPI.checkLink(url);
+    // All strategies failed
+    console.error('🔄 All API strategies failed for URL check');
+    throw new Error('Unable to check URL - all API endpoints are unavailable');
   },
-  getHistory: (page = 1, limit = 20) => apiWithFallback(
-    () => api.get(`/links/history?page=${page}&limit=${limit}`),
-    () => mockAPI.getHistory()
-  ),
-  getLinkResult: (linkId) => apiWithFallback(
-    () => api.get(`/links/${linkId}`),
-    () => Promise.resolve({ data: {} })
-  ),
-  deleteLinkResult: (linkId) => apiWithFallback(
-    () => api.delete(`/links/${linkId}`),
-    () => Promise.resolve({ data: { message: 'Deleted successfully' } })
-  ),
+  getHistory: (page = 1, limit = 20) => api.get(`/links/history?page=${page}&limit=${limit}`),
+  getLinkResult: (linkId) => api.get(`/links/${linkId}`),
+  deleteLinkResult: (linkId) => api.delete(`/links/${linkId}`),
 };
 
-// Helper function to handle API calls with smart fallback
-const apiWithFallback = async (apiCall, mockCall) => {
-  try {
-    return await apiCall();
-  } catch (error) {
-    console.warn('API call failed:', error.message);
-
-    // Check if it's a network error (backend not available)
-    const isNetworkError = error.code === 'NETWORK_ERROR' ||
-                          error.message.includes('Network Error') ||
-                          error.message.includes('ERR_NETWORK') ||
-                          !error.response;
-
-    // Fallback to mock if backend is not available
-    if (isNetworkError) {
-      console.warn('Backend not available, using mock API temporarily');
-      return await mockCall();
-    }
-
-    // For other errors (auth, validation, etc.), throw to show proper error messages
-    throw error;
+// Helper function for consistent error handling
+const handleApiError = (error, context = '') => {
+  console.error(`API Error ${context}:`, error.message);
+  if (error.response) {
+    console.error('Response status:', error.response.status);
+    console.error('Response data:', error.response.data);
   }
+  throw error;
 };
 
 // Chat API endpoints

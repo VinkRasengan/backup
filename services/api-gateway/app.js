@@ -178,21 +178,7 @@ app.use('/community/links', createProxyMiddleware({
   }
 }));
 
-app.get('/news/latest', (req, res) => {
-  res.json({
-    success: true,
-    data: [
-      {
-        id: '1',
-        title: 'Test News from API Gateway',
-        description: 'This proves the API Gateway news endpoint is working',
-        source: 'API Gateway',
-        timestamp: new Date().toISOString()
-      }
-    ],
-    message: 'Mock news data from API Gateway'
-  });
-});
+// Mock news endpoint removed - use real news service
 
 // API routes with /api prefix - Authentication
 app.use('/api/users', createProxyMiddleware({

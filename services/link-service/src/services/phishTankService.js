@@ -47,41 +47,17 @@ class PhishTankService {
       }
 
     } catch (error) {
-      logger.warn('PhishTank API error', { error: error.message, url });
-      return this.getMockResult(url);
-    }
-  }
-
-  /**
-   * Get mock result when API is not available
-   */
-  getMockResult(url) {
-    try {
-      const hash = crypto.createHash('md5').update(url).digest('hex');
-      const riskScore = parseInt(hash.substring(0, 2), 16) % 100;
-
-      // Simulate some URLs being flagged as phishing
-      const isPhishing = riskScore > 95; // 5% chance of being flagged
-
-      return {
-        success: true,
-        url,
-        isPhishing,
-        phishId: isPhishing ? `mock-${hash.substring(0, 8)}` : null,
-        phishDetailUrl: isPhishing ? `https://phishtank.com/phish_detail.php?phish_id=mock-${hash.substring(0, 8)}` : null,
-        verifiedAt: isPhishing ? new Date().toISOString() : null,
-        mock: true,
-        analyzedAt: new Date().toISOString()
-      };
-
-    } catch (error) {
+      logger.error('PhishTank API error', { error: error.message, url });
       return {
         success: false,
-        error: 'Invalid URL format',
-        url
+        error: 'PhishTank API unavailable',
+        url,
+        analyzedAt: new Date().toISOString()
       };
     }
   }
+
+
 
   /**
    * Get service status

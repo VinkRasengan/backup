@@ -202,7 +202,19 @@ const getUserDisplayName = (req) => {
     return req.user.displayName;
   }
   
-  return req.body.displayName || req.query.displayName || 'Anonymous User';
+  // Try to get from request body/query first
+  const displayName = req.body.displayName || req.query.displayName;
+  if (displayName && displayName !== 'Anonymous User') {
+    return displayName;
+  }
+  
+  // Fallback to email username if available
+  const email = getUserEmail(req);
+  if (email) {
+    return email.split('@')[0];
+  }
+  
+  return 'Anonymous User';
 };
 
 module.exports = {

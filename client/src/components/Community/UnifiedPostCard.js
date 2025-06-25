@@ -12,7 +12,7 @@ import {
 } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
 import VoteComponent from './VoteComponent';
-import CommentSection from './CommentSection';
+import CommentSection from './CommentSection.jsx';
 import CommentPreview from './CommentPreview';
 import {
   useResponsive,

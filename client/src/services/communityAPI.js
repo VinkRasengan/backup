@@ -405,9 +405,9 @@ class CommunityAPI {
   // Get current user ID from auth context
   getCurrentUserId() {
     try {
-      // Try to get from Firebase auth
-      if (window.firebase && window.firebase.auth && window.firebase.auth().currentUser) {
-        return window.firebase.auth().currentUser.uid;
+      // Try to get from Firebase auth (v9+ modular SDK)
+      if (window.auth && window.auth.currentUser) {
+        return window.auth.currentUser.uid;
       }
 
       // Try to get from localStorage
@@ -427,9 +427,9 @@ class CommunityAPI {
   // Get current user email from auth context
   getCurrentUserEmail() {
     try {
-      // Try to get from Firebase auth
-      if (window.firebase && window.firebase.auth && window.firebase.auth().currentUser) {
-        return window.firebase.auth().currentUser.email;
+      // Try to get from Firebase auth (v9+ modular SDK)
+      if (window.auth?.currentUser) {
+        return window.auth.currentUser.email;
       }
 
       // Try to get from localStorage
@@ -449,16 +449,17 @@ class CommunityAPI {
   // Get current user display name from auth context
   getCurrentUserDisplayName() {
     try {
-      // Try to get from Firebase auth
-      if (window.firebase && window.firebase.auth && window.firebase.auth().currentUser) {
-        return window.firebase.auth().currentUser.displayName;
+      // Try to get from Firebase auth (v9+ modular SDK)
+      if (window.auth?.currentUser) {
+        const currentUser = window.auth.currentUser;
+        return currentUser.displayName || currentUser.email?.split('@')[0] || null;
       }
 
       // Try to get from localStorage
       const user = localStorage.getItem('user');
       if (user) {
         const userData = JSON.parse(user);
-        return userData.displayName || userData.email?.split('@')[0];
+        return userData.displayName || userData.email?.split('@')[0] || null;
       }
 
       return null;

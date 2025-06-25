@@ -10,7 +10,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../co
 import PageLayout from '../components/layout/PageLayout';
 import { linkAPI } from '../services/api';
 import VoteComponent from '../components/Community/VoteComponent';
-import CommentSection from '../components/Community/CommentSection';
+import CommentSection from '../components/Community/CommentSection.jsx';
 import ReportModal from '../components/Community/ReportModal';
 import toast from 'react-hot-toast';
 import { useFadeIn, useCounterAnimation, useLoadingAnimation } from '../hooks/useGSAP';
@@ -130,121 +130,12 @@ const CheckLinkPage = () => {
         resultData = response.data.result;
         setResult(resultData);
       } catch (apiError) {
-        console.log('API not available, using mock data:', apiError.message);
-        // Mock response for demo
-        await new Promise(resolve => setTimeout(resolve, 2000));        const domain = new URL(normalizedUrl).hostname;
-        const credibilityScore = Math.floor(Math.random() * 100);
-        const vtSecurityScore = Math.floor(Math.random() * 100);
-        const saScore = Math.floor(Math.random() * 100);
-        const combinedSecurityScore = Math.round((vtSecurityScore * 0.6) + (saScore * 0.4));
-        const finalScore = Math.round((credibilityScore * 0.6) + (combinedSecurityScore * 0.4));
+        console.error('API Error:', apiError.message);
+        setError('Unable to check URL. Please try again later.');
+        setLoading(false);
+        return;
 
-        let status;
-        if (finalScore >= 70) status = 'safe';
-        else if (finalScore >= 40) status = 'warning';
-        else status = 'dangerous';
 
-        // Generate ScamAdviser risk level
-        let riskLevel;
-        if (saScore >= 80) riskLevel = 'low';
-        else if (saScore >= 60) riskLevel = 'medium';
-        else if (saScore >= 40) riskLevel = 'high';
-        else riskLevel = 'very_high';
-
-        // Generate risk factors for ScamAdviser
-        const possibleRiskFactors = [
-          'Suspicious activity detected',
-          'High phishing risk',
-          'Very new domain',
-          'No SSL/HTTPS security',
-          'High-risk country'
-        ];
-        const riskFactors = riskLevel === 'very_high' ? possibleRiskFactors.slice(0, 3) :
-                           riskLevel === 'high' ? possibleRiskFactors.slice(0, 2) :
-                           riskLevel === 'medium' ? possibleRiskFactors.slice(0, 1) : [];
-
-        resultData = {
-          url: normalizedUrl,
-          status: status,
-          credibilityScore: credibilityScore,
-          securityScore: combinedSecurityScore,
-          finalScore: finalScore,
-          metadata: {
-            title: `Trang web ${domain}`,
-            domain: domain,
-            publishDate: new Date().toISOString(),
-            author: 'Không xác định',
-            ip: '157.240.199.35',
-            country: 'Việt Nam',
-            organization: `${domain.charAt(0).toUpperCase() + domain.slice(1)} Inc.`
-          },
-          security: {
-            virusTotal: {
-              threats: {
-                malicious: vtSecurityScore < 30,
-                suspicious: vtSecurityScore >= 30 && vtSecurityScore < 60,
-                threatNames: vtSecurityScore < 30 ? ['Phishing', 'Malware'] : vtSecurityScore < 60 ? ['Suspicious Content'] : []
-              },
-              urlAnalysis: {
-                success: true,
-                stats: {
-                  malicious: vtSecurityScore < 30 ? 2 : 0,
-                  suspicious: vtSecurityScore >= 30 && vtSecurityScore < 60 ? 1 : 0,
-                  harmless: vtSecurityScore >= 60 ? 5 : 3,
-                  undetected: 2
-                }
-              },
-              domainAnalysis: {
-                success: true,
-                reputation: vtSecurityScore >= 60 ? 1 : vtSecurityScore >= 30 ? 0 : -1
-              },
-              securityScore: vtSecurityScore,
-              analyzedAt: new Date().toISOString()
-            },
-            scamAdviser: {
-              trustScore: saScore,
-              riskLevel: riskLevel,
-              riskFactors: riskFactors,
-              details: {
-                domain: domain,
-                country: 'Vietnam',
-                registrationDate: new Date(Date.now() - Math.random() * 365 * 24 * 60 * 60 * 1000).toISOString(),
-                ssl: saScore >= 50,
-                socialMedia: saScore >= 70,
-                reviews: Math.floor(saScore / 20),
-                lastChecked: new Date().toISOString()
-              },
-              analyzedAt: new Date().toISOString()
-            },
-            combinedScore: combinedSecurityScore
-          },
-          thirdPartyResults: [
-            {
-              name: 'VirusTotal',
-              status: vtSecurityScore >= 70 ? 'clean' : vtSecurityScore >= 40 ? 'suspicious' : 'malicious',
-              details: vtSecurityScore >= 70 ? 'An toàn' : vtSecurityScore >= 40 ? 'Đáng ngờ' : 'Nguy hiểm'
-            },
-            {
-              name: 'URLScan',
-              status: vtSecurityScore >= 60 ? 'clean' : 'suspicious',
-              details: vtSecurityScore >= 60 ? 'An toàn' : 'Đáng ngờ'
-            },
-            {
-              name: 'ScamAdviser',
-              status: saScore >= 50 ? 'clean' : 'suspicious',
-              details: saScore >= 50 ? 'An toàn' : 'Đáng ngờ'
-            }
-          ],
-          screenshot: `https://via.placeholder.com/400x300/f0f0f0/666666?text=${encodeURIComponent(domain)}`,
-          additionalTools: [
-            { name: 'VirusTotal', color: 'blue' },
-            { name: 'URLScan', color: 'red' },
-            { name: 'ScamAdviser', color: 'orange' },
-            { name: 'Thông gia cộng đồng', color: 'green' }
-          ],
-          summary: `Kết quả phân tích cho ${domain}. Điểm tin cậy: ${credibilityScore}/100, Điểm bảo mật tổng hợp: ${combinedSecurityScore}/100 (VirusTotal: ${vtSecurityScore}, ScamAdviser: ${saScore}). ${status === 'safe' ? 'Trang web này được đánh giá là an toàn.' : status === 'warning' ? 'Trang web này có một số dấu hiệu đáng ngờ.' : 'Trang web này có thể không an toàn.'} ${vtSecurityScore < 30 ? '⚠️ CẢNH BÁO BẢO MẬT: VirusTotal phát hiện mối đe dọa!' : vtSecurityScore < 60 ? '⚠️ VirusTotal phát hiện dấu hiệu đáng ngờ.' : '✅ VirusTotal xác nhận an toàn.'} ${riskLevel === 'very_high' ? '🚨 ScamAdviser cảnh báo nguy cơ lừa đảo rất cao!' : riskLevel === 'high' ? '⚠️ ScamAdviser cảnh báo nguy cơ lừa đảo cao.' : riskLevel === 'medium' ? '⚠️ ScamAdviser đánh giá có rủi ro trung bình.' : '✅ ScamAdviser đánh giá an toàn.'}`
-        };
-        setResult(resultData);
       }
 
       // Save to Firestore if user is logged in
