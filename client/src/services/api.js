@@ -163,16 +163,6 @@ export const linkAPI = {
   deleteLinkResult: (linkId) => api.delete(`/links/${linkId}`),
 };
 
-// Helper function for consistent error handling
-const handleApiError = (error, context = '') => {
-  console.error(`API Error ${context}:`, error.message);
-  if (error.response) {
-    console.error('Response status:', error.response.status);
-    console.error('Response data:', error.response.data);
-  }
-  throw error;
-};
-
 // Chat API endpoints
 export const chatAPI = {
   // Send message to authenticated chat (requires login)

@@ -60,6 +60,7 @@ const CheckLinkPage = () => {
   const { user } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [result, setResult] = useState(null);
+  const [error, setError] = useState(null);
   const [showReportModal, setShowReportModal] = useState(false);
 
   // GSAP animations
@@ -105,6 +106,7 @@ const CheckLinkPage = () => {
 
   const onSubmit = async (data) => {
     setIsLoading(true);
+    setError(null); // Clear any previous errors
     try {
       // Normalize and validate URL manually
       const normalizedUrl = normalizeUrl(data.url);
@@ -132,7 +134,7 @@ const CheckLinkPage = () => {
       } catch (apiError) {
         console.error('API Error:', apiError.message);
         setError('Unable to check URL. Please try again later.');
-        setLoading(false);
+        setIsLoading(false);
         return;
 
 
@@ -239,19 +241,6 @@ const CheckLinkPage = () => {
     }
   };
 
-  const getThirdPartyStatusColor = (status) => {
-    switch (status) {
-      case 'clean':
-        return 'text-green-600 dark:text-green-400';
-      case 'suspicious':
-        return 'text-yellow-600 dark:text-yellow-400';
-      case 'malicious':
-        return 'text-red-600 dark:text-red-400';
-      default:
-        return 'text-gray-600 dark:text-gray-400';
-    }
-  };
-
   const getToolButtonColor = (color) => {
     const colors = {
       blue: 'bg-blue-500 hover:bg-blue-600',
@@ -325,6 +314,17 @@ const CheckLinkPage = () => {
             </CardContent>
           </Card>
         </motion.div>
+
+        {/* Error Display */}
+        {error && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6"
+          >
+            <p>{error}</p>
+          </motion.div>
+        )}
 
         {/* Results */}
         {result && (

@@ -112,8 +112,8 @@ class CommunityAPI {
       const authToken = this.getAuthToken();
       if (!userId && authToken) {
         // Try to extract user info from token or get from auth context
-        userId = this.getCurrentUserId();
-        userEmail = this.getCurrentUserEmail();
+        userId = await this.getCurrentUserId();
+        userEmail = await this.getCurrentUserEmail();
       }
 
       const response = await fetch(`${this.baseURL}/api/votes/${linkId}`, {
@@ -181,9 +181,9 @@ class CommunityAPI {
     try {
       // Get user info from auth context if not provided
       if (!userId) {
-        userId = this.getCurrentUserId();
-        userEmail = this.getCurrentUserEmail();
-        displayName = this.getCurrentUserDisplayName();
+        userId = await this.getCurrentUserId();
+        userEmail = await this.getCurrentUserEmail();
+        displayName = await this.getCurrentUserDisplayName();
       }
 
       const response = await fetch(`${this.baseURL}/api/comments`, {
@@ -403,11 +403,12 @@ class CommunityAPI {
   }
 
   // Get current user ID from auth context
-  getCurrentUserId() {
+  async getCurrentUserId() {
     try {
       // Try to get from Firebase auth (v9+ modular SDK)
-      if (window.auth && window.auth.currentUser) {
-        return window.auth.currentUser.uid;
+      const { auth } = await import('../config/firebase');
+      if (auth.currentUser) {
+        return auth.currentUser.uid;
       }
 
       // Try to get from localStorage
@@ -425,11 +426,12 @@ class CommunityAPI {
   }
 
   // Get current user email from auth context
-  getCurrentUserEmail() {
+  async getCurrentUserEmail() {
     try {
       // Try to get from Firebase auth (v9+ modular SDK)
-      if (window.auth?.currentUser) {
-        return window.auth.currentUser.email;
+      const { auth } = await import('../config/firebase');
+      if (auth.currentUser) {
+        return auth.currentUser.email;
       }
 
       // Try to get from localStorage
@@ -447,11 +449,12 @@ class CommunityAPI {
   }
 
   // Get current user display name from auth context
-  getCurrentUserDisplayName() {
+  async getCurrentUserDisplayName() {
     try {
       // Try to get from Firebase auth (v9+ modular SDK)
-      if (window.auth?.currentUser) {
-        const currentUser = window.auth.currentUser;
+      const { auth } = await import('../config/firebase');
+      if (auth.currentUser) {
+        const currentUser = auth.currentUser;
         return currentUser.displayName || currentUser.email?.split('@')[0] || null;
       }
 
@@ -523,4 +526,5 @@ class CommunityAPI {
   }
 }
 
-export default new CommunityAPI();
+const communityAPIInstance = new CommunityAPI();
+export default communityAPIInstance;

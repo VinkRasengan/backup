@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import { MessageCircle, Send } from 'lucide-react';
-import { communityAPI } from '../../services/api';
+import firestoreService from '../../services/firestoreService';
+import toast from 'react-hot-toast';
 
 const CommentSection = ({ postId, initialCommentCount = 0 }) => {
   const { user } = useAuth();
@@ -12,7 +13,7 @@ const CommentSection = ({ postId, initialCommentCount = 0 }) => {
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [newComment, setNewComment] = useState('');
-  const [showComments, setShowComments] = useState(false);
+  const [showComments, setShowComments] = useState(true); // Show comments by default
   const [error, setError] = useState(null);
   const [pagination, setPagination] = useState({
     total: initialCommentCount,
@@ -21,59 +22,92 @@ const CommentSection = ({ postId, initialCommentCount = 0 }) => {
     hasMore: false
   });
 
-  // Retry mechanism for API calls
-  const retryApiCall = async (apiCall, maxRetries = 3) => {
-    for (let attempt = 0; attempt <= maxRetries; attempt++) {
-      try {
-        return await apiCall();
-      } catch (error) {
-        if (attempt === maxRetries) {
-          throw error;
-        }
-        // Exponential backoff: 1s, 2s, 4s
-        const delay = Math.pow(2, attempt) * 1000;
-        await new Promise(resolve => setTimeout(resolve, delay));
-      }
-    }
-  };
-
-  // Load comments with retry mechanism
-  const loadComments = async (offset = 0, append = false) => {
+  // Load comments on mount and set up real-time subscription
+  useEffect(() => {
     if (!postId) return;
 
-    setLoading(true);
-    setError(null);
+    let unsubscribe = null;
 
-    try {
-      const result = await retryApiCall(async () => {
-        // ✅ Use API service instead of direct fetch
-        const response = await communityAPI.getComments(
-          postId,
-          Math.floor(offset / pagination.limit) + 1, // Convert offset to page
-          pagination.limit
-        );
-
-        if (!response.success) {
-          throw new Error(response.error || 'Failed to load comments');
+    // Set up real-time subscription for comments
+    const setupRealtimeComments = () => {
+      try {
+        unsubscribe = firestoreService.subscribeToComments(postId, (comments) => {
+          // Transform Firestore comments to match expected structure
+          const transformedComments = comments.map(comment => ({
+            ...comment,
+            author: {
+              uid: comment.userId,
+              email: comment.userEmail,
+              displayName: comment.userEmail?.split('@')[0] || 'Anonymous'
+            }
+          }));
+          
+          setComments(transformedComments);
+          setPagination(prev => ({
+            ...prev,
+            total: transformedComments.length,
+            hasMore: transformedComments.length >= prev.limit
+          }));
+          setLoading(false);
+        });
+      } catch (error) {
+        console.error('Error setting up real-time comments:', error);
+        
+        // Check if it's a missing index error
+        if (error.code === 'failed-precondition' && error.message.includes('requires an index')) {
+          console.warn('Firestore index missing for comments query. Using fallback method.');
+          setError('Đang thiết lập cơ sở dữ liệu. Vui lòng thử lại sau.');
         }
-
-        return response;
-      });
-
-      if (append) {
-        setComments(prev => [...prev, ...result.data.comments]);
-      } else {
-        setComments(result.data.comments);
+        
+        // Fallback to manual loading without real-time
+        loadCommentsManually();
       }
-      setPagination(result.data.pagination);
+    };
 
-    } catch (error) {
-      console.error('Load comments error:', error);
-      setError('Không thể tải bình luận. Vui lòng thử lại.');
-    } finally {
-      setLoading(false);
-    }
-  };
+    // Manual loading function (fallback when real-time fails)
+    const loadCommentsManually = async () => {
+      setLoading(true);
+      try {
+        const result = await firestoreService.getComments(postId, { limitCount: 10 });
+        // Transform Firestore comments to match expected structure
+        const transformedComments = result.comments.map(comment => ({
+          ...comment,
+          author: {
+            uid: comment.userId,
+            email: comment.userEmail,
+            displayName: comment.userEmail?.split('@')[0] || 'Anonymous'
+          }
+        }));
+        
+        setComments(transformedComments);
+        setPagination(prev => ({
+          ...prev,
+          total: transformedComments.length,
+          hasMore: result.hasMore,
+          lastDoc: result.lastDoc
+        }));
+      } catch (err) {
+        console.error('Error loading comments:', err);
+        if (err.code === 'failed-precondition' && err.message.includes('requires an index')) {
+          setError('Cần thiết lập index cho Firestore. Vui lòng liên hệ admin để tạo index.');
+        } else {
+          setError('Không thể tải bình luận. Vui lòng thử lại.');
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    setLoading(true);
+    setupRealtimeComments();
+
+    // Cleanup subscription on unmount
+    return () => {
+      if (unsubscribe) {
+        unsubscribe();
+      }
+    };
+  }, [postId]);
 
   // Submit new comment with optimistic UI updates
   const handleSubmitComment = async (e) => {
@@ -109,22 +143,40 @@ const CommentSection = ({ postId, initialCommentCount = 0 }) => {
     setError(null);
 
     try {
-      // ✅ Use API service instead of direct fetch
-      const response = await communityAPI.addComment(
+      // ✅ Use Firestore service directly
+      const commentId = await firestoreService.addComment(
         postId,
         commentContent,
         user.id || user.uid,
-        user.email,
-        user.displayName || user.email?.split('@')[0] || 'Anonymous'
+        user.email
       );
 
-      if (response.success) {
+      if (commentId) {
         // Replace optimistic comment with real comment
+        const realComment = {
+          id: commentId,
+          content: commentContent,
+          userId: user.id || user.uid,
+          userEmail: user.email,
+          linkId: postId,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          author: {
+            uid: user.id || user.uid,
+            email: user.email,
+            displayName: user.displayName || user.email?.split('@')[0] || 'Anonymous'
+          },
+          voteScore: 0,
+          isOptimistic: false
+        };
+
         setComments(prev => prev.map(comment =>
-          comment.id === tempId ? { ...response.data.comment, isOptimistic: false } : comment
+          comment.id === tempId ? realComment : comment
         ));
+        
+        toast.success('Bình luận đã được thêm!');
       } else {
-        throw new Error(response.error || 'Failed to submit comment');
+        throw new Error('Failed to add comment');
       }
     } catch (error) {
       console.error('Submit comment error:', error);
@@ -137,24 +189,52 @@ const CommentSection = ({ postId, initialCommentCount = 0 }) => {
       }));
       setNewComment(commentContent); // Restore comment text
       setError('Không thể gửi bình luận. Vui lòng thử lại.');
+      toast.error('Không thể gửi bình luận. Vui lòng thử lại.');
     } finally {
       setSubmitting(false);
     }
   };
 
-  // Load more comments
-  const handleLoadMore = () => {
-    if (pagination.hasMore && !loading) {
-      loadComments(pagination.offset + pagination.limit, true);
+  // Load more comments - now uses pagination with Firestore
+  const handleLoadMore = async () => {
+    if (!pagination.hasMore || loading || !pagination.lastDoc) return;
+
+    setLoading(true);
+    try {
+      const result = await firestoreService.getComments(postId, {
+        limitCount: pagination.limit,
+        lastDoc: pagination.lastDoc
+      });
+
+      // Transform Firestore comments to match expected structure
+      const transformedComments = result.comments.map(comment => ({
+        ...comment,
+        author: {
+          uid: comment.userId,
+          email: comment.userEmail,
+          displayName: comment.userEmail?.split('@')[0] || 'Anonymous'
+        }
+      }));
+
+      setComments(prev => [...prev, ...transformedComments]);
+      setPagination(prev => ({
+        ...prev,
+        hasMore: result.hasMore,
+        lastDoc: result.lastDoc,
+        total: prev.total + transformedComments.length
+      }));
+    } catch (error) {
+      console.error('Error loading more comments:', error);
+      setError('Không thể tải thêm bình luận. Vui lòng thử lại.');
+    } finally {
+      setLoading(false);
     }
   };
 
   // Toggle comments visibility
   const toggleComments = () => {
     setShowComments(!showComments);
-    if (!showComments && comments.length === 0) {
-      loadComments();
-    }
+    // Real-time subscription will handle loading automatically
   };
 
   // Format time ago
@@ -337,9 +417,34 @@ const CommentSection = ({ postId, initialCommentCount = 0 }) => {
             }`}>
               <p>{error}</p>
               <button
-                onClick={() => {
+                onClick={async () => {
                   setError(null);
-                  loadComments();
+                  setLoading(true);
+                  try {
+                    const result = await firestoreService.getComments(postId, { limitCount: 10 });
+                    // Transform Firestore comments to match expected structure
+                    const transformedComments = result.comments.map(comment => ({
+                      ...comment,
+                      author: {
+                        uid: comment.userId,
+                        email: comment.userEmail,
+                        displayName: comment.userEmail?.split('@')[0] || 'Anonymous'
+                      }
+                    }));
+                    
+                    setComments(transformedComments);
+                    setPagination(prev => ({
+                      ...prev,
+                      total: transformedComments.length,
+                      hasMore: result.hasMore,
+                      lastDoc: result.lastDoc
+                    }));
+                  } catch (error) {
+                    console.error('Error retrying comments:', error);
+                    setError('Vẫn không thể tải bình luận. Vui lòng thử lại sau.');
+                  } finally {
+                    setLoading(false);
+                  }
                 }}
                 className={`mt-2 px-3 py-1 text-xs rounded-full transition-colors ${
                   isDarkMode

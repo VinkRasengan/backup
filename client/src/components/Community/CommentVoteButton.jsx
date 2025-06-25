@@ -36,7 +36,7 @@ const CommentVoteButton = ({ commentId, initialVotes = 0, initialUserVote = null
     };
 
     loadVoteData();
-  }, [commentId, user]);
+  }, [commentId, user, getAuthHeaders]);
 
   const handleVote = async (voteType) => {
     if (!user) {

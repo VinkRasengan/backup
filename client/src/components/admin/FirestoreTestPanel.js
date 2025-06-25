@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Database, Play, CheckCircle, AlertCircle, Loader, Shield } from 'lucide-react';
+import { Database, Play, CheckCircle, AlertCircle, Loader } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import firestoreService from '../../services/firestoreService';
 
