@@ -243,6 +243,8 @@ class FirestoreService {
         throw new Error('Missing required parameters: linkId, content, and userId are required');
       }
 
+      console.log('🔍 Adding comment with data:', { linkId, content, userId, userEmail });
+
       const newComment = {
         linkId,
         content,
@@ -254,22 +256,38 @@ class FirestoreService {
 
       // Clean the comment data
       const cleanedComment = this.cleanData(newComment);
+      console.log('📝 Cleaned comment data:', cleanedComment);
 
+      // First, try to add the comment
       const docRef = await addDoc(collection(this.db, 'comments'), cleanedComment);
+      console.log('✅ Comment added with ID:', docRef.id);
       
-      // Update comment count on the post
-      const postRef = doc(this.db, 'links', linkId);
-      const postSnap = await getDoc(postRef);
-      if (postSnap.exists()) {
-        const currentCount = postSnap.data().commentCount || 0;
-        await updateDoc(postRef, {
-          commentCount: currentCount + 1
-        });
+      // Then try to update comment count on the post
+      try {
+        const postRef = doc(this.db, 'links', linkId);
+        const postSnap = await getDoc(postRef);
+        if (postSnap.exists()) {
+          const currentCount = postSnap.data().commentCount || 0;
+          await updateDoc(postRef, {
+            commentCount: currentCount + 1
+          });
+          console.log('✅ Comment count updated to:', currentCount + 1);
+        } else {
+          console.log('⚠️ Post not found in links collection, comment added but count not updated');
+        }
+      } catch (countError) {
+        console.warn('⚠️ Failed to update comment count, but comment was added successfully:', countError);
+        // Don't throw error here since the comment was already added successfully
       }
 
       return docRef.id;
     } catch (error) {
-      console.error('Error adding comment:', error);
+      console.error('❌ Error adding comment:', error);
+      console.error('Error details:', {
+        code: error.code,
+        message: error.message,
+        stack: error.stack
+      });
       throw error;
     }
   }

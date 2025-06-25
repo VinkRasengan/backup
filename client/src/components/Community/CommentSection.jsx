@@ -13,7 +13,7 @@ const CommentSection = ({ postId, initialCommentCount = 0 }) => {
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [newComment, setNewComment] = useState('');
-  const [showComments, setShowComments] = useState(true); // Show comments by default
+  const [showComments, setShowComments] = useState(true);
   const [error, setError] = useState(null);
   const [pagination, setPagination] = useState({
     total: initialCommentCount,
@@ -22,17 +22,14 @@ const CommentSection = ({ postId, initialCommentCount = 0 }) => {
     hasMore: false
   });
 
-  // Load comments on mount and set up real-time subscription
   useEffect(() => {
     if (!postId) return;
 
     let unsubscribe = null;
 
-    // Set up real-time subscription for comments
     const setupRealtimeComments = () => {
       try {
         unsubscribe = firestoreService.subscribeToComments(postId, (comments) => {
-          // Transform Firestore comments to match expected structure
           const transformedComments = comments.map(comment => ({
             ...comment,
             author: {
@@ -53,23 +50,19 @@ const CommentSection = ({ postId, initialCommentCount = 0 }) => {
       } catch (error) {
         console.error('Error setting up real-time comments:', error);
         
-        // Check if it's a missing index error
         if (error.code === 'failed-precondition' && error.message.includes('requires an index')) {
           console.warn('Firestore index missing for comments query. Using fallback method.');
           setError('Đang thiết lập cơ sở dữ liệu. Vui lòng thử lại sau.');
         }
         
-        // Fallback to manual loading without real-time
         loadCommentsManually();
       }
     };
 
-    // Manual loading function (fallback when real-time fails)
     const loadCommentsManually = async () => {
       setLoading(true);
       try {
         const result = await firestoreService.getComments(postId, { limitCount: 10 });
-        // Transform Firestore comments to match expected structure
         const transformedComments = result.comments.map(comment => ({
           ...comment,
           author: {
@@ -101,7 +94,6 @@ const CommentSection = ({ postId, initialCommentCount = 0 }) => {
     setLoading(true);
     setupRealtimeComments();
 
-    // Cleanup subscription on unmount
     return () => {
       if (unsubscribe) {
         unsubscribe();
@@ -109,41 +101,27 @@ const CommentSection = ({ postId, initialCommentCount = 0 }) => {
     };
   }, [postId]);
 
-  // Submit new comment with optimistic UI updates
   const handleSubmitComment = async (e) => {
     e.preventDefault();
 
     if (!newComment.trim() || !user || submitting) return;
 
     const commentContent = newComment.trim();
-    const tempId = `temp_${Date.now()}`;
-
-    // Create optimistic comment
-    const optimisticComment = {
-      id: tempId,
-      content: commentContent,
-      author: {
-        uid: user.id || user.uid,
-        email: user.email,
-        displayName: user.displayName || user.email?.split('@')[0] || 'Anonymous'
-      },
-      createdAt: new Date().toISOString(),
-      voteScore: 0,
-      isOptimistic: true // Flag to identify optimistic updates
-    };
-
-    // Optimistic UI update
-    setComments(prev => [optimisticComment, ...prev]);
     setNewComment('');
-    setPagination(prev => ({
-      ...prev,
-      total: prev.total + 1
-    }));
     setSubmitting(true);
     setError(null);
 
     try {
-      // ✅ Use Firestore service directly
+      console.log('🔍 Submitting comment with user data:', {
+        postId,
+        user: {
+          id: user.id,
+          uid: user.uid,
+          email: user.email,
+          displayName: user.displayName
+        }
+      });
+
       const commentId = await firestoreService.addComment(
         postId,
         commentContent,
@@ -152,42 +130,13 @@ const CommentSection = ({ postId, initialCommentCount = 0 }) => {
       );
 
       if (commentId) {
-        // Replace optimistic comment with real comment
-        const realComment = {
-          id: commentId,
-          content: commentContent,
-          userId: user.id || user.uid,
-          userEmail: user.email,
-          linkId: postId,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-          author: {
-            uid: user.id || user.uid,
-            email: user.email,
-            displayName: user.displayName || user.email?.split('@')[0] || 'Anonymous'
-          },
-          voteScore: 0,
-          isOptimistic: false
-        };
-
-        setComments(prev => prev.map(comment =>
-          comment.id === tempId ? realComment : comment
-        ));
-        
         toast.success('Bình luận đã được thêm!');
       } else {
         throw new Error('Failed to add comment');
       }
     } catch (error) {
       console.error('Submit comment error:', error);
-
-      // Rollback optimistic update
-      setComments(prev => prev.filter(comment => comment.id !== tempId));
-      setPagination(prev => ({
-        ...prev,
-        total: prev.total - 1
-      }));
-      setNewComment(commentContent); // Restore comment text
+      setNewComment(commentContent);
       setError('Không thể gửi bình luận. Vui lòng thử lại.');
       toast.error('Không thể gửi bình luận. Vui lòng thử lại.');
     } finally {
@@ -195,7 +144,6 @@ const CommentSection = ({ postId, initialCommentCount = 0 }) => {
     }
   };
 
-  // Load more comments - now uses pagination with Firestore
   const handleLoadMore = async () => {
     if (!pagination.hasMore || loading || !pagination.lastDoc) return;
 
@@ -206,7 +154,6 @@ const CommentSection = ({ postId, initialCommentCount = 0 }) => {
         lastDoc: pagination.lastDoc
       });
 
-      // Transform Firestore comments to match expected structure
       const transformedComments = result.comments.map(comment => ({
         ...comment,
         author: {
@@ -231,13 +178,10 @@ const CommentSection = ({ postId, initialCommentCount = 0 }) => {
     }
   };
 
-  // Toggle comments visibility
   const toggleComments = () => {
     setShowComments(!showComments);
-    // Real-time subscription will handle loading automatically
   };
 
-  // Format time ago
   const formatTimeAgo = (dateString) => {
     const date = new Date(dateString);
     const now = new Date();
@@ -253,7 +197,6 @@ const CommentSection = ({ postId, initialCommentCount = 0 }) => {
 
   return (
     <div className="border-t border-gray-200 dark:border-gray-700 pt-3">
-      {/* Comment Toggle Button */}
       <button
         onClick={toggleComments}
         className={`flex items-center space-x-2 text-sm font-medium mb-3 transition-colors ${
@@ -264,8 +207,8 @@ const CommentSection = ({ postId, initialCommentCount = 0 }) => {
       >
         <MessageCircle className="w-4 h-4" />
         <span>
-          {pagination.total > 0 
-            ? `${pagination.total} bình luận` 
+          {comments.length > 0 
+            ? `${comments.length} bình luận` 
             : 'Bình luận'
           }
         </span>
@@ -273,7 +216,6 @@ const CommentSection = ({ postId, initialCommentCount = 0 }) => {
 
       {showComments && (
         <div className="space-y-4">
-          {/* Comment Input */}
           {user && (
             <form onSubmit={handleSubmitComment} className="flex space-x-3">
               <div className="flex-shrink-0">
@@ -315,7 +257,6 @@ const CommentSection = ({ postId, initialCommentCount = 0 }) => {
             </form>
           )}
 
-          {/* Comments List */}
           {loading && comments.length === 0 ? (
             <div className="space-y-3">
               {[...Array(3)].map((_, i) => (
@@ -331,9 +272,7 @@ const CommentSection = ({ postId, initialCommentCount = 0 }) => {
           ) : (
             <div className="space-y-4">
               {comments.map((comment) => (
-                <div key={comment.id} className={`flex space-x-3 ${
-                  comment.isOptimistic ? 'opacity-70' : ''
-                }`}>
+                <div key={comment.id} className="flex space-x-3">
                   <div className="flex-shrink-0">
                     <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
                       isDarkMode ? 'bg-gray-600' : 'bg-gray-300'
@@ -346,12 +285,9 @@ const CommentSection = ({ postId, initialCommentCount = 0 }) => {
                   <div className="flex-1">
                     <div className={`inline-block px-3 py-2 rounded-2xl ${
                       isDarkMode ? 'bg-gray-700' : 'bg-gray-100'
-                    } ${comment.isOptimistic ? 'border border-dashed border-gray-400' : ''}`}>
-                      <div className="text-sm font-medium mb-1 flex items-center space-x-2">
+                    }`}>
+                      <div className="text-sm font-medium mb-1">
                         <span>{comment.author?.displayName || comment.author?.email || 'Anonymous'}</span>
-                        {comment.isOptimistic && (
-                          <div className="w-3 h-3 border border-gray-400 border-t-transparent rounded-full animate-spin"></div>
-                        )}
                       </div>
                       <div className={`text-sm ${
                         isDarkMode ? 'text-gray-200' : 'text-gray-800'
@@ -363,28 +299,23 @@ const CommentSection = ({ postId, initialCommentCount = 0 }) => {
                       <span className={`text-xs ${
                         isDarkMode ? 'text-gray-400' : 'text-gray-500'
                       }`}>
-                        {comment.isOptimistic ? 'Đang gửi...' : formatTimeAgo(comment.createdAt)}
+                        {formatTimeAgo(comment.createdAt)}
                       </span>
-                      {!comment.isOptimistic && (
-                        <>
-                          <button className={`text-xs font-medium ${
-                            isDarkMode ? 'text-gray-400 hover:text-white' : 'text-gray-500 hover:text-gray-900'
-                          }`}>
-                            Thích
-                          </button>
-                          <button className={`text-xs font-medium ${
-                            isDarkMode ? 'text-gray-400 hover:text-white' : 'text-gray-500 hover:text-gray-900'
-                          }`}>
-                            Phản hồi
-                          </button>
-                        </>
-                      )}
+                      <button className={`text-xs font-medium ${
+                        isDarkMode ? 'text-gray-400 hover:text-white' : 'text-gray-500 hover:text-gray-900'
+                      }`}>
+                        Thích
+                      </button>
+                      <button className={`text-xs font-medium ${
+                        isDarkMode ? 'text-gray-400 hover:text-white' : 'text-gray-500 hover:text-gray-900'
+                      }`}>
+                        Phản hồi
+                      </button>
                     </div>
                   </div>
                 </div>
               ))}
 
-              {/* Load More Button */}
               {pagination.hasMore && (
                 <button
                   onClick={handleLoadMore}
@@ -401,7 +332,6 @@ const CommentSection = ({ postId, initialCommentCount = 0 }) => {
             </div>
           )}
 
-          {/* No comments message */}
           {!loading && comments.length === 0 && !error && (
             <div className={`text-center py-4 text-sm ${
               isDarkMode ? 'text-gray-400' : 'text-gray-500'
@@ -410,7 +340,6 @@ const CommentSection = ({ postId, initialCommentCount = 0 }) => {
             </div>
           )}
 
-          {/* Error message */}
           {error && (
             <div className={`text-center py-4 text-sm ${
               isDarkMode ? 'text-red-400' : 'text-red-600'
@@ -422,7 +351,6 @@ const CommentSection = ({ postId, initialCommentCount = 0 }) => {
                   setLoading(true);
                   try {
                     const result = await firestoreService.getComments(postId, { limitCount: 10 });
-                    // Transform Firestore comments to match expected structure
                     const transformedComments = result.comments.map(comment => ({
                       ...comment,
                       author: {
