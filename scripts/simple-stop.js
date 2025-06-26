@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * Simple Stop Script - Stops all services
+ * Enhanced Stop Script - Comprehensive cleanup for all services
  */
 
 const { spawn } = require('child_process');
@@ -10,7 +10,8 @@ const os = require('os');
 class SimpleStop {
   constructor() {
     this.isWindows = os.platform() === 'win32';
-    this.ports = [3000, 3001, 3002, 3003, 3004, 3005, 3006, 8080];
+    // Extended port list including monitoring services
+    this.ports = [3000, 3001, 3002, 3003, 3004, 3005, 3006, 8080, 9090, 3010, 9093, 9100, 8081, 5001];
   }
 
   async stop() {
@@ -22,7 +23,7 @@ class SimpleStop {
       console.log('1. 🔌 Stopping processes by port...');
       await this.stopByPorts();
 
-      // Method 2: Kill Node processes
+      // Method 2: Kill Node processes more aggressively  
       console.log('2. 🛑 Stopping Node.js processes...');
       await this.stopNodeProcesses();
 
@@ -30,11 +31,20 @@ class SimpleStop {
       console.log('3. 🐳 Cleaning up Docker containers...');
       await this.cleanupDocker();
 
+      // Method 4: Final cleanup - kill any remaining node processes
+      console.log('4. 🧹 Final cleanup...');
+      await this.finalCleanup();
+
       console.log('✅ All services stopped!');
+      console.log('\n💡 Tips:');
+      console.log('  • Check status: npm run status');
+      console.log('  • Start again: npm start');
+      console.log('  • Health check: npm run monitoring:health');
 
     } catch (error) {
       console.error('❌ Stop failed:', error.message);
       console.log('💡 Some processes might still be running');
+      console.log('💡 Try running: npm run fix-ports');
     }
   }
 

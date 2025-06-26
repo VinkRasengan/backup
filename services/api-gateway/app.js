@@ -118,16 +118,49 @@ app.use(morgan('combined', {
   stream: { write: (message) => logger.info(message.trim()) }
 }));
 
+// Request counter for metrics
+global.requestCount = 0;
+app.use((req, res, next) => {
+  global.requestCount++;
+  next();
+});
+
 // Health check endpoints
 app.get('/health', (req, res) => {
   res.json({
     status: 'healthy',
     service: SERVICE_NAME,
-    uptime: process.uptime(),
+    uptime: Math.floor(process.uptime()),
     timestamp: new Date().toISOString(),
     port: PORT,
-    environment: process.env.NODE_ENV || 'development'
+    environment: process.env.NODE_ENV || 'development',
+    memory: {
+      used: Math.round(process.memoryUsage().heapUsed / 1024 / 1024) + ' MB',
+      total: Math.round(process.memoryUsage().heapTotal / 1024 / 1024) + ' MB'
+    },
+    cpu: process.cpuUsage()
   });
+});
+
+// Metrics endpoint for Prometheus
+app.get('/metrics', (req, res) => {
+  // Basic metrics - could be enhanced with prom-client
+  const metrics = `
+# HELP api_gateway_uptime_seconds Total uptime in seconds
+# TYPE api_gateway_uptime_seconds counter
+api_gateway_uptime_seconds ${Math.floor(process.uptime())}
+
+# HELP api_gateway_memory_usage_bytes Memory usage in bytes
+# TYPE api_gateway_memory_usage_bytes gauge
+api_gateway_memory_usage_bytes ${process.memoryUsage().heapUsed}
+
+# HELP api_gateway_requests_total Total number of requests
+# TYPE api_gateway_requests_total counter
+api_gateway_requests_total ${global.requestCount || 0}
+  `.trim();
+
+  res.set('Content-Type', 'text/plain');
+  res.send(metrics);
 });
 
 // Info endpoint

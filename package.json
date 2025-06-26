@@ -48,7 +48,13 @@
     "fix-ports": "node scripts/simple-stop.js",
     "info": "echo Frontend: http://localhost:3000, API Gateway: http://localhost:8080",
     "open": "start http://localhost:3000 || open http://localhost:3000",
-    "help": "node scripts/antifraud.js help"
+    "help": "node scripts/antifraud.js help",
+    "monitoring:start": "docker-compose -f docker-compose.monitoring.yml up -d",
+    "monitoring:stop": "docker-compose -f docker-compose.monitoring.yml down",
+    "monitoring:restart": "npm run monitoring:stop && npm run monitoring:start",
+    "monitoring:logs": "docker-compose -f docker-compose.monitoring.yml logs -f",
+    "monitoring:health": "node scripts/monitoring-health-check.js",
+    "open:frontend": "start http://localhost:3000 || open http://localhost:3000 || xdg-open http://localhost:3000"
   },
   "dependencies": {
     "concurrently": "^8.2.2",
@@ -57,7 +63,9 @@
     "node-fetch": "^3.3.2",
     "opossum": "^8.0.0",
     "prom-client": "^15.1.0",
-    "redis": "^4.6.10"
+    "redis": "^4.6.10",
+    "express": "^4.18.2",
+    "axios": "^1.6.0"
   },
   "devDependencies": {
     "@pact-foundation/pact": "^12.1.0",
