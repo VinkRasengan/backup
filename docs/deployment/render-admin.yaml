@@ -1,0 +1,28 @@
+# Render deployment configuration for factcheck-admin
+# Generated automatically - do not edit manually
+
+services:
+  - type: web
+    name: factcheck-admin
+    env: node
+    plan: free
+    region: singapore
+    rootDir: services/admin-service
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: PORT
+        value: "10000"
+      - key: NODE_ENV
+        value: production
+      - key: JWT_SECRET
+        sync: false
+      - key: AUTH_SERVICE_URL
+        value: https://factcheck-auth.onrender.com
+      - key: FIREBASE_PROJECT_ID
+        sync: false
+      - key: FIREBASE_PRIVATE_KEY
+        sync: false
+      - key: FIREBASE_CLIENT_EMAIL
+        sync: false

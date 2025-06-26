@@ -14,6 +14,8 @@ const authMiddleware = async (req, res, next) => {
       return next();
     }
 
+    const authHeader = req.headers.authorization;
+
     // Allow auth processing for votes endpoints (but don't require it)
     const isVotesEndpoint = req.path.includes('/votes');
     const isBatchUserVotes = req.path.includes('/votes/batch/user');
@@ -31,8 +33,6 @@ const authMiddleware = async (req, res, next) => {
     if (isVotesEndpoint && !isBatchUserVotes && (!authHeader || !authHeader.startsWith('Bearer '))) {
       return next();
     }
-
-    const authHeader = req.headers.authorization;
     
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       // For endpoints that don't require auth, continue without user info
@@ -46,8 +46,8 @@ const authMiddleware = async (req, res, next) => {
       // Verify Firebase ID token
       const decodedToken = await admin.auth().verifyIdToken(token);
       
-      // Add user info to request object
-      req.user = {
+      // Create user info object
+      const userInfo = {
         uid: decodedToken.uid,
         email: decodedToken.email,
         emailVerified: decodedToken.email_verified,
@@ -55,9 +55,14 @@ const authMiddleware = async (req, res, next) => {
         picture: decodedToken.picture
       };
 
-      // Also add to headers for backward compatibility
-      req.headers['x-user-id'] = decodedToken.uid;
-      req.headers['x-user-email'] = decodedToken.email;
+      // Add user info to request object (atomic assignment)
+      Object.assign(req, { user: userInfo });
+
+      // Also add to headers for backward compatibility (atomic assignments)
+      Object.assign(req.headers, {
+        'x-user-id': userInfo.uid,
+        'x-user-email': userInfo.email
+      });
 
       logger.debug('User authenticated', { 
         userId: decodedToken.uid, 
@@ -115,7 +120,8 @@ const requireAuth = async (req, res, next) => {
     try {
       const decodedToken = await admin.auth().verifyIdToken(token);
       
-      req.user = {
+      // Create user info object
+      const userInfo = {
         uid: decodedToken.uid,
         email: decodedToken.email,
         emailVerified: decodedToken.email_verified,
@@ -123,8 +129,14 @@ const requireAuth = async (req, res, next) => {
         picture: decodedToken.picture
       };
 
-      req.headers['x-user-id'] = decodedToken.uid;
-      req.headers['x-user-email'] = decodedToken.email;
+      // Add user info to request object (atomic assignment)
+      Object.assign(req, { user: userInfo });
+
+      // Also add to headers for backward compatibility (atomic assignments)
+      Object.assign(req.headers, {
+        'x-user-id': userInfo.uid,
+        'x-user-email': userInfo.email
+      });
 
       logger.debug('User authenticated (required)', { 
         userId: decodedToken.uid, 
@@ -190,7 +202,19 @@ const getUserDisplayName = (req) => {
     return req.user.displayName;
   }
   
-  return req.body.displayName || req.query.displayName || 'Anonymous User';
+  // Try to get from request body/query first
+  const displayName = req.body.displayName || req.query.displayName;
+  if (displayName && displayName !== 'Anonymous User') {
+    return displayName;
+  }
+  
+  // Fallback to email username if available
+  const email = getUserEmail(req);
+  if (email) {
+    return email.split('@')[0];
+  }
+  
+  return 'Anonymous User';
 };
 
 module.exports = {

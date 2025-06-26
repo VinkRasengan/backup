@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
-import { Database, Play, CheckCircle, AlertCircle, Loader, Shield } from 'lucide-react';
-import { seedFirestore, testFirestoreConnection } from '../../utils/seedFirestore';
+import { Database, Play, CheckCircle, AlertCircle, Loader } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import firestoreService from '../../services/firestoreService';
 
@@ -14,11 +13,12 @@ const FirestoreTestPanel = () => {
     setLoading(true);
     setError(null);
     try {
-      const success = await testFirestoreConnection();
+      // Test connection by trying to read from Firestore
+      const testResult = await firestoreService.testConnection();
       setResults({
         type: 'connection',
-        success,
-        message: success ? 'Kết nối Firestore thành công!' : 'Lỗi kết nối Firestore'
+        success: testResult.success,
+        message: testResult.success ? 'Kết nối Firestore thành công!' : 'Lỗi kết nối Firestore'
       });
     } catch (err) {
       setError(err.message);
@@ -31,12 +31,12 @@ const FirestoreTestPanel = () => {
     setLoading(true);
     setError(null);
     try {
-      const result = await seedFirestore();
+      // Seeding functionality removed - use real data from microservices
       setResults({
         type: 'seed',
-        success: result.success,
-        message: `Đã tạo thành công ${result.postsCreated} posts và ${result.commentsCreated} comments`,
-        details: result
+        success: false,
+        message: 'Seeding functionality has been removed. Use real data from microservices instead.',
+        details: { note: 'Mock data seeding is no longer available in production.' }
       });
     } catch (err) {
       setError(err.message);

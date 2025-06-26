@@ -5,7 +5,6 @@ import {
   getDoc, 
   addDoc, 
   updateDoc, 
-  deleteDoc, 
   query, 
   where, 
   orderBy, 
@@ -194,6 +193,44 @@ class FirestoreService {
       };
     } catch (error) {
       console.error('Error fetching comments:', error);
+      
+      // Handle missing index error - try simpler query
+      if (error.code === 'failed-precondition' && error.message.includes('requires an index')) {
+        console.warn('Missing Firestore index. Trying simpler query without orderBy...');
+        
+        try {
+          // Simpler query without orderBy
+          let simpleQuery = query(
+            collection(this.db, 'comments'),
+            where('linkId', '==', linkId),
+            limit(options.limitCount || 10)
+          );
+
+          const simpleSnapshot = await getDocs(simpleQuery);
+          const comments = [];
+          
+          simpleSnapshot.forEach((doc) => {
+            comments.push({
+              id: doc.id,
+              ...doc.data(),
+              createdAt: doc.data().createdAt?.toDate?.() || new Date()
+            });
+          });
+
+          // Sort manually since we can't use orderBy
+          comments.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+          return {
+            comments,
+            lastDoc: simpleSnapshot.docs[simpleSnapshot.docs.length - 1],
+            hasMore: simpleSnapshot.docs.length === (options.limitCount || 10)
+          };
+        } catch (fallbackError) {
+          console.error('Fallback query also failed:', fallbackError);
+          throw fallbackError;
+        }
+      }
+      
       throw error;
     }
   }
@@ -206,6 +243,8 @@ class FirestoreService {
         throw new Error('Missing required parameters: linkId, content, and userId are required');
       }
 
+      console.log('🔍 Adding comment with data:', { linkId, content, userId, userEmail });
+
       const newComment = {
         linkId,
         content,
@@ -217,22 +256,38 @@ class FirestoreService {
 
       // Clean the comment data
       const cleanedComment = this.cleanData(newComment);
+      console.log('📝 Cleaned comment data:', cleanedComment);
 
+      // First, try to add the comment
       const docRef = await addDoc(collection(this.db, 'comments'), cleanedComment);
+      console.log('✅ Comment added with ID:', docRef.id);
       
-      // Update comment count on the post
-      const postRef = doc(this.db, 'links', linkId);
-      const postSnap = await getDoc(postRef);
-      if (postSnap.exists()) {
-        const currentCount = postSnap.data().commentCount || 0;
-        await updateDoc(postRef, {
-          commentCount: currentCount + 1
-        });
+      // Then try to update comment count on the post
+      try {
+        const postRef = doc(this.db, 'links', linkId);
+        const postSnap = await getDoc(postRef);
+        if (postSnap.exists()) {
+          const currentCount = postSnap.data().commentCount || 0;
+          await updateDoc(postRef, {
+            commentCount: currentCount + 1
+          });
+          console.log('✅ Comment count updated to:', currentCount + 1);
+        } else {
+          console.log('⚠️ Post not found in links collection, comment added but count not updated');
+        }
+      } catch (countError) {
+        console.warn('⚠️ Failed to update comment count, but comment was added successfully:', countError);
+        // Don't throw error here since the comment was already added successfully
       }
 
       return docRef.id;
     } catch (error) {
-      console.error('Error adding comment:', error);
+      console.error('❌ Error adding comment:', error);
+      console.error('Error details:', {
+        code: error.code,
+        message: error.message,
+        stack: error.stack
+      });
       throw error;
     }
   }
@@ -361,24 +416,62 @@ class FirestoreService {
 
   // Real-time listeners
   subscribeToComments(linkId, callback) {
-    const q = query(
-      collection(this.db, 'comments'),
-      where('linkId', '==', linkId),
-      orderBy('createdAt', 'desc'),
-      limit(10)
-    );
+    try {
+      const q = query(
+        collection(this.db, 'comments'),
+        where('linkId', '==', linkId),
+        orderBy('createdAt', 'desc'),
+        limit(10)
+      );
 
-    return onSnapshot(q, (snapshot) => {
-      const comments = [];
-      snapshot.forEach((doc) => {
-        comments.push({
-          id: doc.id,
-          ...doc.data(),
-          createdAt: doc.data().createdAt?.toDate?.() || new Date()
-        });
-      });
-      callback(comments);
-    });
+      return onSnapshot(q, 
+        (snapshot) => {
+          const comments = [];
+          snapshot.forEach((doc) => {
+            comments.push({
+              id: doc.id,
+              ...doc.data(),
+              createdAt: doc.data().createdAt?.toDate?.() || new Date()
+            });
+          });
+          callback(comments);
+        },
+        (error) => {
+          console.error('Firestore subscription error:', error);
+          
+          // Handle missing index error specifically
+          if (error.code === 'failed-precondition' && error.message.includes('requires an index')) {
+            console.warn('Missing Firestore index for comments query. Falling back to simple query.');
+            
+            // Fallback: try a simpler query without orderBy
+            const simpleQuery = query(
+              collection(this.db, 'comments'),
+              where('linkId', '==', linkId),
+              limit(10)
+            );
+            
+            return onSnapshot(simpleQuery, (snapshot) => {
+              const comments = [];
+              snapshot.forEach((doc) => {
+                comments.push({
+                  id: doc.id,
+                  ...doc.data(),
+                  createdAt: doc.data().createdAt?.toDate?.() || new Date()
+                });
+              });
+              // Sort manually since we can't use orderBy
+              comments.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+              callback(comments);
+            });
+          }
+          
+          throw error;
+        }
+      );
+    } catch (error) {
+      console.error('Error setting up comments subscription:', error);
+      throw error;
+    }
   }
 
   subscribeToVoteStats(linkId, callback) {

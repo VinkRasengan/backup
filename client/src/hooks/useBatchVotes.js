@@ -13,18 +13,21 @@ export const useBatchVotes = () => {
     // Cache to avoid duplicate requests
     const [requestedPostIds, setRequestedPostIds] = useState(new Set());
 
-    const fetchBatchVotes = useCallback(async (postIds) => {
+    const fetchBatchVotes = useCallback(async (postIds, forceRefresh = false) => {
         if (!postIds || postIds.length === 0) return;
 
-        // Filter out already requested posts
-        const newPostIds = postIds.filter(id => !requestedPostIds.has(id));
-        if (newPostIds.length === 0) return;
+        // Filter out already requested posts (unless force refresh)
+        const newPostIds = forceRefresh ? postIds : postIds.filter(id => !requestedPostIds.has(id));
+        if (newPostIds.length === 0) {
+            console.log('🔄 No new posts to fetch', { forceRefresh, requestedCount: postIds.length });
+            return;
+        }
 
         setLoading(true);
         setError(null);
 
         try {
-            console.log('🚀 Fetching batch votes for', newPostIds.length, 'posts');
+            console.log('🚀 Fetching batch votes for', newPostIds.length, 'posts', { forceRefresh });
 
             // Split into chunks of 10 (Firestore 'in' query limit)
             const chunks = [];
@@ -77,12 +80,13 @@ export const useBatchVotes = () => {
                 }
             });
 
+            console.log('📊 Updating votes data:', { newVotesData, forceRefresh });
             setVotesData(prev => ({ ...prev, ...newVotesData }));
             setRequestedPostIds(prev => new Set([...prev, ...newPostIds]));
 
             // Fetch user votes if authenticated
             if (user) {
-                await fetchBatchUserVotes(newPostIds);
+                await fetchBatchUserVotes(newPostIds, forceRefresh);
             }
 
         } catch (err) {
@@ -91,7 +95,7 @@ export const useBatchVotes = () => {
         } finally {
             setLoading(false);
         }
-    }, [requestedPostIds, user]);    const fetchBatchUserVotes = useCallback(async (postIds) => {
+    }, [requestedPostIds, user]);    const fetchBatchUserVotes = useCallback(async (postIds, forceRefresh = false) => {
         if (!user || !postIds || postIds.length === 0) return;
 
         try {
@@ -154,6 +158,7 @@ export const useBatchVotes = () => {
                 }
             });
 
+            console.log('👤 Updating user votes data:', { newUserVotesData });
             setUserVotesData(prev => ({ ...prev, ...newUserVotesData }));
 
         } catch (err) {
@@ -218,7 +223,7 @@ export const usePostVote = (postId) => {
         console.log('🗳️ useBatchVotes.submitVote called:', { postId, voteType });
 
         if (!postId) {
-            console.log('❌ No postId provided');
+            console.log('❌ No linkId provided');
             return;
         }
 
@@ -271,9 +276,9 @@ export const usePostVote = (postId) => {
             const responseData = await response.json();
             console.log('✅ Batch vote success:', responseData);
 
-            // Refresh votes after successful vote
+            // Refresh votes after successful vote (force refresh to bypass cache)
             console.log('🔄 Refreshing votes...');
-            await fetchBatchVotes([postId]);
+            await fetchBatchVotes([postId], true);
 
             console.log('✅ Vote process completed successfully');
         } catch (error) {

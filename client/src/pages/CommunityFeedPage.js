@@ -18,16 +18,13 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import VoteComponent from '../components/Community/VoteComponent';
-import CommentSection from '../components/Community/CommentSection';
-import CommentPreview from '../components/Community/CommentPreview';
+import CommentSection from '../components/Community/CommentSection.jsx';
+import CommentPreview from '../components/Community/CommentPreview.jsx';
 import ReportModal from '../components/Community/ReportModal';
 import RequestMonitor from '../components/Community/RequestMonitor';
 import { useBatchVotes } from '../hooks/useBatchVotes';
 import { useStaggerAnimation, useFadeIn } from '../hooks/useGSAP';
 import PageLayout from '../components/layout/PageLayout';
-// Import mock services for testing
-import '../services/mockCommentsService';
-import '../services/mockPostsService';
 
 const CommunityFeedPage = () => {
   const { isDarkMode } = useTheme();

@@ -5,14 +5,19 @@ const helmet = require('helmet');
 const morgan = require('morgan');
 const rateLimit = require('express-rate-limit');
 const path = require('path');
-require('dotenv').config({ path: path.join(__dirname, '../../../.env') });
+
+// Load environment variables - conditional for development vs production
+if (process.env.NODE_ENV !== 'production') { // eslint-disable-line no-process-env
+  require('dotenv').config({ path: path.join(__dirname, '../../../../.env') });
+}
+// In production (Render, Docker), environment variables are set by platform
 
 // Import shared utilities
 const Logger = require('../shared/utils/logger');
 const { HealthCheck, commonChecks } = require('../shared/utils/health-check');
 
 // Import local modules
-const postsRoutes = require('./routes/posts');
+const linksRoutes = require('./routes/links');
 const commentsRoutes = require('./routes/comments');
 const votesRoutes = require('./routes/votes');
 const reportsRoutes = require('./routes/reports');
@@ -40,7 +45,7 @@ const httpRequestDuration = new promClient.Histogram({
   labelNames: ['method', 'route']
 });
 
-const PORT = process.env.PORT || 3003;
+const PORT = process.env.PORT || 3003; // eslint-disable-line no-process-env
 const SERVICE_NAME = 'community-service';
 
 // Initialize logger
@@ -52,7 +57,7 @@ const healthCheck = new HealthCheck(SERVICE_NAME);
 // Add health checks
 healthCheck.addCheck('database', commonChecks.database(firebaseConfig.db));
 healthCheck.addCheck('memory', commonChecks.memory(512));
-healthCheck.addCheck('auth-service', commonChecks.externalService('auth-service', process.env.AUTH_SERVICE_URL + '/health/live'));
+healthCheck.addCheck('auth-service', commonChecks.externalService('auth-service', process.env.AUTH_SERVICE_URL + '/health/live')); // eslint-disable-line no-process-env
 healthCheck.addCheck('cache', async () => {
   const cacheHealth = await cacheManager.healthCheck();
   if (cacheHealth.status === 'connected') {
@@ -66,15 +71,15 @@ healthCheck.addCheck('cache', async () => {
 app.use(helmet({
   contentSecurityPolicy: {
     directives: {
-      defaultSrc: ["'self'"],
-      styleSrc: ["'self'", "'unsafe-inline'"],
-      scriptSrc: ["'self'"],
-      imgSrc: ["'self'", "data:", "https:"],
-      connectSrc: ["'self'", "https:"],
-      fontSrc: ["'self'", "https:", "data:"],
-      objectSrc: ["'none'"],
-      mediaSrc: ["'self'"],
-      frameSrc: ["'none'"],
+      defaultSrc: ['\'self\''],
+      styleSrc: ['\'self\'', '\'unsafe-inline\''],
+      scriptSrc: ['\'self\''],
+      imgSrc: ['\'self\'', 'data:', 'https:'],
+      connectSrc: ['\'self\'', 'https:'],
+      fontSrc: ['\'self\'', 'https:', 'data:'],
+      objectSrc: ['\'none\''],
+      mediaSrc: ['\'self\''],
+      frameSrc: ['\'none\''],
     },
   },
   crossOriginEmbedderPolicy: false, // Allow embedding for API service
@@ -87,7 +92,7 @@ app.use(helmet({
 
 // CORS configuration
 app.use(cors({
-  origin: process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:3000', 'http://localhost:8080'],
+  origin: process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:3000', 'http://localhost:8080'], // eslint-disable-line no-process-env
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'x-correlation-id', 'x-service-name', 'x-service-key']
@@ -96,7 +101,7 @@ app.use(cors({
 // Rate limiting - Increased limits for development
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: process.env.NODE_ENV === 'production' ? 500 : 2000, // Higher limit for dev
+  max: process.env.NODE_ENV === 'production' ? 500 : 2000, // Higher limit for dev // eslint-disable-line no-process-env
   message: {
     error: 'Too many requests from this IP',
     code: 'RATE_LIMIT_EXCEEDED'
@@ -105,7 +110,7 @@ const limiter = rateLimit({
   legacyHeaders: false,
   // Skip rate limiting for localhost in development
   skip: (req) => {
-    if (process.env.NODE_ENV !== 'production') {
+    if (process.env.NODE_ENV !== 'production') { // eslint-disable-line no-process-env
       const ip = req.ip || req.connection.remoteAddress;
       return ip === '127.0.0.1' || ip === '::1' || ip === '::ffff:127.0.0.1';
     }
@@ -183,7 +188,7 @@ app.get('/info', (req, res) => {
 });
 
 // API routes
-app.use('/posts', postsRoutes);
+app.use('/links', linksRoutes);
 app.use('/comments', commentsRoutes);
 app.use('/votes', votesRoutes);
 app.use('/reports', reportsRoutes);

@@ -1,12 +1,13 @@
 #!/usr/bin/env node
 
 /**
- * Simple Start Script - Minimal version that works
+ * Enhanced Simple Start Script - With Monitoring Integration
  */
 
 const { spawn } = require('child_process');
 const path = require('path');
 const os = require('os');
+const fs = require('fs');
 
 class SimpleStart {
   constructor() {
@@ -22,27 +23,35 @@ class SimpleStart {
       { name: 'news-service', port: 3005 },
       { name: 'admin-service', port: 3006 }
     ];
+    
+    this.monitoringEnabled = process.env.ENABLE_MONITORING !== 'false';
   }
 
   async start() {
-    console.log('🚀 Starting Anti-Fraud Platform...');
-    console.log('='.repeat(50));
+    console.log('🚀 Starting Anti-Fraud Platform with Monitoring...');
+    console.log('='.repeat(60));
 
     try {
       // Step 1: Quick cleanup
       console.log('1. 🧹 Quick cleanup...');
       await this.quickCleanup();
 
-      // Step 2: Start services
-      console.log('2. 📦 Starting services...');
+      // Step 2: Start monitoring stack (if enabled)
+      if (this.monitoringEnabled) {
+        console.log('2. 📊 Starting monitoring stack...');
+        await this.startMonitoringStack();
+      }
+
+      // Step 3: Start services
+      console.log('3. 📦 Starting services...');
       await this.startServices();
 
-      // Step 3: Start client
-      console.log('3. 🌐 Starting client...');
+      // Step 4: Start client
+      console.log('4. 🌐 Starting client...');
       await this.startClient();
 
-      // Step 4: Show info
-      console.log('4. ✅ Startup complete!');
+      // Step 5: Show info
+      console.log('5. ✅ Startup complete!');
       this.showInfo();
 
     } catch (error) {
@@ -70,6 +79,75 @@ class SimpleStart {
       // Cleanup failed - continue anyway
     }
     console.log('  ✅ Cleanup done');
+  }
+
+  async startMonitoringStack() {
+    try {
+      // 1. Start Docker monitoring stack if available
+      await this.startDockerMonitoring();
+      
+      // 2. Start webhook service if available
+      await this.startWebhookService();
+      
+      console.log('  ✅ Monitoring stack starting...');
+    } catch (error) {
+      console.log('  ⚠️ Monitoring stack failed to start:', error.message);
+      console.log('  ℹ️ Continuing without monitoring...');
+    }
+  }
+
+  async startDockerMonitoring() {
+    try {
+      const monitoringCompose = path.join(this.projectRoot, 'docker-compose.monitoring.yml');
+      
+      if (!fs.existsSync(monitoringCompose)) {
+        console.log('  ℹ️ docker-compose.monitoring.yml not found, skipping Docker monitoring');
+        return;
+      }
+
+      console.log('  🐳 Starting Docker monitoring stack...');
+      const command = this.isWindows ? 'docker-compose.exe' : 'docker-compose';
+      
+      const child = spawn(command, ['-f', monitoringCompose, 'up', '-d'], {
+        cwd: this.projectRoot,
+        stdio: 'pipe',
+        shell: true
+      });
+
+      // Don't wait for completion, start in background
+      child.unref();
+      console.log('  📊 Prometheus, Grafana, Alertmanager starting...');
+      
+    } catch (error) {
+      console.log('  ⚠️ Could not start Docker monitoring:', error.message);
+    }
+  }
+
+  async startWebhookService() {
+    try {
+      const webhookPath = path.join(this.projectRoot, 'monitoring/webhook-service');
+      
+      if (!fs.existsSync(webhookPath)) {
+        console.log('  ℹ️ Webhook service not found, skipping');
+        return;
+      }
+
+      console.log('  🪝 Starting webhook service...');
+      const command = this.isWindows ? 'npm.cmd' : 'npm';
+      
+      const child = spawn(command, ['start'], {
+        cwd: webhookPath,
+        detached: true,
+        stdio: 'ignore',
+        shell: true
+      });
+
+      child.unref();
+      console.log('  🚨 Alert webhook service starting on port 5001...');
+      
+    } catch (error) {
+      console.log('  ⚠️ Could not start webhook service:', error.message);
+    }
   }
 
   async startServices() {
@@ -179,14 +257,114 @@ class SimpleStart {
     console.log('News:        http://localhost:3005');
     console.log('Admin:       http://localhost:3006');
     
-    console.log('\n📋 Commands:');
+    if (this.monitoringEnabled) {
+      console.log('\n� Monitoring URLs:');
+      console.log('='.repeat(30));
+      console.log('Grafana:     http://localhost:3010 (admin/admin123)');
+      console.log('Prometheus:  http://localhost:9090');
+      console.log('Alertmanager: http://localhost:9093');
+      console.log('Node Export: http://localhost:9100');
+      console.log('cAdvisor:    http://localhost:8081');
+      console.log('Webhook:     http://localhost:5001');
+    }
+    
+    console.log('\n�📋 Commands:');
     console.log('Check status: npm run status');
     console.log('Stop all:     npm stop');
     console.log('Restart:      npm restart');
+    console.log('Health check: npm run health');
     
     console.log('\n💡 Note: Services are starting in background.');
     console.log('   Wait 1-2 minutes for everything to be ready.');
-    console.log('   Check http://localhost:3000 when ready.');
+    console.log('   Frontend will auto-open at http://localhost:3000');
+    
+    if (this.monitoringEnabled) {
+      console.log('\n📈 Monitoring Tips:');
+      console.log('   • Grafana dashboards: http://localhost:3010');
+      console.log('   • Import dashboards from monitoring/grafana/dashboards/');
+      console.log('   • View metrics: http://localhost:8080/metrics');
+      console.log('   • Configure alerts in monitoring/prometheus/alert_rules.yml');
+      
+      // Try to open monitoring dashboard
+      this.openMonitoringDashboard();
+    }
+
+    // Auto-open frontend client
+    console.log('\n🌐 Opening frontend application...');
+    this.openFrontendClient();
+  }
+
+  async openMonitoringDashboard() {
+    try {
+      // Wait a bit for services to start
+      setTimeout(async () => {
+        try {
+          const url = 'http://localhost:3010';
+          
+          if (this.isWindows) {
+            await this.runCommand('start', [url], { silent: true });
+          } else if (process.platform === 'darwin') {
+            await this.runCommand('open', [url], { silent: true });
+          } else {
+            await this.runCommand('xdg-open', [url], { silent: true });
+          }
+        } catch {
+          // Silent fail - browser may not be available
+        }
+      }, 5000); // Wait 5 seconds
+    } catch {
+      // Silent fail
+    }
+  }
+
+  async openFrontendClient() {
+    try {
+      // Wait a bit longer for frontend to be ready
+      setTimeout(async () => {
+        try {
+          const url = 'http://localhost:3000';
+          
+          console.log(`   📱 Opening ${url} in browser...`);
+          
+          if (this.isWindows) {
+            await this.runCommand('start', [url], { silent: true });
+          } else if (process.platform === 'darwin') {
+            await this.runCommand('open', [url], { silent: true });
+          } else {
+            await this.runCommand('xdg-open', [url], { silent: true });
+          }
+          
+          console.log('   ✅ Frontend opened in browser!');
+        } catch (error) {
+          console.log('   ℹ️ Could not auto-open browser. Please visit http://localhost:3000');
+        }
+      }, 8000); // Wait 8 seconds for frontend to be ready
+    } catch {
+      // Silent fail
+    }
+  }
+
+  async runCommand(command, args = [], options = {}) {
+    return new Promise((resolve, reject) => {
+      const child = spawn(command, args, {
+        stdio: options.silent ? 'pipe' : 'inherit',
+        shell: true
+      });
+
+      child.on('close', (code) => {
+        if (code === 0) {
+          resolve();
+        } else {
+          reject(new Error(`Command failed with code ${code}`));
+        }
+      });
+
+      child.on('error', reject);
+    });
+  }
+
+  async delay(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
   }
 }
 

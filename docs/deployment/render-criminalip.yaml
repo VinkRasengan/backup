@@ -1,0 +1,24 @@
+# Render deployment configuration for factcheck-criminalip
+# Generated automatically - do not edit manually
+
+services:
+  - type: web
+    name: factcheck-criminalip
+    env: node
+    plan: free
+    region: singapore
+    rootDir: services/criminalip-service
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: PORT
+        value: "10000"
+      - key: NODE_ENV
+        value: production
+      - key: JWT_SECRET
+        sync: false
+      - key: AUTH_SERVICE_URL
+        value: https://factcheck-auth.onrender.com
+      - key: CRIMINALIP_API_KEY
+        sync: false

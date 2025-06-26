@@ -116,28 +116,53 @@ const PostCard = ({ post, onVote, onComment, onShare }) => {
           {post.content ? `${post.content.substring(0, 300)}${post.content.length > 300 ? '...' : ''}` : 'No content available'}
         </p>
 
-        {/* Images */}
-        {post.images && post.images.length > 0 && (
-          <div className={`grid gap-2 mb-4 ${post.images.length === 1 ? 'grid-cols-1' : 'grid-cols-2'}`}>
-            {post.images.slice(0, 4).map((image, index) => (
-              !imageError[index] && (
-                <div key={index} className="relative overflow-hidden rounded-lg">
-                  <img
-                    src={image}
-                    alt={`Content ${index + 1}`}
-                    className="w-full h-48 object-cover hover:scale-105 transition-transform duration-200"
-                    onError={() => handleImageError(index)}
-                  />
-                  {post.images.length > 4 && index === 3 && (
-                    <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-                      <span className="text-white font-semibold">+{post.images.length - 4} more</span>
-                    </div>
-                  )}
-                </div>
-              )
-            ))}
-          </div>
-        )}
+        {/* Images - Support all image field variants */}
+        {(() => {
+          // Collect all available images from different fields
+          const allImages = [];
+
+          // Primary images array
+          if (post.images && Array.isArray(post.images) && post.images.length > 0) {
+            allImages.push(...post.images);
+          }
+
+          // Single image fields as fallback
+          if (post.imageUrl && !allImages.includes(post.imageUrl)) {
+            allImages.push(post.imageUrl);
+          }
+          if (post.screenshot && !allImages.includes(post.screenshot)) {
+            allImages.push(post.screenshot);
+          }
+          if (post.urlToImage && !allImages.includes(post.urlToImage)) {
+            allImages.push(post.urlToImage);
+          }
+          if (post.thumbnailUrl && !allImages.includes(post.thumbnailUrl)) {
+            allImages.push(post.thumbnailUrl);
+          }
+
+          return allImages.length > 0 && (
+            <div className={`grid gap-2 mb-4 ${allImages.length === 1 ? 'grid-cols-1' : 'grid-cols-2'}`}>
+              {allImages.slice(0, 4).map((image, index) => (
+                !imageError[`img-${index}`] && (
+                  <div key={index} className="relative overflow-hidden rounded-lg border border-gray-200 dark:border-gray-600">
+                    <img
+                      src={image}
+                      alt={`Content ${index + 1}`}
+                      className="w-full h-48 object-cover hover:scale-105 transition-transform duration-200 cursor-pointer"
+                      onError={() => handleImageError(`img-${index}`)}
+                      onClick={() => window.open(image, '_blank')}
+                    />
+                    {allImages.length > 4 && index === 3 && (
+                      <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+                        <span className="text-white font-semibold">+{allImages.length - 4} more</span>
+                      </div>
+                    )}
+                  </div>
+                )
+              ))}
+            </div>
+          );
+        })()}
 
         {/* Tags */}
         {post.tags && post.tags.length > 0 && (

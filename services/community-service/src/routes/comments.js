@@ -6,17 +6,17 @@ const { getUserId, getUserEmail, getUserDisplayName } = require('../middleware/a
 
 const logger = new Logger('community-service');
 
-// Get comments for a post (Facebook-style with pagination)
-router.get('/:postId', async (req, res) => {
+// Get comments for a link (Facebook-style with pagination)
+router.get('/:linkId', async (req, res) => {
   try {
-    const { postId } = req.params;
+    const { linkId } = req.params;
     const { limit = 10, offset = 0, loadMore = false } = req.query;
 
-    logger.info('Get comments request', { postId, limit, offset, loadMore });
+    logger.info('Get comments request', { linkId, limit, offset, loadMore });
 
-    // Get comments for the post (workaround for missing composite index)
+    // Get comments for the link (workaround for missing composite index)
     const snapshot = await db.collection(collections.COMMENTS)
-      .where('postId', '==', postId)
+      .where('linkId', '==', linkId)
       .get();
 
     // Sort and paginate in memory (temporary workaround)
@@ -34,15 +34,41 @@ router.get('/:postId', async (req, res) => {
     const paginatedComments = allComments.slice(startIndex, endIndex);
 
     const comments = paginatedComments.map(data => {
+      // Enhanced fallback logic for displayName
+      let displayName = 'Anonymous User';
+      let email = null;
+
+      // Check all possible email sources
+      if (data.author?.email) {
+        email = data.author.email;
+      } else if (data.userEmail) {
+        email = data.userEmail;
+      } else if (data.user?.email) {
+        email = data.user.email;
+      }
+
+      // Check all possible displayName sources
+      if (data.author?.displayName && data.author.displayName !== 'Anonymous User') {
+        displayName = data.author.displayName;
+      } else if (data.userDisplayName) {
+        displayName = data.userDisplayName;
+      } else if (data.user?.displayName) {
+        displayName = data.user.displayName;
+      } else if (email) {
+        // Generate displayName from email
+        const emailPrefix = email.split('@')[0];
+        displayName = emailPrefix.charAt(0).toUpperCase() + emailPrefix.slice(1);
+      }
+
       return {
         id: data.id,
-        postId: data.postId,
+        linkId: data.linkId,
         content: data.content,
         author: {
-          uid: data.author?.uid || data.userId,
-          email: data.author?.email || data.userEmail,
-          displayName: data.author?.displayName || 'Anonymous User',
-          photoURL: data.author?.photoURL || null
+          uid: data.author?.uid || data.userId || data.user?.uid,
+          email: email,
+          displayName: displayName,
+          photoURL: data.author?.photoURL || data.user?.photoURL || null
         },
         voteScore: data.voteScore || 0,
         replyCount: data.replyCount || 0,
@@ -71,7 +97,7 @@ router.get('/:postId', async (req, res) => {
     });
 
   } catch (error) {
-    logger.error('Get comments error', { error: error.message, postId: req.params.postId });
+    logger.error('Get comments error', { error: error.message, linkId: req.params.linkId });
     res.status(500).json({
       success: false,
       error: 'Failed to get comments'
@@ -82,26 +108,26 @@ router.get('/:postId', async (req, res) => {
 // Create a new comment (Facebook-style)
 router.post('/', async (req, res) => {
   try {
-    const { postId, content, parentId } = req.body;
+    const { linkId, content, parentId } = req.body;
 
     // Get user info from auth middleware or request body
     const userId = getUserId(req);
     const userEmail = getUserEmail(req);
     const displayName = getUserDisplayName(req);
 
-    logger.info('Create comment request', { postId, userId, parentId });
+    logger.info('Create comment request', { linkId, userId, parentId, userEmail, displayName });
 
     // Validate required fields
-    if (!postId || !content || !userId) {
+    if (!linkId || !content || !userId) {
       return res.status(400).json({
         success: false,
-        error: 'Missing required fields: postId, content, userId'
+        error: 'Missing required fields: linkId, content, userId'
       });
     }
 
     // Create comment object with enhanced fields
     const newComment = {
-      postId,
+      linkId,
       content: content.trim(),
       author: {
         uid: userId,
@@ -128,15 +154,15 @@ router.post('/', async (req, res) => {
     // Add comment to Firestore
     const commentRef = await db.collection(collections.COMMENTS).add(newComment);
 
-    // Update post comment count
-    await updatePostCommentCount(postId);
+    // Update link comment count
+    await updateLinkCommentCount(linkId);
 
     // If this is a reply, update parent comment reply count
     if (parentId) {
       await updateCommentReplyCount(parentId);
     }
 
-    logger.info('Comment created', { commentId: commentRef.id, postId, userId });
+    logger.info('Comment created', { commentId: commentRef.id, linkId, userId });
 
     // Return created comment
     const createdComment = {
@@ -161,29 +187,28 @@ router.post('/', async (req, res) => {
   }
 });
 
-// Helper function to update post comment count
-async function updatePostCommentCount(postId) {
+// Helper function to update link comment count
+async function updateLinkCommentCount(linkId) {
   try {
     const commentsSnapshot = await db.collection(collections.COMMENTS)
-      .where('postId', '==', postId)
+      .where('linkId', '==', linkId)
       .where('status', '==', 'active')
       .get();
 
     const commentCount = commentsSnapshot.size;
 
-    // Update post
-    const postsQuery = await db.collection(collections.POSTS)
-      .where('id', '==', postId)
-      .get();
+    // Update link
+    const linkRef = db.collection(collections.POSTS).doc(linkId);
+    const linkDoc = await linkRef.get();
 
-    if (!postsQuery.empty) {
-      await postsQuery.docs[0].ref.update({ commentCount });
+    if (linkDoc.exists) {
+      await linkRef.update({ commentCount });
     }
 
-    logger.info('Post comment count updated', { postId, commentCount });
+    logger.info('Link comment count updated', { linkId, commentCount });
     return commentCount;
   } catch (error) {
-    logger.error('Update post comment count error', { error: error.message, postId });
+    logger.error('Update link comment count error', { error: error.message, linkId });
     throw error;
   }
 }
@@ -236,7 +261,7 @@ router.get('/:commentId/replies', async (req, res) => {
       const data = doc.data();
       return {
         id: doc.id,
-        postId: data.postId,
+        linkId: data.linkId,
         content: data.content,
         author: {
           uid: data.author?.uid || data.userId,
@@ -384,8 +409,8 @@ router.delete('/:commentId', async (req, res) => {
       updatedAt: new Date()
     });
 
-    // Update post comment count
-    await updatePostCommentCount(commentData.postId);
+    // Update link comment count
+    await updateLinkCommentCount(commentData.linkId);
 
     // If this comment has a parent, update parent reply count
     if (commentData.parentId) {

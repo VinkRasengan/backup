@@ -1,10 +1,10 @@
 {
   "name": "api-gateway",
   "version": "1.0.0",
-  "description": "API Gateway for Anti-Fraud Platform Microservices",
-  "main": "src/app.js",
+  "description": "API Gateway for Anti-Fraud Platform Microservices",  "main": "app.js",
   "scripts": {
-    "start": "node src/app.js",
+    "start": "node app.js",
+    "start:debug": "node start-debug.js",
     "start:full": "node src/app.js",
     "dev": "nodemon src/app.js",
     "test": "jest",

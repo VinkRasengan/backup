@@ -1,21 +1,33 @@
+# Render deployment configuration for factcheck-frontend
+# Updated for proper production deployment
+
 services:
   - type: web
     name: factcheck-frontend
-    env: static
-    buildCommand: cd client && npm install && npm run build
-    staticPublishPath: ./client/build
+    env: node
+    plan: free
+    region: singapore
+    rootDir: client
+    buildCommand: npm install
+    startCommand: npm start
     envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3000
       - key: REACT_APP_API_URL
         value: https://factcheck-api-gateway.onrender.com
       - key: REACT_APP_FIREBASE_API_KEY
-        sync: false
+        value: AIzaSyCpeeTLujKruzK14siuDzGmpTadzhfvccI
       - key: REACT_APP_FIREBASE_AUTH_DOMAIN
-        sync: false
+        value: factcheck-1d6e8.firebaseapp.com
       - key: REACT_APP_FIREBASE_PROJECT_ID
-        sync: false
+        value: factcheck-1d6e8
       - key: REACT_APP_FIREBASE_STORAGE_BUCKET
-        sync: false
+        value: factcheck-1d6e8.firebasestorage.app
       - key: REACT_APP_FIREBASE_MESSAGING_SENDER_ID
-        sync: false
+        value: 583342362302
       - key: REACT_APP_FIREBASE_APP_ID
-        sync: false
+        value: 1:583342362302:web:ee97918d159c90e5b8d8ef
+      - key: GENERATE_SOURCEMAP
+        value: false

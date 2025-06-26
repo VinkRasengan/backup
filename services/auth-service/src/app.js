@@ -4,7 +4,19 @@ const helmet = require('helmet');
 const morgan = require('morgan');
 const rateLimit = require('express-rate-limit');
 const promClient = require('prom-client');
-require('dotenv').config();
+const path = require('path');
+
+// Load environment variables from root directory with fallback
+const rootEnvPath = path.join(__dirname, '../../../../.env');
+const fs = require('fs');
+
+// Try to load from root first, fallback to local if not found
+if (fs.existsSync(rootEnvPath)) {
+  require('dotenv').config({ path: rootEnvPath });
+} else {
+  // Fallback for production environments (Render, Docker)
+  require('dotenv').config();
+}
 
 // Import shared utilities
 const Logger = require('../shared/utils/logger');

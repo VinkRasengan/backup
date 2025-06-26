@@ -6,10 +6,10 @@ const getApiBaseUrl = () => {
     return process.env.REACT_APP_API_URL;
   }
   if (process.env.NODE_ENV === 'production') {
-    return '/api';
+    return process.env.REACT_APP_API_GATEWAY_URL || '/api';
   }
 
-  // Fixed: Use API Gateway port 8080 
+  // Fixed: Use API Gateway port 8080
   return 'http://localhost:8080/api';
 };
 
@@ -172,7 +172,7 @@ class CommunityDataManager {
                  localStorage.getItem('backendToken') ||
                  localStorage.getItem('firebaseToken');
 
-    const response = await fetch(`${getApiBaseUrl()}/community/posts?${urlParams}`, {
+    const response = await fetch(`${getApiBaseUrl()}/community/links?${urlParams}`, {
       headers: {
         'Authorization': `Bearer ${token}`,
         'Cache-Control': 'max-age=300', // 5 minutes cache

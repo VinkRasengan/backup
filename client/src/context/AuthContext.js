@@ -266,12 +266,10 @@ export const AuthProvider = ({ children }) => {
       // Update profile with name
       await firebaseUpdateProfile(user, {
         displayName: `${userData.firstName} ${userData.lastName}`
-      });
-
-      // Configure action code settings for email verification
+      });      // Configure action code settings for email verification
       const actionCodeSettings = {
-        url: window.location.origin + '/verify-email',
-        handleCodeInApp: true
+        url: window.location.origin + '/dashboard',
+        handleCodeInApp: false
       };
 
       // Send email verification with custom settings
@@ -341,51 +339,7 @@ export const AuthProvider = ({ children }) => {
     } catch (error) {
       console.error('Logout error:', error);
       toast.error('Logout failed');
-    }
-  };
-
-  const verifyEmail = async (actionCode) => {
-    try {
-      console.log('Starting email verification with action code:', actionCode);
-
-      // Firebase Auth handles email verification with action codes
-      const { applyActionCode, checkActionCode } = await import('firebase/auth');
-
-      // First check the action code to get info
-      try {
-        const actionCodeInfo = await checkActionCode(auth, actionCode);
-        console.log('Action code info:', actionCodeInfo);
-      } catch (checkError) {
-        console.log('Action code check failed:', checkError);
-        // Continue anyway, applyActionCode will give us the real error
-      }
-
-      // Apply the action code to verify email
-      await applyActionCode(auth, actionCode);
-      console.log('Email verification applied successfully');
-
-      toast.success('Email xác minh thành công! Bạn có thể đăng nhập ngay bây giờ.');
-      return { success: true };
-
-    } catch (error) {
-      console.error('Email verification error:', error);
-      console.error('Error code:', error.code);
-      console.error('Error message:', error.message);
-
-      let message;
-      if (error.code === 'auth/expired-action-code') {
-        message = 'Link xác minh đã hết hạn. Vui lòng yêu cầu link mới.';
-      } else if (error.code === 'auth/invalid-action-code') {
-        message = 'Link xác minh không hợp lệ. Vui lòng kiểm tra email để lấy link đúng.';
-      } else if (error.code === 'auth/user-disabled') {
-        message = 'Tài khoản này đã bị vô hiệu hóa.';
-      } else {
-        message = error.message || 'Xác minh email thất bại';
-      }
-      toast.error(message);
-      return { success: false, error: message };
-    }
-  };
+    }  };
 
   const resendVerificationEmail = async () => {
     try {
@@ -397,12 +351,10 @@ export const AuthProvider = ({ children }) => {
       if (currentUser.emailVerified) {
         toast.info('Your email is already verified!');
         return { success: true, message: 'Email already verified' };
-      }
-
-      // Configure action code settings for email verification
+      }      // Configure action code settings for email verification
       const actionCodeSettings = {
-        url: window.location.origin + '/verify-email',
-        handleCodeInApp: true
+        url: window.location.origin + '/dashboard',
+        handleCodeInApp: false
       };
 
       await sendEmailVerification(currentUser, actionCodeSettings);
@@ -554,14 +506,12 @@ export const AuthProvider = ({ children }) => {
     const token = getAuthToken();
     return token ? { 'Authorization': `Bearer ${token}` } : {};
   };
-
   const value = {
     user,
     loading,
     login,
     register,
     logout,
-    verifyEmail,
     resendVerificationEmail,
     forgotPassword,
     resetPassword,

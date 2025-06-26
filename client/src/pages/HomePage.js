@@ -5,7 +5,6 @@ import TrendingArticles from '../components/TrendingArticles';
 import AnimatedStats from '../components/AnimatedStats';
 import CommunityPreview from '../components/CommunityPreview';
 import LatestNews from '../components/LatestNews';
-import { ActionCard } from '../components/ui/StandardCard';
 import { ResponsiveContainer, Section } from '../components/ui/ResponsiveLayout';
 import EnhancedHeroSection from '../components/hero/EnhancedHeroSection';
 import ScrollTriggeredSection from '../components/animations/ScrollTriggeredSection';
@@ -18,6 +17,8 @@ const HomePage = () => {
   const containerRef = useRef(null);
   const featuresRef = useRef(null);
   const ctaRef = useRef(null);
+
+
 
   // Enhanced features with new icons and descriptions
   const features = [

@@ -6,8 +6,8 @@ const { getUserId, getUserEmail } = require('../middleware/auth');
 
 const logger = new Logger('community-service');
 
-// Helper function to update post vote count and score using atomic transaction
-async function updatePostVoteCount(linkId) {
+// Helper function to update link vote count and score using atomic transaction
+async function updateLinkVoteCount(linkId) {
   try {
     // Use Firestore transaction for atomic updates
     return await db.runTransaction(async (transaction) => {
@@ -38,13 +38,12 @@ async function updatePostVoteCount(linkId) {
       // Calculate Reddit-style score
       stats.score = stats.upvotes - stats.downvotes;
 
-      // Update post with vote statistics atomically
-      const postsQuery = await transaction.get(
-        db.collection(collections.POSTS).where('id', '==', linkId)
-      );
+      // Update link with vote statistics atomically
+      const linkRef = db.collection(collections.POSTS).doc(linkId);
+      const linkDoc = await transaction.get(linkRef);
 
-      if (!postsQuery.empty) {
-        transaction.update(postsQuery.docs[0].ref, {
+      if (linkDoc.exists) {
+        transaction.update(linkRef, {
           voteCount: stats.total,
           voteScore: stats.score,
           voteStats: {
@@ -161,8 +160,8 @@ router.post('/:linkId', async (req, res) => {
       return { voteDoc, action };
     });
 
-    // Update vote count on the post (async, don't wait for better performance)
-    updatePostVoteCount(linkId).catch(error => {
+    // Update vote count on the link (async, don't wait for better performance)
+    updateLinkVoteCount(linkId).catch(error => {
       logger.error('Background vote count update failed', { error: error.message, linkId });
     });
 
@@ -386,8 +385,8 @@ router.delete('/:linkId', async (req, res) => {
     if (!userVoteQuery.empty) {
       await userVoteQuery.docs[0].ref.delete();
 
-      // Update vote count on the post (async, don't wait)
-      updatePostVoteCount(linkId).catch(error => {
+      // Update vote count on the link (async, don't wait)
+      updateLinkVoteCount(linkId).catch(error => {
         logger.error('Background vote count update failed', { error: error.message, linkId });
       });
 
@@ -482,9 +481,9 @@ router.post('/batch', async (req, res) => {
     // Commit batch
     await batch.commit();
 
-    // Update vote counts for all affected posts
+    // Update vote counts for all affected links
     const uniqueLinkIds = [...new Set(votes.map(v => v.linkId))];
-    await Promise.all(uniqueLinkIds.map(linkId => updatePostVoteCount(linkId)));
+    await Promise.all(uniqueLinkIds.map(linkId => updateLinkVoteCount(linkId)));
 
     res.json({
       success: true,
@@ -503,75 +502,86 @@ router.post('/batch', async (req, res) => {
 // Batch get vote statistics for multiple posts
 router.post('/batch/stats', async (req, res) => {
   try {
-    const { postIds } = req.body;
+    const { postIds, linkIds } = req.body;
 
-    if (!Array.isArray(postIds) || postIds.length === 0) {
+    // Support both postIds and linkIds for backward compatibility
+    const ids = postIds || linkIds;
+
+    if (!Array.isArray(ids) || ids.length === 0) {
       return res.status(400).json({
         success: false,
-        error: 'postIds array is required'
+        error: 'postIds or linkIds array is required'
       });
     }
 
     // Limit batch size to prevent timeout
-    if (postIds.length > 50) {
+    if (ids.length > 20) {
       return res.status(400).json({
         success: false,
-        error: 'Too many postIds. Maximum 50 allowed per batch.'
+        error: 'Too many IDs. Maximum 20 allowed per batch to prevent timeouts.'
       });
     }
 
-    logger.info('Batch vote stats request', { postCount: postIds.length });
+    logger.info('Batch vote stats request', { postCount: ids.length });
+
+    // Set response headers to prevent connection issues
+    res.setHeader('Connection', 'keep-alive');
+    res.setHeader('Keep-Alive', 'timeout=60, max=1000');
 
     const results = {};
 
-    // Process each post ID with timeout
-    const promises = postIds.map(async (postId) => {
-      try {
-        // Add timeout to Firebase query
-        const timeoutPromise = new Promise((_, reject) => {
-          setTimeout(() => reject(new Error('Query timeout')), 5000); // 5 second timeout
-        });
+    // Process in smaller chunks to prevent Firebase timeout
+    const chunkSize = 5;
+    for (let i = 0; i < ids.length; i += chunkSize) {
+      const chunk = ids.slice(i, i + chunkSize);
 
-        const queryPromise = db.collection(collections.VOTES)
-          .where('linkId', '==', postId)
-          .get();
+      const chunkPromises = chunk.map(async (postId) => {
+        try {
+          // Add timeout to Firebase query with shorter timeout
+          const timeoutPromise = new Promise((_, reject) => {
+            setTimeout(() => reject(new Error('Query timeout')), 3000); // 3 second timeout
+          });
 
-        const votesSnapshot = await Promise.race([queryPromise, timeoutPromise]);
+          const queryPromise = db.collection(collections.VOTES)
+            .where('linkId', '==', postId)
+            .limit(100) // Limit results to prevent large data transfer
+            .get();
 
-        const stats = {
-          total: 0,
-          upvotes: 0,
-          downvotes: 0,
-          score: 0
-        };
+          const votesSnapshot = await Promise.race([queryPromise, timeoutPromise]);
 
-        votesSnapshot.forEach((doc) => {
-          const voteType = doc.data().voteType;
-          stats.total++;
+          const stats = {
+            total: 0,
+            upvotes: 0,
+            downvotes: 0,
+            score: 0
+          };
 
-          if (voteType === 'upvote') {
-            stats.upvotes++;
-          } else if (voteType === 'downvote') {
-            stats.downvotes++;
-          }
-        });
+          votesSnapshot.forEach((doc) => {
+            const voteType = doc.data().voteType;
+            stats.total++;
 
-        stats.score = stats.upvotes - stats.downvotes;
-        return { postId, stats };
+            if (voteType === 'upvote') {
+              stats.upvotes++;
+            } else if (voteType === 'downvote') {
+              stats.downvotes++;
+            }
+          });
 
-      } catch (error) {
-        logger.error('Error fetching votes for post', { postId, error: error.message });
-        return { postId, stats: { total: 0, upvotes: 0, downvotes: 0, score: 0 } };
-      }
-    });
+          stats.score = stats.upvotes - stats.downvotes;
+          return { postId, stats };
 
-    // Execute all queries in parallel with overall timeout
-    const allResults = await Promise.all(promises);
+        } catch (error) {
+          logger.error('Error fetching votes for post', { postId, error: error.message });
+          return { postId, stats: { total: 0, upvotes: 0, downvotes: 0, score: 0 } };
+        }
+      });
 
-    // Convert to results object
-    allResults.forEach(({ postId, stats }) => {
-      results[postId] = stats;
-    });
+      // Process chunk and add to results
+      const chunkResults = await Promise.all(chunkPromises);
+      chunkResults.forEach(({ postId, stats }) => {
+        results[postId] = stats;
+      });
+    }
 
     res.json({
       success: true,
@@ -579,11 +589,14 @@ router.post('/batch/stats', async (req, res) => {
     });
 
   } catch (error) {
-    logger.error('Batch vote stats error', { error: error.message });
-    res.status(500).json({
-      success: false,
-      error: 'Failed to get batch vote stats'
-    });
+    logger.error('Batch vote stats error', { error: error.message, stack: error.stack });
+
+    if (!res.headersSent) {
+      res.status(500).json({
+        success: false,
+        error: 'Failed to get batch vote stats'
+      });
+    }
   }
 });
 

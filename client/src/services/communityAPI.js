@@ -1,7 +1,17 @@
 // Community API Service - Voting, Comments, Reports
 const getApiBaseUrl = () => {
-  // Always use relative URLs to leverage React dev server proxy
-  return '';
+  // Use environment variable if set
+  if (process.env.REACT_APP_API_URL) {
+    return process.env.REACT_APP_API_URL;
+  }
+
+  // Fallback based on environment
+  if (process.env.NODE_ENV === 'production') {
+    // Use environment variable for production API Gateway URL
+    return process.env.REACT_APP_API_GATEWAY_URL || '/api';
+  }
+
+  return 'http://localhost:8080'; // Development fallback (API Gateway port)
 };
 
 const API_BASE_URL = getApiBaseUrl();
@@ -34,27 +44,26 @@ class CommunityAPI {
     return response.json();
   }
 
-  // POSTS ENDPOINTS
-
-  // Get community posts
+  // LINKS ENDPOINTS
+  // Get community links - use API Gateway routing
   async getPosts(params = {}) {
     try {
       const queryParams = new URLSearchParams(params);
-      const response = await fetch(`${this.baseURL}/api/posts?${queryParams}`, {
+      const response = await fetch(`${this.baseURL}/api/links?${queryParams}`, {
         method: 'GET',
         headers: this.getAuthHeaders()
       });
       return await this.handleResponse(response);
     } catch (error) {
-      console.error('Get posts error:', error);
+      console.error('Get links error:', error);
       throw error;
     }
   }
 
-  // Submit to community (create new post)
+  // Submit to community (create new link) - use API Gateway routing
   async submitToCommunity(data) {
     try {
-      const response = await fetch(`${this.baseURL}/api/posts`, {
+      const response = await fetch(`${this.baseURL}/api/links`, {
         method: 'POST',
         headers: this.getAuthHeaders(),
         body: JSON.stringify(data)
@@ -66,10 +75,10 @@ class CommunityAPI {
     }
   }
 
-  // Get my submissions (filter posts by user)
+  // Get my submissions (filter links by user) - use API Gateway routing
   async getMySubmissions() {
     try {
-      const response = await fetch(`${this.baseURL}/api/posts?userPostsOnly=true`, {
+      const response = await fetch(`${this.baseURL}/api/links?userPostsOnly=true`, {
         method: 'GET',
         headers: this.getAuthHeaders()
       });
@@ -80,10 +89,10 @@ class CommunityAPI {
     }
   }
 
-  // Delete submission (delete post)
+  // Delete submission (delete link) - use API Gateway routing
   async deleteSubmission(id) {
     try {
-      const response = await fetch(`${this.baseURL}/api/posts/${id}`, {
+      const response = await fetch(`${this.baseURL}/api/links/${id}`, {
         method: 'DELETE',
         headers: this.getAuthHeaders()
       });
@@ -103,8 +112,8 @@ class CommunityAPI {
       const authToken = this.getAuthToken();
       if (!userId && authToken) {
         // Try to extract user info from token or get from auth context
-        userId = this.getCurrentUserId();
-        userEmail = this.getCurrentUserEmail();
+        userId = await this.getCurrentUserId();
+        userEmail = await this.getCurrentUserEmail();
       }
 
       const response = await fetch(`${this.baseURL}/api/votes/${linkId}`, {
@@ -172,16 +181,16 @@ class CommunityAPI {
     try {
       // Get user info from auth context if not provided
       if (!userId) {
-        userId = this.getCurrentUserId();
-        userEmail = this.getCurrentUserEmail();
-        displayName = this.getCurrentUserDisplayName();
+        userId = await this.getCurrentUserId();
+        userEmail = await this.getCurrentUserEmail();
+        displayName = await this.getCurrentUserDisplayName();
       }
 
       const response = await fetch(`${this.baseURL}/api/comments`, {
         method: 'POST',
         headers: this.getAuthHeaders(),
         body: JSON.stringify({
-          postId: linkId,
+          linkId: linkId,
           content,
           userId,
           userEmail,
@@ -394,11 +403,12 @@ class CommunityAPI {
   }
 
   // Get current user ID from auth context
-  getCurrentUserId() {
+  async getCurrentUserId() {
     try {
-      // Try to get from Firebase auth
-      if (window.firebase && window.firebase.auth && window.firebase.auth().currentUser) {
-        return window.firebase.auth().currentUser.uid;
+      // Try to get from Firebase auth (v9+ modular SDK)
+      const { auth } = await import('../config/firebase');
+      if (auth.currentUser) {
+        return auth.currentUser.uid;
       }
 
       // Try to get from localStorage
@@ -416,11 +426,12 @@ class CommunityAPI {
   }
 
   // Get current user email from auth context
-  getCurrentUserEmail() {
+  async getCurrentUserEmail() {
     try {
-      // Try to get from Firebase auth
-      if (window.firebase && window.firebase.auth && window.firebase.auth().currentUser) {
-        return window.firebase.auth().currentUser.email;
+      // Try to get from Firebase auth (v9+ modular SDK)
+      const { auth } = await import('../config/firebase');
+      if (auth.currentUser) {
+        return auth.currentUser.email;
       }
 
       // Try to get from localStorage
@@ -438,18 +449,20 @@ class CommunityAPI {
   }
 
   // Get current user display name from auth context
-  getCurrentUserDisplayName() {
+  async getCurrentUserDisplayName() {
     try {
-      // Try to get from Firebase auth
-      if (window.firebase && window.firebase.auth && window.firebase.auth().currentUser) {
-        return window.firebase.auth().currentUser.displayName;
+      // Try to get from Firebase auth (v9+ modular SDK)
+      const { auth } = await import('../config/firebase');
+      if (auth.currentUser) {
+        const currentUser = auth.currentUser;
+        return currentUser.displayName || currentUser.email?.split('@')[0] || null;
       }
 
       // Try to get from localStorage
       const user = localStorage.getItem('user');
       if (user) {
         const userData = JSON.parse(user);
-        return userData.displayName || userData.email?.split('@')[0];
+        return userData.displayName || userData.email?.split('@')[0] || null;
       }
 
       return null;
@@ -513,4 +526,5 @@ class CommunityAPI {
   }
 }
 
-export default new CommunityAPI();
+const communityAPIInstance = new CommunityAPI();
+export default communityAPIInstance;

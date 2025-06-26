@@ -72,56 +72,17 @@ class GoogleSafeBrowsingService {
       };
 
     } catch (error) {
-      logger.warn('Google Safe Browsing API error', { error: error.message, url });
-      return this.getMockResult(url);
-    }
-  }
-
-  /**
-   * Get mock result when API is not available
-   */
-  getMockResult(url) {
-    try {
-      const hash = crypto.createHash('md5').update(url).digest('hex');
-      const riskScore = parseInt(hash.substring(0, 2), 16) % 100;
-
-      // Simulate some URLs being flagged
-      const isMalicious = riskScore > 92; // 8% chance of being flagged
-      
-      let threatTypes = [];
-      let threatDetails = [];
-
-      if (isMalicious) {
-        // Randomly assign threat types
-        const possibleThreats = ['MALWARE', 'SOCIAL_ENGINEERING', 'UNWANTED_SOFTWARE'];
-        const threatType = possibleThreats[parseInt(hash.substring(2, 4), 16) % possibleThreats.length];
-        
-        threatTypes = [threatType];
-        threatDetails = [{
-          threatType,
-          platformType: 'ANY_PLATFORM',
-          threatEntryType: 'URL'
-        }];
-      }
-
-      return {
-        success: true,
-        url,
-        isMalicious,
-        threatTypes,
-        threatDetails,
-        mock: true,
-        analyzedAt: new Date().toISOString()
-      };
-
-    } catch (error) {
+      logger.error('Google Safe Browsing API error', { error: error.message, url });
       return {
         success: false,
-        error: 'Invalid URL format',
-        url
+        error: 'Google Safe Browsing API unavailable',
+        url,
+        analyzedAt: new Date().toISOString()
       };
     }
   }
+
+
 
   /**
    * Get service status

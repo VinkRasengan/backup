@@ -150,7 +150,7 @@ const TrendingArticles = () => {
     // Try to fetch real data in background
     try {
       console.log('🔄 Fetching real trending data from API...');
-      const response = await fetch(`${getApiBaseUrl()}/community/posts?sort=trending&limit=5`, {
+      const response = await fetch(`${getApiBaseUrl()}/community/links?sort=trending&limit=5`, {
         headers: {
           'Cache-Control': 'max-age=60',
           'Content-Type': 'application/json'
@@ -163,25 +163,25 @@ const TrendingArticles = () => {
         const data = await response.json();
         console.log('📊 API Response data:', data);
 
-        if (data.success && data.data && data.data.posts && data.data.posts.length > 0) {
-          console.log('✅ Updated with real trending articles:', data.data.posts.length);
+        if (data.success && data.data && data.data.links && data.data.links.length > 0) {
+          console.log('✅ Updated with real trending articles:', data.data.links.length);
 
           // Transform API data to match our format
-          const transformedPosts = data.data.posts.map(post => ({
-            id: post.id,
-            title: post.title,
-            url: post.url,
-            credibilityScore: post.trustScore || 50,
-            voteCount: post.voteStats?.total || 0,
-            commentCount: post.commentsCount || 0,
-            engagementScore: (post.voteStats?.total || 0) * (post.trustScore || 50) / 10,
-            createdAt: post.createdAt,
-            author: post.author || { firstName: 'Unknown', lastName: 'User' }
+          const transformedPosts = data.data.links.map(link => ({
+            id: link.id,
+            title: link.title,
+            url: link.url,
+            credibilityScore: link.trustScore || 50,
+            voteCount: link.voteStats?.total || 0,
+            commentCount: link.commentsCount || 0,
+            engagementScore: (link.voteStats?.total || 0) * (link.trustScore || 50) / 10,
+            createdAt: link.createdAt,
+            author: link.author || { firstName: 'Unknown', lastName: 'User' }
           }));
 
           setTrendingArticles(transformedPosts);
         } else {
-          console.log('⚠️ API returned no posts, keeping mock data');
+          console.log('⚠️ API returned no links, keeping mock data');
         }
       } else {
         console.log('⚠️ API request failed:', response.status, response.statusText);

@@ -51,60 +51,17 @@ class IPQualityScoreService {
       }
 
     } catch (error) {
-      logger.warn('IPQualityScore API error', { error: error.message, url });
-      return this.getMockResult(url);
-    }
-  }
-
-  /**
-   * Get mock result when API is not available
-   */
-  getMockResult(url) {
-    try {
-      const domain = new URL(url).hostname;
-      const hash = crypto.createHash('md5').update(url).digest('hex');
-      const riskScore = parseInt(hash.substring(0, 2), 16) % 100;
-
-      // Simulate various risk factors
-      const isSuspicious = riskScore > 70;
-      const isMalware = riskScore > 85;
-      const isPhishing = riskScore > 90;
-      const isProxy = parseInt(hash.substring(2, 4), 16) % 100 > 80;
-      const isVPN = parseInt(hash.substring(4, 6), 16) % 100 > 85;
-
-      // Mock country codes
-      const countries = ['US', 'CN', 'RU', 'DE', 'GB', 'FR', 'JP', 'CA', 'AU', 'BR'];
-      const countryCode = countries[parseInt(hash.substring(6, 8), 16) % countries.length];
-
-      // Mock categories
-      const categories = ['Business', 'Technology', 'News', 'Entertainment', 'Shopping', 'Social Media', 'Unknown'];
-      const category = categories[parseInt(hash.substring(8, 10), 16) % categories.length];
-
-      return {
-        success: true,
-        url,
-        riskScore,
-        isSuspicious,
-        isMalware,
-        isPhishing,
-        isProxy,
-        isVPN,
-        countryCode,
-        language: 'en',
-        category,
-        domainAge: Math.floor(Math.random() * 3650) + 30, // 30-3650 days
-        mock: true,
-        analyzedAt: new Date().toISOString()
-      };
-
-    } catch (error) {
+      logger.error('IPQualityScore API error', { error: error.message, url });
       return {
         success: false,
-        error: 'Invalid URL format',
-        url
+        error: 'IPQualityScore API unavailable',
+        url,
+        analyzedAt: new Date().toISOString()
       };
     }
   }
+
+
 
   /**
    * Check IP address
@@ -146,37 +103,17 @@ class IPQualityScoreService {
       }
 
     } catch (error) {
-      logger.warn('IPQualityScore IP API error', { error: error.message, ip });
-      return this.getMockIPResult(ip);
+      logger.error('IPQualityScore IP API error', { error: error.message, ip });
+      return {
+        success: false,
+        error: 'IPQualityScore API unavailable',
+        ip,
+        analyzedAt: new Date().toISOString()
+      };
     }
   }
 
-  /**
-   * Get mock IP result
-   */
-  getMockIPResult(ip) {
-    const hash = crypto.createHash('md5').update(ip).digest('hex');
-    const fraudScore = parseInt(hash.substring(0, 2), 16) % 100;
 
-    const countries = ['US', 'CN', 'RU', 'DE', 'GB', 'FR', 'JP', 'CA', 'AU', 'BR'];
-    const countryCode = countries[parseInt(hash.substring(2, 4), 16) % countries.length];
-
-    return {
-      success: true,
-      ip,
-      fraudScore,
-      countryCode,
-      region: 'Mock Region',
-      city: 'Mock City',
-      isp: 'Mock ISP',
-      isProxy: fraudScore > 80,
-      isVPN: fraudScore > 85,
-      isTor: fraudScore > 95,
-      isCrawler: fraudScore < 10,
-      mock: true,
-      analyzedAt: new Date().toISOString()
-    };
-  }
 
   /**
    * Get service status
