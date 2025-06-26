@@ -34,15 +34,30 @@ router.get('/:linkId', async (req, res) => {
     const paginatedComments = allComments.slice(startIndex, endIndex);
 
     const comments = paginatedComments.map(data => {
-      // Better fallback logic for displayName
+      // Enhanced fallback logic for displayName
       let displayName = 'Anonymous User';
+      let email = null;
 
+      // Check all possible email sources
+      if (data.author?.email) {
+        email = data.author.email;
+      } else if (data.userEmail) {
+        email = data.userEmail;
+      } else if (data.user?.email) {
+        email = data.user.email;
+      }
+
+      // Check all possible displayName sources
       if (data.author?.displayName && data.author.displayName !== 'Anonymous User') {
         displayName = data.author.displayName;
-      } else if (data.author?.email) {
-        displayName = data.author.email.split('@')[0];
-      } else if (data.userEmail) {
-        displayName = data.userEmail.split('@')[0];
+      } else if (data.userDisplayName) {
+        displayName = data.userDisplayName;
+      } else if (data.user?.displayName) {
+        displayName = data.user.displayName;
+      } else if (email) {
+        // Generate displayName from email
+        const emailPrefix = email.split('@')[0];
+        displayName = emailPrefix.charAt(0).toUpperCase() + emailPrefix.slice(1);
       }
 
       return {
@@ -50,10 +65,10 @@ router.get('/:linkId', async (req, res) => {
         linkId: data.linkId,
         content: data.content,
         author: {
-          uid: data.author?.uid || data.userId,
-          email: data.author?.email || data.userEmail,
+          uid: data.author?.uid || data.userId || data.user?.uid,
+          email: email,
           displayName: displayName,
-          photoURL: data.author?.photoURL || null
+          photoURL: data.author?.photoURL || data.user?.photoURL || null
         },
         voteScore: data.voteScore || 0,
         replyCount: data.replyCount || 0,

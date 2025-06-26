@@ -30,12 +30,12 @@ const logger = {
 };
 
 const app = express();
-const PORT = process.env.PORT || 8081;
+const PORT = process.env.PORT || 8080;
 const SERVICE_NAME = 'api-gateway';
 
 // Service configuration
 const services = {
-  'auth-service': process.env.AUTH_SERVICE_URL || 'http://localhost:3001',
+  'auth-service': process.env.AUTH_SERVICE_URL || 'http://localhost:3001', // User management only (Firebase Auth for login/register)
   'link-service': process.env.LINK_SERVICE_URL || 'http://localhost:3002',
   'community-service': process.env.COMMUNITY_SERVICE_URL || 'http://localhost:3003',
   'chat-service': process.env.CHAT_SERVICE_URL || 'http://localhost:3004',
@@ -346,29 +346,46 @@ app.use('/api/links', createProxyMiddleware({
   }
 }));
 
-// Votes routes (proxy to community service)
-app.use('/api/votes', createProxyMiddleware({
-  target: services['community-service'],
-  changeOrigin: true,
-  pathRewrite: { '^/api/votes': '/votes' },
-  onError: (err, req, res) => {
-    logger.error('Community service proxy error (votes)', { error: err.message });
-    if (!res.headersSent) {
-      res.status(503).json({
-        error: 'Community service unavailable',
-        code: 'SERVICE_UNAVAILABLE'
-      });
-    }
-  }
-}));
-
 // Comments routes (proxy to community service)
 app.use('/api/comments', createProxyMiddleware({
   target: services['community-service'],
   changeOrigin: true,
+  timeout: 30000,
+  proxyTimeout: 30000,
   pathRewrite: { '^/api/comments': '/comments' },
+  onProxyReq: (proxyReq, req, res) => {
+    logger.info('Proxying comments request', {
+      method: req.method,
+      url: req.url,
+      target: services['community-service']
+    });
+
+    // Forward authentication headers
+    if (req.headers.authorization) {
+      proxyReq.setHeader('Authorization', req.headers.authorization);
+    }
+
+    // Handle JSON body for POST/PUT requests
+    if (req.body && (req.method === 'POST' || req.method === 'PUT')) {
+      const bodyData = JSON.stringify(req.body);
+      proxyReq.setHeader('Content-Type', 'application/json');
+      proxyReq.setHeader('Content-Length', Buffer.byteLength(bodyData));
+      proxyReq.write(bodyData);
+    }
+  },
+  onProxyRes: (proxyRes, req, res) => {
+    logger.info('Comments proxy response', {
+      status: proxyRes.statusCode,
+      url: req.url
+    });
+  },
   onError: (err, req, res) => {
-    logger.error('Community service proxy error (comments)', { error: err.message });
+    logger.error('Community service proxy error (comments)', { 
+      error: err.message,
+      stack: err.stack,
+      url: req.url,
+      method: req.method
+    });
     if (!res.headersSent) {
       res.status(503).json({
         error: 'Community service unavailable',
@@ -626,8 +643,9 @@ const server = app.listen(PORT, () => {
   console.log(`  - /api/links/* (proxied to community service)`);
   console.log(`  - /api/posts/* (backward compatibility - proxied to community service)`);
   console.log(`  - /api/comments/* (proxied to community service)`);
-  console.log(`  - /api/auth/* (proxied to auth service)`);
-  console.log(`  - /api/users/* (proxied to auth service)`);
+  console.log(`  - /api/reports/* (proxied to community service)`);
+  console.log(`  - /api/auth/* (proxied to auth service - user management only)`);
+  console.log(`  - /api/users/* (proxied to auth service - user management only)`);
   console.log(`  - /link-check/* (proxied to link service)`);
   console.log(`  - /api/chat/* (proxied to chat service)`);
   console.log(`  - /api/news/* (proxied to news service)`);

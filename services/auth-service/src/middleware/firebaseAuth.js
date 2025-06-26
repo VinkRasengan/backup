@@ -1,5 +1,5 @@
 const { auth } = require('../config/firebase');
-const Logger = require('../../../shared/utils/logger');
+const Logger = require('../../shared/utils/logger');
 
 const logger = new Logger('auth-service');
 
