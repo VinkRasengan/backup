@@ -13,7 +13,7 @@ import {
 import { useTheme } from '../../context/ThemeContext';
 import VoteComponent from './VoteComponent';
 import CommentSection from './CommentSection.jsx';
-import CommentPreview from './CommentPreview';
+import CommentPreview from './CommentPreview.jsx';
 import {
   useResponsive,
   getSmartImageLayout,
@@ -326,7 +326,7 @@ const UnifiedPostCard = ({
                 }`}
               >
                 <MessageCircle size={16} />
-                <span>{post.commentCount || 0}</span>
+                <span>{post.commentCount || post.commentsCount || 0} bình luận</span>
               </button>
 
               <button className="flex items-center space-x-2 px-3 py-1.5 rounded-full text-sm text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700 transition-colors">
@@ -379,7 +379,7 @@ const UnifiedPostCard = ({
               <div className="p-4">
                 <div className="flex justify-between items-center mb-4">
                   <h3 className="font-semibold text-gray-900 dark:text-white">
-                    Bình luận ({post.commentCount || 0})
+                    Bình luận ({post.commentCount || post.commentsCount || 0})
                   </h3>
                   <button
                     onClick={() => setShowFullComments(false)}
@@ -643,8 +643,8 @@ const UnifiedPostCard = ({
                   }`}
                 >
                   <MessageCircle size={12} className="sm:w-4 sm:h-4" />
-                  <span className="hidden sm:inline">{post.commentCount || 0} Comments</span>
-                  <span className="sm:hidden">{post.commentCount || 0}</span>
+                  <span className="hidden sm:inline">{post.commentCount || post.commentsCount || 0} Comments</span>
+                  <span className="sm:hidden">{post.commentCount || post.commentsCount || 0}</span>
                 </button>
 
                 <button

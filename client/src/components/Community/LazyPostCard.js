@@ -13,7 +13,7 @@ import {
 import { gsap } from '../../utils/gsap';
 import { useIntersectionObserver } from '../../hooks/useIntersectionObserver';
 import CommentSection from './CommentSection.jsx';
-import CommentPreview from './CommentPreview';
+import CommentPreview from './CommentPreview.jsx';
 
 const LazyPostCard = ({ 
   post, 
@@ -281,7 +281,7 @@ const LazyPostCard = ({
         >
           <CommentSection
             postId={post.id}
-            initialCommentCount={post.commentCount || 0}
+            initialCommentCount={post.commentCount || post.commentsCount || 0}
           />
         </motion.div>
       )}

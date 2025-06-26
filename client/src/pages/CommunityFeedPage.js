@@ -19,7 +19,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import VoteComponent from '../components/Community/VoteComponent';
 import CommentSection from '../components/Community/CommentSection.jsx';
-import CommentPreview from '../components/Community/CommentPreview';
+import CommentPreview from '../components/Community/CommentPreview.jsx';
 import ReportModal from '../components/Community/ReportModal';
 import RequestMonitor from '../components/Community/RequestMonitor';
 import { useBatchVotes } from '../hooks/useBatchVotes';

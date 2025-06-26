@@ -34,6 +34,17 @@ router.get('/:linkId', async (req, res) => {
     const paginatedComments = allComments.slice(startIndex, endIndex);
 
     const comments = paginatedComments.map(data => {
+      // Better fallback logic for displayName
+      let displayName = 'Anonymous User';
+
+      if (data.author?.displayName && data.author.displayName !== 'Anonymous User') {
+        displayName = data.author.displayName;
+      } else if (data.author?.email) {
+        displayName = data.author.email.split('@')[0];
+      } else if (data.userEmail) {
+        displayName = data.userEmail.split('@')[0];
+      }
+
       return {
         id: data.id,
         linkId: data.linkId,
@@ -41,7 +52,7 @@ router.get('/:linkId', async (req, res) => {
         author: {
           uid: data.author?.uid || data.userId,
           email: data.author?.email || data.userEmail,
-          displayName: data.author?.displayName || 'Anonymous User',
+          displayName: displayName,
           photoURL: data.author?.photoURL || null
         },
         voteScore: data.voteScore || 0,
@@ -89,7 +100,7 @@ router.post('/', async (req, res) => {
     const userEmail = getUserEmail(req);
     const displayName = getUserDisplayName(req);
 
-    logger.info('Create comment request', { linkId, userId, parentId });
+    logger.info('Create comment request', { linkId, userId, parentId, userEmail, displayName });
 
     // Validate required fields
     if (!linkId || !content || !userId) {

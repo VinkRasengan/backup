@@ -36,21 +36,23 @@ const CommentPreview = ({ linkId, onToggleFullComments }) => {
       const response = await communityAPI.getComments(linkId, 1, 2, 'newest');
       console.log('📝 Comments API response:', response);
 
-      if (response.data && response.data.success) {
-        const comments = response.data.data?.comments || [];
-        const pagination = response.data.data?.pagination || {};
+      // Fix: Check response.success instead of response.data.success
+      if (response && response.success) {
+        const comments = response.data?.comments || [];
+        const pagination = response.data?.pagination || {};
+
+        console.log('🔍 Raw comments data:', comments);
+        console.log('🔍 Pagination data:', pagination);
 
         setComments(comments);
         // Handle different response structures
-        setTotalComments(
-          pagination.totalComments ||
-          pagination.total ||
-          comments.length ||
-          0
-        );
-        console.log('✅ Comments loaded:', comments.length, 'Total:', pagination.totalComments || pagination.total);
+        const totalCount = pagination.totalComments || pagination.total || comments.length || 0;
+        setTotalComments(totalCount);
+
+        console.log('✅ Comments loaded:', comments.length, 'Total:', totalCount);
+        console.log('🔍 First comment structure:', comments[0]);
       } else {
-        console.warn('⚠️ Comments API response not successful:', response.data);
+        console.warn('⚠️ Comments API response not successful:', response);
         // Set empty state on failure
         setComments([]);
         setTotalComments(0);
@@ -107,12 +109,15 @@ const CommentPreview = ({ linkId, onToggleFullComments }) => {
     try {
       const response = await communityAPI.addComment(linkId, commentContent);
 
-      if (response.data && response.data.success) {
+      // Fix: Check response.success instead of response.data.success
+      if (response && response.success) {
         // Replace optimistic comment with real comment
-        const newCommentData = response.data.comment;
-        setComments(prev => prev.map(comment =>
-          comment.id === tempId ? { ...newCommentData, isOptimistic: false } : comment
-        ));
+        const newCommentData = response.comment; // Backend returns comment directly
+        if (newCommentData) {
+          setComments(prev => prev.map(comment =>
+            comment.id === tempId ? { ...newCommentData, isOptimistic: false } : comment
+          ));
+        }
 
         // Also reload to ensure sync
         setTimeout(() => loadPreviewComments(), 1000);
@@ -236,9 +241,19 @@ const CommentPreview = ({ linkId, onToggleFullComments }) => {
         </button>
       </div>
 
+      {/* Loading State */}
+      {loading && (
+        <div className={`flex items-center justify-center py-4 ${
+          isDarkMode ? 'text-gray-400' : 'text-gray-500'
+        }`}>
+          <div className="w-4 h-4 border border-gray-400 border-t-transparent rounded-full animate-spin mr-2"></div>
+          <span className="text-sm">Đang tải bình luận...</span>
+        </div>
+      )}
+
       {/* Preview Comments */}
       <AnimatePresence>
-        {comments.length > 0 && (
+        {!loading && comments.length > 0 && (
           <motion.div
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
@@ -248,7 +263,7 @@ const CommentPreview = ({ linkId, onToggleFullComments }) => {
             {comments.map((comment) => (
               <CommentItem key={comment.id} comment={comment} />
             ))}
-            
+
             {/* Show more comments button */}
             {totalComments > 2 && (
               <button
@@ -264,6 +279,15 @@ const CommentPreview = ({ linkId, onToggleFullComments }) => {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Empty State */}
+      {!loading && comments.length === 0 && totalComments === 0 && (
+        <div className={`text-center py-4 ${
+          isDarkMode ? 'text-gray-400' : 'text-gray-500'
+        }`}>
+          <p className="text-sm">Chưa có bình luận nào. Hãy là người đầu tiên bình luận!</p>
+        </div>
+      )}
 
       {/* Quick Comment Form */}
       <AnimatePresence>
