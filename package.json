@@ -59,7 +59,8 @@
     "force:cleanup": "node scripts/process-checker.js force",
     "shared:migrate": "node scripts/migrate-to-shared-package.js",
     "shared:validate": "node scripts/validate-shared-utils.js",
-    "shared:optimize": "npm run shared:migrate && npm run shared:validate"
+    "shared:optimize": "npm run shared:migrate && npm run shared:validate",
+    "test:vote": "node scripts/test-vote-functionality.js"
   },
   "dependencies": {
     "concurrently": "^8.2.2",
