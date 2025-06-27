@@ -13,8 +13,8 @@ if (process.env.NODE_ENV !== 'production') { // eslint-disable-line no-process-e
 // In production (Render, Docker), environment variables are set by platform
 
 // Import shared utilities
-const Logger = require('../shared/utils/logger');
-const { HealthCheck, commonChecks } = require('../shared/utils/health-check');
+const Logger = require('../../../shared/utils/logger');
+const { HealthCheck, commonChecks } = require('../../../shared/utils/health-check');
 
 // Import local modules
 const linksRoutes = require('./routes/links');
@@ -25,7 +25,7 @@ const firebaseConfig = require('./config/firebase');
 const errorHandler = require('./middleware/errorHandler');
 const { authMiddleware } = require('./middleware/auth');
 const { cacheManager } = require('./utils/cache');
-const ResponseFormatter = require('../shared/utils/response');
+const ResponseFormatter = require('../../../shared/utils/response');
 
 const app = express();
 // Prometheus metrics setup

@@ -1,5 +1,5 @@
 const redis = require('redis');
-const Logger = require('../../shared/utils/logger');
+const Logger = require('../../../../shared/utils/logger');
 
 const logger = new Logger('community-service');
 

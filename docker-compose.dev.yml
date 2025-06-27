@@ -1,0 +1,238 @@
+version: '3.8'
+
+networks:
+  factcheck-network:
+    driver: bridge
+
+volumes:
+  redis-data:
+
+services:
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: factcheck-redis
+    ports:
+      - "6379:6379"
+    command: redis-server --requirepass antifraud123
+    volumes:
+      - redis-data:/data
+    networks:
+      - factcheck-network
+    restart: unless-stopped
+
+  # API Gateway
+  api-gateway:
+    build: ./services/api-gateway
+    container_name: factcheck-api-gateway
+    ports:
+      - "8080:8080"
+    environment:
+      - NODE_ENV=development
+      - PORT=8080
+      - REDIS_HOST=redis
+      - REDIS_PASSWORD=antifraud123
+      - AUTH_SERVICE_URL=http://auth-service:3001
+      - LINK_SERVICE_URL=http://link-service:3002
+      - COMMUNITY_SERVICE_URL=http://community-service:3003
+      - CHAT_SERVICE_URL=http://chat-service:3004
+      - NEWS_SERVICE_URL=http://news-service:3005
+      - ADMIN_SERVICE_URL=http://admin-service:3006
+      - ALLOWED_ORIGINS=http://localhost:3000,http://localhost:8080
+    depends_on:
+      - redis
+      - auth-service
+      - link-service
+      - community-service
+      - chat-service
+      - news-service
+      - admin-service
+    networks:
+      - factcheck-network
+    restart: unless-stopped
+
+  # Auth Service
+  auth-service:
+    build: ./services/auth-service
+    container_name: factcheck-auth-service
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=development
+      - PORT=3001
+      - REDIS_HOST=redis
+      - REDIS_PASSWORD=antifraud123
+      - FIREBASE_PROJECT_ID=${FIREBASE_PROJECT_ID}
+      - FIREBASE_CLIENT_EMAIL=${FIREBASE_CLIENT_EMAIL}
+      - FIREBASE_PRIVATE_KEY=${FIREBASE_PRIVATE_KEY}
+      - JWT_SECRET=${JWT_SECRET}
+      - ALLOWED_ORIGINS=http://localhost:3000,http://localhost:8080
+    depends_on:
+      - redis
+    networks:
+      - factcheck-network
+    restart: unless-stopped
+
+  # Link Service
+  link-service:
+    build: ./services/link-service
+    container_name: factcheck-link-service
+    ports:
+      - "3002:3002"
+    environment:
+      - NODE_ENV=development
+      - PORT=3002
+      - REDIS_HOST=redis
+      - REDIS_PASSWORD=antifraud123
+      - FIREBASE_PROJECT_ID=${FIREBASE_PROJECT_ID}
+      - FIREBASE_CLIENT_EMAIL=${FIREBASE_CLIENT_EMAIL}
+      - FIREBASE_PRIVATE_KEY=${FIREBASE_PRIVATE_KEY}
+      - VIRUSTOTAL_API_KEY=${VIRUSTOTAL_API_KEY}
+      - SCAMADVISER_API_KEY=${SCAMADVISER_API_KEY}
+      - ALLOWED_ORIGINS=http://localhost:3000,http://localhost:8080
+    depends_on:
+      - redis
+    networks:
+      - factcheck-network
+    restart: unless-stopped
+
+  # Community Service
+  community-service:
+    build: ./services/community-service
+    container_name: factcheck-community-service
+    ports:
+      - "3003:3003"
+    environment:
+      - NODE_ENV=development
+      - PORT=3003
+      - REDIS_HOST=redis
+      - REDIS_PASSWORD=antifraud123
+      - FIREBASE_PROJECT_ID=${FIREBASE_PROJECT_ID}
+      - FIREBASE_CLIENT_EMAIL=${FIREBASE_CLIENT_EMAIL}
+      - FIREBASE_PRIVATE_KEY=${FIREBASE_PRIVATE_KEY}
+      - ALLOWED_ORIGINS=http://localhost:3000,http://localhost:8080
+    depends_on:
+      - redis
+    networks:
+      - factcheck-network
+    restart: unless-stopped
+
+  # Chat Service
+  chat-service:
+    build: ./services/chat-service
+    container_name: factcheck-chat-service
+    ports:
+      - "3004:3004"
+    environment:
+      - NODE_ENV=development
+      - PORT=3004
+      - REDIS_HOST=redis
+      - REDIS_PASSWORD=antifraud123
+      - FIREBASE_PROJECT_ID=${FIREBASE_PROJECT_ID}
+      - FIREBASE_CLIENT_EMAIL=${FIREBASE_CLIENT_EMAIL}
+      - FIREBASE_PRIVATE_KEY=${FIREBASE_PRIVATE_KEY}
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - ALLOWED_ORIGINS=http://localhost:3000,http://localhost:8080
+    depends_on:
+      - redis
+    networks:
+      - factcheck-network
+    restart: unless-stopped
+
+  # News Service
+  news-service:
+    build: ./services/news-service
+    container_name: factcheck-news-service
+    ports:
+      - "3005:3005"
+    environment:
+      - NODE_ENV=development
+      - PORT=3005
+      - REDIS_HOST=redis
+      - REDIS_PASSWORD=antifraud123
+      - FIREBASE_PROJECT_ID=${FIREBASE_PROJECT_ID}
+      - FIREBASE_CLIENT_EMAIL=${FIREBASE_CLIENT_EMAIL}
+      - FIREBASE_PRIVATE_KEY=${FIREBASE_PRIVATE_KEY}
+      - NEWSAPI_API_KEY=${NEWSAPI_API_KEY}
+      - NEWSDATA_API_KEY=${NEWSDATA_API_KEY}
+      - ALLOWED_ORIGINS=http://localhost:3000,http://localhost:8080
+    depends_on:
+      - redis
+    networks:
+      - factcheck-network
+    restart: unless-stopped
+
+  # Admin Service
+  admin-service:
+    build: ./services/admin-service
+    container_name: factcheck-admin-service
+    ports:
+      - "3006:3006"
+    environment:
+      - NODE_ENV=development
+      - PORT=3006
+      - REDIS_HOST=redis
+      - REDIS_PASSWORD=antifraud123
+      - FIREBASE_PROJECT_ID=${FIREBASE_PROJECT_ID}
+      - FIREBASE_CLIENT_EMAIL=${FIREBASE_CLIENT_EMAIL}
+      - FIREBASE_PRIVATE_KEY=${FIREBASE_PRIVATE_KEY}
+      - ALLOWED_ORIGINS=http://localhost:3000,http://localhost:8080
+    depends_on:
+      - redis
+    networks:
+      - factcheck-network
+    restart: unless-stopped
+
+  # Frontend Client
+  client:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+    container_name: factcheck-frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - REACT_APP_API_URL=http://localhost:8080
+      - REACT_APP_FIREBASE_API_KEY=${REACT_APP_FIREBASE_API_KEY}
+      - REACT_APP_FIREBASE_AUTH_DOMAIN=${REACT_APP_FIREBASE_AUTH_DOMAIN}
+      - REACT_APP_FIREBASE_PROJECT_ID=${REACT_APP_FIREBASE_PROJECT_ID}
+      - REACT_APP_FIREBASE_STORAGE_BUCKET=${REACT_APP_FIREBASE_STORAGE_BUCKET}
+      - REACT_APP_FIREBASE_MESSAGING_SENDER_ID=${REACT_APP_FIREBASE_MESSAGING_SENDER_ID}
+      - REACT_APP_FIREBASE_APP_ID=${REACT_APP_FIREBASE_APP_ID}
+    depends_on:
+      - api-gateway
+    networks:
+      - factcheck-network
+    restart: unless-stopped
+
+  # Monitoring Services (Optional)
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: factcheck-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus:/etc/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--web.enable-lifecycle'
+    networks:
+      - factcheck-network
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: factcheck-grafana
+    ports:
+      - "3010:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin123
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - ./monitoring/grafana:/var/lib/grafana
+    networks:
+      - factcheck-network
+    restart: unless-stopped

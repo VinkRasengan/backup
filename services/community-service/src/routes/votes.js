@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { db, collections } = require('../config/firebase');
-const Logger = require('../../shared/utils/logger');
+const Logger = require('../../../../shared/utils/logger');
 const { getUserId, getUserEmail } = require('../middleware/auth');
 
 const logger = new Logger('community-service');
