@@ -98,28 +98,29 @@ class SimpleStart {
 
   async startDockerMonitoring() {
     try {
-      const monitoringCompose = path.join(this.projectRoot, 'docker-compose.monitoring.yml');
+      // Start simple HTML dashboard instead of Docker
+      const dashboardPath = path.join(this.projectRoot, 'monitoring/simple-dashboard');
       
-      if (!fs.existsSync(monitoringCompose)) {
-        console.log('  ℹ️ docker-compose.monitoring.yml not found, skipping Docker monitoring');
+      if (!fs.existsSync(dashboardPath)) {
+        console.log('  ℹ️ Simple dashboard not found, skipping monitoring');
         return;
       }
 
-      console.log('  🐳 Starting Docker monitoring stack...');
-      const command = this.isWindows ? 'docker-compose.exe' : 'docker-compose';
+      console.log('  📊 Starting simple monitoring dashboard...');
+      const command = this.isWindows ? 'npm.cmd' : 'npm';
       
-      const child = spawn(command, ['-f', monitoringCompose, 'up', '-d'], {
-        cwd: this.projectRoot,
-        stdio: 'pipe',
+      const child = spawn(command, ['start'], {
+        cwd: dashboardPath,
+        detached: true,
+        stdio: 'ignore',
         shell: true
       });
 
-      // Don't wait for completion, start in background
       child.unref();
-      console.log('  📊 Prometheus, Grafana, Alertmanager starting...');
+      console.log('  🌐 Simple monitoring dashboard starting on port 3010...');
       
     } catch (error) {
-      console.log('  ⚠️ Could not start Docker monitoring:', error.message);
+      console.log('  ⚠️ Could not start simple dashboard:', error.message);
     }
   }
 
@@ -260,12 +261,10 @@ class SimpleStart {
     if (this.monitoringEnabled) {
       console.log('\n� Monitoring URLs:');
       console.log('='.repeat(30));
-      console.log('Grafana:     http://localhost:3010 (admin/admin123)');
-      console.log('Prometheus:  http://localhost:9090');
-      console.log('Alertmanager: http://localhost:9093');
-      console.log('Node Export: http://localhost:9100');
-      console.log('cAdvisor:    http://localhost:8081');
+      console.log('Dashboard:   http://localhost:3010 (Simple HTML Dashboard)');
       console.log('Webhook:     http://localhost:5001');
+      console.log('Health API:  http://localhost:3010/api/health');
+      console.log('Alerts API:  http://localhost:3010/api/alerts');
     }
     
     console.log('\n�📋 Commands:');
@@ -280,10 +279,10 @@ class SimpleStart {
     
     if (this.monitoringEnabled) {
       console.log('\n📈 Monitoring Tips:');
-      console.log('   • Grafana dashboards: http://localhost:3010');
-      console.log('   • Import dashboards from monitoring/grafana/dashboards/');
-      console.log('   • View metrics: http://localhost:8080/metrics');
-      console.log('   • Configure alerts in monitoring/prometheus/alert_rules.yml');
+      console.log('   • Simple dashboard: http://localhost:3010');
+      console.log('   • Check service health: http://localhost:3010/api/health');
+      console.log('   • View alerts: http://localhost:3010/api/alerts');
+      console.log('   • Webhook service: http://localhost:5001/health');
       
       // Try to open monitoring dashboard
       this.openMonitoringDashboard();

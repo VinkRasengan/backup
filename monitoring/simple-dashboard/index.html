@@ -232,7 +232,7 @@
         
         async function fetchData() {
             try {
-                const response = await fetch('/api/status');
+                const response = await fetch('/api/health');
                 const data = await response.json();
                 return data;
             } catch (error) {
@@ -242,10 +242,11 @@
         }
         
         function updateStats(data) {
-            document.getElementById('healthy-count').textContent = data.healthyServices;
-            document.getElementById('unhealthy-count').textContent = data.unhealthyServices;
-            document.getElementById('offline-count').textContent = data.offlineServices;
-            document.getElementById('total-count').textContent = data.totalServices;
+            const summary = data.summary;
+            document.getElementById('healthy-count').textContent = summary.healthy;
+            document.getElementById('unhealthy-count').textContent = summary.unhealthy;
+            document.getElementById('offline-count').textContent = summary.offline;
+            document.getElementById('total-count').textContent = summary.total;
         }
         
         function formatUptime(seconds) {
@@ -283,24 +284,24 @@
                             <span>${service.port}</span>
                         </div>
                         <div class="detail-item">
-                            <span>Status Code:</span>
-                            <span>${service.statusCode}</span>
-                        </div>
-                        <div class="detail-item">
                             <span>Response Time:</span>
-                            <span>${service.responseTime}ms</span>
+                            <span>${service.responseTime}</span>
                         </div>
                         <div class="detail-item">
                             <span>Uptime:</span>
-                            <span>${formatUptime(service.uptime)}</span>
+                            <span>${formatUptime(service.response?.uptime)}</span>
                         </div>
                         <div class="detail-item">
                             <span>Memory:</span>
-                            <span>${formatMemory(service.memory)}</span>
+                            <span>${formatMemory(service.response?.memory)}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span>Service:</span>
+                            <span>${service.response?.service || service.name}</span>
                         </div>
                         <div class="detail-item">
                             <span>Last Check:</span>
-                            <span>${new Date(service.timestamp).toLocaleTimeString()}</span>
+                            <span>${new Date().toLocaleTimeString()}</span>
                         </div>
                     </div>
                     ${service.error ? `<div class="error">Error: ${service.error}</div>` : ''}
@@ -318,7 +319,7 @@
                 updateStats(data);
                 renderServices(data.services);
                 document.getElementById('last-update').textContent = 
-                    `Last updated: ${new Date(data.lastUpdate).toLocaleString()}`;
+                    `Last updated: ${new Date(data.timestamp).toLocaleString()}`;
             } else {
                 document.getElementById('services').innerHTML = 
                     '<div class="error">Failed to fetch data. Please check if the monitoring service is running.</div>';
