@@ -1,6 +1,5 @@
 const { db, collections } = require('../config/firebase');
-const { Logger } = require('@factcheck/shared');
-const AuthMiddleware = require('../../shared/middleware/auth');
+const { Logger, authMiddleware: AuthMiddleware } = require('@factcheck/shared');
 const securityAggregatorService = require('../services/securityAggregatorService');
 const securityAPIService = require('../services/securityAPIService');
 const screenshotService = require('../services/screenshotService');

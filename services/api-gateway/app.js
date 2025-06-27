@@ -569,6 +569,77 @@ app.use('/link-check', createProxyMiddleware({
   }
 }));
 
+// Direct links routes (for /links/check endpoint)
+app.use('/links', createProxyMiddleware({
+  target: services['link-service'],
+  changeOrigin: true,
+  timeout: 60000, // 60 seconds
+  proxyTimeout: 60000,
+  pathRewrite: { '^/links': '/links' },
+  onProxyReq: (proxyReq, req, res) => {
+    logger.info('Proxying links request to link-service', {
+      method: req.method,
+      url: req.url,
+      target: `${services['link-service']}${proxyReq.path}`,
+      headers: req.headers
+    });
+
+    // Set connection keep-alive to prevent timeouts
+    proxyReq.setHeader('Connection', 'keep-alive');
+    proxyReq.setHeader('Keep-Alive', 'timeout=60, max=1000');
+
+    // Forward authentication headers
+    if (req.headers.authorization) {
+      proxyReq.setHeader('Authorization', req.headers.authorization);
+    }
+
+    // Handle JSON body for POST/PUT requests
+    if (req.body && (req.method === 'POST' || req.method === 'PUT')) {
+      const bodyData = JSON.stringify(req.body);
+      proxyReq.setHeader('Content-Type', 'application/json');
+      proxyReq.setHeader('Content-Length', Buffer.byteLength(bodyData));
+      proxyReq.write(bodyData);
+    }
+  },
+  onProxyRes: (proxyRes, req, res) => {
+    logger.info('Links proxy response from link-service', {
+      status: proxyRes.statusCode,
+      url: req.url,
+      headers: proxyRes.headers
+    });
+  },
+  onError: (err, req, res) => {
+    logger.error('Link service proxy error', { 
+      error: err.message,
+      stack: err.stack,
+      url: req.url,
+      method: req.method
+    });
+    if (!res.headersSent) {
+      res.status(503).json({
+        error: 'Link service unavailable',
+        code: 'SERVICE_UNAVAILABLE'
+      });
+    }
+  }
+}));
+
+// Security routes for virustotal endpoints
+app.use('/api/security', createProxyMiddleware({
+  target: services['link-service'],
+  changeOrigin: true,
+  pathRewrite: { '^/api/security': '/security' },
+  onError: (err, req, res) => {
+    logger.error('Link service proxy error (security)', { error: err.message });
+    if (!res.headersSent) {
+      res.status(503).json({
+        error: 'Link service security endpoints unavailable',
+        code: 'SERVICE_UNAVAILABLE'
+      });
+    }
+  }
+}));
+
 app.use('/chat', createProxyMiddleware({
   target: services['chat-service'],
   changeOrigin: true,

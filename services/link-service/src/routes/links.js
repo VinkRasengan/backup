@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const linkController = require('../controllers/linkController');
-const AuthMiddleware = require('../../shared/middleware/auth');
+const { authMiddleware: AuthMiddleware } = require('@factcheck/shared');
 const { validateRequest, schemas } = require('../middleware/validation');
 
 // Initialize auth middleware

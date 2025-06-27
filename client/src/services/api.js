@@ -111,15 +111,36 @@ export const linkAPI = {
   checkLink: async (url) => {
     console.log('🔍 Checking URL with backend API via Gateway:', url);
 
-    // ✅ Strategy 1: Use API Gateway (primary method)
+    // ✅ Strategy 1: Direct Link Service (fastest & most reliable)
     try {
-      console.log('🔐 Using link check API via Gateway');
-      return await api.post('/links/check', { url });
-    } catch (authError) {
-      console.log('🔄 API Gateway failed:', authError.response?.status, authError.message);
+      console.log('🚀 Using direct link service (http://localhost:3002)');
+      const directResponse = await axios.post('http://localhost:3002/links/check', { url }, {
+        timeout: 30000,
+        headers: { 'Content-Type': 'application/json' }
+      });
+      console.log('✅ Direct link service success');
+      return directResponse;
+    } catch (directError) {
+      console.log('🔄 Direct link service failed:', directError.response?.status, directError.message);
     }
 
-    // ✅ Strategy 2: VirusTotal via backend service as fallback
+    // ✅ Strategy 2: API Gateway via /link-check (backup proxy route)
+    try {
+      console.log('🔄 Using backup API Gateway route (/link-check)');
+      return await api.post('/link-check/check', { url });
+    } catch (backupError) {
+      console.log('🔄 Backup API Gateway failed:', backupError.response?.status, backupError.message);
+    }
+
+    // ✅ Strategy 3: API Gateway via /links (original proxy route)
+    try {
+      console.log('🔄 Using main API Gateway route (/links)');
+      return await api.post('/links/check', { url });
+    } catch (authError) {
+      console.log('🔄 Main API Gateway failed:', authError.response?.status, authError.message);
+    }
+
+    // ✅ Strategy 4: VirusTotal via backend service as last resort
     try {
       console.log('🔄 Using VirusTotal via backend service as fallback...');
       const virusTotalService = (await import('./virusTotalService')).default;
