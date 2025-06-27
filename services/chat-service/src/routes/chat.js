@@ -61,9 +61,24 @@ router.post('/gemini', async (req, res) => {
     }
 
     console.log('📤 Processing Gemini request:', { message: message.substring(0, 50) + '...' });
+    
+    // Debug: Check service status
+    const serviceStatus = geminiService.getStatus();
+    console.log('🔧 GeminiService status in route:', serviceStatus);
+    console.log('🔧 Environment check:', { 
+      hasApiKey: !!process.env.GEMINI_API_KEY,
+      apiKeyPrefix: process.env.GEMINI_API_KEY ? process.env.GEMINI_API_KEY.substring(0, 10) + '...' : 'none'
+    });
 
     // Call real Gemini API
     const geminiResult = await geminiService.generateResponse(message.trim());
+    
+    console.log('🔧 Gemini result:', { 
+      success: geminiResult.success, 
+      fallback: geminiResult.fallback,
+      hasUsage: !!geminiResult.usage,
+      responseLength: geminiResult.response ? geminiResult.response.length : 0
+    });
     
     if (!geminiResult.success) {
       console.error('Gemini API failed:', geminiResult.error);
@@ -81,7 +96,7 @@ router.post('/gemini', async (req, res) => {
           content: geminiResult.response,
           timestamp: new Date().toISOString(),
           type: geminiResult.fallback ? 'fallback_response' : 'ai_response',
-          model: 'gemini-pro',
+          model: 'gemini-1.5-flash',
           usage: geminiResult.usage || null
         },
         message: geminiResult.response // Fallback for different frontend response handling

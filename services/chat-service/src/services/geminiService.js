@@ -27,7 +27,7 @@ class GeminiService {
     if (this.apiKey) {
       try {
         this.genAI = new GoogleGenerativeAI(this.apiKey);
-        this.model = this.genAI.getGenerativeModel({ model: 'gemini-pro' });
+        this.model = this.genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
         console.log('✅ Gemini API initialized successfully');
       } catch (error) {
         console.error('❌ Failed to initialize Gemini API:', error.message);
@@ -190,7 +190,7 @@ Bạn cần hỗ trợ gì cụ thể?`;
     return {
       configured: !!this.apiKey,
       available: this.isAvailable(),
-      model: 'gemini-pro',
+      model: 'gemini-1.5-flash',
       features: {
         textGeneration: true,
         conversational: true,
