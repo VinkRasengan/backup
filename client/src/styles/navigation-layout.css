@@ -38,15 +38,41 @@
   visibility: visible;
 }
 
-/* Prevent sidebar from covering hamburger menu */
+/* Enhanced responsive hamburger menu positioning */
 .hamburger-menu {
   position: fixed !important;
-  top: 1rem !important;
-  left: 1rem !important;
   z-index: 51 !important;
-  opacity: 1 !important;
   visibility: visible !important;
   display: block !important;
+}
+
+/* Responsive positioning - let JS handle top/left for auto-scaling */
+@media (max-width: 374px) {
+  .hamburger-menu {
+    top: 0.75rem !important;
+    left: 0.75rem !important;
+  }
+}
+
+@media (min-width: 375px) and (max-width: 767px) {
+  .hamburger-menu {
+    top: 1rem !important;
+    left: 1rem !important;
+  }
+}
+
+@media (min-width: 768px) and (max-width: 1023px) {
+  .hamburger-menu {
+    top: 1rem !important;
+    left: 1rem !important;
+  }
+}
+
+@media (min-width: 1024px) {
+  .hamburger-menu {
+    top: 1.25rem !important;
+    left: 1.25rem !important;
+  }
 }
 
 .nav-sidebar {
@@ -69,7 +95,7 @@
   visibility: visible;
 }
 
-/* Mobile specific optimizations */
+/* Enhanced mobile specific optimizations */
 @media (max-width: 767px) {
   .nav-container.with-sidebar {
     margin-left: 0 !important;
@@ -77,7 +103,27 @@
   
   .nav-sidebar {
     width: 100vw !important;
-    max-width: 320px;
+    max-width: 320px !important;
+  }
+}
+
+/* Enhanced tablet optimizations */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .nav-container.with-sidebar {
+    margin-left: 0 !important;
+  }
+  
+  .nav-sidebar {
+    width: 85vw !important;
+    max-width: 380px !important;
+  }
+}
+
+/* Desktop optimizations */
+@media (min-width: 1024px) {
+  .nav-sidebar {
+    width: 320px !important;
+    max-width: 400px !important;
   }
 }
 
@@ -89,10 +135,72 @@
   height: auto;
 }
 
-/* Fix for potential z-index conflicts */
+/* Enhanced responsive hamburger menu sizing and positioning */
 .nav-hamburger {
   position: fixed !important;
-  top: 1rem !important;
-  left: 1rem !important;
   z-index: 51 !important;
+}
+
+/* Responsive sizing and positioning for nav-hamburger */
+@media (max-width: 374px) {
+  .nav-hamburger {
+    top: 0.75rem !important;
+    left: 0.75rem !important;
+    width: 2.75rem !important;
+    height: 2.75rem !important;
+  }
+}
+
+@media (min-width: 375px) and (max-width: 767px) {
+  .nav-hamburger {
+    top: 1rem !important;
+    left: 1rem !important;
+    width: 3rem !important;
+    height: 3rem !important;
+  }
+}
+
+@media (min-width: 768px) and (max-width: 1023px) {
+  .nav-hamburger {
+    top: 1rem !important;
+    left: 1rem !important;
+    width: 3.5rem !important;
+    height: 3.5rem !important;
+  }
+}
+
+@media (min-width: 1024px) {
+  .nav-hamburger {
+    top: 1.25rem !important;
+    left: 1.25rem !important;
+    width: 4rem !important;
+    height: 4rem !important;
+  }
+}
+
+/* Responsive sidebar adjustments */
+@media (max-width: 374px) {
+  .nav-sidebar {
+    width: 100vw !important;
+    max-width: 280px !important;
+  }
+}
+
+/* Enhanced responsive animations and transitions */
+@media (prefers-reduced-motion: reduce) {
+  .hamburger-menu,
+  .nav-hamburger,
+  .nav-sidebar {
+    transition: none !important;
+    animation: none !important;
+  }
+}
+
+/* Touch-friendly enhancements for mobile */
+@media (max-width: 767px) {
+  .hamburger-menu,
+  .nav-hamburger {
+    min-height: 44px !important;
+    min-width: 44px !important;
+  }
 }
