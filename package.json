@@ -10,7 +10,7 @@
     "status": "node scripts/simple-status.js",
     "validate": "node scripts/validate-deployment.js",
     "setup": "npm install && npm run install:all",
-    "install:all": "npm install && cd client && npm install && cd ../services/api-gateway && npm install && cd ../auth-service && npm install",
+    "install:all": "npm install --ignore-scripts && cd shared && npm install && cd ../client && npm install && cd ../services/api-gateway && npm install && cd ../auth-service && npm install && cd ../link-service && npm install && cd ../community-service && npm install && cd ../chat-service && npm install && cd ../news-service && npm install && cd ../admin-service && npm install",
     "fix:render": "node scripts/fix-render-deployment.js",
     "deploy:cross-platform": "node scripts/cross-platform-deploy.js",
     "stop:cross-platform": "node scripts/cross-platform-stop.js",
@@ -56,7 +56,10 @@
     "monitoring:health": "node scripts/monitoring-health-check.js",
     "open:frontend": "start http://localhost:3000 || open http://localhost:3000 || xdg-open http://localhost:3000",
     "check:processes": "node scripts/process-checker.js check",
-    "force:cleanup": "node scripts/process-checker.js force"
+    "force:cleanup": "node scripts/process-checker.js force",
+    "shared:migrate": "node scripts/migrate-to-shared-package.js",
+    "shared:validate": "node scripts/validate-shared-utils.js",
+    "shared:optimize": "npm run shared:migrate && npm run shared:validate"
   },
   "dependencies": {
     "concurrently": "^8.2.2",
@@ -79,10 +82,6 @@
     "node": ">=18.0.0",
     "npm": ">=9.0.0"
   },
-  "workspaces": [
-    "client",
-    "services/*"
-  ],
   "keywords": [
     "microservices",
     "anti-fraud",

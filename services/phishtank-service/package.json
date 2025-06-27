@@ -42,9 +42,9 @@
     "morgan": "^1.10.0",
     "node-cron": "^3.0.3",
     "path": "^0.12.7",
-    "prom-client": "^15.1.0",
     "redis": "^4.6.10",
-    "uuid": "^9.0.1"
+    "uuid": "^9.0.1",
+    "@factcheck/shared": "file:../../shared"
   },
   "devDependencies": {
     "@pact-foundation/pact": "^12.1.0",

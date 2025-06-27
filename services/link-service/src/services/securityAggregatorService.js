@@ -5,7 +5,7 @@ const googleSafeBrowsingService = require('./googleSafeBrowsingService');
 const ipQualityScoreService = require('./ipQualityScoreService');
 const criminalIPService = require('./criminalIPService');
 const vietnameseSecurityService = require('./vietnameseSecurityService');
-const Logger = require('../../shared/utils/logger');
+const { Logger } = require('@factcheck/shared');
 
 const logger = new Logger('link-service');
 

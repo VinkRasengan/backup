@@ -1,7 +1,8 @@
 {
   "name": "api-gateway",
   "version": "1.0.0",
-  "description": "API Gateway for Anti-Fraud Platform Microservices",  "main": "app.js",
+  "description": "API Gateway for Anti-Fraud Platform Microservices",
+  "main": "app.js",
   "scripts": {
     "start": "node app.js",
     "start:debug": "node start-debug.js",
@@ -44,10 +45,9 @@
     "jsonwebtoken": "^9.0.2",
     "morgan": "^1.10.0",
     "opossum": "^8.0.0",
-    "prom-client": "^15.1.0",
     "redis": "^4.6.10",
     "uuid": "^11.1.0",
-    "winston": "^3.11.0"
+    "@factcheck/shared": "file:../../shared"
   },
   "devDependencies": {
     "@pact-foundation/pact": "^12.1.0",

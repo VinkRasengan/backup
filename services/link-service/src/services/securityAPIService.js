@@ -5,7 +5,7 @@
 
 const axios = require('axios');
 const { config } = require('../config/thirdPartyAPIs');
-const Logger = require('../../shared/utils/logger');
+const { Logger } = require('@factcheck/shared');
 
 const logger = new Logger('link-service');
 

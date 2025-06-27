@@ -1,6 +1,6 @@
 const axios = require('axios');
 const crypto = require('crypto');
-const Logger = require('../../shared/utils/logger');
+const { Logger } = require('@factcheck/shared');
 const { config } = require('../config/thirdPartyAPIs');
 
 const logger = new Logger('link-service');

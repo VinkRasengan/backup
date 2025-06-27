@@ -4,7 +4,7 @@ const securityAggregatorService = require('../services/securityAggregatorService
 const screenshotService = require('../services/screenshotService');
 const AuthMiddleware = require('../../shared/middleware/auth');
 const { validateRequest, schemas } = require('../middleware/validation');
-const Logger = require('../../shared/utils/logger');
+const { Logger } = require('@factcheck/shared');
 
 const logger = new Logger('link-service');
 const authMiddleware = new AuthMiddleware(process.env.AUTH_SERVICE_URL);
