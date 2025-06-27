@@ -3,57 +3,36 @@ import { motion } from 'framer-motion';
 
 const QuickReplies = ({ onQuickReply, disabled = false }) => {
   const quickReplies = [
-    {
-      id: 1,
-      text: 'Cách kiểm tra link an toàn?',
-      icon: '🔍'
-    },
-    {
-      id: 2,
-      text: 'Phân tích bảo mật website',
-      icon: '🛡️'
-    },
-    {
-      id: 3,
-      text: 'Cách nhận biết lừa đảo',
-      icon: '⚠️'
-    },
-    {
-      id: 4,
-      text: 'Tính năng FactCheck AI',
-      icon: '🤖'
-    },
-    {
-      id: 5,
-      text: 'Hướng dẫn sử dụng',
-      icon: '📖'
-    },
-    {
-      id: 6,
-      text: 'Báo cáo link độc hại',
-      icon: '🚨'
-    }
+    "Cách kiểm tra link an toàn?",
+    "Nhận biết email lừa đảo",
+    "Tips bảo mật mật khẩu",
+    "Sử dụng FactCheck platform",
+    "Phân biệt tin thật và fake news"
   ];
 
   return (
-    <div className="bg-gray-50/50 dark:bg-gray-800/50">
-      <p className="text-xs text-gray-500 dark:text-gray-400 mb-3 font-medium px-1">Câu hỏi thường gặp:</p>
-      <div className="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto">
-        {quickReplies.map((reply) => (
-          <motion.button
-            key={reply.id}
-            whileHover={{ scale: disabled ? 1 : 1.02 }}
-            whileTap={{ scale: disabled ? 1 : 0.98 }}
-            onClick={() => !disabled && onQuickReply(reply.text)}
-            disabled={disabled}
-            className="flex items-center gap-2 p-3 text-xs bg-white dark:bg-gray-700 hover:bg-blue-50 dark:hover:bg-gray-600 rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed text-left border border-gray-200 dark:border-gray-600 hover:border-blue-200 dark:hover:border-gray-500 shadow-sm hover:shadow-md"
-          >
-            <span className="text-sm flex-shrink-0">{reply.icon}</span>
-            <span className="text-gray-700 dark:text-gray-300 truncate font-medium text-xs leading-tight">{reply.text}</span>
-          </motion.button>
-        ))}
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3 }}
+      className="flex flex-wrap gap-2"
+    >
+      <div className="w-full text-xs text-gray-500 dark:text-gray-400 mb-2">
+        Gợi ý câu hỏi:
       </div>
-    </div>
+      {quickReplies.map((reply, index) => (
+        <motion.button
+          key={index}
+          onClick={() => onQuickReply(reply)}
+          disabled={disabled}
+          whileHover={{ scale: disabled ? 1 : 1.02 }}
+          whileTap={{ scale: disabled ? 1 : 0.98 }}
+          className="px-3 py-1.5 text-sm bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/20 dark:hover:bg-blue-900/40 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-700 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {reply}
+        </motion.button>
+      ))}
+    </motion.div>
   );
 };
 

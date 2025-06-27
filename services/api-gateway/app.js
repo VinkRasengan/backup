@@ -464,9 +464,40 @@ app.use('/api/community', createProxyMiddleware({
 app.use('/api/chat', createProxyMiddleware({
   target: services['chat-service'],
   changeOrigin: true,
+  timeout: 30000,
+  proxyTimeout: 30000,
   pathRewrite: { '^/api/chat': '/chat' },
+  onProxyReq: (proxyReq, req, res) => {
+    logger.info('Proxying chat request', {
+      method: req.method,
+      url: req.url,
+      target: services['chat-service'],
+      contentType: req.get('Content-Type'),
+      bodySize: req.body ? JSON.stringify(req.body).length : 0
+    });
+
+    // Handle JSON body for POST/PUT requests
+    if (req.body && (req.method === 'POST' || req.method === 'PUT')) {
+      const bodyData = JSON.stringify(req.body);
+      proxyReq.setHeader('Content-Type', 'application/json');
+      proxyReq.setHeader('Content-Length', Buffer.byteLength(bodyData));
+      proxyReq.write(bodyData);
+    }
+  },
+  onProxyRes: (proxyRes, req, res) => {
+    logger.info('Chat proxy response', {
+      status: proxyRes.statusCode,
+      url: req.url,
+      headers: proxyRes.headers['content-type']
+    });
+  },
   onError: (err, req, res) => {
-    logger.error('Chat service proxy error', { error: err.message });
+    logger.error('Chat service proxy error', { 
+      error: err.message,
+      stack: err.stack,
+      url: req.url,
+      method: req.method
+    });
     if (!res.headersSent) {
       res.status(503).json({
         error: 'Chat service unavailable',
