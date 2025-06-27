@@ -83,10 +83,13 @@ class SimpleStart {
 
   async startMonitoringStack() {
     try {
-      // 1. Start Docker monitoring stack if available
+      // 1. Start Firebase emulator first (required for services)
+      await this.startFirebaseEmulator();
+      
+      // 2. Start Docker monitoring stack if available
       await this.startDockerMonitoring();
       
-      // 2. Start webhook service if available
+      // 3. Start webhook service if available
       await this.startWebhookService();
       
       console.log('  ✅ Monitoring stack starting...');
@@ -121,6 +124,30 @@ class SimpleStart {
       
     } catch (error) {
       console.log('  ⚠️ Could not start simple dashboard:', error.message);
+    }
+  }
+
+  async startFirebaseEmulator() {
+    try {
+      console.log('  🔥 Starting Firebase emulator...');
+      const command = this.isWindows ? 'firebase.cmd' : 'firebase';
+      
+      const child = spawn(command, ['emulators:start', '--only', 'firestore', '--project', 'factcheck-1d6e8'], {
+        detached: true,
+        stdio: 'ignore',
+        shell: true
+      });
+
+      child.unref();
+      console.log('  ✅ Firebase emulator starting on port 8081...');
+      console.log('  🌐 Firebase UI available at: http://localhost:4000');
+      
+      // Wait for emulator to start
+      await this.delay(8000);
+      
+    } catch (error) {
+      console.log('  ⚠️ Could not start Firebase emulator:', error.message);
+      console.log('  💡 Make sure Firebase CLI is installed: npm install -g firebase-tools');
     }
   }
 
@@ -259,7 +286,7 @@ class SimpleStart {
     console.log('Admin:       http://localhost:3006');
     
     if (this.monitoringEnabled) {
-      console.log('\n� Monitoring URLs:');
+      console.log('\n🔍 Monitoring URLs:');
       console.log('='.repeat(30));
       console.log('Dashboard:   http://localhost:3010 (Simple HTML Dashboard)');
       console.log('Webhook:     http://localhost:5001');
@@ -267,7 +294,7 @@ class SimpleStart {
       console.log('Alerts API:  http://localhost:3010/api/alerts');
     }
     
-    console.log('\n�📋 Commands:');
+    console.log('\n📋 Commands:');
     console.log('Check status: npm run status');
     console.log('Stop all:     npm stop');
     console.log('Restart:      npm restart');
@@ -341,29 +368,6 @@ class SimpleStart {
     } catch {
       // Silent fail
     }
-  }
-
-  async runCommand(command, args = [], options = {}) {
-    return new Promise((resolve, reject) => {
-      const child = spawn(command, args, {
-        stdio: options.silent ? 'pipe' : 'inherit',
-        shell: true
-      });
-
-      child.on('close', (code) => {
-        if (code === 0) {
-          resolve();
-        } else {
-          reject(new Error(`Command failed with code ${code}`));
-        }
-      });
-
-      child.on('error', reject);
-    });
-  }
-
-  async delay(ms) {
-    return new Promise(resolve => setTimeout(resolve, ms));
   }
 }
 

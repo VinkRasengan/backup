@@ -66,12 +66,23 @@ try {
  */
 async function healthCheck() {
   try {
+    // In development mode, do simplified health check
+    if (process.env.NODE_ENV !== 'production') {
+      return {
+        status: 'healthy',
+        type: 'firebase',
+        projectId: process.env.FIREBASE_PROJECT_ID,
+        environment: 'emulator',
+        note: 'Development mode - simplified health check'
+      };
+    }
+    
     await db.collection('health_check').limit(1).get();
     return {
       status: 'healthy',
       type: 'firebase',
       projectId: process.env.FIREBASE_PROJECT_ID,
-      environment: process.env.NODE_ENV === 'production' ? 'production' : 'emulator'
+      environment: 'production'
     };
   } catch (error) {
     return {

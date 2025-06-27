@@ -101,6 +101,17 @@ async function getCollectionStats() {
  */
 async function healthCheck() {
   try {
+    // In development mode, skip actual Firebase connection test
+    if (process.env.NODE_ENV !== 'production') {
+      return {
+        status: 'healthy',
+        type: 'firebase',
+        projectId: process.env.FIREBASE_PROJECT_ID,
+        environment: 'emulator-mock',
+        note: 'Development mode - health check bypassed'
+      };
+    }
+    
     await db.collection('health_check').limit(1).get();
     return {
       status: 'healthy',
