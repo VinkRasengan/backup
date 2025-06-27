@@ -28,15 +28,24 @@ const SimpleVoteComponent = ({ linkId, className = '' }) => {
     setState(prev => ({ ...prev, loading: true }));
     
     try {
+      console.log('🔍 [SimpleVoteComponent] Loading vote data for linkId:', linkId);
+      console.log('🔍 [SimpleVoteComponent] Current user:', user);
+      
       // Load both stats and user vote in parallel
       const [statsResponse, userVoteResponse] = await Promise.all([
         communityAPI.getVoteStats(linkId),
         user ? communityAPI.getUserVote(linkId) : Promise.resolve({ success: true, data: null })
       ]);
       
+      console.log('📊 [SimpleVoteComponent] Stats response:', statsResponse);
+      console.log('👤 [SimpleVoteComponent] User vote response:', userVoteResponse);
+      
       // Extract data
       const stats = statsResponse.success ? (statsResponse.data.statistics || statsResponse.data || {}) : {};
       const userVoteData = userVoteResponse.success ? userVoteResponse.data : null;
+      
+      console.log('📈 [SimpleVoteComponent] Extracted stats:', stats);
+      console.log('✅ [SimpleVoteComponent] Extracted user vote:', userVoteData);
       
       setState({
         userVote: userVoteData?.voteType || null,
@@ -46,7 +55,7 @@ const SimpleVoteComponent = ({ linkId, className = '' }) => {
       });
       
     } catch (error) {
-      console.error('Load vote data error:', error);
+      console.error('❌ [SimpleVoteComponent] Load vote data error:', error);
       setState(prev => ({ ...prev, loading: false }));
     }
   };
@@ -61,6 +70,8 @@ const SimpleVoteComponent = ({ linkId, className = '' }) => {
 
     // Prevent double submission
     if (state.voting) return;
+
+    console.log('🗳️ [SimpleVoteComponent] Submitting vote:', { linkId, voteType, user: user.uid || user.id });
 
     // Calculate new state
     const currentVote = state.userVote;
@@ -90,6 +101,8 @@ const SimpleVoteComponent = ({ linkId, className = '' }) => {
       // Submit to backend
       const response = await communityAPI.submitVote(linkId, voteType);
       
+      console.log('📡 [SimpleVoteComponent] Vote response:', response);
+      
       if (response.success) {
         // Success - keep optimistic state and stop loading
         setState(prev => ({ ...prev, voting: false }));
@@ -100,12 +113,17 @@ const SimpleVoteComponent = ({ linkId, className = '' }) => {
           : 'Đã hủy vote!';
         toast.success(message);
         
+        // Reload data to sync with server
+        setTimeout(() => {
+          loadVoteData();
+        }, 500);
+        
       } else {
         throw new Error(response.error || 'Vote failed');
       }
       
     } catch (error) {
-      console.error('Vote error:', error);
+      console.error('❌ [SimpleVoteComponent] Vote error:', error);
       toast.error('Không thể vote. Vui lòng thử lại.');
       
       // Revert to previous state on error

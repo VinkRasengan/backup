@@ -11,7 +11,7 @@ import {
   TrendingUp
 } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
-import VoteComponent from './VoteComponent';
+import SimpleVoteComponent from './SimpleVoteComponent';
 import CommentSection from './CommentSection.jsx';
 import CommentPreview from './CommentPreview.jsx';
 import {
@@ -141,7 +141,7 @@ const UnifiedPostCard = ({
               )}
             </div>            {/* Vote Component - Right side for sidebar layout */}
             <div className="ml-4">
-              <VoteComponent linkId={post.id} postData={post} onVote={onVote} />
+              <SimpleVoteComponent linkId={post.id} />
             </div>
           </div>          {/* Intelligent Image Layout - Facebook/Reddit Style */}
           {(() => {
@@ -409,7 +409,7 @@ const UnifiedPostCard = ({
     >
       <div className="flex">
         {/* Left Vote Section - Smart responsive sizing */}        <div className={`${isMobile ? 'w-8' : 'w-10'} flex flex-col items-center ${spacing.element} ${isDarkMode ? 'bg-gray-750' : 'bg-gray-50'} border-r border-gray-200 dark:border-gray-700`}>
-          <VoteComponent linkId={post.id} postData={post} compact={true} vertical={true} onVote={onVote} />
+                        <SimpleVoteComponent linkId={post.id} />
         </div>
 
         {/* Main Content - Responsive */}

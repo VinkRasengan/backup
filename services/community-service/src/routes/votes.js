@@ -113,6 +113,20 @@ router.post('/:linkId', async (req, res) => {
     const finalUserId = getUserId(req) || userId || 'anonymous';
     const userEmail = getUserEmail(req);
 
+    console.log('🗳️ [POST /votes/:linkId] Debug info:', {
+      linkId,
+      voteType,
+      requestUserId: userId,
+      finalUserId,
+      requestHeaders: {
+        authorization: req.headers.authorization ? 'Bearer ***' : 'none',
+        'x-user-id': req.headers['x-user-id']
+      },
+      requestUser: req.user,
+      authUserId: req.user?.uid,
+      userEmail
+    });
+
     logger.info('Vote submission request', { 
       linkId, 
       voteType, 
@@ -323,21 +337,46 @@ router.get('/:linkId/user', async (req, res) => {
     const { linkId } = req.params;
     const userId = getUserId(req);
 
+    console.log('🔍 [GET /votes/:linkId/user] Debug info:', {
+      linkId,
+      userId,
+      requestHeaders: {
+        authorization: req.headers.authorization ? 'Bearer ***' : 'none',
+        'x-user-id': req.headers['x-user-id']
+      },
+      requestUser: req.user,
+      requestBody: req.body,
+      requestQuery: req.query
+    });
+
     if (!userId) {
+      console.log('❌ [GET /votes/:linkId/user] No user ID found');
       return res.status(400).json({
         success: false,
         error: 'User ID required'
       });
     }
 
+    console.log('🔍 [GET /votes/:linkId/user] Querying votes with:', { linkId, userId });
+
     const userVoteQuery = await db.collection(collections.VOTES)
       .where('linkId', '==', linkId)
       .where('userId', '==', userId)
       .get();
 
+    console.log('📊 [GET /votes/:linkId/user] Query result:', {
+      isEmpty: userVoteQuery.empty,
+      size: userVoteQuery.size
+    });
+
     if (!userVoteQuery.empty) {
       const voteDoc = userVoteQuery.docs[0];
       const voteData = voteDoc.data();
+
+      console.log('✅ [GET /votes/:linkId/user] Found user vote:', {
+        docId: voteDoc.id,
+        voteData: voteData
+      });
 
       res.json({
         success: true,
@@ -350,12 +389,14 @@ router.get('/:linkId/user', async (req, res) => {
         }
       });
     } else {
+      console.log('🔍 [GET /votes/:linkId/user] No vote found for user');
       res.json({
         success: true,
         data: null
       });
     }
   } catch (error) {
+    console.error('❌ [GET /votes/:linkId/user] Error:', error);
     logger.error('Get user vote error', { error: error.message, linkId: req.params.linkId });
     res.status(500).json({
       success: false,
