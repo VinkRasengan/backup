@@ -2,7 +2,7 @@
  * Error handling middleware for Chat Service
  */
 
-const Logger = require('../../shared/utils/logger');
+const { Logger } = require('@factcheck/shared');
 const logger = new Logger('chat-service');
 
 const errorHandler = (error, req, res, next) => {

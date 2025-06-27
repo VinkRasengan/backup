@@ -1,7 +1,7 @@
 const axios = require('axios');
 const cheerio = require('cheerio');
 const crypto = require('crypto');
-const Logger = require('../../shared/utils/logger');
+const { Logger } = require('@factcheck/shared');
 
 const logger = new Logger('link-service');
 

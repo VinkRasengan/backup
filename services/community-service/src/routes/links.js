@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { db, collections } = require('../config/firebase');
-const Logger = require('../../shared/utils/logger');
+const Logger = require('../../../../shared/utils/logger');
 const { getUserId, getUserEmail, getUserDisplayName } = require('../middleware/auth');
 const { createSampleData, clearSampleData } = require('../utils/sampleData');
 
@@ -97,20 +97,20 @@ router.get('/', async (req, res) => {
 
     // Sort links
     switch (sort) {
-      case 'newest':
-        links.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-        break;
-      case 'oldest':
-        links.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
-        break;
-      case 'popular':
-        links.sort((a, b) => (b.voteStats?.score || 0) - (a.voteStats?.score || 0));
-        break;
-      case 'comments':
-        links.sort((a, b) => (b.commentCount || 0) - (a.commentCount || 0));
-        break;
-      default:
-        links.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    case 'newest':
+      links.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      break;
+    case 'oldest':
+      links.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+      break;
+    case 'popular':
+      links.sort((a, b) => (b.voteStats?.score || 0) - (a.voteStats?.score || 0));
+      break;
+    case 'comments':
+      links.sort((a, b) => (b.commentCount || 0) - (a.commentCount || 0));
+      break;
+    default:
+      links.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
     }
 
     // Apply pagination

@@ -1,5 +1,5 @@
 const Joi = require('joi');
-const Logger = require('../../shared/utils/logger');
+const { Logger } = require('@factcheck/shared');
 
 const logger = new Logger('community-service');
 

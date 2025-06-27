@@ -1,83 +1,105 @@
 const express = require('express');
 const router = express.Router();
 const { db, collections } = require('../config/firebase');
-const Logger = require('../../shared/utils/logger');
+const Logger = require('../../../../shared/utils/logger');
 const { getUserId, getUserEmail } = require('../middleware/auth');
 
 const logger = new Logger('community-service');
 
 // Helper function to update link vote count and score using atomic transaction
 async function updateLinkVoteCount(linkId) {
-  try {
-    // Use Firestore transaction for atomic updates
-    return await db.runTransaction(async (transaction) => {
-      // Get all votes for this link
-      const votesSnapshot = await transaction.get(
-        db.collection(collections.VOTES).where('linkId', '==', linkId)
-      );
+  const maxRetries = 3;
+  let retryCount = 0;
+  
+  while (retryCount < maxRetries) {
+    try {
+      // Use Firestore transaction for atomic updates with timeout
+      return await Promise.race([
+        db.runTransaction(async (transaction) => {
+          // Get all votes for this link
+          const votesSnapshot = await transaction.get(
+            db.collection(collections.VOTES).where('linkId', '==', linkId)
+          );
 
-      // Calculate vote statistics
-      const stats = {
-        total: 0,
-        upvotes: 0,
-        downvotes: 0,
-        score: 0
-      };
+          // Calculate vote statistics
+          const stats = {
+            total: 0,
+            upvotes: 0,
+            downvotes: 0,
+            score: 0
+          };
 
-      votesSnapshot.forEach((doc) => {
-        const voteType = doc.data().voteType;
-        stats.total++;
+          votesSnapshot.forEach((doc) => {
+            const voteType = doc.data().voteType;
+            stats.total++;
 
-        if (voteType === 'upvote') {
-          stats.upvotes++;
-        } else if (voteType === 'downvote') {
-          stats.downvotes++;
-        }
-      });
-
-      // Calculate Reddit-style score
-      stats.score = stats.upvotes - stats.downvotes;
-
-      // Update link with vote statistics atomically
-      const linkRef = db.collection(collections.POSTS).doc(linkId);
-      const linkDoc = await transaction.get(linkRef);
-
-      if (linkDoc.exists) {
-        transaction.update(linkRef, {
-          voteCount: stats.total,
-          voteScore: stats.score,
-          voteStats: {
-            upvotes: stats.upvotes,
-            downvotes: stats.downvotes,
-            total: stats.total,
-            score: stats.score
-          },
-          updatedAt: new Date()
-        });
-      }
-
-      // Also try links collection (for backward compatibility)
-      try {
-        const linkRef = db.collection('links').doc(linkId);
-        const linkDoc = await transaction.get(linkRef);
-        if (linkDoc.exists) {
-          transaction.update(linkRef, {
-            voteCount: stats.total,
-            voteScore: stats.score,
-            updatedAt: new Date()
+            if (voteType === 'upvote') {
+              stats.upvotes++;
+            } else if (voteType === 'downvote') {
+              stats.downvotes++;
+            }
           });
-        }
-      } catch (error) {
-        // Ignore if links collection doesn't exist
-        logger.debug('Links collection update failed (expected if not using links collection)', { linkId });
-      }
 
-      logger.info('Vote statistics updated atomically', { linkId, stats });
-      return stats;
-    });
-  } catch (error) {
-    logger.error('Atomic vote count update error', { error: error.message, linkId });
-    throw error;
+          // Calculate Reddit-style score
+          stats.score = stats.upvotes - stats.downvotes;
+
+          // Update link with vote statistics atomically
+          const linkRef = db.collection(collections.POSTS).doc(linkId);
+          const linkDoc = await transaction.get(linkRef);
+
+          if (linkDoc.exists) {
+            transaction.update(linkRef, {
+              voteCount: stats.total,
+              voteScore: stats.score,
+              voteStats: {
+                upvotes: stats.upvotes,
+                downvotes: stats.downvotes,
+                total: stats.total,
+                score: stats.score
+              },
+              updatedAt: new Date()
+            });
+          }
+
+          // Also try links collection (for backward compatibility)
+          try {
+            const linksRef = db.collection('links').doc(linkId);
+            const linksDoc = await transaction.get(linksRef);
+            if (linksDoc.exists) {
+              transaction.update(linksRef, {
+                voteCount: stats.total,
+                voteScore: stats.score,
+                updatedAt: new Date()
+              });
+            }
+          } catch (error) {
+            // Ignore if links collection doesn't exist
+            logger.debug('Links collection update failed (expected if not using links collection)', { linkId });
+          }
+
+          logger.info('Vote statistics updated atomically', { linkId, stats });
+          return stats;
+        }),
+        new Promise((_, reject) => {
+          setTimeout(() => reject(new Error('Transaction timeout')), 10000); // 10 second timeout
+        })
+      ]);
+    } catch (error) {
+      retryCount++;
+      logger.error('Atomic vote count update error', { 
+        error: error.message, 
+        linkId, 
+        attempt: retryCount,
+        maxRetries 
+      });
+      
+      if (retryCount >= maxRetries) {
+        throw error;
+      }
+      
+      // Wait before retry with exponential backoff
+      await new Promise(resolve => setTimeout(resolve, 1000 * Math.pow(2, retryCount - 1)));
+    }
   }
 }
 
@@ -91,10 +113,33 @@ router.post('/:linkId', async (req, res) => {
     const finalUserId = getUserId(req) || userId || 'anonymous';
     const userEmail = getUserEmail(req);
 
-    logger.info('Vote submission request', { linkId, voteType, userId: finalUserId });
+    console.log('🗳️ [POST /votes/:linkId] Debug info:', {
+      linkId,
+      voteType,
+      requestUserId: userId,
+      finalUserId,
+      requestHeaders: {
+        authorization: req.headers.authorization ? 'Bearer ***' : 'none',
+        'x-user-id': req.headers['x-user-id']
+      },
+      requestUser: req.user,
+      authUserId: req.user?.uid,
+      userEmail
+    });
 
-    // Validate required fields
+    logger.info('Vote submission request', { 
+      linkId, 
+      voteType, 
+      userId: finalUserId,
+      requestUserId: userId,
+      hasAuthUser: !!req.user,
+      authUserId: req.user?.uid,
+      userEmail
+    });
+
+    // Enhanced validation
     if (!linkId || !voteType) {
+      logger.warn('Vote submission missing required fields', { linkId, voteType });
       return res.status(400).json({
         success: false,
         error: 'Missing required fields: linkId, voteType'
@@ -103,14 +148,22 @@ router.post('/:linkId', async (req, res) => {
 
     // Validate vote type (Reddit-style)
     if (!['upvote', 'downvote'].includes(voteType)) {
+      logger.warn('Invalid vote type', { voteType, validTypes: ['upvote', 'downvote'] });
       return res.status(400).json({
         success: false,
         error: 'Invalid vote type. Must be "upvote" or "downvote"'
       });
     }
 
+    // Warn if no user ID (but allow anonymous voting for now)
+    if (!finalUserId || finalUserId === 'anonymous') {
+      logger.warn('Anonymous vote detected', { linkId, voteType });
+    }
+
     // Use atomic transaction for vote submission and count update
     const result = await db.runTransaction(async (transaction) => {
+      logger.debug('Starting vote transaction', { linkId, userId: finalUserId, voteType });
+      
       // Check if user already voted
       const existingVoteQuery = await transaction.get(
         db.collection(collections.VOTES)
@@ -126,11 +179,16 @@ router.post('/:linkId', async (req, res) => {
         voteDoc = existingVoteQuery.docs[0];
         const existingVote = voteDoc.data();
 
+        logger.debug('Existing vote found', { 
+          existingVoteType: existingVote.voteType, 
+          newVoteType: voteType 
+        });
+
         if (existingVote.voteType === voteType) {
           // Same vote type - remove vote (toggle off)
           transaction.delete(voteDoc.ref);
           action = 'removed';
-          logger.info('Vote removed (toggle off)', { linkId, userId, voteType });
+          logger.info('Vote removed (toggle off)', { linkId, userId: finalUserId, voteType });
         } else {
           // Different vote type - update vote
           transaction.update(voteDoc.ref, {
@@ -138,7 +196,12 @@ router.post('/:linkId', async (req, res) => {
             updatedAt: new Date()
           });
           action = 'updated';
-          logger.info('Vote updated', { linkId, userId, oldType: existingVote.voteType, newType: voteType });
+          logger.info('Vote updated', { 
+            linkId, 
+            userId: finalUserId, 
+            oldType: existingVote.voteType, 
+            newType: voteType 
+          });
         }
       } else {
         // Create new vote
@@ -154,15 +217,37 @@ router.post('/:linkId', async (req, res) => {
 
         transaction.set(newVoteRef, newVote);
         voteDoc = { id: newVoteRef.id, ref: newVoteRef };
-        logger.info('New vote created', { linkId, userId, voteType });
+        logger.info('New vote created', { linkId, userId: finalUserId, voteType });
       }
 
+      logger.debug('Vote transaction completed', { action, linkId, userId: finalUserId });
       return { voteDoc, action };
     });
 
-    // Update vote count on the link (async, don't wait for better performance)
-    updateLinkVoteCount(linkId).catch(error => {
-      logger.error('Background vote count update failed', { error: error.message, linkId });
+    // Update vote count on the link with retry mechanism
+    setImmediate(async () => {
+      let retries = 3;
+      while (retries > 0) {
+        try {
+          const stats = await updateLinkVoteCount(linkId);
+          logger.info('Vote count updated successfully', { linkId, stats, retries: 3 - retries + 1 });
+          break;
+        } catch (error) {
+          retries--;
+          logger.error('Vote count update failed', { 
+            error: error.message, 
+            linkId, 
+            retriesLeft: retries 
+          });
+          
+          if (retries === 0) {
+            logger.error('Vote count update failed after all retries', { linkId, error: error.message });
+          } else {
+            // Wait before retry
+            await new Promise(resolve => setTimeout(resolve, 1000 * (4 - retries)));
+          }
+        }
+      }
     });
 
     const { voteDoc, action } = result;
@@ -234,7 +319,7 @@ router.get('/:linkId/stats', async (req, res) => {
       success: true,
       data: {
         linkId,
-        ...stats
+        statistics: stats  // Use 'statistics' to match frontend expectation
       }
     });
   } catch (error) {
@@ -252,21 +337,46 @@ router.get('/:linkId/user', async (req, res) => {
     const { linkId } = req.params;
     const userId = getUserId(req);
 
+    console.log('🔍 [GET /votes/:linkId/user] Debug info:', {
+      linkId,
+      userId,
+      requestHeaders: {
+        authorization: req.headers.authorization ? 'Bearer ***' : 'none',
+        'x-user-id': req.headers['x-user-id']
+      },
+      requestUser: req.user,
+      requestBody: req.body,
+      requestQuery: req.query
+    });
+
     if (!userId) {
+      console.log('❌ [GET /votes/:linkId/user] No user ID found');
       return res.status(400).json({
         success: false,
         error: 'User ID required'
       });
     }
 
+    console.log('🔍 [GET /votes/:linkId/user] Querying votes with:', { linkId, userId });
+
     const userVoteQuery = await db.collection(collections.VOTES)
       .where('linkId', '==', linkId)
       .where('userId', '==', userId)
       .get();
 
+    console.log('📊 [GET /votes/:linkId/user] Query result:', {
+      isEmpty: userVoteQuery.empty,
+      size: userVoteQuery.size
+    });
+
     if (!userVoteQuery.empty) {
       const voteDoc = userVoteQuery.docs[0];
       const voteData = voteDoc.data();
+
+      console.log('✅ [GET /votes/:linkId/user] Found user vote:', {
+        docId: voteDoc.id,
+        voteData: voteData
+      });
 
       res.json({
         success: true,
@@ -279,12 +389,14 @@ router.get('/:linkId/user', async (req, res) => {
         }
       });
     } else {
+      console.log('🔍 [GET /votes/:linkId/user] No vote found for user');
       res.json({
         success: true,
         data: null
       });
     }
   } catch (error) {
+    console.error('❌ [GET /votes/:linkId/user] Error:', error);
     logger.error('Get user vote error', { error: error.message, linkId: req.params.linkId });
     res.status(500).json({
       success: false,
@@ -412,6 +524,14 @@ router.post('/batch', async (req, res) => {
   try {
     const { votes } = req.body; // Array of { linkId, voteType, userId }
 
+    // Debug log
+    logger.info('Batch vote request received', { 
+      body: req.body, 
+      votes, 
+      votesLength: votes ? votes.length : 'undefined',
+      isArray: Array.isArray(votes)
+    });
+
     if (!Array.isArray(votes) || votes.length === 0) {
       return res.status(400).json({
         success: false,
@@ -425,7 +545,11 @@ router.post('/batch', async (req, res) => {
     for (const vote of votes) {
       const { linkId, voteType, userId } = vote;
 
+      // Debug log for each vote
+      logger.info('Processing vote', { vote, linkId, voteType, userId });
+
       if (!linkId || !voteType || !userId) {
+        logger.warn('Missing required fields', { vote });
         results.push({
           linkId,
           success: false,
@@ -663,6 +787,87 @@ router.post('/batch/user', async (req, res) => {
     res.status(500).json({
       success: false,
       error: 'Failed to get batch user votes'
+    });
+  }
+});
+
+// Debug endpoint - sync vote stats for a specific link
+router.post('/:linkId/sync', async (req, res) => {
+  try {
+    const { linkId } = req.params;
+    
+    logger.info('Manual vote sync requested', { linkId });
+    
+    const stats = await updateLinkVoteCount(linkId);
+    
+    res.json({
+      success: true,
+      message: 'Vote stats synced successfully',
+      data: {
+        linkId,
+        stats
+      }
+    });
+  } catch (error) {
+    logger.error('Manual vote sync error', { error: error.message, linkId: req.params.linkId });
+    res.status(500).json({
+      success: false,
+      error: 'Failed to sync vote stats'
+    });
+  }
+});
+
+// Debug endpoint - get detailed vote info for a link
+router.get('/:linkId/debug', async (req, res) => {
+  try {
+    const { linkId } = req.params;
+    
+    // Get all votes
+    const votesSnapshot = await db.collection(collections.VOTES)
+      .where('linkId', '==', linkId)
+      .get();
+    
+    const votes = [];
+    const stats = { total: 0, upvotes: 0, downvotes: 0, score: 0 };
+    
+    votesSnapshot.forEach((doc) => {
+      const voteData = doc.data();
+      votes.push({
+        id: doc.id,
+        ...voteData,
+        createdAt: voteData.createdAt?.toDate?.()?.toISOString() || voteData.createdAt
+      });
+      
+      stats.total++;
+      if (voteData.voteType === 'upvote') {
+        stats.upvotes++;
+      } else if (voteData.voteType === 'downvote') {
+        stats.downvotes++;
+      }
+    });
+    
+    stats.score = stats.upvotes - stats.downvotes;
+    
+    // Get link/post data
+    const linkDoc = await db.collection(collections.POSTS).doc(linkId).get();
+    const linkData = linkDoc.exists ? linkDoc.data() : null;
+    
+    res.json({
+      success: true,
+      data: {
+        linkId,
+        votesCount: votes.length,
+        calculatedStats: stats,
+        linkVoteStats: linkData?.voteStats || null,
+        linkVoteScore: linkData?.voteScore || null,
+        votes: votes.slice(0, 10) // Limit to first 10 votes for debugging
+      }
+    });
+  } catch (error) {
+    logger.error('Vote debug error', { error: error.message, linkId: req.params.linkId });
+    res.status(500).json({
+      success: false,
+      error: 'Failed to get vote debug info'
     });
   }
 });

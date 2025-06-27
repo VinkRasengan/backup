@@ -19,8 +19,8 @@ if (fs.existsSync(rootEnvPath)) {
 }
 
 // Import shared utilities
-const Logger = require('../shared/utils/logger');
-const { HealthCheck, commonChecks } = require('../shared/utils/health-check');
+const { Logger } = require('@factcheck/shared');
+const { HealthCheck, commonChecks } = require('@factcheck/shared');
 
 const app = express();
 // Prometheus metrics setup

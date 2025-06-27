@@ -2,7 +2,7 @@
  * Error handling middleware for Auth Service
  */
 
-const Logger = require('../../shared/utils/logger');
+const { Logger } = require('@factcheck/shared');
 const logger = new Logger('auth-service');
 
 const errorHandler = (error, req, res, next) => {

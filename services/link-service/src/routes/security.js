@@ -2,9 +2,10 @@ const express = require('express');
 const router = express.Router();
 const securityAggregatorService = require('../services/securityAggregatorService');
 const screenshotService = require('../services/screenshotService');
-const AuthMiddleware = require('../../shared/middleware/auth');
+const virusTotalService = require('../services/virusTotalService');
+const { authMiddleware: AuthMiddleware } = require('@factcheck/shared');
 const { validateRequest, schemas } = require('../middleware/validation');
-const Logger = require('../../shared/utils/logger');
+const { Logger } = require('@factcheck/shared');
 
 const logger = new Logger('link-service');
 const authMiddleware = new AuthMiddleware(process.env.AUTH_SERVICE_URL);
@@ -29,6 +30,70 @@ router.get('/status', async (req, res, next) => {
   } catch (error) {
     logger.logError(error, req);
     next(error);
+  }
+});
+
+// @route   POST /security/virustotal/scan
+// @desc    Scan URL with VirusTotal
+// @access  Public
+router.post('/virustotal/scan', async (req, res, next) => {
+  try {
+    const { url } = req.body;
+
+    if (!url) {
+      return res.status(400).json({
+        success: false,
+        error: 'URL is required'
+      });
+    }
+
+    logger.info('VirusTotal scan request', { url });
+
+    const result = await virusTotalService.submitUrl(url);
+
+    res.json({
+      success: true,
+      result
+    });
+
+  } catch (error) {
+    logger.logError(error, req);
+    res.status(500).json({
+      success: false,
+      error: error.message || 'VirusTotal scan failed'
+    });
+  }
+});
+
+// @route   POST /security/virustotal/report
+// @desc    Get VirusTotal analysis report
+// @access  Public
+router.post('/virustotal/report', async (req, res, next) => {
+  try {
+    const { url } = req.body;
+
+    if (!url) {
+      return res.status(400).json({
+        success: false,
+        error: 'URL is required'
+      });
+    }
+
+    logger.info('VirusTotal report request', { url });
+
+    const result = await virusTotalService.analyzeUrl(url);
+
+    res.json({
+      success: true,
+      result
+    });
+
+  } catch (error) {
+    logger.logError(error, req);
+    res.status(500).json({
+      success: false,
+      error: error.message || 'VirusTotal report failed'
+    });
   }
 });
 

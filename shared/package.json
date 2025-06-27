@@ -1,0 +1,36 @@
+{
+  "name": "@factcheck/shared",
+  "version": "1.0.0",
+  "description": "Shared utilities for FactCheck Platform microservices",
+  "main": "index.js",
+  "scripts": {
+    "test": "jest --passWithNoTests",
+    "lint": "echo 'Linting shared utilities...'",
+    "build": "echo 'No build step required'",
+    "dev": "echo 'Shared utilities ready for development'"
+  },
+  "dependencies": {
+    "winston": "^3.11.0",
+    "axios": "^1.6.0",
+    "redis": "^4.6.10",
+    "prom-client": "^15.1.0",
+    "jsonwebtoken": "^9.0.2"
+  },
+  "peerDependencies": {
+    "express": "^4.18.0"
+  },
+  "files": [
+    "utils/",
+    "middleware/",
+    "index.js"
+  ],
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "keywords": [
+    "shared",
+    "utilities",
+    "microservices",
+    "factcheck"
+  ]
+}
