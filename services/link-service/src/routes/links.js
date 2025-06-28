@@ -3,9 +3,33 @@ const router = express.Router();
 const linkController = require('../controllers/linkController');
 const { authMiddleware: AuthMiddleware } = require('@factcheck/shared');
 const { validateRequest, schemas } = require('../middleware/validation');
+const { Logger } = require('@factcheck/shared');
 
 // Initialize auth middleware
 const authMiddleware = new AuthMiddleware(process.env.AUTH_SERVICE_URL);
+const logger = new Logger('link-service-routes');
+
+// Debug middleware for link check requests
+const debugLinkCheckMiddleware = (req, res, next) => {
+  if (req.path === '/check' && req.method === 'POST') {
+    logger.info('🔍 DEBUG: Link check request intercepted', {
+      timestamp: new Date().toISOString(),
+      method: req.method,
+      path: req.path,
+      contentType: req.headers['content-type'],
+      contentLength: req.headers['content-length'],
+      userAgent: req.headers['user-agent'],
+      origin: req.headers['origin'],
+      body: req.body,
+      bodyType: typeof req.body,
+      bodyKeys: Object.keys(req.body || {}),
+      rawBodyString: JSON.stringify(req.body),
+      query: req.query,
+      params: req.params
+    });
+  }
+  next();
+};
 
 // Test endpoint
 router.get('/test', (req, res) => {
@@ -55,6 +79,7 @@ router.get('/debug', (req, res) => {
 // @desc    Check a link for security and credibility
 // @access  Public (temporarily bypassed for testing)
 router.post('/check',
+  debugLinkCheckMiddleware, // Debug middleware to capture request details
   // authMiddleware.optionalAuth, // Temporarily disabled
   // validateRequest(schemas.checkLink), // Temporarily disabled
   linkController.checkLink

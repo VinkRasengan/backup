@@ -5,9 +5,10 @@
  */
 
 import React from 'react';
+import PropTypes from 'prop-types';
 import { motion } from 'framer-motion';
 import { cn } from '../../utils/cn';
-import { useResponsive, getSmartGridConfig } from '../../utils/responsiveDesign';
+import { useResponsive } from '../../utils/responsiveDesign';
 
 const SmartGrid = ({
   children,
@@ -453,6 +454,51 @@ export const AutoGrid = ({
       ))}
     </motion.div>
   );
+};
+
+// PropTypes validation
+SmartGrid.propTypes = {
+  children: PropTypes.node.isRequired,
+  type: PropTypes.oneOf(['posts', 'cards', 'images', 'default']),
+  gap: PropTypes.oneOfType([PropTypes.string, PropTypes.oneOf(['sm', 'md', 'lg', 'xl'])]),
+  animate: PropTypes.bool,
+  staggerDelay: PropTypes.number,
+  className: PropTypes.string,
+  autoScale: PropTypes.bool,
+  minItemWidth: PropTypes.number,
+  maxItemWidth: PropTypes.number
+};
+
+PostGrid.propTypes = {
+  children: PropTypes.node.isRequired
+};
+
+CardGrid.propTypes = {
+  children: PropTypes.node.isRequired
+};
+
+ImageGrid.propTypes = {
+  children: PropTypes.node.isRequired
+};
+
+MasonryGrid.propTypes = {
+  children: PropTypes.node.isRequired,
+  columns: PropTypes.shape({
+    mobile: PropTypes.number,
+    tablet: PropTypes.number,
+    desktop: PropTypes.number
+  }),
+  gap: PropTypes.oneOfType([PropTypes.string, PropTypes.oneOf(['sm', 'md', 'lg'])]),
+  className: PropTypes.string,
+  autoScale: PropTypes.bool
+};
+
+AutoGrid.propTypes = {
+  children: PropTypes.node.isRequired,
+  minItemWidth: PropTypes.number,
+  maxItemWidth: PropTypes.number,
+  gap: PropTypes.oneOfType([PropTypes.string, PropTypes.oneOf(['sm', 'md', 'lg'])]),
+  className: PropTypes.string
 };
 
 export default SmartGrid;

@@ -23,16 +23,20 @@ class CommunityAPI {
 
   // Get auth token from localStorage
   getAuthToken() {
-    return localStorage.getItem('backendToken') || localStorage.getItem('authToken');
+    const token = localStorage.getItem('backendToken') || localStorage.getItem('authToken') || localStorage.getItem('token') || localStorage.getItem('firebaseToken');
+    console.log('🔑 Getting auth token:', token ? `${token.substring(0, 30)}...` : 'No token found');
+    return token;
   }
 
   // Common headers for authenticated requests
   getAuthHeaders() {
     const token = this.getAuthToken();
-    return {
+    const headers = {
       'Content-Type': 'application/json',
       ...(token && { 'Authorization': `Bearer ${token}` })
     };
+    console.log('🔑 Auth headers:', headers);
+    return headers;
   }
 
   // Handle API responses
@@ -63,14 +67,26 @@ class CommunityAPI {
   // Submit to community (create new link) - use API Gateway routing
   async submitToCommunity(data) {
     try {
-      const response = await fetch(`${this.baseURL}/api/links`, {
+      console.log('🌐 submitToCommunity called with data:', data);
+      const url = `${this.baseURL}/api/links`;
+      const headers = this.getAuthHeaders();
+      console.log('🌐 Request URL:', url);
+      console.log('🌐 Request headers:', headers);
+      console.log('🌐 Request body:', JSON.stringify(data));
+      
+      const response = await fetch(url, {
         method: 'POST',
-        headers: this.getAuthHeaders(),
+        headers: headers,
         body: JSON.stringify(data)
       });
+      
+      console.log('🌐 Response status:', response.status);
+      console.log('🌐 Response headers:', response.headers);
+      
       return await this.handleResponse(response);
     } catch (error) {
       console.error('Submit to community error:', error);
+      console.error('Error stack:', error.stack);
       throw error;
     }
   }

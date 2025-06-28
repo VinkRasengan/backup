@@ -24,20 +24,7 @@ import { useTheme } from '../context/ThemeContext';
 import toast from 'react-hot-toast';
 import { auth } from '../config/firebase';
 
-// Custom URL validation that auto-adds protocol
-const normalizeUrl = (url) => {
-  if (!url) return url;
-
-  // Remove whitespace
-  url = url.trim();
-
-  // If no protocol, add https://
-  if (!/^https?:\/\//i.test(url)) {
-    url = 'https://' + url;
-  }
-
-  return url;
-};
+import { normalizeUrl } from '../utils/urlUtils';
 
 const schema = yup.object({
   url: yup
@@ -223,11 +210,15 @@ const SubmitArticlePage = () => {
       console.log('🔑 Token length:', token ? token.length : 'No token');
 
       try {
-        // Use API service instead of direct fetch to ensure correct backend URL
-        const api = (await import('../services/api')).default;
-        const response = await api.post('/links/submit-to-community', articleData);
+        // Use communityAPI service with correct endpoint
+        console.log('📡 Importing communityAPI...');
+        const { communityAPI } = await import('../services/api');
+        console.log('📡 communityAPI imported:', communityAPI);
+        
+        console.log('🚀 Calling submitToCommunity with data:', articleData);
+        const response = await communityAPI.submitToCommunity(articleData);
 
-        console.log('✅ Submit success:', response.data);
+        console.log('✅ Submit success:', response);
 
         // Trigger community refresh
         localStorage.setItem('newCommunitySubmission', Date.now().toString());
@@ -239,9 +230,16 @@ const SubmitArticlePage = () => {
         }, 2000);
       } catch (fetchError) {
         console.error('❌ API error:', fetchError);
+        console.error('❌ Error type:', fetchError.constructor.name);
+        console.error('❌ Error message:', fetchError.message);
+        console.error('❌ Error stack:', fetchError.stack);
         console.error('❌ Response status:', fetchError.response?.status);
         console.error('❌ Response data:', fetchError.response?.data);
-        throw new Error(fetchError.response?.data?.message || fetchError.message || 'Failed to submit article');
+        
+        // Don't throw, show toast instead
+        toast.error(fetchError.message || 'Không thể gửi bài viết');
+        setIsLoading(false);
+        return;
       }
     } catch (error) {
       console.error('Error submitting article:', error);

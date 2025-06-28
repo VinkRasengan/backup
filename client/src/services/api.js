@@ -20,7 +20,10 @@ const getApiBaseUrl = () => {
 
 const api = axios.create({
   baseURL: getApiBaseUrl(),
-  timeout: 30000,
+  timeout: 60000, // Increase main timeout to 60 seconds
+  validateStatus: function (status) {
+    return status < 500; // Don't throw error for 4xx status codes
+  }
 });
 
 console.log('🔗 API Base URL:', api.defaults.baseURL);
@@ -111,33 +114,58 @@ export const linkAPI = {
   checkLink: async (url) => {
     console.log('🔍 Checking URL with backend API via Gateway:', url);
 
+    // Create a common axios config for all requests
+    const requestConfig = {
+      timeout: 60000, // Increase timeout to 60 seconds
+      headers: { 'Content-Type': 'application/json' },
+      validateStatus: function (status) {
+        return status < 500; // Resolve only if the status code is less than 500
+      }
+    };
+
     // ✅ Strategy 1: Direct Link Service (fastest & most reliable)
     try {
       console.log('🚀 Using direct link service (http://localhost:3002)');
-      const directResponse = await axios.post('http://localhost:3002/links/check', { url }, {
-        timeout: 30000,
-        headers: { 'Content-Type': 'application/json' }
-      });
-      console.log('✅ Direct link service success');
-      return directResponse;
+      const directResponse = await axios.post('http://localhost:3002/links/check', { url }, requestConfig);
+      
+      if (directResponse.status >= 200 && directResponse.status < 300) {
+        console.log('✅ Direct link service success');
+        return directResponse;
+      } else {
+        throw new Error(`HTTP ${directResponse.status}: ${directResponse.statusText}`);
+      }
     } catch (directError) {
-      console.log('🔄 Direct link service failed:', directError.response?.status, directError.message);
+      console.log('🔄 Direct link service failed:', directError.response?.status || 'NETWORK_ERROR', directError.message);
     }
 
     // ✅ Strategy 2: API Gateway via /link-check (backup proxy route)
     try {
       console.log('🔄 Using backup API Gateway route (/link-check)');
-      return await api.post('/link-check/check', { url });
+      const backupResponse = await api.post('/link-check/check', { url });
+      
+      if (backupResponse.status >= 200 && backupResponse.status < 300) {
+        console.log('✅ Backup API Gateway success');
+        return backupResponse;
+      } else {
+        throw new Error(`HTTP ${backupResponse.status}: ${backupResponse.statusText}`);
+      }
     } catch (backupError) {
-      console.log('🔄 Backup API Gateway failed:', backupError.response?.status, backupError.message);
+      console.log('🔄 Backup API Gateway failed:', backupError.response?.status || 'NETWORK_ERROR', backupError.message);
     }
 
     // ✅ Strategy 3: API Gateway via /links (original proxy route)
     try {
       console.log('🔄 Using main API Gateway route (/links)');
-      return await api.post('/links/check', { url });
+      const mainResponse = await api.post('/links/check', { url });
+      
+      if (mainResponse.status >= 200 && mainResponse.status < 300) {
+        console.log('✅ Main API Gateway success');
+        return mainResponse;
+      } else {
+        throw new Error(`HTTP ${mainResponse.status}: ${mainResponse.statusText}`);
+      }
     } catch (authError) {
-      console.log('🔄 Main API Gateway failed:', authError.response?.status, authError.message);
+      console.log('🔄 Main API Gateway failed:', authError.response?.status || 'NETWORK_ERROR', authError.message);
     }
 
     // ✅ Strategy 4: VirusTotal via backend service as last resort
@@ -147,6 +175,7 @@ export const linkAPI = {
       const analysis = await virusTotalService.analyzeUrl(url);
 
       if (analysis.success) {
+        console.log('✅ VirusTotal fallback success');
         return {
           data: {
             message: 'Link đã được kiểm tra thành công (VirusTotal via backend)',
@@ -176,8 +205,8 @@ export const linkAPI = {
     }
 
     // All strategies failed
-    console.error('🔄 All API strategies failed for URL check');
-    throw new Error('Unable to check URL - all API endpoints are unavailable');
+    console.error('❌ All API strategies failed for URL check');
+    throw new Error('Unable to check URL - all API endpoints are unavailable. Please check if services are running.');
   },
   getHistory: (page = 1, limit = 20) => api.get(`/links/history?page=${page}&limit=${limit}`),
   getLinkResult: (linkId) => api.get(`/links/${linkId}`),

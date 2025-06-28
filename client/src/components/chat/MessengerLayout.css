@@ -108,6 +108,7 @@
   margin-bottom: 4px;
   width: 100%;
   transition: all 0.2s ease;
+  animation: slideInMessage 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 
 .message-container.user {
@@ -553,9 +554,6 @@
 }
 
 /* Animation Improvements */
-.message-container {
-  animation: slideInMessage 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-}
 
 @keyframes slideInMessage {
   from {

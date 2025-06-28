@@ -588,9 +588,46 @@ app.use('/users', createProxyMiddleware({
 app.use('/link-check', createProxyMiddleware({
   target: services['link-service'],
   changeOrigin: true,
+  timeout: 60000, // Add timeout configuration
+  proxyTimeout: 60000, // Add proxy timeout
   pathRewrite: { '^/link-check': '/links' },
+  onProxyReq: (proxyReq, req, res) => {
+    logger.info('Proxying link-check request to link-service', {
+      method: req.method,
+      url: req.url,
+      target: `${services['link-service']}${proxyReq.path}`
+    });
+
+    // Set connection keep-alive to prevent timeouts
+    proxyReq.setHeader('Connection', 'keep-alive');
+    proxyReq.setHeader('Keep-Alive', 'timeout=60, max=1000');
+
+    // Forward authentication headers
+    if (req.headers.authorization) {
+      proxyReq.setHeader('Authorization', req.headers.authorization);
+    }
+
+    // Handle JSON body for POST/PUT requests
+    if (req.body && (req.method === 'POST' || req.method === 'PUT')) {
+      const bodyData = JSON.stringify(req.body);
+      proxyReq.setHeader('Content-Type', 'application/json');
+      proxyReq.setHeader('Content-Length', Buffer.byteLength(bodyData));
+      proxyReq.write(bodyData);
+    }
+  },
+  onProxyRes: (proxyRes, req, res) => {
+    logger.info('Link-check proxy response from link-service', {
+      status: proxyRes.statusCode,
+      url: req.url
+    });
+  },
   onError: (err, req, res) => {
-    logger.error('Link service proxy error', { error: err.message });
+    logger.error('Link service proxy error (link-check)', { 
+      error: err.message,
+      stack: err.stack,
+      url: req.url,
+      method: req.method
+    });
     if (!res.headersSent) {
       res.status(503).json({
         error: 'Link service unavailable',

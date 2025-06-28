@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
+import PropTypes from 'prop-types';
 import { ChevronUp, ChevronDown } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
@@ -211,6 +212,16 @@ const VoteComponentSimplified = ({ linkId, className = '' }) => {
       )}
     </div>
   );
+};
+
+// PropTypes validation
+VoteComponentSimplified.propTypes = {
+  linkId: PropTypes.string.isRequired,
+  className: PropTypes.string
+};
+
+VoteComponentSimplified.defaultProps = {
+  className: ''
 };
 
 export default VoteComponentSimplified; 

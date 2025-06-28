@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Submit Page Debug Test</title>
+</head>
+<body>
+    <h1>🔍 Submit Page Debug Test</h1>
+    
+    <div>
+        <h3>Test Protocol-Relative URL Fix</h3>
+        <input type="text" id="urlInput" placeholder="Enter URL..." value="//www.plantuml.com/plantuml/png/SoWkIImgAStDuNBAJrBGjLDmpCbCJbMmKiX8pSd9vt98pKi1IW80">
+        <button onclick="testUrlNormalization()">Test Normalization</button>
+        <button onclick="testDirectBackend()">Test Backend Direct</button>
+        <div id="result"></div>
+    </div>
+
+    <script>
+        // Copy exact normalization function from frontend
+        const normalizeUrl = (url) => {
+            if (!url) return url;
+            url = url.trim();
+            
+            // Handle protocol-relative URLs (//example.com)
+            if (url.startsWith('//')) {
+                url = 'https:' + url;
+            }
+            // If no protocol, add https://
+            else if (!/^https?:\/\//i.test(url)) {
+                url = 'https://' + url;
+            }
+            
+            return url;
+        };
+
+        function testUrlNormalization() {
+            const inputUrl = document.getElementById('urlInput').value;
+            const normalizedUrl = normalizeUrl(inputUrl);
+            
+            console.log('🧪 Testing URL normalization...');
+            console.log('Original:', inputUrl);
+            console.log('Normalized:', normalizedUrl);
+            
+            // Test if normalized URL is valid
+            try {
+                new URL(normalizedUrl);
+                console.log('✅ Normalized URL is valid');
+                
+                document.getElementById('result').innerHTML = `
+                    <strong>✅ Normalization Test:</strong><br>
+                    <strong>Original:</strong> "${inputUrl}"<br>
+                    <strong>Normalized:</strong> "${normalizedUrl}"<br>
+                    <strong>Valid:</strong> ✅ Yes<br>
+                    <strong>Length:</strong> ${normalizedUrl.length} chars
+                `;
+                
+            } catch (error) {
+                console.log('❌ Normalized URL is invalid:', error.message);
+                
+                document.getElementById('result').innerHTML = `
+                    <strong>❌ Normalization Test:</strong><br>
+                    <strong>Original:</strong> "${inputUrl}"<br>
+                    <strong>Normalized:</strong> "${normalizedUrl}"<br>
+                    <strong>Valid:</strong> ❌ No<br>
+                    <strong>Error:</strong> ${error.message}
+                `;
+            }
+        }
+
+        async function testDirectBackend() {
+            const inputUrl = document.getElementById('urlInput').value;
+            const normalizedUrl = normalizeUrl(inputUrl);
+            
+            console.log('🚀 Testing direct backend call...');
+            console.log('Sending URL:', normalizedUrl);
+            
+            const requestBody = { url: normalizedUrl };
+            console.log('Request body:', JSON.stringify(requestBody));
+            
+            try {
+                const response = await fetch('http://localhost:3002/links/check', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(requestBody)
+                });
+                
+                const result = await response.json();
+                
+                console.log('Response status:', response.status);
+                console.log('Response data:', result);
+                
+                if (response.ok) {
+                    document.getElementById('result').innerHTML = `
+                        <strong>✅ Backend Test Success:</strong><br>
+                        <strong>Status:</strong> ${response.status}<br>
+                        <strong>Success:</strong> ${result.success}<br>
+                        <strong>URL:</strong> "${normalizedUrl}"<br>
+                        <strong>Title:</strong> ${result.result?.title || 'N/A'}
+                    `;
+                } else {
+                    document.getElementById('result').innerHTML = `
+                        <strong>❌ Backend Test Failed:</strong><br>
+                        <strong>Status:</strong> ${response.status}<br>
+                        <strong>Error:</strong> ${result.error}<br>
+                        <strong>Code:</strong> ${result.code}<br>
+                        <strong>Details:</strong> ${result.details || 'None'}<br>
+                        <strong>URL Sent:</strong> "${normalizedUrl}"<br>
+                        <strong>Request Body:</strong> ${JSON.stringify(requestBody)}
+                    `;
+                }
+                
+            } catch (error) {
+                console.error('Network error:', error);
+                document.getElementById('result').innerHTML = `
+                    <strong>💥 Network Error:</strong><br>
+                    <strong>Error:</strong> ${error.message}<br>
+                    <strong>URL:</strong> "${normalizedUrl}"
+                `;
+            }
+        }
+
+        // Auto-test on page load
+        window.onload = function() {
+            console.log('🚀 Submit page debug tool loaded');
+            console.log('Testing with PlantUML URL...');
+            testUrlNormalization();
+        };
+    </script>
+
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        div { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        button { padding: 10px 15px; margin: 5px; background: #007bff; color: white; border: none; border-radius: 3px; cursor: pointer; }
+        button:hover { background: #0056b3; }
+        input { padding: 8px; margin: 5px; width: 500px; }
+        #result { margin-top: 15px; padding: 15px; background: #f8f9fa; border-radius: 3px; font-family: monospace; white-space: pre-wrap; }
+    </style>
+</body>
+</html> 

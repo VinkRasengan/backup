@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import PropTypes from 'prop-types';
 import { useAuth } from '../../context/AuthContext';
 import { Mail, X, RefreshCw } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -66,6 +67,11 @@ const EmailVerificationBanner = ({ onDismiss }) => {
       </div>
     </motion.div>
   );
+};
+
+// PropTypes validation
+EmailVerificationBanner.propTypes = {
+  onDismiss: PropTypes.func
 };
 
 export default EmailVerificationBanner;

@@ -17,7 +17,11 @@ router.get('/', async (req, res) => {
       category,
       search,
       newsOnly = false,
-      includeNews = true
+      includeNews = true,
+      // New enhanced filter parameters
+      voteFilter = 'all', // all, safe, unsafe, suspicious
+      timeFilter = 'all', // all, today, week, month
+      sourceFilter = 'all' // all, verified, user_posts, news_only
     } = req.query;
 
     const offset = (page - 1) * limit;
@@ -29,7 +33,10 @@ router.get('/', async (req, res) => {
       category,
       search,
       newsOnly,
-      includeNews
+      includeNews,
+      voteFilter,
+      timeFilter,
+      sourceFilter
     });
 
     // Build query
@@ -40,11 +47,16 @@ router.get('/', async (req, res) => {
       query = query.where('category', '==', category);
     }
 
-    // Filter by type if newsOnly is true
-    if (newsOnly === 'true' || newsOnly === true) {
+    // Filter by type based on sourceFilter and existing logic
+    if (sourceFilter === 'news_only' || newsOnly === 'true' || newsOnly === true) {
       query = query.where('type', '==', 'news');
-    } else if (includeNews === 'false' || includeNews === false) {
+    } else if (sourceFilter === 'user_posts' || includeNews === 'false' || includeNews === false) {
       query = query.where('type', '==', 'user_post');
+    }
+
+    // Filter by verified status if sourceFilter is 'verified'
+    if (sourceFilter === 'verified') {
+      query = query.where('verified', '==', true);
     }
 
     // Get all documents first (workaround for missing composite index)
@@ -69,7 +81,7 @@ router.get('/', async (req, res) => {
         urlToImage: data.urlToImage || null,
         thumbnailUrl: data.thumbnailUrl || null,
         // Vote and engagement fields
-        voteStats: data.voteStats || { upvotes: 0, downvotes: 0, total: 0, score: 0 },
+        voteStats: data.voteStats || { upvotes: 0, downvotes: 0, total: 0, score: 0, safe: 0, unsafe: 0, suspicious: 0 },
         voteScore: data.voteScore || 0,
         commentCount: data.commentCount || 0,
         viewCount: data.viewCount || 0,
@@ -95,7 +107,49 @@ router.get('/', async (req, res) => {
       );
     }
 
-    // Sort links
+    // Apply vote filter
+    if (voteFilter && voteFilter !== 'all') {
+      links = links.filter(link => {
+        const voteStats = link.voteStats || {};
+        switch (voteFilter) {
+        case 'safe':
+          return (voteStats.safe || 0) > (voteStats.unsafe || 0) && (voteStats.safe || 0) > (voteStats.suspicious || 0);
+        case 'unsafe':
+          return (voteStats.unsafe || 0) > (voteStats.safe || 0) && (voteStats.unsafe || 0) > (voteStats.suspicious || 0);
+        case 'suspicious':
+          return (voteStats.suspicious || 0) > (voteStats.safe || 0) && (voteStats.suspicious || 0) > (voteStats.unsafe || 0);
+        default:
+          return true;
+        }
+      });
+    }
+
+    // Apply time filter
+    if (timeFilter && timeFilter !== 'all') {
+      const now = new Date();
+      const filterDate = new Date();
+      
+      switch (timeFilter) {
+      case 'today':
+        filterDate.setHours(0, 0, 0, 0);
+        break;
+      case 'week':
+        filterDate.setDate(now.getDate() - 7);
+        break;
+      case 'month':
+        filterDate.setMonth(now.getMonth() - 1);
+        break;
+      default:
+        filterDate.setFullYear(1970); // Include all
+      }
+
+      links = links.filter(link => {
+        const createdAt = new Date(link.createdAt);
+        return createdAt >= filterDate;
+      });
+    }
+
+    // Enhanced sorting options
     switch (sort) {
     case 'newest':
       links.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
@@ -103,11 +157,49 @@ router.get('/', async (req, res) => {
     case 'oldest':
       links.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
       break;
+    case 'trending':
     case 'popular':
-      links.sort((a, b) => (b.voteStats?.score || 0) - (a.voteStats?.score || 0));
+      // Trending: combination of recent activity, votes, and engagement
+      links.sort((a, b) => {
+        const aScore = (a.voteStats?.score || 0) + (a.commentCount || 0) * 2 + (a.viewCount || 0) * 0.1;
+        const bScore = (b.voteStats?.score || 0) + (b.commentCount || 0) * 2 + (b.viewCount || 0) * 0.1;
+        
+        // Factor in recency (newer posts get slight boost)
+        const aRecency = (Date.now() - new Date(a.createdAt).getTime()) / (1000 * 60 * 60 * 24); // days old
+        const bRecency = (Date.now() - new Date(b.createdAt).getTime()) / (1000 * 60 * 60 * 24);
+        
+        const aFinalScore = aScore * Math.exp(-aRecency * 0.1); // Exponential decay
+        const bFinalScore = bScore * Math.exp(-bRecency * 0.1);
+        
+        return bFinalScore - aFinalScore;
+      });
       break;
+    case 'most_voted':
+      links.sort((a, b) => {
+        const aTotal = (a.voteStats?.safe || 0) + (a.voteStats?.unsafe || 0) + (a.voteStats?.suspicious || 0);
+        const bTotal = (b.voteStats?.safe || 0) + (b.voteStats?.unsafe || 0) + (b.voteStats?.suspicious || 0);
+        return bTotal - aTotal;
+      });
+      break;
+    case 'most_commented':
     case 'comments':
       links.sort((a, b) => (b.commentCount || 0) - (a.commentCount || 0));
+      break;
+    case 'controversial':
+      // Posts with high engagement but mixed votes
+      links.sort((a, b) => {
+        const aControversy = Math.min(
+          (a.voteStats?.safe || 0) + (a.voteStats?.unsafe || 0),
+          (a.voteStats?.safe || 0) + (a.voteStats?.suspicious || 0),
+          (a.voteStats?.unsafe || 0) + (a.voteStats?.suspicious || 0)
+        );
+        const bControversy = Math.min(
+          (b.voteStats?.safe || 0) + (b.voteStats?.unsafe || 0),
+          (b.voteStats?.safe || 0) + (b.voteStats?.suspicious || 0),
+          (b.voteStats?.unsafe || 0) + (b.voteStats?.suspicious || 0)
+        );
+        return bControversy - aControversy;
+      });
       break;
     default:
       links.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
@@ -121,7 +213,13 @@ router.get('/', async (req, res) => {
       total,
       returned: paginatedLinks.length,
       page,
-      limit
+      limit,
+      appliedFilters: {
+        voteFilter,
+        timeFilter,
+        sourceFilter,
+        sort
+      }
     });
 
     res.json({
@@ -142,7 +240,10 @@ router.get('/', async (req, res) => {
           category,
           search,
           newsOnly,
-          includeNews
+          includeNews,
+          voteFilter,
+          timeFilter,
+          sourceFilter
         }
       }
     });

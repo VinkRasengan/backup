@@ -316,8 +316,8 @@ class SimpleStart {
     }
 
     // Auto-open frontend client
-    console.log('\n🌐 Opening frontend application...');
-    this.openFrontendClient();
+    // console.log('\n🌐 Opening frontend application...');
+    // this.openFrontendClient();
   }
 
   async openMonitoringDashboard() {
