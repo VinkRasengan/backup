@@ -82,7 +82,10 @@ module.exports = function(app) {
   // Proxy backend API routes only
   app.use('/news', createProxyMiddleware(createCommonProxy('News', '📰')));
   app.use('/links', createProxyMiddleware(createCommonProxy('Links', '🔗')));
-  app.use('/admin', createProxyMiddleware(createCommonProxy('Admin', '⚙️')));
+  // ❌ REMOVED: /admin is a FRONTEND route, not backend API
+  // Frontend routes like /admin should be handled by React Router
+  // Backend admin APIs are at /api/admin/* (already handled by /api proxy above)
+  // app.use('/admin', createProxyMiddleware(createCommonProxy('Admin', '⚙️')));
   app.use('/posts', createProxyMiddleware(createCommonProxy('Posts', '📝')));
   app.use('/votes', createProxyMiddleware(createCommonProxy('Votes', '👍')));
   app.use('/comments', createProxyMiddleware(createCommonProxy('Comments', '💬')));

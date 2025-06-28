@@ -116,8 +116,9 @@ const EmailVerificationBanner = ({ onDismiss }) => {
   const { user, resendVerificationEmail } = useAuth();
   const [isResending, setIsResending] = useState(false);
 
-  // Don't show banner if user is verified or not logged in
-  if (!user || user.emailVerified) {
+  // Don't show banner if user is verified, admin, or not logged in
+  const isAdmin = user?.email?.endsWith('@factcheck.com');
+  if (!user || user.emailVerified || isAdmin) {
     return null;
   }
 

@@ -328,7 +328,7 @@ const NavigationSidebar = ({ isOpen, onToggle }) => {
                     <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
                       {user.displayName || user.email || 'Người dùng'}
                     </p>
-                    {user.emailVerified && (
+                    {(user.emailVerified || user.email?.endsWith('@factcheck.com')) && (
                       <div className="w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center">
                         <span className="text-white text-xs">✓</span>
                       </div>

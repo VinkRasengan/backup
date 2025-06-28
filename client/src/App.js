@@ -124,6 +124,14 @@ function App() {
                 <AdminDashboard />
               </ProtectedRoute>
             }
+          />
+          <Route
+            path="/admin/dashboard"
+            element={
+              <ProtectedRoute>
+                <AdminDashboard />
+              </ProtectedRoute>
+            }
           />          <Route
             path="/community"
             element={<CommunityPage />}

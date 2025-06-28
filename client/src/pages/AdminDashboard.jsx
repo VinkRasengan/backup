@@ -32,33 +32,84 @@ const AdminDashboard = () => {
 
   useEffect(() => {
     loadAdminData();
-  }, [selectedStatus, selectedReason, pagination.currentPage]);
+  }, [selectedStatus, selectedReason, pagination?.currentPage]);
 
   const loadAdminData = async () => {
     try {
       setLoading(true);
 
-      // Load reports
+      // Load reports with fallback pagination
       const reportsResponse = await communityAPI.getAllReports(
-        pagination.currentPage,
+        pagination?.currentPage || 1,
         20,
         selectedStatus === 'all' ? null : selectedStatus,
         selectedReason === 'all' ? null : selectedReason
       );
-      setReports(reportsResponse.reports);
-      setPagination(reportsResponse.pagination);
+      
+      // Handle response safely
+      if (reportsResponse && reportsResponse.reports) {
+        setReports(reportsResponse.reports);
+        setPagination(reportsResponse.pagination || {
+          currentPage: 1,
+          totalPages: 1,
+          totalReports: 0
+        });
+      } else {
+        // Fallback for empty/failed response
+        setReports([]);
+        setPagination({
+          currentPage: 1,
+          totalPages: 1,
+          totalReports: 0
+        });
+      }
 
-      // Load statistics
-      const statsResponse = await communityAPI.getReportStatistics();
-      setStatistics(statsResponse.statistics);
+      // Load statistics with error handling
+      try {
+        const statsResponse = await communityAPI.getReportStatistics();
+        setStatistics(statsResponse?.statistics || {
+          pending: 0,
+          reviewed: 0,
+          resolved: 0,
+          total: 0
+        });
+      } catch (statsError) {
+        console.error('Failed to load statistics:', statsError);
+        setStatistics({
+          pending: 0,
+          reviewed: 0,
+          resolved: 0,
+          total: 0
+        });
+      }
 
-      // Load notifications
-      const notificationsResponse = await communityAPI.getAdminNotifications();
-      setNotifications(notificationsResponse.notifications || []);
+      // Load notifications with error handling
+      try {
+        const notificationsResponse = await communityAPI.getAdminNotifications();
+        setNotifications(notificationsResponse?.notifications || []);
+      } catch (notifError) {
+        console.error('Failed to load notifications:', notifError);
+        setNotifications([]);
+      }
 
     } catch (error) {
       console.error('Load admin data error:', error);
       toast.error('Không thể tải dữ liệu admin');
+      
+      // Set safe fallback states on error
+      setReports([]);
+      setPagination({
+        currentPage: 1,
+        totalPages: 1,
+        totalReports: 0
+      });
+      setStatistics({
+        pending: 0,
+        reviewed: 0,
+        resolved: 0,
+        total: 0
+      });
+      setNotifications([]);
     } finally {
       setLoading(false);
     }
@@ -276,7 +327,7 @@ const AdminDashboard = () => {
             <CardHeader>
               <CardTitle className="flex items-center">
                 <FlagIcon className="w-5 h-5 mr-2" />
-                Báo cáo từ người dùng ({pagination.totalReports})
+                Báo cáo từ người dùng ({pagination?.totalReports || 0})
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -300,7 +351,7 @@ const AdminDashboard = () => {
                               {report.status}
                             </span>
                             <span className="text-sm text-gray-500">
-                              {communityAPI.getReportReasonDisplay(report.reason)}
+                              {communityAPI.getReportReasonDisplay ? communityAPI.getReportReasonDisplay(report.reason) : report.reason}
                             </span>
                             <span className="text-sm text-gray-400">
                               {formatDate(report.createdAt)}
@@ -364,24 +415,24 @@ const AdminDashboard = () => {
               )}
 
               {/* Pagination */}
-              {pagination.totalPages > 1 && (
+              {pagination && pagination.totalPages > 1 && (
                 <div className="flex items-center justify-between mt-6 pt-6 border-t border-gray-200">
                   <Button
                     variant="outline"
                     onClick={() => setPagination(prev => ({ ...prev, currentPage: prev.currentPage - 1 }))}
-                    disabled={pagination.currentPage === 1}
+                    disabled={!pagination || pagination.currentPage === 1}
                   >
                     Trang trước
                   </Button>
                   
                   <span className="text-sm text-gray-700">
-                    Trang {pagination.currentPage} / {pagination.totalPages}
+                    Trang {pagination?.currentPage || 1} / {pagination?.totalPages || 1}
                   </span>
                   
                   <Button
                     variant="outline"
                     onClick={() => setPagination(prev => ({ ...prev, currentPage: prev.currentPage + 1 }))}
-                    disabled={pagination.currentPage === pagination.totalPages}
+                    disabled={!pagination || pagination.currentPage === pagination.totalPages}
                   >
                     Trang sau
                   </Button>
