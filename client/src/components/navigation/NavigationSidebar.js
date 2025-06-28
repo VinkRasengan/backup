@@ -34,7 +34,10 @@ const NavigationSidebar = ({ isOpen, onToggle }) => {
 
   // Get real-time data from Firestore
   const firestoreStats = useFirestoreStats();
-  const notifications = useRealtimeNotifications();  // Memoized navigation items structure
+  
+  // Disable realtime notifications on submit page to reduce overhead
+  const enableNotifications = !location.pathname.includes('/submit');
+  const notifications = useRealtimeNotifications(enableNotifications);  // Memoized navigation items structure
   const navigationItems = useMemo(() => [
     {
       id: 'home',

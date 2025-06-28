@@ -134,7 +134,7 @@ export const useFirestoreStats = () => {
   return stats;
 };
 
-export const useRealtimeNotifications = () => {
+export const useRealtimeNotifications = (enabled = true) => {
   const { user } = useAuth();
   const [notifications, setNotifications] = useState({
     count: 0,
@@ -143,7 +143,8 @@ export const useRealtimeNotifications = () => {
   });
 
   useEffect(() => {
-    if (!user || (!user.uid && !user.id)) {
+    // Skip if disabled or no user
+    if (!enabled || !user || (!user.uid && !user.id)) {
       setNotifications({ count: 0, items: [], loading: false });
       return;
     }

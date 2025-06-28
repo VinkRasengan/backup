@@ -360,6 +360,19 @@ app.use('/api/links', createProxyMiddleware({
       url: req.url,
       target: services['community-service']
     });
+
+    // Forward authentication headers
+    if (req.headers.authorization) {
+      proxyReq.setHeader('Authorization', req.headers.authorization);
+    }
+
+    // Handle JSON body for POST/PUT requests
+    if (req.body && (req.method === 'POST' || req.method === 'PUT')) {
+      const bodyData = JSON.stringify(req.body);
+      proxyReq.setHeader('Content-Type', 'application/json');
+      proxyReq.setHeader('Content-Length', Buffer.byteLength(bodyData));
+      proxyReq.write(bodyData);
+    }
   },
   onProxyRes: (proxyRes, req, res) => {
     logger.info('Community links proxy response', {
@@ -369,7 +382,12 @@ app.use('/api/links', createProxyMiddleware({
     });
   },
   onError: (err, req, res) => {
-    logger.error('Community service proxy error (links)', { error: err.message });
+    logger.error('Community service proxy error (links)', { 
+      error: err.message,
+      stack: err.stack,
+      url: req.url,
+      method: req.method
+    });
     if (!res.headersSent) {
       res.status(503).json({
         error: 'Community service unavailable',
