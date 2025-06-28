@@ -347,7 +347,7 @@ const CommunityFeedPage = () => {
                   {article.tags.slice(0, 5).map((tag, index) => (
                     <span
                       key={index}
-                      className="px-2 py-1 text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full"
+                      className="px-2 py-1 text-xs bg-blue-50/70 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300 rounded-full"
                     >
                       #{tag}
                     </span>
@@ -363,7 +363,7 @@ const CommunityFeedPage = () => {
               onClick={() => toggleComments(article.id)}
               className={`flex items-center space-x-1 px-3 py-1.5 rounded-full transition-colors ${
                 showComments[article.id]
-                  ? 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400'
+                  ? 'bg-blue-50/70 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300'
                   : 'text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700'
               }`}
             >
@@ -481,8 +481,8 @@ const CommunityFeedPage = () => {
                               onClick={() => setViewMode('card')}
                               className={`flex items-center space-x-2 px-3 py-2 rounded-lg text-sm transition-colors ${
                                 viewMode === 'card'
-                                  ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300'
-                                  : 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                                  ? 'bg-blue-50/70 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300'
+                                  : 'bg-gray-50 text-gray-700 dark:bg-gray-700/50 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
                               }`}
                             >
                               <Grid size={14} />
@@ -492,8 +492,8 @@ const CommunityFeedPage = () => {
                               onClick={() => setViewMode('list')}
                               className={`flex items-center space-x-2 px-3 py-2 rounded-lg text-sm transition-colors ${
                                 viewMode === 'list'
-                                  ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300'
-                                  : 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                                  ? 'bg-blue-50/70 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300'
+                                  : 'bg-gray-50 text-gray-700 dark:bg-gray-700/50 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
                               }`}
                             >
                               <List size={14} />
@@ -606,18 +606,51 @@ const CommunityFeedPage = () => {
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value)}
-                  className={`appearance-none bg-transparent border rounded-lg px-3 py-2 pr-8 text-sm font-medium focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                  className={`appearance-none border rounded-lg px-3 py-2 pr-8 text-sm font-medium focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
                     isDarkMode 
                       ? 'bg-gray-800 border-gray-600 text-white' 
                       : 'bg-white border-gray-300 text-gray-900'
                   }`}
+                  style={{
+                    colorScheme: isDarkMode ? 'dark' : 'light'
+                  }}
                 >
-                  <option value="trending">🔥 Trending</option>
-                  <option value="newest">🆕 Mới nhất</option>
-                  <option value="oldest">📅 Cũ nhất</option>
-                  <option value="most_voted">👍 Nhiều vote nhất</option>
-                  <option value="most_commented">💬 Nhiều bình luận</option>
-                  <option value="controversial">⚡ Gây tranh cãi</option>
+                  <option 
+                    value="trending"
+                    className={isDarkMode ? 'bg-gray-800 text-white' : 'bg-white text-gray-900'}
+                  >
+                    🔥 Trending
+                  </option>
+                  <option 
+                    value="newest"
+                    className={isDarkMode ? 'bg-gray-800 text-white' : 'bg-white text-gray-900'}
+                  >
+                    🆕 Mới nhất
+                  </option>
+                  <option 
+                    value="oldest"
+                    className={isDarkMode ? 'bg-gray-800 text-white' : 'bg-white text-gray-900'}
+                  >
+                    📅 Cũ nhất
+                  </option>
+                  <option 
+                    value="most_voted"
+                    className={isDarkMode ? 'bg-gray-800 text-white' : 'bg-white text-gray-900'}
+                  >
+                    👍 Nhiều vote nhất
+                  </option>
+                  <option 
+                    value="most_commented"
+                    className={isDarkMode ? 'bg-gray-800 text-white' : 'bg-white text-gray-900'}
+                  >
+                    💬 Nhiều bình luận
+                  </option>
+                  <option 
+                    value="controversial"
+                    className={isDarkMode ? 'bg-gray-800 text-white' : 'bg-white text-gray-900'}
+                  >
+                    ⚡ Gây tranh cãi
+                  </option>
                 </select>
                 <ChevronDown className="absolute right-2 top-1/2 transform -translate-y-1/2 w-4 h-4 pointer-events-none text-gray-400" />
               </div>
@@ -629,11 +662,11 @@ const CommunityFeedPage = () => {
                 <button
                   onClick={() => setShowFiltersMenu(!showFiltersMenu)}
                   className={`flex items-center space-x-2 px-4 py-2 rounded-lg border transition-colors text-sm font-medium ${
-                    (voteFilter !== 'all' || timeFilter !== 'all' || sourceFilter !== 'all')
-                      ? 'border-blue-500 bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-400'
-                      : isDarkMode 
-                        ? 'border-gray-600 bg-gray-800 text-gray-300 hover:bg-gray-700'
-                        : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
+                                      (voteFilter !== 'all' || timeFilter !== 'all' || sourceFilter !== 'all')
+                    ? 'border-blue-500 bg-blue-50/50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300 dark:border-blue-400/50'
+                    : isDarkMode 
+                      ? 'border-gray-600 bg-gray-800 text-gray-300 hover:bg-gray-700'
+                      : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
                   }`}
                 >
                   <Filter size={16} />
@@ -673,8 +706,8 @@ const CommunityFeedPage = () => {
                                 onClick={() => setVoteFilter(option.value)}
                                 className={`flex items-center space-x-2 px-3 py-2 rounded-lg text-xs transition-colors ${
                                   voteFilter === option.value
-                                    ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300'
-                                    : 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                                    ? 'bg-blue-50/70 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300'
+                                    : 'bg-gray-50 text-gray-700 dark:bg-gray-700/50 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
                                 }`}
                               >
                                 <span>{option.icon}</span>
@@ -701,8 +734,8 @@ const CommunityFeedPage = () => {
                                 onClick={() => setTimeFilter(option.value)}
                                 className={`flex items-center space-x-2 px-3 py-2 rounded-lg text-xs transition-colors ${
                                   timeFilter === option.value
-                                    ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300'
-                                    : 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                                    ? 'bg-blue-50/70 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300'
+                                    : 'bg-gray-50 text-gray-700 dark:bg-gray-700/50 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
                                 }`}
                               >
                                 <span>{option.icon}</span>
@@ -729,8 +762,8 @@ const CommunityFeedPage = () => {
                                 onClick={() => setSourceFilter(option.value)}
                                 className={`flex items-center space-x-2 px-3 py-2 rounded-lg text-xs transition-colors ${
                                   sourceFilter === option.value
-                                    ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300'
-                                    : 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                                    ? 'bg-blue-50/70 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300'
+                                    : 'bg-gray-50 text-gray-700 dark:bg-gray-700/50 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
                                 }`}
                               >
                                 <span>{option.icon}</span>
@@ -764,33 +797,33 @@ const CommunityFeedPage = () => {
               {/* Quick filter indicators */}
               <div className="flex items-center space-x-2">
                 {voteFilter !== 'all' && (
-                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-green-50/70 text-green-700 dark:bg-green-900/20 dark:text-green-300">
                     Vote: {voteFilter}
                     <button
                       onClick={() => setVoteFilter('all')}
-                      className="ml-1 text-green-600 hover:text-green-800"
+                      className="ml-1 text-green-600 hover:text-green-700 dark:text-green-400 dark:hover:text-green-300"
                     >
                       ×
                     </button>
                   </span>
                 )}
                 {timeFilter !== 'all' && (
-                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-blue-50/70 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300">
                     Time: {timeFilter}
                     <button
                       onClick={() => setTimeFilter('all')}
-                      className="ml-1 text-blue-600 hover:text-blue-800"
+                      className="ml-1 text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
                     >
                       ×
                     </button>
                   </span>
                 )}
                 {sourceFilter !== 'all' && (
-                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200">
+                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-purple-50/70 text-purple-700 dark:bg-purple-900/20 dark:text-purple-300">
                     Source: {sourceFilter}
                     <button
                       onClick={() => setSourceFilter('all')}
-                      className="ml-1 text-purple-600 hover:text-purple-800"
+                      className="ml-1 text-purple-600 hover:text-purple-700 dark:text-purple-400 dark:hover:text-purple-300"
                     >
                       ×
                     </button>
