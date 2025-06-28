@@ -144,15 +144,15 @@ const AdminDashboard = () => {
   const getStatusColor = (status) => {
     switch (status) {
       case 'pending':
-        return 'bg-yellow-100 text-yellow-800';
+        return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300';
       case 'reviewed':
-        return 'bg-blue-100 text-blue-800';
+        return 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300';
       case 'resolved':
-        return 'bg-green-100 text-green-800';
+        return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300';
       case 'dismissed':
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
       default:
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
     }
   };
 
@@ -171,13 +171,13 @@ const AdminDashboard = () => {
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="animate-pulse">
-            <div className="h-8 bg-gray-200 rounded w-1/4 mb-8"></div>
+            <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-1/4 mb-8"></div>
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
               {[...Array(4)].map((_, i) => (
-                <div key={i} className="h-32 bg-gray-200 rounded-lg"></div>
+                <div key={i} className="h-32 bg-gray-200 dark:bg-gray-700 rounded-lg"></div>
               ))}
             </div>
-            <div className="h-96 bg-gray-200 rounded-lg"></div>
+            <div className="h-96 bg-gray-200 dark:bg-gray-700 rounded-lg"></div>
           </div>
         </div>
       </div>
@@ -209,57 +209,57 @@ const AdminDashboard = () => {
             transition={{ delay: 0.1 }}
             className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8"
           >
-            <Card>
+            <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
               <CardContent className="p-6">
                 <div className="flex items-center">
-                  <div className="p-2 bg-yellow-100 rounded-lg">
-                    <ClockIcon className="w-6 h-6 text-yellow-600" />
+                  <div className="p-2 bg-yellow-100 dark:bg-yellow-900/30 rounded-lg">
+                    <ClockIcon className="w-6 h-6 text-yellow-600 dark:text-yellow-400" />
                   </div>
                   <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-600">Chờ xử lý</p>
-                    <p className="text-2xl font-bold text-gray-900">{statistics.pending || 0}</p>
+                    <p className="text-sm font-medium text-gray-600 dark:text-gray-300">Chờ xử lý</p>
+                    <p className="text-2xl font-bold text-gray-900 dark:text-white">{statistics.pending || 0}</p>
                   </div>
                 </div>
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
               <CardContent className="p-6">
                 <div className="flex items-center">
-                  <div className="p-2 bg-blue-100 rounded-lg">
-                    <EyeIcon className="w-6 h-6 text-blue-600" />
+                  <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+                    <EyeIcon className="w-6 h-6 text-blue-600 dark:text-blue-400" />
                   </div>
                   <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-600">Đã xem</p>
-                    <p className="text-2xl font-bold text-gray-900">{statistics.reviewed || 0}</p>
+                    <p className="text-sm font-medium text-gray-600 dark:text-gray-300">Đã xem</p>
+                    <p className="text-2xl font-bold text-gray-900 dark:text-white">{statistics.reviewed || 0}</p>
                   </div>
                 </div>
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
               <CardContent className="p-6">
                 <div className="flex items-center">
-                  <div className="p-2 bg-green-100 rounded-lg">
-                    <CheckCircleIcon className="w-6 h-6 text-green-600" />
+                  <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
+                    <CheckCircleIcon className="w-6 h-6 text-green-600 dark:text-green-400" />
                   </div>
                   <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-600">Đã giải quyết</p>
-                    <p className="text-2xl font-bold text-gray-900">{statistics.resolved || 0}</p>
+                    <p className="text-sm font-medium text-gray-600 dark:text-gray-300">Đã giải quyết</p>
+                    <p className="text-2xl font-bold text-gray-900 dark:text-white">{statistics.resolved || 0}</p>
                   </div>
                 </div>
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
               <CardContent className="p-6">
                 <div className="flex items-center">
-                  <div className="p-2 bg-red-100 rounded-lg">
-                    <FlagIcon className="w-6 h-6 text-red-600" />
+                  <div className="p-2 bg-red-100 dark:bg-red-900/30 rounded-lg">
+                    <FlagIcon className="w-6 h-6 text-red-600 dark:text-red-400" />
                   </div>
                   <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-600">Tổng báo cáo</p>
-                    <p className="text-2xl font-bold text-gray-900">{statistics.total || 0}</p>
+                    <p className="text-sm font-medium text-gray-600 dark:text-gray-300">Tổng báo cáo</p>
+                    <p className="text-2xl font-bold text-gray-900 dark:text-white">{statistics.total || 0}</p>
                   </div>
                 </div>
               </CardContent>
@@ -274,17 +274,17 @@ const AdminDashboard = () => {
           transition={{ delay: 0.2 }}
           className="mb-6"
         >
-          <Card>
+          <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
             <CardContent className="p-6">
               <div className="flex flex-wrap gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Trạng thái
                   </label>
                   <select
                     value={selectedStatus}
                     onChange={(e) => setSelectedStatus(e.target.value)}
-                    className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                   >
                     <option value="all">Tất cả</option>
                     <option value="pending">Chờ xử lý</option>
@@ -295,13 +295,13 @@ const AdminDashboard = () => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Lý do
                   </label>
                   <select
                     value={selectedReason}
                     onChange={(e) => setSelectedReason(e.target.value)}
-                    className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                   >
                     <option value="all">Tất cả</option>
                     <option value="fake_news">Tin giả</option>
@@ -323,9 +323,9 @@ const AdminDashboard = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
         >
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center">
+          <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
+            <CardHeader className="border-b border-gray-200 dark:border-gray-700">
+              <CardTitle className="flex items-center text-gray-900 dark:text-white">
                 <FlagIcon className="w-5 h-5 mr-2" />
                 Báo cáo từ người dùng ({pagination?.totalReports || 0})
               </CardTitle>
@@ -333,15 +333,15 @@ const AdminDashboard = () => {
             <CardContent>
               {reports.length === 0 ? (
                 <div className="text-center py-8">
-                  <FlagIcon className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-                  <p className="text-gray-500">Không có báo cáo nào</p>
+                  <FlagIcon className="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
+                  <p className="text-gray-500 dark:text-gray-400">Không có báo cáo nào</p>
                 </div>
               ) : (
                 <div className="space-y-4">
                   {reports.map((report) => (
                     <div
                       key={report.id}
-                      className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors"
+                      className="border border-gray-200 dark:border-gray-600 rounded-lg p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
                     >
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
@@ -350,23 +350,23 @@ const AdminDashboard = () => {
                             <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(report.status)}`}>
                               {report.status}
                             </span>
-                            <span className="text-sm text-gray-500">
+                            <span className="text-sm text-gray-500 dark:text-gray-400">
                               {communityAPI.getReportReasonDisplay ? communityAPI.getReportReasonDisplay(report.reason) : report.reason}
                             </span>
-                            <span className="text-sm text-gray-400">
+                            <span className="text-sm text-gray-400 dark:text-gray-500">
                               {formatDate(report.createdAt)}
                             </span>
                           </div>
                           
-                          <p className="text-sm font-medium text-gray-900 mb-1">
+                          <p className="text-sm font-medium text-gray-900 dark:text-white mb-1">
                             {report.linkInfo?.url || 'URL không xác định'}
                           </p>
                           
-                          <p className="text-sm text-gray-600 mb-2">
+                          <p className="text-sm text-gray-600 dark:text-gray-300 mb-2">
                             {report.description}
                           </p>
                           
-                          <p className="text-xs text-gray-500">
+                          <p className="text-xs text-gray-500 dark:text-gray-400">
                             Báo cáo bởi: {report.reporter?.firstName} {report.reporter?.lastName}
                           </p>
                         </div>
@@ -378,12 +378,14 @@ const AdminDashboard = () => {
                                 size="sm"
                                 variant="outline"
                                 onClick={() => handleStatusUpdate(report.id, 'reviewed')}
+                                className="border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
                               >
                                 Đánh dấu đã xem
                               </Button>
                               <Button
                                 size="sm"
                                 onClick={() => handleStatusUpdate(report.id, 'resolved')}
+                                className="bg-blue-600 hover:bg-blue-700 text-white"
                               >
                                 Giải quyết
                               </Button>
@@ -395,6 +397,7 @@ const AdminDashboard = () => {
                               <Button
                                 size="sm"
                                 onClick={() => handleStatusUpdate(report.id, 'resolved')}
+                                className="bg-green-600 hover:bg-green-700 text-white"
                               >
                                 Giải quyết
                               </Button>
@@ -402,6 +405,7 @@ const AdminDashboard = () => {
                                 size="sm"
                                 variant="outline"
                                 onClick={() => handleStatusUpdate(report.id, 'dismissed')}
+                                className="border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
                               >
                                 Bỏ qua
                               </Button>
@@ -416,16 +420,17 @@ const AdminDashboard = () => {
 
               {/* Pagination */}
               {pagination && pagination.totalPages > 1 && (
-                <div className="flex items-center justify-between mt-6 pt-6 border-t border-gray-200">
+                <div className="flex items-center justify-between mt-6 pt-6 border-t border-gray-200 dark:border-gray-600">
                   <Button
                     variant="outline"
                     onClick={() => setPagination(prev => ({ ...prev, currentPage: prev.currentPage - 1 }))}
                     disabled={!pagination || pagination.currentPage === 1}
+                    className="border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50"
                   >
                     Trang trước
                   </Button>
                   
-                  <span className="text-sm text-gray-700">
+                  <span className="text-sm text-gray-700 dark:text-gray-300">
                     Trang {pagination?.currentPage || 1} / {pagination?.totalPages || 1}
                   </span>
                   
@@ -433,6 +438,7 @@ const AdminDashboard = () => {
                     variant="outline"
                     onClick={() => setPagination(prev => ({ ...prev, currentPage: prev.currentPage + 1 }))}
                     disabled={!pagination || pagination.currentPage === pagination.totalPages}
+                    className="border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50"
                   >
                     Trang sau
                   </Button>
