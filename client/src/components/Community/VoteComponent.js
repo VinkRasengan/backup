@@ -52,15 +52,15 @@ const VoteComponent = ({
   const handleVote = useCallback(async (voteType) => {
     if (isVoting) return; // Prevent multiple simultaneous votes
     
+    // Store old state for rollback (move outside try block)
+    const oldUserVote = userVote;
+    const oldVoteCount = voteCount;
+    
     try {
       setIsVoting(true);
       
-      // FIXED: Convert UI vote type to backend vote type
-      const backendVoteType = voteType === 'up' ? 'upvote' : 'downvote';
-      
-      // Store old state for rollback
-      const oldUserVote = userVote;
-      const oldVoteCount = voteCount;
+      // FIXED: Use consistent vote types with backend
+      const backendVoteType = voteType; // Remove conversion, use direct 'upvote'/'downvote'
       
       // If clicking the same vote type, remove vote
       const newVote = userVote === backendVoteType ? null : backendVoteType;
@@ -78,29 +78,37 @@ const VoteComponent = ({
       setUserVote(newVote);
       setVoteCount(newCount);
 
-      // Call parent vote handler to trigger API call - FIXED: use backend vote type
+      // Call API via onVote or direct API call
+      let apiResponse;
       if (onVote) {
-        await onVote(linkId, backendVoteType);
+        apiResponse = await onVote(linkId, backendVoteType);
+      } else {
+        // Direct API call if no onVote handler
+        const { communityAPI } = await import('../../services/api');
+        apiResponse = await communityAPI.submitVote(linkId, backendVoteType);
       }
 
-      // FIXED: Refresh data from server to ensure sync
-      setTimeout(async () => {
-        try {
-          await loadVoteData(); // Refresh from server
-          console.log('✅ Vote state synced with server');
-        } catch (error) {
-          console.error('❌ Failed to sync vote state:', error);
-          // Rollback on sync error
-          setUserVote(oldUserVote);
-          setVoteCount(oldVoteCount);
-        }
-      }, 500); // Small delay to let server process
+      // FIXED: Remove setTimeout race condition, handle response immediately
+      if (!apiResponse || !apiResponse.success) {
+        throw new Error(apiResponse?.error || 'Vote failed');
+      }
 
+      // FIXED: Only sync if server response differs from optimistic update
+      // Trust optimistic update for better UX
+      if (apiResponse.action === 'removed' && newVote !== null) {
+        // Server says removed but we expected a vote - sync to fix
+        setTimeout(() => loadVoteData(), 1000);
+      } else if (apiResponse.action !== 'removed' && newVote === null) {
+        // Server says voted but we expected removal - sync to fix  
+        setTimeout(() => loadVoteData(), 1000);
+      }
+      // Otherwise trust optimistic update to avoid UI flicker
+      
     } catch (error) {
       console.error('Error voting:', error);
-      // Revert on error
-      setUserVote(userVote);
-      setVoteCount(voteCount);
+      // FIXED: Rollback using captured state variables
+      setUserVote(oldUserVote);
+      setVoteCount(oldVoteCount);
     } finally {
       setIsVoting(false);
     }
@@ -130,7 +138,7 @@ const VoteComponent = ({
     return (
       <div className="flex flex-col items-center space-y-1">
         <button
-          onClick={() => handleVote('up')}
+          onClick={() => handleVote('upvote')}
           disabled={isVoting}
           className={`p-1 rounded-sm transition-colors duration-200 ${
             isVoting ? 'opacity-50 cursor-not-allowed' : ''
@@ -156,7 +164,7 @@ const VoteComponent = ({
         </div>
         
         <button
-          onClick={() => handleVote('down')}
+          onClick={() => handleVote('downvote')}
           disabled={isVoting}
           className={`p-1 rounded-sm transition-colors duration-200 ${
             isVoting ? 'opacity-50 cursor-not-allowed' : ''
@@ -177,7 +185,7 @@ const VoteComponent = ({
     return (
       <div className="flex items-center space-x-1">
         <button
-          onClick={() => handleVote('up')}
+          onClick={() => handleVote('upvote')}
           disabled={isVoting}
           className={`p-1 rounded-sm transition-colors duration-200 ${
             isVoting ? 'opacity-50 cursor-not-allowed' : ''
@@ -203,7 +211,7 @@ const VoteComponent = ({
         </div>
         
         <button
-          onClick={() => handleVote('down')}
+          onClick={() => handleVote('downvote')}
           disabled={isVoting}
           className={`p-1 rounded-sm transition-colors duration-200 ${
             isVoting ? 'opacity-50 cursor-not-allowed' : ''
@@ -225,7 +233,7 @@ const VoteComponent = ({
       isDarkMode ? 'bg-gray-700' : 'bg-gray-50'
     } rounded-lg`}>
       <button
-        onClick={() => handleVote('up')}
+        onClick={() => handleVote('upvote')}
         disabled={isVoting}
         className={`p-2 rounded-full transition-colors duration-200 ${
           isVoting ? 'opacity-50 cursor-not-allowed' : ''
@@ -251,7 +259,7 @@ const VoteComponent = ({
       </div>
       
       <button
-        onClick={() => handleVote('down')}
+        onClick={() => handleVote('downvote')}
         disabled={isVoting}
         className={`p-2 rounded-full transition-colors duration-200 ${
           isVoting ? 'opacity-50 cursor-not-allowed' : ''

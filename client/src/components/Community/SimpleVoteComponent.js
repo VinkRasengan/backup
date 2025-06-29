@@ -113,10 +113,16 @@ const SimpleVoteComponent = ({ linkId, className = '' }) => {
           : 'Đã hủy vote!';
         toast.success(message);
         
-        // Reload data to sync with server
-        setTimeout(() => {
-          loadVoteData();
-        }, 500);
+        // FIXED: Only sync if the response indicates different state than optimistic
+        // Trust optimistic update for immediate UI feedback
+        if (response.action === 'removed' && newVote !== null) {
+          // Server says removed but we expected a vote - sync to fix
+          setTimeout(() => loadVoteData(), 1000);
+        } else if (response.action !== 'removed' && newVote === null) {
+          // Server says voted but we expected removal - sync to fix
+          setTimeout(() => loadVoteData(), 1000);
+        }
+        // Otherwise trust optimistic update for better UX
         
       } else {
         throw new Error(response.error || 'Vote failed');
