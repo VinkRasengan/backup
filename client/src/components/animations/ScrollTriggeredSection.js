@@ -1,7 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import { motion } from 'framer-motion';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -71,7 +70,7 @@ const ScrollTriggeredSection = ({
 
       // Special handling for slideInFromSides animation
       if (animation === 'slideInFromSides') {
-        Array.from(elements).forEach((element, index) => {
+        Array.from(elements).forEach((element) => {
           const isLeft = element.classList.contains('scroll-trigger-left');
           const isRight = element.classList.contains('scroll-trigger-right');
 
@@ -98,9 +97,6 @@ const ScrollTriggeredSection = ({
         onEnter: () => {
           if (animation === 'slideInFromSides') {
             Array.from(elements).forEach((element, index) => {
-              const isLeft = element.classList.contains('scroll-trigger-left');
-              const isRight = element.classList.contains('scroll-trigger-right');
-
               gsap.to(element, {
                 opacity: 1,
                 x: 0,

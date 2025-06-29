@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { ChevronUp, ChevronDown } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
@@ -22,7 +22,7 @@ const SimpleVoteComponent = ({ linkId, className = '' }) => {
   });
 
   // Load vote data from API
-  const loadVoteData = async () => {
+  const loadVoteData = useCallback(async () => {
     if (!linkId) return;
     
     setState(prev => ({ ...prev, loading: true }));
@@ -58,7 +58,7 @@ const SimpleVoteComponent = ({ linkId, className = '' }) => {
       console.error('❌ [SimpleVoteComponent] Load vote data error:', error);
       setState(prev => ({ ...prev, loading: false }));
     }
-  };
+  }, [linkId, user]);
 
   // Handle vote submission
   const handleVote = async (voteType) => {
@@ -134,7 +134,7 @@ const SimpleVoteComponent = ({ linkId, className = '' }) => {
   // Load data when component mounts or user changes
   useEffect(() => {
     loadVoteData();
-  }, [linkId, user]);
+  }, [loadVoteData]);
 
   // Loading state
   if (state.loading) {

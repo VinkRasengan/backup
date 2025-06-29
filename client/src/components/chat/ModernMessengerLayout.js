@@ -166,7 +166,7 @@ const ModernMessengerLayout = () => {
 
     window.addEventListener('keydown', handleKeyboard);
     return () => window.removeEventListener('keydown', handleKeyboard);
-  }, [showChatInfo]);
+  }, [showChatInfo, handleSendMessage]);
 
   // Load chat history with message limit
   useEffect(() => {
@@ -305,9 +305,10 @@ const ModernMessengerLayout = () => {
     }, 2000);
   };
 
-  const handleSendMessage = async () => {
-    if (!message.trim() || !selectedChat) return;
-
+  // Send message function  
+  const handleSendMessage = useCallback(async () => {
+    if (!message.trim()) return;
+    
     const newMessage = {
       id: Date.now().toString(),
       text: message.trim(),
@@ -422,16 +423,7 @@ const ModernMessengerLayout = () => {
         setIsTyping(false);
       }
     }
-  };
-
-  const handleKeyPress = (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSendMessage();
-    } else {
-      handleTyping();
-    }
-  };
+  }, [message, selectedChat]);
 
   const handleMessageReaction = (messageId, emoji) => {
     setChatHistory(prev =>
@@ -465,13 +457,6 @@ const ModernMessengerLayout = () => {
     if (diff < 3600000) return `${Math.floor(diff / 60000)} phút`;
     if (diff < 86400000) return `${Math.floor(diff / 3600000)} giờ`;
     return date.toLocaleDateString('vi-VN');
-  };
-
-  const formatMessageTime = (date) => {
-    return date.toLocaleTimeString('vi-VN', {
-      hour: '2-digit',
-      minute: '2-digit'
-    });
   };
 
   const getStatusColor = (status) => {
@@ -965,7 +950,14 @@ const ModernMessengerLayout = () => {
                   ref={inputRef}
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
-                  onKeyDown={handleKeyPress}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      handleSendMessage();
+                    } else {
+                      handleTyping();
+                    }
+                  }}
                   placeholder="Aa"
                   className="messenger-input-box"
                   rows={1}

@@ -120,8 +120,7 @@ export const GSAPPageTransition = ({
 }) => {
   const location = useLocation();
   const containerRef = useRef();
-  const currentPageRef = useRef();
-  const nextPageRef = useRef();
+  // Removed unused refs - currentPageRef and nextPageRef
 
   useEffect(() => {
     const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;

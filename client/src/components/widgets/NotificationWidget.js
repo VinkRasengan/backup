@@ -10,7 +10,7 @@ const NotificationWidget = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
-  const [loading, setLoading] = useState(true);
+  const [, setLoading] = useState(true);
 
   // Subscribe to real-time notifications
   useEffect(() => {

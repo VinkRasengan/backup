@@ -11,7 +11,7 @@ A comprehensive microservices-based platform for link verification, community di
 ```bash
 git clone https://github.com/VinkRasengan/backup.git
 cd backup
-npm run setup        # Install deps + create .env template
+npm run setup:full        # Install deps + create .env template
 npm run validate:cicd # Check for CI/CD issues
 npm run fix:cicd      # Auto-fix common issues
 # Edit .env with your Firebase credentials

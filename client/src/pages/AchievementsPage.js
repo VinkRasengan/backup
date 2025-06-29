@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 import { motion } from 'framer-motion';
 import {
   Trophy,
@@ -13,15 +13,14 @@ import {
   CheckCircle
 } from 'lucide-react';
 import NavigationLayout from '../components/navigation/NavigationLayout';
-import { useAuth } from '../context/AuthContext';
+// import { useAuth } from '../context/AuthContext';
 import { useGSAP } from '../hooks/useGSAP';
 import { gsap } from '../utils/gsap';
-import achievementService from '../services/achievementService';
+// import achievementService from '../services/achievementService';
 
 const AchievementsPage = () => {
-  const { user } = useAuth();
   const [selectedCategory, setSelectedCategory] = useState('all');
-  const [selectedAchievement, setSelectedAchievement] = useState(null);
+  const [, setSelectedAchievement] = useState(null);
   const containerRef = useRef(null);
 
   // Mock user stats
@@ -186,9 +185,9 @@ const AchievementsPage = () => {
     selectedCategory === 'all' || achievement.category === selectedCategory
   );
 
-  const getProgressPercentage = (progress, target) => {
-    return Math.min((progress / target) * 100, 100);
-  };
+  // const getProgressPercentage = (progress, target) => {
+  //   return Math.min((progress / target) * 100, 100);
+  // };
 
   return (
     <NavigationLayout>
@@ -291,7 +290,7 @@ const AchievementsPage = () => {
           <div className="achievements-grid grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredAchievements.map((achievement) => {
               const Icon = achievement.icon;
-              const progressPercentage = getProgressPercentage(achievement.progress, achievement.target);
+              // const progressPercentage = getProgressPercentage(achievement.progress, achievement.target);
 
               return (
                 <motion.div

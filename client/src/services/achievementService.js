@@ -5,12 +5,9 @@ import {
   setDoc,
   updateDoc,
   query,
-  where,
   orderBy,
-  limit,
   getDocs,
-  serverTimestamp,
-  increment
+  serverTimestamp
 } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import notificationService from './notificationService';

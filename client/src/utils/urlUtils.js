@@ -73,9 +73,11 @@ export const isProtocolRelativeUrl = (url) => {
   return url && url.trim().startsWith('//');
 };
 
-export default {
+const urlUtils = {
   normalizeUrl,
   isValidUrl,
   extractDomain,
   isProtocolRelativeUrl
-}; 
+};
+
+export default urlUtils; 

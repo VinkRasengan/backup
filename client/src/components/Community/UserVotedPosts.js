@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   ChevronUp, 
@@ -22,13 +22,7 @@ const UserVotedPosts = () => {
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
 
-  useEffect(() => {
-    if (user) {
-      loadVotedPosts();
-    }
-  }, [user, filter]);
-
-  const loadVotedPosts = async (pageNum = 1) => {
+  const loadVotedPosts = useCallback(async (pageNum = 1) => {
     if (!user) return;
 
     try {
@@ -71,7 +65,13 @@ const UserVotedPosts = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user, filter]);
+
+  useEffect(() => {
+    if (user) {
+      loadVotedPosts();
+    }
+  }, [user, loadVotedPosts]);
 
   const loadMore = () => {
     if (!loading && hasMore) {

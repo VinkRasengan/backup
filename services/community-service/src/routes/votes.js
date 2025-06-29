@@ -3,8 +3,12 @@ const router = express.Router();
 const { db, collections } = require('../config/firebase');
 const Logger = require('../../../../shared/utils/logger');
 const { getUserId, getUserEmail } = require('../middleware/auth');
+const { cacheManager, SimpleCache } = require('../utils/cache');
 
 const logger = new Logger('community-service');
+
+// Use unified cache for vote statistics with shorter TTL
+const voteStatsCache = new SimpleCache(30000); // 30 seconds TTL
 
 // Helper function to update link vote count and score using atomic transaction
 async function updateLinkVoteCount(linkId) {
@@ -76,6 +80,13 @@ async function updateLinkVoteCount(linkId) {
             // Ignore if links collection doesn't exist
             logger.debug('Links collection update failed (expected if not using links collection)', { linkId });
           }
+
+          // Clear all related cache after successful update
+          voteStatsCache.delete(linkId);
+          await cacheManager.del('votes', `stats:${linkId}`);
+          
+          // Also clear user vote cache for all users voting on this link
+          await cacheManager.delPattern('votes', `user:*:${linkId}`);
 
           logger.info('Vote statistics updated atomically', { linkId, stats });
           return stats;
@@ -285,10 +296,23 @@ router.post('/:linkId', async (req, res) => {
   }
 });
 
-// Get vote statistics for a link
+// Get vote statistics for a link with caching
 router.get('/:linkId/stats', async (req, res) => {
   try {
     const { linkId } = req.params;
+
+    // Try cache first (30 seconds TTL)
+    const cached = await cacheManager.get('votes', `stats:${linkId}`);
+    if (cached) {
+      logger.debug('Vote stats cache hit', { linkId });
+      return res.json({
+        success: true,
+        data: {
+          linkId,
+          statistics: cached
+        }
+      });
+    }
 
     const votesSnapshot = await db.collection(collections.VOTES)
       .where('linkId', '==', linkId)
@@ -315,6 +339,9 @@ router.get('/:linkId/stats', async (req, res) => {
     // Calculate Reddit-style score
     stats.score = stats.upvotes - stats.downvotes;
 
+    // Cache the stats for 30 seconds
+    await cacheManager.set('votes', `stats:${linkId}`, stats, 30);
+
     res.json({
       success: true,
       data: {
@@ -331,7 +358,7 @@ router.get('/:linkId/stats', async (req, res) => {
   }
 });
 
-// Get user's vote for a specific link
+// Get user's vote for a specific link with caching
 router.get('/:linkId/user', async (req, res) => {
   try {
     const { linkId } = req.params;
@@ -357,6 +384,17 @@ router.get('/:linkId/user', async (req, res) => {
       });
     }
 
+    // Try cache first for user vote (60 seconds TTL)
+    const cacheKey = `user:${userId}:${linkId}`;
+    const cached = await cacheManager.get('votes', cacheKey);
+    if (cached) {
+      logger.debug('User vote cache hit', { linkId, userId });
+      return res.json({
+        success: true,
+        data: cached
+      });
+    }
+
     console.log('🔍 [GET /votes/:linkId/user] Querying votes with:', { linkId, userId });
 
     const userVoteQuery = await db.collection(collections.VOTES)
@@ -369,6 +407,8 @@ router.get('/:linkId/user', async (req, res) => {
       size: userVoteQuery.size
     });
 
+    let userVoteData = null;
+
     if (!userVoteQuery.empty) {
       const voteDoc = userVoteQuery.docs[0];
       const voteData = voteDoc.data();
@@ -378,23 +418,24 @@ router.get('/:linkId/user', async (req, res) => {
         voteData: voteData
       });
 
-      res.json({
-        success: true,
-        data: {
-          id: voteDoc.id,
-          linkId,
-          userId: voteData.userId,
-          voteType: voteData.voteType,
-          createdAt: voteData.createdAt?.toDate?.()?.toISOString() || voteData.createdAt
-        }
-      });
+      userVoteData = {
+        id: voteDoc.id,
+        linkId,
+        userId: voteData.userId,
+        voteType: voteData.voteType,
+        createdAt: voteData.createdAt?.toDate?.()?.toISOString() || voteData.createdAt
+      };
     } else {
       console.log('🔍 [GET /votes/:linkId/user] No vote found for user');
-      res.json({
-        success: true,
-        data: null
-      });
     }
+
+    // Cache the result for 60 seconds
+    await cacheManager.set('votes', cacheKey, userVoteData, 60);
+
+    res.json({
+      success: true,
+      data: userVoteData
+    });
   } catch (error) {
     console.error('❌ [GET /votes/:linkId/user] Error:', error);
     logger.error('Get user vote error', { error: error.message, linkId: req.params.linkId });
@@ -405,41 +446,60 @@ router.get('/:linkId/user', async (req, res) => {
   }
 });
 
-// Get optimized vote data (stats + user vote)
+// Get optimized vote data (stats + user vote) with caching
 router.get('/:linkId/optimized', async (req, res) => {
   try {
     const { linkId } = req.params;
     const userId = getUserId(req);
 
-    // Get vote statistics
-    const votesSnapshot = await db.collection(collections.VOTES)
-      .where('linkId', '==', linkId)
-      .get();
+    // Try to get both stats and user vote from cache
+    const statsCacheKey = `stats:${linkId}`;
+    const userCacheKey = userId ? `user:${userId}:${linkId}` : null;
 
-    const stats = {
-      total: 0,
-      upvotes: 0,
-      downvotes: 0,
-      score: 0 // upvotes - downvotes (Reddit-style score)
-    };
-
-    votesSnapshot.forEach((doc) => {
-      const voteType = doc.data().voteType;
-      stats.total++;
-
-      if (voteType === 'upvote') {
-        stats.upvotes++;
-      } else if (voteType === 'downvote') {
-        stats.downvotes++;
-      }
-    });
-
-    // Calculate Reddit-style score
-    stats.score = stats.upvotes - stats.downvotes;
-
-    // Get user's vote if userId provided
+    // Get cached stats
+    let stats = await cacheManager.get('votes', statsCacheKey);
     let userVote = null;
-    if (userId) {
+
+    // Get cached user vote if userId provided
+    if (userId && userCacheKey) {
+      userVote = await cacheManager.get('votes', userCacheKey);
+    }
+
+    // If stats not cached, fetch from database
+    if (!stats) {
+      const votesSnapshot = await db.collection(collections.VOTES)
+        .where('linkId', '==', linkId)
+        .get();
+
+      const freshStats = {
+        total: 0,
+        upvotes: 0,
+        downvotes: 0,
+        score: 0 // upvotes - downvotes (Reddit-style score)
+      };
+
+      votesSnapshot.forEach((doc) => {
+        const voteType = doc.data().voteType;
+        freshStats.total++;
+
+        if (voteType === 'upvote') {
+          freshStats.upvotes++;
+        } else if (voteType === 'downvote') {
+          freshStats.downvotes++;
+        }
+      });
+
+      // Calculate Reddit-style score
+      freshStats.score = freshStats.upvotes - freshStats.downvotes;
+
+      // Cache stats for 30 seconds
+      await cacheManager.set('votes', statsCacheKey, freshStats, 30);
+      
+      stats = freshStats;
+    }
+
+    // If user vote not cached and userId provided, fetch from database
+    if (userId && userVote === null) {
       const userVoteQuery = await db.collection(collections.VOTES)
         .where('linkId', '==', linkId)
         .where('userId', '==', userId)
@@ -456,6 +516,11 @@ router.get('/:linkId/optimized', async (req, res) => {
           voteType: voteData.voteType,
           createdAt: voteData.createdAt?.toDate?.()?.toISOString() || voteData.createdAt
         };
+      }
+
+      // Cache user vote for 60 seconds
+      if (userCacheKey) {
+        await cacheManager.set('votes', userCacheKey, userVote, 60);
       }
     }
 
@@ -496,6 +561,12 @@ router.delete('/:linkId', async (req, res) => {
 
     if (!userVoteQuery.empty) {
       await userVoteQuery.docs[0].ref.delete();
+
+      // Clear related cache
+      await Promise.all([
+        cacheManager.del('votes', `stats:${linkId}`),
+        cacheManager.del('votes', `user:${userId}:${linkId}`)
+      ]);
 
       // Update vote count on the link (async, don't wait)
       updateLinkVoteCount(linkId).catch(error => {
@@ -605,9 +676,16 @@ router.post('/batch', async (req, res) => {
     // Commit batch
     await batch.commit();
 
-    // Update vote counts for all affected links
+    // Update vote counts for all affected links and clear cache
     const uniqueLinkIds = [...new Set(votes.map(v => v.linkId))];
-    await Promise.all(uniqueLinkIds.map(linkId => updateLinkVoteCount(linkId)));
+    await Promise.all(uniqueLinkIds.map(async (linkId) => {
+      // Clear cache before updating
+      await Promise.all([
+        cacheManager.del('votes', `stats:${linkId}`),
+        cacheManager.delPattern('votes', `user:*:${linkId}`)
+      ]);
+      return updateLinkVoteCount(linkId);
+    }));
 
     res.json({
       success: true,
@@ -661,6 +739,13 @@ router.post('/batch/stats', async (req, res) => {
 
       const chunkPromises = chunk.map(async (postId) => {
         try {
+          // Try cache first
+          const cachedStats = await cacheManager.get('votes', `stats:${postId}`);
+          if (cachedStats) {
+            logger.debug('Batch stats cache hit', { postId });
+            return { postId, stats: cachedStats };
+          }
+
           // Add timeout to Firebase query with shorter timeout
           const timeoutPromise = new Promise((_, reject) => {
             setTimeout(() => reject(new Error('Query timeout')), 3000); // 3 second timeout
@@ -692,6 +777,10 @@ router.post('/batch/stats', async (req, res) => {
           });
 
           stats.score = stats.upvotes - stats.downvotes;
+
+          // Cache the stats for 30 seconds
+          await cacheManager.set('votes', `stats:${postId}`, stats, 30);
+
           return { postId, stats };
 
         } catch (error) {
@@ -992,8 +1081,8 @@ router.get('/user/voted-posts', async (req, res) => {
             voteStats: linkData.voteStats || { safe: 0, unsafe: 0, suspicious: 0 },
             userVote: {
               voteType: userVoteForLink.voteType === 'upvote' ? 'safe' : 
-                        userVoteForLink.voteType === 'downvote' ? 'unsafe' : 
-                        userVoteForLink.voteType,
+                userVoteForLink.voteType === 'downvote' ? 'unsafe' : 
+                  userVoteForLink.voteType,
               votedAt: userVoteForLink.votedAt
             }
           });
