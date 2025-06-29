@@ -137,6 +137,126 @@ const ModernMessengerLayout = () => {
     }
   }, [conversations, selectedChat]);
 
+  // Send message function - moved before useEffect to avoid initialization error
+  const handleSendMessage = useCallback(async () => {
+    if (!message.trim()) return;
+    
+    const newMessage = {
+      id: Date.now().toString(),
+      text: message.trim(),
+      sender: 'user',
+      timestamp: new Date(),
+      reactions: [],
+      status: 'sending',
+      isRead: false
+    };
+
+    setChatHistory(prev => [...prev, newMessage]);
+    setMessage('');
+    setUserTyping(false);
+
+    // Update message status to sent
+    setTimeout(() => {
+      setChatHistory(prev => 
+        prev.map(msg => 
+          msg.id === newMessage.id 
+            ? { ...msg, status: 'sent' }
+            : msg
+        )
+      );
+    }, 500);
+
+    // Send to AI if it's FactCheck AI or support
+    if (selectedChat.type === 'ai' || selectedChat.type === 'support') {
+      setIsTyping(true);
+      
+      try {
+              // Use correct API endpoint through Gateway
+      const response = await fetch('http://localhost:8080/api/chat/gemini', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({ message: message.trim() })
+      });
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        
+        // Handle response structure
+        let responseContent;
+        if (data.data?.response?.content) {
+          responseContent = data.data.response.content;
+        } else if (data.data?.message) {
+          responseContent = data.data.message;
+        } else if (data.message) {
+          responseContent = data.message;
+        } else {
+          responseContent = 'Cảm ơn bạn đã liên hệ! Hiện tại tôi đang xử lý yêu cầu của bạn.';
+        }
+
+        const botResponse = {
+          id: (Date.now() + 1).toString(),
+          text: responseContent,
+          sender: 'bot',
+          timestamp: new Date(),
+          reactions: [],
+          status: 'sent',
+          isRead: false
+        };
+
+        setChatHistory(prev => [...prev, botResponse]);
+        
+        // Mark user message as read
+        setTimeout(() => {
+          setChatHistory(prev => 
+            prev.map(msg => 
+              msg.id === newMessage.id 
+                ? { ...msg, status: 'read', isRead: true }
+                : msg
+            )
+          );
+        }, 1000);
+
+      } catch (error) {
+        console.error('Chat API Error:', error);
+        
+        // Enhanced error handling with retry suggestion
+        let errorText = 'Xin lỗi, hiện tại tôi gặp sự cố kỹ thuật. ';
+        
+        if (error.message?.includes('network') || error.message?.includes('fetch')) {
+          errorText += 'Vui lòng kiểm tra kết nối mạng và thử lại.';
+        } else if (error.message?.includes('timeout')) {
+          errorText += 'Yêu cầu đã hết thời gian chờ. Vui lòng thử lại.';
+        } else if (error.status === 429) {
+          errorText += 'Quá nhiều yêu cầu. Vui lòng chờ một chút rồi thử lại.';
+        } else if (error.status >= 500) {
+          errorText += 'Máy chủ đang bảo trì. Vui lòng thử lại sau vài phút.';
+        } else {
+          errorText += `Lỗi: ${error.message || 'Không xác định'}. Vui lòng thử lại sau vài phút hoặc liên hệ với bộ phận hỗ trợ qua email support@factcheck.vn`;
+        }
+
+        const errorMessage = {
+          id: (Date.now() + 1).toString(),
+          text: errorText,
+          sender: 'bot',
+          timestamp: new Date(),
+          reactions: [],
+          status: 'sent',
+          isRead: false
+        };
+
+        setChatHistory(prev => [...prev, errorMessage]);
+      } finally {
+        setIsTyping(false);
+      }
+    }
+  }, [message, selectedChat]);
+
   // Enhanced keyboard shortcuts for desktop
   useEffect(() => {
     const handleKeyboard = (e) => {
@@ -305,125 +425,7 @@ const ModernMessengerLayout = () => {
     }, 2000);
   };
 
-  // Send message function  
-  const handleSendMessage = useCallback(async () => {
-    if (!message.trim()) return;
-    
-    const newMessage = {
-      id: Date.now().toString(),
-      text: message.trim(),
-      sender: 'user',
-      timestamp: new Date(),
-      reactions: [],
-      status: 'sending',
-      isRead: false
-    };
 
-    setChatHistory(prev => [...prev, newMessage]);
-    setMessage('');
-    setUserTyping(false);
-
-    // Update message status to sent
-    setTimeout(() => {
-      setChatHistory(prev => 
-        prev.map(msg => 
-          msg.id === newMessage.id 
-            ? { ...msg, status: 'sent' }
-            : msg
-        )
-      );
-    }, 500);
-
-    // Send to AI if it's FactCheck AI or support
-    if (selectedChat.type === 'ai' || selectedChat.type === 'support') {
-      setIsTyping(true);
-      
-      try {
-              // Use correct API endpoint through Gateway
-      const response = await fetch('http://localhost:8080/api/chat/gemini', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify({ message: message.trim() })
-      });
-
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
-        const data = await response.json();
-        
-        // Handle response structure
-        let responseContent;
-        if (data.data?.response?.content) {
-          responseContent = data.data.response.content;
-        } else if (data.data?.message) {
-          responseContent = data.data.message;
-        } else if (data.message) {
-          responseContent = data.message;
-        } else {
-          responseContent = 'Cảm ơn bạn đã liên hệ! Hiện tại tôi đang xử lý yêu cầu của bạn.';
-        }
-
-        const botResponse = {
-          id: (Date.now() + 1).toString(),
-          text: responseContent,
-          sender: 'bot',
-          timestamp: new Date(),
-          reactions: [],
-          status: 'sent',
-          isRead: false
-        };
-
-        setChatHistory(prev => [...prev, botResponse]);
-        
-        // Mark user message as read
-        setTimeout(() => {
-          setChatHistory(prev => 
-            prev.map(msg => 
-              msg.id === newMessage.id 
-                ? { ...msg, status: 'read', isRead: true }
-                : msg
-            )
-          );
-        }, 1000);
-
-      } catch (error) {
-        console.error('Chat API Error:', error);
-        
-        // Enhanced error handling with retry suggestion
-        let errorText = 'Xin lỗi, hiện tại tôi gặp sự cố kỹ thuật. ';
-        
-        if (error.message?.includes('network') || error.message?.includes('fetch')) {
-          errorText += 'Vui lòng kiểm tra kết nối mạng và thử lại.';
-        } else if (error.message?.includes('timeout')) {
-          errorText += 'Yêu cầu đã hết thời gian chờ. Vui lòng thử lại.';
-        } else if (error.status === 429) {
-          errorText += 'Quá nhiều yêu cầu. Vui lòng chờ một chút rồi thử lại.';
-        } else if (error.status >= 500) {
-          errorText += 'Máy chủ đang bảo trì. Vui lòng thử lại sau vài phút.';
-        } else {
-          errorText += `Lỗi: ${error.message || 'Không xác định'}. Vui lòng thử lại sau vài phút hoặc liên hệ với bộ phận hỗ trợ qua email support@factcheck.vn`;
-        }
-
-        const errorMessage = {
-          id: (Date.now() + 1).toString(),
-          text: errorText,
-          sender: 'bot',
-          timestamp: new Date(),
-          reactions: [],
-          status: 'sent',
-          isRead: false
-        };
-
-        setChatHistory(prev => [...prev, errorMessage]);
-      } finally {
-        setIsTyping(false);
-      }
-    }
-  }, [message, selectedChat]);
 
   const handleMessageReaction = (messageId, emoji) => {
     setChatHistory(prev =>

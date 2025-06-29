@@ -62,13 +62,65 @@ NGUYÊN TẮC PHẢN HỒI:
 - Đưa ra thông tin cụ thể, actionable advice
 - Không đưa ra thông tin y tế, pháp lý, tài chính cụ thể
 
-STYLE:
+STYLE & ĐỘ DÀI:
 - Tiếng Việt tự nhiên, dễ hiểu
-- Cấu trúc rõ ràng với bullet points
+- CỰC KỲ QUAN TRỌNG: Giữ câu trả lời NGẮN GỌN (tối đa 200-300 từ)
+- Ưu tiên nội dung cốt lõi, bỏ qua chi tiết phụ
+- Cấu trúc rõ ràng với 2-4 bullet points chính
 - Tone tích cực, hỗ trợ
-- Độ dài vừa phải (không quá dài)
+- Trả lời trực tiếp, không lan man
+- Nếu cần giải thích dài, chỉ đưa ra điểm chính nhất
 
-Hãy trả lời câu hỏi của người dùng theo phong cách và vai trò này.`;
+ĐỊNH DẠNG QUY ĐỊNH:
+- Mở đầu: 1 câu ngắn (tối đa 15 từ)
+- Nội dung chính: 2-4 điểm quan trọng
+- Kết thúc: 1 câu hỏi hoặc call-to-action ngắn
+
+Hãy trả lời câu hỏi của người dùng theo phong cách và vai trò này. LUÔN LUÔN giữ câu trả lời ngắn gọn và đi thẳng vào vấn đề.`;
+  }
+
+  /**
+   * Optimize response length and content
+   */
+  optimizeResponse(text) {
+    // Remove extra whitespace and normalize
+    let optimized = text.trim().replace(/\s+/g, ' ');
+    
+    // If response is too long (over 800 characters), try to shorten it
+    if (optimized.length > 800) {
+      // Split by sentences and keep only the most important ones
+      const sentences = optimized.split(/[.!?]\s+/);
+      const importantSentences = sentences.filter(sentence => {
+        const lower = sentence.toLowerCase();
+        // Keep sentences with key information
+        return (
+          sentence.length > 10 && // Not too short
+          (lower.includes('factcheck') || 
+           lower.includes('kiểm tra') || 
+           lower.includes('an toàn') ||
+           lower.includes('bảo mật') ||
+           lower.includes('⚠️') ||
+           lower.includes('✅') ||
+           lower.includes('🔍') ||
+           lower.includes('🛡️') ||
+           sentence.includes('*'))
+        );
+      });
+
+      if (importantSentences.length > 0) {
+        optimized = importantSentences.slice(0, 4).join('. ') + '.';
+      } else {
+        // Fallback: keep first 3 sentences
+        optimized = sentences.slice(0, 3).join('. ') + '.';
+      }
+    }
+
+    // Ensure it doesn't exceed 500 characters as hard limit
+    if (optimized.length > 500) {
+      optimized = optimized.substring(0, 480) + '...';
+    }
+
+    return optimized;
   }
 
   /**
@@ -80,21 +132,26 @@ Hãy trả lời câu hỏi của người dùng theo phong cách và vai trò n
         throw new Error('Gemini API not configured');
       }
 
-      // Combine system prompt with user message
-      const fullPrompt = `${this.getSystemPrompt()}\n\nNgười dùng hỏi: "${userMessage}"\n\nTrả lời:`;
+      // Enhanced prompt with length constraints
+      const lengthConstraint = "\n\nQUY TẮC ĐỘ DÀI: Trả lời NGẮN GỌN trong 200-300 từ. Đi thẳng vào vấn đề. Không lặp lại thông tin.";
+      const fullPrompt = `${this.getSystemPrompt()}${lengthConstraint}\n\nNgười dùng hỏi: "${userMessage}"\n\nTrả lời ngắn gọn:`;
 
       const result = await this.model.generateContent(fullPrompt);
       const response = await result.response;
-      const text = response.text();
+      let text = response.text();
+
+      // Optimize the response length
+      text = this.optimizeResponse(text);
 
       return {
         success: true,
-        response: text.trim(),
+        response: text,
         usage: {
           promptTokens: fullPrompt.length,
           completionTokens: text.length,
           totalTokens: fullPrompt.length + text.length
-        }
+        },
+        optimized: true
       };
 
     } catch (error) {
@@ -114,64 +171,57 @@ Hãy trả lời câu hỏi của người dùng theo phong cách và vai trò n
     let response = '';
     
     if (messageText.includes('xin chào') || messageText.includes('hello') || messageText.includes('hi')) {
-      response = `Xin chào! 👋 Tôi là trợ lý FactCheck AI. Tôi có thể giúp bạn:
+      response = `Xin chào! 👋 Tôi là trợ lý FactCheck AI.
 
-🔍 **Kiểm tra tính xác thực của links và websites**
-🛡️ **Phân tích rủi ro bảo mật**
-📰 **Xác minh thông tin và tin tức**
-💡 **Tư vấn về an toàn mạng**
+🔍 **Kiểm tra links/websites**
+🛡️ **Phân tích bảo mật** 
+📰 **Xác minh tin tức**
+💡 **Tư vấn an toàn mạng**
 
-Bạn cần hỗ trợ gì hôm nay?`;
+Bạn cần hỗ trợ gì?`;
     } else if (messageText.includes('link') || messageText.includes('url') || messageText.includes('website')) {
-      response = `🔗 **Để kiểm tra link an toàn, bạn có thể:**
+      response = `🔗 **Kiểm tra link an toàn:**
 
-1. **Sao chép và dán link** vào đây, tôi sẽ phân tích ngay
-2. **Sử dụng công cụ Check Link** - nhấn vào menu bên trái
-3. **Kiểm tra chứng chỉ SSL** và domain reputation
+✅ **Dán link vào đây** - tôi phân tích ngay
+✅ **Dùng công cụ Check Link** (menu trái)
+✅ **Kiểm tra SSL** và domain
 
-⚠️ **Dấu hiệu cảnh báo:**
-• URL rút gọn đáng ngờ
-• Domain lạ hoặc typo
-• Yêu cầu thông tin cá nhân ngay lập tức
+⚠️ **Cảnh báo:** URL rút gọn, domain lạ, yêu cầu thông tin cá nhân
 
-Hãy gửi link bạn muốn kiểm tra nhé!`;
+Gửi link cần kiểm tra nhé!`;
     } else if (messageText.includes('lừa đảo') || messageText.includes('scam') || messageText.includes('phishing')) {
-      response = `🚨 **Cách nhận biết lừa đảo online:**
+      response = `🚨 **Nhận biết lừa đảo:**
 
-**🎭 Dấu hiệu nghi ngờ:**
-• Email/tin nhắn yêu cầu thông tin cá nhân
+**🎭 Dấu hiệu nguy hiểm:**
+• Yêu cầu thông tin cá nhân gấp
 • Links rút gọn đáng ngờ
-• Offers "quá tốt để có thể tin được"
-• Ngữ pháp kém, chính tả sai
-• Tạo áp lực phải hành động ngay
+• Offers "quá tốt" 
+• Tạo áp lực hành động ngay
 
-**🛡️ Biện pháp bảo vệ:**
-✅ Luôn xác minh nguồn gốc
-✅ Không click links đáng ngờ
-✅ Sử dụng FactCheck để kiểm tra
-✅ Báo cáo cho cộng đồng
+**🛡️ Bảo vệ:** Xác minh nguồn gốc, dùng FactCheck kiểm tra
 
-Bạn có gặp tình huống đáng ngờ nào cần kiểm tra không?`;
+Bạn gặp tình huống nào cụ thể?`;
     } else {
-      response = `Cảm ơn bạn đã liên hệ! 😊 Tôi là trợ lý FactCheck AI, chuyên hỗ trợ về:
+      response = `Tôi là trợ lý FactCheck AI! 😊
 
-🔍 **Kiểm tra link và website**
-🛡️ **Bảo mật mạng**  
-📰 **Xác minh thông tin**
-🎯 **Nhận biết lừa đảo**
+🔍 **Kiểm tra link** 🛡️ **Bảo mật** 📰 **Xác minh tin tức** 🎯 **Chống lừa đảo**
 
-Để tôi có thể hỗ trợ tốt nhất, bạn có thể:
-• Chia sẻ cụ thể vấn đề cần giải quyết
-• Gửi link cần kiểm tra
-• Hỏi về cách bảo vệ an toàn online
+**Cách tôi giúp bạn:**
+• Chia sẻ link cần kiểm tra
+• Hỏi về an toàn mạng
+• Báo cáo nội dung đáng ngờ
 
-Bạn cần hỗ trợ gì cụ thể?`;
+Bạn cần gì cụ thể?`;
     }
+
+    // Apply same optimization to fallback responses
+    response = this.optimizeResponse(response);
 
     return {
       success: true,
       response: response,
       fallback: true,
+      optimized: true,
       error: 'Using fallback response due to API unavailability'
     };
   }
