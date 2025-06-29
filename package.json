@@ -10,6 +10,8 @@
     "status": "node scripts/simple-status.js",
     "validate": "node scripts/validate-deployment.js",
     "setup": "npm install && npm run install:all && npm run env:setup",
+    "setup:validate": "node scripts/validate-new-dev-setup.js",
+    "setup:full": "npm run setup && npm run setup:validate",
     "env:setup": "node scripts/env-setup.js",
     "env:validate": "node scripts/env-setup.js",
     "generate:jwt": "node scripts/generate-jwt-secret.js",

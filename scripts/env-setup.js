@@ -165,10 +165,22 @@ DEBUG=false
       'JWT_SECRET',
       'GEMINI_API_KEY'
     ];
+
+    // React app environment variables
+    const reactVars = [
+      'REACT_APP_API_URL',
+      'REACT_APP_FIREBASE_API_KEY',
+      'REACT_APP_FIREBASE_AUTH_DOMAIN',
+      'REACT_APP_FIREBASE_PROJECT_ID',
+      'REACT_APP_FIREBASE_STORAGE_BUCKET',
+      'REACT_APP_FIREBASE_MESSAGING_SENDER_ID',
+      'REACT_APP_FIREBASE_APP_ID'
+    ];
     
     const warnings = [];
     const errors = [];
     
+    // Validate backend environment variables
     for (const varName of requiredVars) {
       const value = process.env[varName];
       
@@ -182,6 +194,27 @@ DEBUG=false
         console.log(`  ✅ ${varName} is properly set (${value.length} characters)`);
       } else {
         console.log(`  ✅ ${varName} is set`);
+      }
+    }
+
+    // Validate React app environment variables
+    console.log('\n  🔍 Validating React app environment variables...');
+    for (const varName of reactVars) {
+      const value = process.env[varName];
+      
+      if (!value) {
+        warnings.push(`${varName} is missing (frontend may not work properly)`);
+      } else if (value.includes('your_') || value.includes('YOUR_') || value.includes('xxxxx')) {
+        warnings.push(`${varName} still has placeholder value`);
+      } else {
+        console.log(`  ✅ ${varName} is set`);
+      }
+    }
+
+    // Check if REACT_APP_FIREBASE_PROJECT_ID matches FIREBASE_PROJECT_ID
+    if (process.env.REACT_APP_FIREBASE_PROJECT_ID && process.env.FIREBASE_PROJECT_ID) {
+      if (process.env.REACT_APP_FIREBASE_PROJECT_ID !== process.env.FIREBASE_PROJECT_ID) {
+        warnings.push('REACT_APP_FIREBASE_PROJECT_ID does not match FIREBASE_PROJECT_ID');
       }
     }
     
@@ -201,6 +234,7 @@ DEBUG=false
     
     if (warnings.length > 0) {
       console.log('\n  ⚠️ Environment has warnings but can continue...');
+      console.log('  💡 For full functionality, consider updating the warned variables.');
     } else {
       console.log('  ✅ All required environment variables are properly set');
     }
@@ -353,17 +387,32 @@ DEBUG=false
 
   showNextSteps() {
     console.log('\n🎉 Environment setup complete!');
-    console.log('\n📋 Next steps:');
-    console.log('  1. npm run install:all  # Install all dependencies');
-    console.log('  2. npm start           # Start all services');
+    console.log('\n📋 Next steps for new developers:');
+    console.log('  1. npm run install:all  # Install all dependencies (this may take a few minutes)');
+    console.log('  2. npm start           # Start all services in development mode');
     console.log('  3. Open http://localhost:3000 in your browser');
-    console.log('\n💡 Useful commands:');
+    console.log('\n💡 Alternative startup methods:');
+    console.log('  - npm run docker       # Run with Docker (requires Docker installed)');
+    console.log('  - npm run quick-start  # Cross-platform quick start');
+    console.log('\n🔧 Useful commands:');
     console.log('  - npm run status       # Check service status');
     console.log('  - npm stop            # Stop all services');
     console.log('  - npm run health      # Health check all services');
+    console.log('  - npm run validate     # Validate deployment');
+    console.log('\n📊 Monitoring & Development:');
+    console.log('  - Frontend:            http://localhost:3000');
+    console.log('  - API Gateway:         http://localhost:8080');
+    console.log('  - Grafana Dashboard:   http://localhost:3010 (user: admin, pass: admin123)');
+    console.log('  - Prometheus:          http://localhost:9090');
     console.log('\n🔧 If you need to update .env:');
-    console.log('  - Edit .env file directly');
-    console.log('  - Run: node scripts/env-setup.js (to re-validate)');
+    console.log('  - Edit .env file directly (in project root)');
+    console.log('  - Run: npm run env:setup (to re-validate)');
+    console.log('  - No need to copy .env to individual services - they auto-detect it!');
+    console.log('\n⚠️  Important notes:');
+    console.log('  - Keep .env file in project ROOT only');
+    console.log('  - Never commit .env file to git');
+    console.log('  - All services automatically load from root .env');
+    console.log('  - React app variables must start with REACT_APP_');
   }
 }
 
