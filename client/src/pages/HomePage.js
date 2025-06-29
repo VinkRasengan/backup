@@ -1,10 +1,8 @@
 import React, { useRef } from 'react';
 import { Search, Shield, Users, BarChart3, BookOpen, MessageCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
-import TrendingArticles from '../components/TrendingArticles';
-import AnimatedStats from '../components/AnimatedStats';
-import CommunityPreview from '../components/CommunityPreview';
-import LatestNews from '../components/LatestNews';
+import { TrendingArticles, CommunityPreview, LatestNews } from '../components/features';
+import AnimatedStats from '../components/animations/AnimatedStats';
 import { ResponsiveContainer, Section } from '../components/ui/ResponsiveLayout';
 import EnhancedHeroSection from '../components/hero/EnhancedHeroSection';
 import ScrollTriggeredSection from '../components/animations/ScrollTriggeredSection';

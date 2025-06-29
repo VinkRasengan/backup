@@ -1,6 +1,6 @@
 import React from 'react';
 import StatsCard from './StatsCard';
-import { Users, Activity, CheckCircle, Send } from 'react-feather';
+import { Users, Activity, CheckCircle, Send } from 'lucide-react';
 
 const StatsSection = () => {
   return (

@@ -8,7 +8,7 @@ import { User, Mail, Calendar, Edit3, Save, X, Settings, Shield, Bell, Key, Lock
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/Card';
-import PasswordStrengthIndicator from '../components/PasswordStrengthIndicator';
+import { PasswordStrengthIndicator } from '../components/common';
 import toast from 'react-hot-toast';
 
 // Validation schemas

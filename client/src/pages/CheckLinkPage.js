@@ -10,7 +10,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../co
 import PageLayout from '../components/layout/PageLayout';
 import { linkAPI } from '../services/api';
 import VoteComponent from '../components/Community/VoteComponent';
-import CommentSection from '../components/Community/CommentSection.jsx';
+import CommentSection from '../components/Community/CommentSection';
 import ReportModal from '../components/Community/ReportModal';
 import toast from 'react-hot-toast';
 import { useFadeIn, useCounterAnimation, useLoadingAnimation } from '../hooks/useGSAP';

@@ -8,8 +8,8 @@ import {
   ChevronRight,
   Clock
 } from 'lucide-react';
-import { useTheme } from '../context/ThemeContext';
-import { gsap, ScrollTrigger } from '../utils/gsap';
+import { useTheme } from '../../context/ThemeContext';
+import { gsap, ScrollTrigger } from '../../utils/gsap';
 
 // Get API base URL (same logic as api.js)
 const getApiBaseUrl = () => {

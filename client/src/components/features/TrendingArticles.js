@@ -8,9 +8,9 @@ import {
   Clock,
   Flame
 } from 'lucide-react';
-import { useTheme } from '../context/ThemeContext';
-import { Card, CardHeader, CardTitle, CardContent } from './ui/Card';
-import { gsap } from '../utils/gsap';
+import { useTheme } from '../../context/ThemeContext';
+import { Card, CardHeader, CardTitle, CardContent } from '../ui/Card';
+import { gsap } from '../../utils/gsap';
 
 // Get API base URL (same logic as api.js)
 const getApiBaseUrl = () => {

@@ -1,9 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { gsap } from '../utils/gsap';
-import { useCounterAnimation } from '../hooks/useGSAP';
-import { useTheme } from '../context/ThemeContext';
+import { gsap } from '../../utils/gsap';
+import { useCounterAnimation } from '../../hooks/useGSAP';
+import { useTheme } from '../../context/ThemeContext';
 import { Users, CheckCircle, AlertTriangle, TrendingUp } from 'lucide-react';
-import { useFirestoreStats } from '../hooks/useFirestoreStats';
+import { useFirestoreStats } from '../../hooks/useFirestoreStats';
 
 const AnimatedStats = () => {
   const { isDarkMode } = useTheme();

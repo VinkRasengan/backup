@@ -2,20 +2,20 @@
 
 # Redirect all API calls to API Gateway (backend services only)
 # Note: These URLs will be replaced during build process with actual environment variables
-/api/* __API_GATEWAY_URL__/api/:splat 200
-/auth/* __API_GATEWAY_URL__/auth/:splat 200
-/users/* __API_GATEWAY_URL__/users/:splat 200
+/api/* https://backup-zhhs.onrender.com/api/:splat 200
+/auth/* https://backup-zhhs.onrender.com/auth/:splat 200
+/users/* https://backup-zhhs.onrender.com/users/:splat 200
 
 # These routes are frontend routes and should be handled by SPA fallback, not backend redirects
-# /chat/* __API_GATEWAY_URL__/chat/:splat 200
-# /community/* __API_GATEWAY_URL__/community/:splat 200
+# /chat/* https://backup-zhhs.onrender.com/chat/:splat 200
+# /community/* https://backup-zhhs.onrender.com/community/:splat 200
 
 # API routes only (backend services)
-/news/* __API_GATEWAY_URL__/news/:splat 200
-/links/* __API_GATEWAY_URL__/links/:splat 200
-/admin/* __API_GATEWAY_URL__/admin/:splat 200
-/posts/* __API_GATEWAY_URL__/posts/:splat 200
-/votes/* __API_GATEWAY_URL__/votes/:splat 200
+/news/* https://backup-zhhs.onrender.com/news/:splat 200
+/links/* https://backup-zhhs.onrender.com/links/:splat 200
+/admin/* https://backup-zhhs.onrender.com/admin/:splat 200
+/posts/* https://backup-zhhs.onrender.com/posts/:splat 200
+/votes/* https://backup-zhhs.onrender.com/votes/:splat 200
 /comments/* https://factcheck-api-gateway.onrender.com/comments/:splat 200
 
 # SPA fallback - all other routes (including /community, /chat) serve index.html
