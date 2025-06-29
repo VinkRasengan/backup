@@ -129,7 +129,7 @@ const NavigationSidebar = ({ isOpen, onToggle }) => {
     },
     {
       id: 'favorites',
-      label: 'Yêu thích',
+      label: 'Đã Vote',
       icon: Heart,
       path: '/favorites',
       color: 'pink'

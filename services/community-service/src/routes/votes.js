@@ -872,4 +872,192 @@ router.get('/:linkId/debug', async (req, res) => {
   }
 });
 
+// Get user's voted posts with filtering and pagination
+router.get('/user/voted-posts', async (req, res) => {
+  try {
+    const userId = getUserId(req);
+    const { page = 1, limit = 10, voteType } = req.query;
+    
+    logger.info('User voted posts request', { userId, page, limit, voteType });
+
+    if (!userId) {
+      return res.status(400).json({
+        success: false,
+        error: 'User ID required'
+      });
+    }
+
+    // Build query for user votes - Remove orderBy to avoid index issues
+    let votesQuery = db.collection(collections.VOTES)
+      .where('userId', '==', userId);
+    
+    // Filter by vote type if specified (convert UI filter to backend voteType)
+    if (voteType && voteType !== 'all') {
+      // Map UI filter values to backend vote types
+      const voteTypeMapping = {
+        'safe': 'upvote',
+        'unsafe': 'downvote', 
+        'suspicious': 'suspicious'
+      };
+      const backendVoteType = voteTypeMapping[voteType] || voteType;
+      votesQuery = votesQuery.where('voteType', '==', backendVoteType);
+    }
+
+    const votesSnapshot = await votesQuery.get();
+    
+    if (votesSnapshot.empty) {
+      return res.json({
+        success: true,
+        data: {
+          posts: [],
+          pagination: {
+            page: parseInt(page),
+            limit: parseInt(limit),
+            total: 0,
+            totalPages: 0
+          }
+        }
+      });
+    }
+
+    // Get all voted link IDs
+    const votes = [];
+    const linkIds = [];
+    
+    votesSnapshot.forEach((doc) => {
+      const voteData = doc.data();
+      votes.push({
+        id: doc.id,
+        linkId: voteData.linkId,
+        voteType: voteData.voteType,
+        votedAt: voteData.createdAt?.toDate?.()?.toISOString() || voteData.createdAt
+      });
+      linkIds.push(voteData.linkId);
+    });
+
+    // Sort votes by date in memory (newest first)
+    votes.sort((a, b) => new Date(b.votedAt) - new Date(a.votedAt));
+
+    // Remove duplicate linkIds (user might have voted multiple times, keep latest)
+    const uniqueVotes = [];
+    const seenLinkIds = new Set();
+    
+    for (const vote of votes) {
+      if (!seenLinkIds.has(vote.linkId)) {
+        uniqueVotes.push(vote);
+        seenLinkIds.add(vote.linkId);
+      }
+    }
+
+    if (uniqueVotes.length === 0) {
+      return res.json({
+        success: true,
+        data: {
+          posts: [],
+          pagination: {
+            page: parseInt(page),
+            limit: parseInt(limit),
+            total: 0,
+            totalPages: 0
+          }
+        }
+      });
+    }
+
+    // Get post details for voted links
+    const posts = [];
+    const uniqueLinkIds = uniqueVotes.map(v => v.linkId);
+    
+    // Process in batches to avoid Firestore 'in' query limit (10 items)
+    const batchSize = 10;
+    for (let i = 0; i < uniqueLinkIds.length; i += batchSize) {
+      const batch = uniqueLinkIds.slice(i, i + batchSize);
+      
+      const linksQuery = await db.collection(collections.POSTS)
+        .where('__name__', 'in', batch)
+        .get();
+      
+      linksQuery.forEach((doc) => {
+        const linkData = doc.data();
+        const userVoteForLink = uniqueVotes.find(v => v.linkId === doc.id);
+        
+        if (userVoteForLink) {
+          posts.push({
+            id: doc.id,
+            title: linkData.title || 'Untitled',
+            url: linkData.url,
+            description: linkData.description,
+            createdAt: linkData.createdAt?.toDate?.()?.toISOString() || linkData.createdAt,
+            author: linkData.author,
+            voteStats: linkData.voteStats || { safe: 0, unsafe: 0, suspicious: 0 },
+            userVote: {
+              voteType: userVoteForLink.voteType === 'upvote' ? 'safe' : 
+                        userVoteForLink.voteType === 'downvote' ? 'unsafe' : 
+                        userVoteForLink.voteType,
+              votedAt: userVoteForLink.votedAt
+            }
+          });
+        }
+      });
+    }
+
+    // Sort posts by vote date again (newest first)
+    posts.sort((a, b) => new Date(b.userVote.votedAt) - new Date(a.userVote.votedAt));
+
+    // Apply pagination
+    const totalPosts = posts.length;
+    const totalPages = Math.ceil(totalPosts / limit);
+    const startIndex = (page - 1) * limit;
+    const endIndex = startIndex + parseInt(limit);
+    const paginatedPosts = posts.slice(startIndex, endIndex);
+
+    res.json({
+      success: true,
+      data: {
+        posts: paginatedPosts,
+        pagination: {
+          page: parseInt(page),
+          limit: parseInt(limit),
+          total: totalPosts,
+          totalPages
+        }
+      }
+    });
+
+  } catch (error) {
+    logger.error('User voted posts error', { error: error.message, stack: error.stack, userId: getUserId(req) });
+    res.status(500).json({
+      success: false,
+      error: 'Failed to get user voted posts'
+    });
+  }
+});
+
+// Debug endpoint - test user authentication
+router.get('/user/debug', async (req, res) => {
+  try {
+    const userId = getUserId(req);
+    const userEmail = getUserEmail(req);
+    
+    res.json({
+      success: true,
+      debug: {
+        userId,
+        userEmail,
+        hasAuthHeader: !!req.headers.authorization,
+        userFromToken: req.user,
+        headers: {
+          'x-user-id': req.headers['x-user-id'],
+          'x-user-email': req.headers['x-user-email']
+        }
+      }
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
 module.exports = router;
