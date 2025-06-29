@@ -3,7 +3,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Monitor, 
   Zap, 
-  Clock, 
   Activity, 
   AlertTriangle, 
   CheckCircle,
@@ -25,7 +24,6 @@ const PerformanceMonitor = ({ isOpen, onClose }) => {
   });
   const [isMonitoring, setIsMonitoring] = useState(false);
   const [performanceScore, setPerformanceScore] = useState(0);
-  const intervalRef = useRef(null);
   const frameCountRef = useRef(0);
   const lastTimeRef = useRef(performance.now());
 

@@ -1,25 +1,16 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useTheme } from '../context/ThemeContext';
 import { useCommunityData } from '../hooks/useCommunityData';
 import {
-  Plus,
   Search,
-  Eye,
-  MessageCircle,
-  AlertTriangle,
-  ExternalLink,
+  Plus,
   RefreshCw,
-  Settings,
-  Grid,
-  List,
   Filter,
   ChevronDown,
   RotateCcw
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import VoteComponent from '../components/Community/VoteComponent';
-import CommentSection from '../components/Community/CommentSection';
-import CommentPreview from '../components/Community/CommentPreview';
+
 import ReportModal from '../components/Community/ReportModal';
 import RequestMonitor from '../components/Community/RequestMonitor';
 import UnifiedPostCard from '../components/Community/UnifiedPostCard';
@@ -38,15 +29,14 @@ const CommunityPage = () => {
   const [timeFilter, setTimeFilter] = useState('all');
   const [sourceFilter, setSourceFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
+  // eslint-disable-next-line no-unused-vars
   const [showComments, setShowComments] = useState({});
   const [showReportModal, setShowReportModal] = useState(null);
   const [page, setPage] = useState(1);
   const [isSearching, setIsSearching] = useState(false);
   const [showSettingsMenu, setShowSettingsMenu] = useState(false);
   const [showFiltersMenu, setShowFiltersMenu] = useState(false);
-  const [viewMode, setViewMode] = useState('card');
-  const [autoRefresh, setAutoRefresh] = useState(false);
-  const [showImages, setShowImages] = useState(true);
+  const [showImages] = useState(true);
 
   // Batch votes optimization
   const { preloadVotes } = useBatchVotes();
@@ -143,8 +133,8 @@ const CommunityPage = () => {
     };
   }, [showSettingsMenu, showFiltersMenu]);
 
-  // Extract data from hook
-  const articles = communityData.posts || [];
+  // Extract data from hook using useMemo to prevent unnecessary re-renders
+  const articles = useMemo(() => communityData.posts || [], [communityData.posts]);
 
   // Preload votes for visible articles
   useEffect(() => {
@@ -267,189 +257,6 @@ const CommunityPage = () => {
       window.removeEventListener('storage', handleStorageChange);
     };
   }, [refreshData]);
-
-  const getTrustScoreColor = (score) => {
-    if (score >= 80) return 'text-green-600 bg-green-100 dark:bg-green-900/30 dark:text-green-400';
-    if (score >= 60) return 'text-yellow-600 bg-yellow-100 dark:bg-yellow-900/30 dark:text-yellow-400';
-    if (score >= 40) return 'text-orange-600 bg-orange-100 dark:bg-orange-900/30 dark:text-orange-400';
-    return 'text-red-600 bg-red-100 dark:bg-red-900/30 dark:text-red-400';
-  };
-
-  const getTrustScoreLabel = (score) => {
-    if (score >= 80) return 'Đáng tin cậy';
-    if (score >= 60) return 'Cần thận trọng';
-    if (score >= 40) return 'Nghi ngờ';
-    return 'Không đáng tin';
-  };
-
-  const getPostTypeIcon = (type) => {
-    switch (type) {
-      case 'news': return '📰';
-      case 'user_post': return '👤';
-      default: return '📝';
-    }
-  };
-
-  const ArticleCard = ({ article }) => (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      className={`${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}
-        border rounded-lg mb-2 hover:shadow-md transition-all duration-200 overflow-hidden`}
-    >
-      <div className="flex">
-        {/* Vote Section - Left Side */}
-        <div className="flex flex-col items-center p-4 bg-gray-50 dark:bg-gray-700/50 min-w-[80px]">
-          <VoteComponent linkId={article.id} postData={article} />
-        </div>
-
-        {/* Content Section - Right Side */}
-        <div className="flex-1 p-4">
-          {/* Article Header */}
-          <div className="flex items-start justify-between mb-3">
-            <div className="flex-1">
-              {/* Meta Info */}
-              <div className="flex items-center space-x-2 text-xs text-gray-500 dark:text-gray-400 mb-2">
-                <span className="font-medium">{getPostTypeIcon(article.type)} {article.source}</span>
-                <span>•</span>
-                <span>Đăng bởi {article.author?.name || article.userInfo?.name || 'Ẩn danh'}</span>
-                <span>•</span>
-                <span>{new Date(article.createdAt).toLocaleDateString('vi-VN')}</span>
-                {article.isVerified && (
-                  <>
-                    <span>•</span>
-                    <span className="text-blue-500 font-medium">✓ Đã xác minh</span>
-                  </>
-                )}
-                {article.trustScore && (
-                  <>
-                    <span>•</span>
-                    <div className={`px-2 py-0.5 rounded-full text-xs font-medium ${getTrustScoreColor(article.trustScore)}`}>
-                      {getTrustScoreLabel(article.trustScore)} ({article.trustScore}%)
-                    </div>
-                  </>
-                )}
-              </div>
-
-              {/* Title */}
-              <h3 className={`text-lg font-medium mb-2 hover:text-blue-600 cursor-pointer ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                {article.title || 'Untitled Article'}
-              </h3>
-
-              {/* Content */}
-              {article.content && (
-                <p className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'} mb-3 line-clamp-3`}>
-                  {article.content}
-                </p>
-              )}
-
-              {/* Screenshot/Image */}
-              {showImages && (article.imageUrl || article.screenshot) && (
-                <div className="mb-3">
-                  <img
-                    src={article.imageUrl || article.screenshot}
-                    alt={article.title}
-                    className="w-full max-w-md h-48 object-cover rounded-lg border border-gray-200 dark:border-gray-700"
-                    onError={(e) => {
-                      e.target.style.display = 'none';
-                    }}
-                  />
-                </div>
-              )}
-
-              {/* URL Preview */}
-              {article.url && (
-                <div className="flex items-center space-x-2 mb-3 p-2 bg-gray-50 dark:bg-gray-700 rounded border-l-4 border-blue-500">
-                  <ExternalLink size={14} className="text-blue-500 flex-shrink-0" />
-                  <a
-                    href={article.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-blue-500 hover:text-blue-600 text-sm truncate"
-                  >
-                    {article.url}
-                  </a>
-                </div>
-              )}
-
-              {/* Tags */}
-              {article.tags && article.tags.length > 0 && (
-                <div className="flex flex-wrap gap-1 mb-3">
-                  {article.tags.slice(0, 5).map((tag, index) => (
-                    <span
-                      key={index}
-                      className="px-2 py-1 text-xs bg-blue-50/70 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300 rounded-full"
-                    >
-                      #{tag}
-                    </span>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Action Bar */}
-          <div className="flex items-center space-x-4 text-sm">
-            <button
-              onClick={() => handleToggleComments(article.id)}
-              className={`flex items-center space-x-1 px-3 py-1.5 rounded-full transition-colors ${
-                showComments[article.id]
-                  ? 'bg-blue-50/70 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300'
-                  : 'text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700'
-              }`}
-            >
-              <MessageCircle size={16} />
-              <span>{showComments[article.id] ? 'Ẩn bình luận' : 'Xem tất cả'}</span>
-            </button>
-
-            <button
-              onClick={() => handleShare(article)}
-              className={`flex items-center space-x-1 px-3 py-1.5 rounded-full transition-colors
-                ${isDarkMode ? 'hover:bg-gray-700 text-gray-400' : 'hover:bg-gray-100 text-gray-600'}`}
-            >
-              <span>Chia sẻ</span>
-            </button>
-
-            <button
-              onClick={() => setShowReportModal(article.id)}
-              className={`flex items-center space-x-1 px-3 py-1.5 rounded-full transition-colors text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20`}
-            >
-              <AlertTriangle size={16} />
-              <span>Báo cáo</span>
-            </button>
-
-            <div className="flex items-center space-x-1 text-gray-400">
-              <Eye size={14} />
-              <span>{article.viewCount || 0}</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Comment Preview - Always show */}
-      <CommentPreview
-        linkId={article.id}
-        onToggleFullComments={() => {
-          console.log('🔗 Article data for comments:', { id: article.id, title: article.title, url: article.url });
-          handleToggleComments(article.id);
-        }}
-      />
-
-      {/* Full Comments Section */}
-      <AnimatePresence>
-        {showComments[article.id] && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            className="mt-4 border-t pt-4"
-          >
-            <CommentSection postId={article.id} />
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </motion.div>
-  );
 
   return (
     <PageLayout

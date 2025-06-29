@@ -209,13 +209,6 @@ const TrendingArticles = () => {
     return 'text-red-600 bg-red-100 dark:bg-red-900/30 dark:text-red-300';
   };
 
-  const getCredibilityLabel = (score) => {
-    if (score >= 80) return 'Đáng tin cậy';
-    if (score >= 60) return 'Cần thận trọng';
-    if (score >= 40) return 'Nghi ngờ';
-    return 'Không đáng tin';
-  };
-
   const formatTimeAgo = (dateString) => {
     const now = new Date();
     const date = new Date(dateString);
