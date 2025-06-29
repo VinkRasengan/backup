@@ -381,3 +381,20 @@ img {
     animation: none;
   }
 }
+
+/* Chat page specific styles for navigation layout integration */
+.chat-page-active {
+  overflow: hidden;
+}
+
+/* Ensure chat container works well with navigation layout */
+.nav-content.nav-container .chat-page-active {
+  height: 100vh;
+}
+
+/* Mobile adjustments for chat with navigation */
+@media (max-width: 768px) {
+  .chat-page-active .messenger-layout {
+    padding-bottom: 60px; /* Account for mobile tab bar */
+  }
+}

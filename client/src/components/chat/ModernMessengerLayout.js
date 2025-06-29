@@ -15,8 +15,6 @@ import {
   Mic,
   Settings,
   UserPlus,
-  Menu,
-  Home,
   MoreHorizontal,
   Check,
   CheckCheck,
@@ -24,7 +22,6 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
-import { useNavigate } from 'react-router-dom';
 import EmojiPicker from './EmojiPicker';
 import './MessengerLayout.css';
 import './ChatTheme.css';
@@ -32,7 +29,6 @@ import './ChatTheme.css';
 const ModernMessengerLayout = () => {
   const { user } = useAuth();
   const { isDarkMode } = useTheme();
-  const navigate = useNavigate();
   const [selectedChat, setSelectedChat] = useState(null);
   const [chatHistory, setChatHistory] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -493,47 +489,12 @@ const ModernMessengerLayout = () => {
 
   return (
     <div
-      className={`chat-fullscreen messenger-layout ${isDarkMode ? 'dark' : ''}`}
+      className={`messenger-layout ${isDarkMode ? 'dark' : ''}`}
       data-theme={isDarkMode ? 'dark' : 'light'}
+      style={{ height: '100%' }}
     >
-      {/* Enhanced Chat Navigation Header */}
-      <div className="messenger-header">
-        <div className="flex items-center space-x-3">
-          <button
-            onClick={() => navigate('/')}
-            className="btn btn-ghost p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-all duration-200"
-            title="Về trang chủ (Alt+H)"
-          >
-            <Home size={20} className="text-gray-600 dark:text-gray-400" />
-          </button>
-          <button
-            onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="btn btn-ghost p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-all duration-200"
-            title="Menu (Ctrl+M)"
-          >
-            <Menu size={20} className="text-gray-600 dark:text-gray-400" />
-          </button>
-          <div className="flex items-center space-x-2">
-            <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-sm">
-              💬
-            </div>
-            <h1 className="heading-2 text-lg font-semibold text-gray-900 dark:text-white">
-              FactCheck Chat
-            </h1>
-          </div>
-        </div>
-        <div className="flex items-center space-x-2">
-          <div className="text-sm text-gray-600 dark:text-gray-400">
-            {user?.displayName || user?.email || 'Người dùng'}
-          </div>
-          <div className="w-8 h-8 bg-gradient-to-br from-primary-500 to-primary-600 rounded-full flex items-center justify-center text-white font-semibold text-sm">
-            {user?.displayName?.charAt(0) || user?.email?.charAt(0) || '?'}
-          </div>
-        </div>
-      </div>
-
       {/* Main Chat Container */}
-      <div className="messenger-content">
+      <div className="messenger-content" style={{ height: '100%' }}>
         {/* Mobile Overlay */}
         {sidebarOpen && isMobile && (
           <button
