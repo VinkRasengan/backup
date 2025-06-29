@@ -446,8 +446,8 @@ router.get('/:linkId/user', async (req, res) => {
   }
 });
 
-// Get optimized vote data (stats + user vote) with caching
-router.get('/:linkId/optimized', async (req, res) => {
+// Get combined vote data (stats + user vote) with enhanced caching - IMPROVED VERSION
+router.get('/:linkId/combined', async (req, res) => {
   try {
     const { linkId } = req.params;
     const userId = getUserId(req);
@@ -465,7 +465,7 @@ router.get('/:linkId/optimized', async (req, res) => {
       userVote = await cacheManager.get('votes', userCacheKey);
     }
 
-    // If stats not cached, fetch from database
+    // If stats not cached, fetch from database with optimized single query
     if (!stats) {
       const votesSnapshot = await db.collection(collections.VOTES)
         .where('linkId', '==', linkId)
@@ -475,25 +475,49 @@ router.get('/:linkId/optimized', async (req, res) => {
         total: 0,
         upvotes: 0,
         downvotes: 0,
-        score: 0 // upvotes - downvotes (Reddit-style score)
+        score: 0
       };
 
+      // Process all votes in one loop and find user vote simultaneously
+      let foundUserVote = null;
       votesSnapshot.forEach((doc) => {
-        const voteType = doc.data().voteType;
+        const voteData = doc.data();
+        const voteType = voteData.voteType;
+        
         freshStats.total++;
-
         if (voteType === 'upvote') {
           freshStats.upvotes++;
         } else if (voteType === 'downvote') {
           freshStats.downvotes++;
         }
+
+        // Find user vote in the same iteration (optimization from votes-optimized.js)
+        if (userId && !foundUserVote && voteData.userId === userId) {
+          foundUserVote = {
+            id: doc.id,
+            linkId,
+            userId: voteData.userId,
+            voteType: voteData.voteType,
+            createdAt: voteData.createdAt?.toDate?.()?.toISOString() || voteData.createdAt
+          };
+        }
       });
+      
+      // Set userVote after the loop to avoid race condition
+      if (foundUserVote) {
+        userVote = foundUserVote;
+      }
 
       // Calculate Reddit-style score
       freshStats.score = freshStats.upvotes - freshStats.downvotes;
 
       // Cache stats for 30 seconds
       await cacheManager.set('votes', statsCacheKey, freshStats, 30);
+      
+      // Cache user vote if found and userId provided
+      if (userId && userVote && userCacheKey) {
+        await cacheManager.set('votes', userCacheKey, userVote, 60);
+      }
       
       stats = freshStats;
     }
@@ -503,6 +527,7 @@ router.get('/:linkId/optimized', async (req, res) => {
       const userVoteQuery = await db.collection(collections.VOTES)
         .where('linkId', '==', linkId)
         .where('userId', '==', userId)
+        .limit(1)
         .get();
 
       if (!userVoteQuery.empty) {
@@ -516,11 +541,11 @@ router.get('/:linkId/optimized', async (req, res) => {
           voteType: voteData.voteType,
           createdAt: voteData.createdAt?.toDate?.()?.toISOString() || voteData.createdAt
         };
-      }
 
-      // Cache user vote for 60 seconds
-      if (userCacheKey) {
-        await cacheManager.set('votes', userCacheKey, userVote, 60);
+        // Cache user vote for 60 seconds
+        if (userCacheKey) {
+          await cacheManager.set('votes', userCacheKey, userVote, 60);
+        }
       }
     }
 
@@ -528,17 +553,24 @@ router.get('/:linkId/optimized', async (req, res) => {
       success: true,
       data: {
         linkId,
-        statistics: stats, // Changed from 'stats' to 'statistics' to match frontend
+        statistics: stats,
         userVote
       }
     });
   } catch (error) {
-    logger.error('Optimized vote data error', { error: error.message, linkId: req.params.linkId });
+    logger.error('Combined vote data error', { error: error.message, linkId: req.params.linkId });
     res.status(500).json({
       success: false,
-      error: 'Failed to get vote data'
+      error: 'Failed to get combined vote data'
     });
   }
+});
+
+// Legacy optimized endpoint - redirects to combined for backwards compatibility
+router.get('/:linkId/optimized', async (req, res) => {
+  // Redirect to combined endpoint internally
+  req.url = req.url.replace('/optimized', '/combined');
+  return router.handle(req, res);
 });
 
 // Delete user's vote
@@ -697,6 +729,129 @@ router.post('/batch', async (req, res) => {
     res.status(500).json({
       success: false,
       error: 'Failed to process batch votes'
+    });
+  }
+});
+
+// Batch get combined vote data (stats + user votes) for multiple links - NEW OPTIMIZED ENDPOINT
+router.post('/batch/combined', async (req, res) => {
+  try {
+    const { linkIds } = req.body;
+    const userId = getUserId(req);
+    
+    if (!Array.isArray(linkIds) || linkIds.length === 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'linkIds array is required'
+      });
+    }
+
+    // Limit batch size to prevent timeout
+    if (linkIds.length > 20) {
+      return res.status(400).json({
+        success: false,
+        error: 'Too many linkIds (max 20)'
+      });
+    }
+
+    logger.info('Batch combined vote data request', { 
+      linkCount: linkIds.length, 
+      userId: userId || 'anonymous'
+    });
+
+    const results = {};
+
+    // Initialize results and check cache for stats
+    const uncachedIds = [];
+    for (const linkId of linkIds) {
+      const cachedStats = await cacheManager.get('votes', `stats:${linkId}`);
+      if (cachedStats) {
+        results[linkId] = {
+          statistics: cachedStats,
+          userVote: null // Will be populated below
+        };
+      } else {
+        uncachedIds.push(linkId);
+        results[linkId] = {
+          statistics: { total: 0, upvotes: 0, downvotes: 0, score: 0 },
+          userVote: null
+        };
+      }
+    }
+
+    // Get votes for uncached links using chunked queries (Firebase limit: 10 items per 'in' query)
+    if (uncachedIds.length > 0) {
+      const chunkSize = 10;
+      for (let i = 0; i < uncachedIds.length; i += chunkSize) {
+        const chunk = uncachedIds.slice(i, i + chunkSize);
+        
+        const votesSnapshot = await db.collection(collections.VOTES)
+          .where('linkId', 'in', chunk)
+          .get();
+
+        votesSnapshot.forEach((doc) => {
+          const voteData = doc.data();
+          const linkId = voteData.linkId;
+          const voteType = voteData.voteType;
+          
+          if (results[linkId]) {
+            results[linkId].statistics.total++;
+            if (voteType === 'upvote') {
+              results[linkId].statistics.upvotes++;
+            } else if (voteType === 'downvote') {
+              results[linkId].statistics.downvotes++;
+            }
+          }
+        });
+      }
+
+      // Calculate scores and cache stats
+      uncachedIds.forEach(async (linkId) => {
+        const stats = results[linkId].statistics;
+        stats.score = stats.upvotes - stats.downvotes;
+        // Cache stats for 30 seconds
+        await cacheManager.set('votes', `stats:${linkId}`, stats, 30);
+      });
+    }
+
+    // Get user votes for all links in chunked queries if userId provided
+    if (userId) {
+      const chunkSize = 10;
+      for (let i = 0; i < linkIds.length; i += chunkSize) {
+        const chunk = linkIds.slice(i, i + chunkSize);
+        
+        const userVotesSnapshot = await db.collection(collections.VOTES)
+          .where('linkId', 'in', chunk)
+          .where('userId', '==', userId)
+          .get();
+
+        userVotesSnapshot.forEach((doc) => {
+          const voteData = doc.data();
+          const linkId = voteData.linkId;
+          
+          if (results[linkId]) {
+            results[linkId].userVote = {
+              id: doc.id,
+              linkId,
+              userId: voteData.userId,
+              voteType: voteData.voteType,
+              createdAt: voteData.createdAt?.toDate?.()?.toISOString() || voteData.createdAt
+            };
+          }
+        });
+      }
+    }
+
+    res.json({
+      success: true,
+      data: results
+    });
+
+  } catch (error) {
+    logger.error('Batch combined vote data error', { error: error.message });
+    res.status(500).json({
+      success: false,
+      error: 'Failed to get batch combined vote data'
     });
   }
 });

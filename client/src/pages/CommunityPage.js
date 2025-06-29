@@ -55,8 +55,10 @@ const CommunityPage = () => {
       const user = JSON.parse(localStorage.getItem('user') || '{}');
       if (!user.uid && !user.id) {
         toast.error('Vui lòng đăng nhập để vote');
-        return;
+        throw new Error('User not authenticated');
       }
+
+      console.log('🗳️ Submitting vote:', { linkId, voteType, userId: user.uid || user.id });
 
       // Use API service instead of direct fetch
       const response = await communityAPI.submitVote(
@@ -67,16 +69,19 @@ const CommunityPage = () => {
       );
 
       if (response.success) {
-        // Vote successful - no need to refresh whole page
-        // Individual vote components will handle their own state
-        toast.success('Vote successful!');
+        // Vote successful - return success for VoteComponent sync
+        console.log('✅ Vote submitted successfully:', response);
+        toast.success(`Vote ${response.action || 'submitted'} successfully!`);
+        return response; // Return response for VoteComponent
       } else {
         console.error('❌ Vote failed:', response.error);
-        toast.error('Failed to vote');
+        toast.error('Failed to vote: ' + (response.error || 'Unknown error'));
+        throw new Error(response.error || 'Vote failed');
       }
     } catch (error) {
       console.error('❌ Error voting:', error);
-      toast.error('Error voting');
+      toast.error('Error voting: ' + error.message);
+      throw error; // Propagate error to VoteComponent
     }
   };
 
