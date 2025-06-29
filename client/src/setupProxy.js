@@ -1,13 +1,14 @@
 const { createProxyMiddleware } = require('http-proxy-middleware');
 
+// Load environment variables if needed
+if (process.env.NODE_ENV !== 'production') {
+  require('dotenv').config({ path: require('path').join(__dirname, '../../.env') });
+}
+
 // Get proxy target based on environment
 const getProxyTarget = () => {
-  // In production on Render, use the API Gateway URL
-  if (process.env.NODE_ENV === 'production' && process.env.REACT_APP_API_URL) {
-    return process.env.REACT_APP_API_URL;
-  }
-  // Development fallback
-  return 'http://localhost:8080';
+  // Use REACT_APP_API_URL if set, otherwise default to local
+  return process.env.REACT_APP_API_URL || 'http://localhost:8080';
 };
 
 module.exports = function(app) {

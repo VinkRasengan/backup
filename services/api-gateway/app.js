@@ -7,16 +7,11 @@ const { createProxyMiddleware } = require('http-proxy-middleware');
 const path = require('path');
 const fs = require('fs');
 
-// Load environment variables from root directory with fallback
-const rootEnvPath = path.join(__dirname, '../../.env');
+// Load environment variables using standardized loader
+const { setupEnvironment, getRequiredVarsForService } = require('../../shared/utils/env-loader');
 
-// Try to load from root first, fallback to local if not found
-if (fs.existsSync(rootEnvPath)) {
-  require('dotenv').config({ path: rootEnvPath });
-} else {
-  // Fallback for production environments (Render, Docker)
-  require('dotenv').config();
-}
+// Setup environment with validation
+const envResult = setupEnvironment('api-gateway', getRequiredVarsForService('api-gateway'), true);
 
 // Simple logger implementation
 const logger = {

@@ -2,18 +2,9 @@ const admin = require('firebase-admin');
 const path = require('path');
 const fs = require('fs');
 
-// Load environment variables - conditional for development vs production
-if (process.env.NODE_ENV !== 'production') {
-  const rootEnvPath = path.join(__dirname, '../../../../.env');
-  // Try to load from root first, fallback to local if not found
-  if (fs.existsSync(rootEnvPath)) {
-    require('dotenv').config({ path: rootEnvPath });
-  } else {
-    // Fallback for development environments
-    require('dotenv').config();
-  }
-} 
-// In production (Render, Docker), environment variables are set by platform
+// Load environment variables using standardized loader
+const { loadEnvironmentVariables } = require('../../../../shared/utils/env-loader');
+loadEnvironmentVariables('auth-service-firebase');
 
 let db, auth, collections;
 
