@@ -37,6 +37,14 @@ router.get('/dashboard',
   userController.getDashboard
 );
 
+// @route   GET /users/notifications
+// @desc    Get user notifications
+// @access  Private
+router.get('/notifications',
+  firebaseAuth.authenticate,
+  userController.getNotifications
+);
+
 // @route   PUT /users/:userId/roles
 // @desc    Update user roles (admin only)
 // @access  Private (Admin)

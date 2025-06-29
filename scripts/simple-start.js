@@ -376,6 +376,139 @@ class SimpleStart {
     console.log('   2. Open http://localhost:3000 in your browser');
     console.log('   3. Check service status with: npm run status');
   }
+
+  /**
+   * Cross-platform command execution with better error handling
+   */
+  async execCommand(command, cwd = process.cwd(), options = {}) {
+    return new Promise((resolve, reject) => {
+      // Enhanced cross-platform command execution
+      let shell, shellFlag;
+      
+      if (this.isWindows) {
+        shell = 'cmd';
+        shellFlag = '/c';
+      } else {
+        shell = 'bash';
+        shellFlag = '-c';
+      }
+      
+      const child = spawn(shell, [shellFlag, command], {
+        cwd,
+        stdio: options.silent ? 'pipe' : 'inherit',
+        shell: true,
+        env: { ...process.env, FORCE_COLOR: '1' },
+        ...options
+      });
+
+      let output = '';
+      if (options.silent && child.stdout) {
+        child.stdout.on('data', (data) => {
+          output += data.toString();
+        });
+      }
+
+      child.on('close', (code) => {
+        if (code === 0) {
+          resolve({ code, output });
+        } else {
+          const error = new Error(`Command failed with code ${code}: ${command}`);
+          error.code = code;
+          error.output = output;
+          reject(error);
+        }
+      });
+
+      child.on('error', (error) => {
+        this.log(`Command execution error: ${error.message}`, 'error');
+        reject(error);
+      });
+
+      // Handle timeout
+      if (options.timeout) {
+        setTimeout(() => {
+          child.kill('SIGTERM');
+          reject(new Error(`Command timed out after ${options.timeout}ms: ${command}`));
+        }, options.timeout);
+      }
+    });
+  }
+
+  /**
+   * Check if required tools are available
+   */
+  async checkPrerequisites() {
+    console.log('🔍 Checking prerequisites...');
+    
+    const requirements = [
+      { name: 'Node.js', command: 'node --version', required: true },
+      { name: 'npm', command: 'npm --version', required: true },
+      { name: 'Git', command: 'git --version', required: false }
+    ];
+    
+    for (const req of requirements) {
+      try {
+        const result = await this.execCommand(req.command, process.cwd(), { silent: true, timeout: 5000 });
+        this.log(`✅ ${req.name} is available: ${result.output.trim()}`, 'success');
+      } catch (error) {
+        if (req.required) {
+          this.log(`❌ ${req.name} is required but not found`, 'error');
+          throw new Error(`Missing prerequisite: ${req.name}`);
+        } else {
+          this.log(`⚠️  ${req.name} not found (optional)`, 'warning');
+        }
+      }
+    }
+  }
+
+  /**
+   * Check if ports are available
+   */
+  async checkPortsAvailability() {
+    console.log('🔌 Checking port availability...');
+    
+    const busyPorts = [];
+    
+    for (const service of this.services) {
+      const isAvailable = await this.isPortAvailable(service.port);
+      if (!isAvailable) {
+        busyPorts.push(service.port);
+        this.log(`⚠️  Port ${service.port} is busy (${service.name})`, 'warning');
+      } else {
+        this.log(`✅ Port ${service.port} is available (${service.name})`, 'success');
+      }
+    }
+    
+    if (busyPorts.length > 0) {
+      this.log(`⚠️  ${busyPorts.length} ports are busy. Services may fail to start.`, 'warning');
+      this.log('   Run "npm stop" or "npm run force:cleanup" to free ports', 'info');
+    }
+    
+    return busyPorts;
+  }
+  
+  /**
+   * Check if a port is available
+   */
+  async isPortAvailable(port) {
+    return new Promise((resolve) => {
+      const net = require('net');
+      const server = net.createServer();
+      
+      server.listen(port, () => {
+        server.once('close', () => resolve(true));
+        server.close();
+      });
+      
+      server.on('error', () => resolve(false));
+      
+      // Timeout after 1 second
+      setTimeout(() => {
+        server.close();
+        resolve(false);
+      }, 1000);
+    });
+  }
 }
 
 // Run if called directly

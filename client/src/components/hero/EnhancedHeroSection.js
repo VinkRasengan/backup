@@ -58,44 +58,44 @@ const EnhancedHeroSection = () => {
           ease: "back.out(1.7)"
         }, 0.5);
 
-        // Continuous floating animation
+        // Continuous floating animation - reduced intensity
         gsap.to(particles, {
-          y: "random(-30, 30)",
-          x: "random(-20, 20)",
-          rotation: "random(-360, 360)",
-          duration: "random(4, 8)",
+          y: "random(-15, 15)", // Reduced from -30,30
+          x: "random(-10, 10)",  // Reduced from -20,20
+          rotation: "random(-180, 180)", // Reduced from -360,360
+          duration: "random(6, 10)", // Increased duration for slower movement
           ease: "sine.inOut",
           repeat: -1,
           yoyo: true,
           stagger: {
-            amount: 2,
+            amount: 3, // Increased stagger for more distributed timing
             from: "random"
           }
         });
       }
 
-      // Title cinematic reveal
-      const titleWords = titleRef.current?.children;
-      if (titleWords) {
-        gsap.set(titleWords, {
-          y: 100,
-          opacity: 0,
-          rotationX: 90,
-          transformOrigin: "center bottom"
-        });
+              // Title cinematic reveal - improved timing
+        const titleWords = titleRef.current?.children;
+        if (titleWords) {
+          gsap.set(titleWords, {
+            y: 100,
+            opacity: 0,
+            rotationX: 90,
+            transformOrigin: "center bottom"
+          });
 
-        masterTl.to(titleWords, {
-          y: 0,
-          opacity: 1,
-          rotationX: 0,
-          duration: 1.5,
-          ease: "power3.out",
-          stagger: {
-            amount: 0.8,
-            from: "start"
-          }
-        }, 1);
-      }
+          masterTl.to(titleWords, {
+            y: 0,
+            opacity: 1,
+            rotationX: 0,
+            duration: 1.2,
+            ease: "power3.out",
+            stagger: {
+              amount: 0.4, // Reduced from 0.8 for faster reveal
+              from: "start"
+            }
+          }, 1);
+        }
 
       // Subtitle scale bounce with text reveal
       if (subtitleRef.current) {
@@ -230,11 +230,11 @@ const EnhancedHeroSection = () => {
         <div className="absolute top-32 right-1/3 w-5 h-5 bg-white/20 rounded-full backdrop-blur-sm" />
         <div className="absolute bottom-32 left-1/3 w-7 h-7 bg-white/15 rounded-full backdrop-blur-sm" />
         
-        {/* Small particles */}
-        {Array.from({ length: 20 }, (_, i) => (
+        {/* Small particles - reduced for better performance */}
+        {Array.from({ length: 12 }, (_, i) => (
           <div
             key={i}
-            className="absolute w-2 h-2 bg-white/20 rounded-full"
+            className="absolute w-2 h-2 bg-white/15 rounded-full"
             style={{
               top: `${Math.random() * 100}%`,
               left: `${Math.random() * 100}%`,

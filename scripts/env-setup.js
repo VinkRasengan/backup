@@ -29,7 +29,10 @@ class EnvironmentSetup {
       // Step 3: Validate required variables
       await this.validateEnvironment();
       
-      // Step 4: Show next steps
+      // Step 4: Check for common dependency conflicts
+      await this.checkDependencyConflicts();
+      
+      // Step 5: Show next steps
       this.showNextSteps();
       
     } catch (error) {
@@ -201,6 +204,151 @@ DEBUG=false
     } else {
       console.log('  ✅ All required environment variables are properly set');
     }
+  }
+
+  /**
+   * Check for common dependency conflicts
+   */
+  async checkDependencyConflicts() {
+    console.log('4. 📦 Checking dependency conflicts...');
+    
+    const conflicts = [];
+    
+    // Check Firebase Admin version consistency
+    const firebaseVersions = await this.checkFirebaseVersions();
+    if (firebaseVersions.conflicts.length > 0) {
+      conflicts.push('Firebase Admin versions conflicts detected');
+      console.log('  ⚠️  Firebase Admin versions:', firebaseVersions.versions);
+    }
+    
+    // Check Node.js version consistency
+    const nodeVersions = await this.checkNodeVersions();
+    if (nodeVersions.conflicts.length > 0) {
+      conflicts.push('Node.js version requirements inconsistent');
+      console.log('  ⚠️  Node.js version conflicts:', nodeVersions.conflicts);
+    }
+    
+    // Check for heavy dependencies
+    const heavyDeps = await this.checkHeavyDependencies();
+    if (heavyDeps.length > 0) {
+      console.log('  ⚠️  Heavy dependencies detected:', heavyDeps);
+      console.log('      These may slow down CI/CD and cause cross-platform issues');
+    }
+    
+    if (conflicts.length === 0) {
+      console.log('  ✅ No dependency conflicts detected');
+    } else {
+      console.log('  ⚠️  Conflicts detected:', conflicts.length);
+    }
+    
+    return conflicts;
+  }
+  
+  /**
+   * Check Firebase Admin SDK versions across services
+   */
+  async checkFirebaseVersions() {
+    const versions = {};
+    const conflicts = [];
+    
+    const servicesDirs = ['auth-service', 'community-service', 'link-service', 'chat-service', 'news-service', 'admin-service'];
+    
+    for (const service of servicesDirs) {
+      const packagePath = path.join(this.projectRoot, 'services', service, 'package.json');
+      if (fs.existsSync(packagePath)) {
+        try {
+          const pkg = JSON.parse(fs.readFileSync(packagePath, 'utf8'));
+          if (pkg.dependencies && pkg.dependencies['firebase-admin']) {
+            versions[service] = pkg.dependencies['firebase-admin'];
+          }
+        } catch (error) {
+          console.log(`    ⚠️  Could not read ${service}/package.json`);
+        }
+      }
+    }
+    
+    // Check if all versions are the same
+    const versionValues = Object.values(versions);
+    const uniqueVersions = [...new Set(versionValues)];
+    
+    if (uniqueVersions.length > 1) {
+      conflicts.push('Multiple Firebase Admin versions found');
+    }
+    
+    return { versions, conflicts };
+  }
+  
+  /**
+   * Check Node.js version requirements
+   */
+  async checkNodeVersions() {
+    const versions = {};
+    const conflicts = [];
+    
+    // Check root package.json
+    try {
+      const rootPkg = JSON.parse(fs.readFileSync(path.join(this.projectRoot, 'package.json'), 'utf8'));
+      if (rootPkg.engines && rootPkg.engines.node) {
+        versions.root = rootPkg.engines.node;
+      }
+    } catch (error) {
+      conflicts.push('Could not read root package.json');
+    }
+    
+    // Check client package.json
+    try {
+      const clientPkg = JSON.parse(fs.readFileSync(path.join(this.projectRoot, 'client', 'package.json'), 'utf8'));
+      if (clientPkg.engines && clientPkg.engines.node) {
+        versions.client = clientPkg.engines.node;
+      } else {
+        conflicts.push('Client package.json missing Node.js version requirement');
+      }
+    } catch (error) {
+      conflicts.push('Could not read client/package.json');
+    }
+    
+    return { versions, conflicts };
+  }
+  
+  /**
+   * Check for heavy dependencies that may cause CI/CD issues
+   */
+  async checkHeavyDependencies() {
+    const heavyDeps = [];
+    
+    // Check link-service for Puppeteer
+    const linkServicePkg = path.join(this.projectRoot, 'services', 'link-service', 'package.json');
+    if (fs.existsSync(linkServicePkg)) {
+      try {
+        const pkg = JSON.parse(fs.readFileSync(linkServicePkg, 'utf8'));
+        if (pkg.dependencies && pkg.dependencies.puppeteer) {
+          heavyDeps.push({
+            service: 'link-service',
+            dependency: 'puppeteer',
+            version: pkg.dependencies.puppeteer,
+            issue: 'Downloads Chromium (~200MB), may fail cross-platform'
+          });
+        }
+      } catch (error) {
+        // Ignore
+      }
+    }
+    
+    return heavyDeps;
+  }
+  
+  /**
+   * Fix dependency conflicts
+   */
+  async fixDependencyConflicts() {
+    console.log('5. 🔧 Fixing dependency conflicts...');
+    
+    // This would typically run npm install to resolve conflicts
+    // For now, just recommend manual fixes
+    console.log('  ℹ️  To fix conflicts:');
+    console.log('     1. Run: npm run install:all');
+    console.log('     2. Check package-lock.json files for conflicts');
+    console.log('     3. Consider using npm audit to check for vulnerabilities');
   }
 
   showNextSteps() {
