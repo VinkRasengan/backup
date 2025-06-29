@@ -20,30 +20,20 @@ let db, collections;
 try {
   // Initialize Firebase Admin SDK
   if (!admin.apps.length) {
-    if (process.env.NODE_ENV === 'production') {
-      // Production: Use service account from environment variables
-      const serviceAccount = {
-        projectId: process.env.FIREBASE_PROJECT_ID,
-        clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-        privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n')
-      };
+    // Use production Firebase with service account credentials
+    const serviceAccount = {
+      type: 'service_account',
+      project_id: process.env.FIREBASE_PROJECT_ID,
+      client_email: process.env.FIREBASE_CLIENT_EMAIL,
+      private_key: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n')
+    };
 
-      admin.initializeApp({
-        credential: admin.credential.cert(serviceAccount),
-        projectId: process.env.FIREBASE_PROJECT_ID
-      });
+    admin.initializeApp({
+      credential: admin.credential.cert(serviceAccount),
+      projectId: process.env.FIREBASE_PROJECT_ID
+    });
 
-      console.log('🔥 Firebase Admin initialized for production');
-    } else {
-      // Development: Use emulator
-      admin.initializeApp({
-        projectId: process.env.FIREBASE_PROJECT_ID || 'factcheck-1d6e8'
-      });
-      
-      // Configure for emulator
-      process.env.FIRESTORE_EMULATOR_HOST = '127.0.0.1:8081';
-      console.log('🔥 Firebase Admin initialized for emulator');
-    }
+    console.log('🔥 Firebase Admin initialized for production');
   }
 
   db = admin.firestore();
@@ -101,23 +91,12 @@ async function getCollectionStats() {
  */
 async function healthCheck() {
   try {
-    // In development mode, skip actual Firebase connection test
-    if (process.env.NODE_ENV !== 'production') {
-      return {
-        status: 'healthy',
-        type: 'firebase',
-        projectId: process.env.FIREBASE_PROJECT_ID,
-        environment: 'emulator-mock',
-        note: 'Development mode - health check bypassed'
-      };
-    }
-    
     await db.collection('health_check').limit(1).get();
     return {
       status: 'healthy',
       type: 'firebase',
       projectId: process.env.FIREBASE_PROJECT_ID,
-      environment: process.env.NODE_ENV === 'production' ? 'production' : 'emulator'
+      environment: process.env.NODE_ENV === 'production' ? 'production' : 'development'
     };
   } catch (error) {
     return {

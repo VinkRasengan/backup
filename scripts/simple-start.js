@@ -83,8 +83,8 @@ class SimpleStart {
 
   async startMonitoringStack() {
     try {
-      // 1. Start Firebase emulator first (required for services)
-      await this.startFirebaseEmulator();
+      // Firebase emulator removed - all services now use production Firebase
+      // await this.startFirebaseEmulator();
       
       // 2. Start Docker monitoring stack if available
       await this.startDockerMonitoring();
@@ -124,30 +124,6 @@ class SimpleStart {
       
     } catch (error) {
       console.log('  ⚠️ Could not start simple dashboard:', error.message);
-    }
-  }
-
-  async startFirebaseEmulator() {
-    try {
-      console.log('  🔥 Starting Firebase emulator...');
-      const command = this.isWindows ? 'firebase.cmd' : 'firebase';
-      
-      const child = spawn(command, ['emulators:start', '--only', 'firestore', '--project', 'factcheck-1d6e8'], {
-        detached: true,
-        stdio: 'ignore',
-        shell: true
-      });
-
-      child.unref();
-      console.log('  ✅ Firebase emulator starting on port 8081...');
-      console.log('  🌐 Firebase UI available at: http://localhost:4000');
-      
-      // Wait for emulator to start
-      await this.delay(8000);
-      
-    } catch (error) {
-      console.log('  ⚠️ Could not start Firebase emulator:', error.message);
-      console.log('  💡 Make sure Firebase CLI is installed: npm install -g firebase-tools');
     }
   }
 

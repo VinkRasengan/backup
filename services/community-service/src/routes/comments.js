@@ -108,6 +108,11 @@ router.get('/:linkId', async (req, res) => {
 // Create a new comment (Facebook-style)
 router.post('/', async (req, res) => {
   try {
+    console.log('🐛 DEBUG: Comments POST route called');
+    console.log('🐛 DEBUG: req.body =', JSON.stringify(req.body, null, 2));
+    console.log('🐛 DEBUG: req.headers.authorization =', req.headers.authorization ? 'EXISTS' : 'MISSING');
+    console.log('🐛 DEBUG: req.user =', req.user);
+
     const { linkId, content, parentId } = req.body;
 
     // Get user info from auth middleware or request body
@@ -115,13 +120,27 @@ router.post('/', async (req, res) => {
     const userEmail = getUserEmail(req);
     const displayName = getUserDisplayName(req);
 
+    console.log('🐛 DEBUG: Extracted user info =', { userId, userEmail, displayName });
+
     logger.info('Create comment request', { linkId, userId, parentId, userEmail, displayName });
 
     // Validate required fields
     if (!linkId || !content || !userId) {
+      console.log('🐛 DEBUG: Validation failed - missing fields:', { 
+        linkId: !!linkId, 
+        content: !!content, 
+        userId: !!userId 
+      });
       return res.status(400).json({
         success: false,
-        error: 'Missing required fields: linkId, content, userId'
+        error: 'Missing required fields: linkId, content, userId',
+        debug: {
+          linkId: !!linkId,
+          content: !!content,
+          userId: !!userId,
+          authHeader: !!req.headers.authorization,
+          user: !!req.user
+        }
       });
     }
 
@@ -151,8 +170,12 @@ router.post('/', async (req, res) => {
       updatedAt: new Date()
     };
 
+    console.log('🐛 DEBUG: About to create comment in Firestore');
+
     // Add comment to Firestore
     const commentRef = await db.collection(collections.COMMENTS).add(newComment);
+
+    console.log('🐛 DEBUG: Comment created successfully in Firestore');
 
     // Update link comment count
     await updateLinkCommentCount(linkId);
@@ -172,6 +195,8 @@ router.post('/', async (req, res) => {
       updatedAt: newComment.updatedAt.toISOString()
     };
 
+    console.log('🐛 DEBUG: Sending success response');
+
     res.json({
       success: true,
       message: 'Comment added successfully',
@@ -179,10 +204,12 @@ router.post('/', async (req, res) => {
     });
 
   } catch (error) {
+    console.error('🐛 DEBUG: Error in comments POST route:', error);
     logger.error('Create comment error', { error: error.message });
     res.status(500).json({
       success: false,
-      error: 'Failed to create comment'
+      error: 'Failed to create comment',
+      debug: error.message
     });
   }
 });

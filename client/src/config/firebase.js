@@ -1,6 +1,6 @@
 import { initializeApp } from 'firebase/app';
-import { getAuth, connectAuthEmulator } from 'firebase/auth';
-import { getFirestore, connectFirestoreEmulator } from 'firebase/firestore';
+import { getAuth } from 'firebase/auth';
+import { getFirestore } from 'firebase/firestore';
 
 // Firebase configuration
 const firebaseConfig = {
@@ -26,27 +26,7 @@ export const db = getFirestore(app);
 console.log('Firebase initialized:', {
   projectId: firebaseConfig.projectId,
   authDomain: firebaseConfig.authDomain,
-  environment: process.env.NODE_ENV
+  environment: process.env.NODE_ENV || 'development'
 });
-
-// Test Firebase connection
-auth.onAuthStateChanged((user) => {
-  console.log('Firebase Auth state changed:', user ? 'User logged in' : 'User logged out');
-}, (error) => {
-  console.error('Firebase Auth connection error:', error);
-});
-
-// Connect to emulators in development
-if (process.env.NODE_ENV === 'development' && process.env.REACT_APP_USE_EMULATOR === 'true') {
-  // Connect to Firestore emulator
-  if (!db._delegate._databaseId.projectId.includes('localhost')) {
-    connectFirestoreEmulator(db, 'localhost', 8081);
-  }
-
-  // Connect to Auth emulator
-  if (!auth.config.emulator) {
-    connectAuthEmulator(auth, 'http://localhost:9099');
-  }
-}
 
 export default app;
