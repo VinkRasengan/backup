@@ -56,12 +56,18 @@ const schemas = {
 
   // Comment creation validation
   createComment: Joi.object({
+    linkId: Joi.string().required().messages({
+      'any.required': 'Link ID is required'
+    }),
     content: Joi.string().min(1).max(1000).required().messages({
       'string.min': 'Comment cannot be empty',
       'string.max': 'Comment cannot exceed 1000 characters',
       'any.required': 'Comment content is required'
     }),
-    parentId: Joi.string().optional().allow('', null)
+    parentId: Joi.string().optional().allow('', null),
+    userId: Joi.string().optional().allow('', null),
+    userEmail: Joi.string().email().optional().allow('', null),
+    displayName: Joi.string().max(100).optional().allow('', null)
   }),
 
   // Vote validation

@@ -12,8 +12,8 @@ import {
 } from 'lucide-react';
 import { gsap } from '../../utils/gsap';
 import { useIntersectionObserver } from '../../hooks/useIntersectionObserver';
-import CommentSection from './CommentSection.jsx';
-import CommentPreview from './CommentPreview.jsx';
+import CommentSection from './CommentSection';
+import CommentPreview from './CommentPreview';
 
 const LazyPostCard = ({ 
   post, 

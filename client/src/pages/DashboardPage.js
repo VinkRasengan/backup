@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Search, BarChart3, Clock, TrendingUp, RefreshCw, Users } from 'lucide-react';
-import EmailVerificationBanner from '../components/EmailVerificationBanner';
+import { EmailVerificationBanner } from '../components/common';
 import { useAuth } from '../context/AuthContext';
 import PageLayout from '../components/layout/PageLayout';
 

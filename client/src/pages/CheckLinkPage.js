@@ -10,27 +10,14 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../co
 import PageLayout from '../components/layout/PageLayout';
 import { linkAPI } from '../services/api';
 import VoteComponent from '../components/Community/VoteComponent';
-import CommentSection from '../components/Community/CommentSection.jsx';
+import CommentSection from '../components/Community/CommentSection';
 import ReportModal from '../components/Community/ReportModal';
 import toast from 'react-hot-toast';
 import { useFadeIn, useCounterAnimation, useLoadingAnimation } from '../hooks/useGSAP';
 import firestoreService from '../services/firestoreService';
 import { useAuth } from '../context/AuthContext';
 
-// Custom URL validation that auto-adds protocol
-const normalizeUrl = (url) => {
-  if (!url) return url;
-
-  // Remove whitespace
-  url = url.trim();
-
-  // If no protocol, add https://
-  if (!/^https?:\/\//i.test(url)) {
-    url = 'https://' + url;
-  }
-
-  return url;
-};
+import { normalizeUrl } from '../utils/urlUtils';
 
 const schema = yup.object({
   url: yup

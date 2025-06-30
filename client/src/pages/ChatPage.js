@@ -3,7 +3,7 @@ import ModernMessengerLayout from '../components/chat/ModernMessengerLayout';
 
 const ChatPage = () => {
   useEffect(() => {
-    // Add class to body to prevent scrolling
+    // Add class to body for chat-specific styling if needed
     document.body.classList.add('chat-page-active');
 
     // Cleanup when component unmounts
@@ -13,7 +13,7 @@ const ChatPage = () => {
   }, []);
 
   return (
-    <div className="h-screen w-screen bg-gray-50 dark:bg-gray-900 overflow-hidden">
+    <div className="h-screen w-full bg-gray-50 dark:bg-gray-900 overflow-hidden">
       <ModernMessengerLayout />
     </div>
   );

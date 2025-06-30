@@ -6,11 +6,11 @@ const morgan = require('morgan');
 const rateLimit = require('express-rate-limit');
 const path = require('path');
 
-// Load environment variables - conditional for development vs production
-if (process.env.NODE_ENV !== 'production') { // eslint-disable-line no-process-env
-  require('dotenv').config({ path: path.join(__dirname, '../../../../.env') });
-}
-// In production (Render, Docker), environment variables are set by platform
+// Load environment variables using standardized loader
+const { setupEnvironment, getRequiredVarsForService } = require('../../../shared/utils/env-loader');
+
+// Setup environment with validation
+const envResult = setupEnvironment('community-service', getRequiredVarsForService('community'), true);
 
 // Import shared utilities
 const Logger = require('../../../shared/utils/logger');
@@ -21,6 +21,7 @@ const linksRoutes = require('./routes/links');
 const commentsRoutes = require('./routes/comments');
 const votesRoutes = require('./routes/votes');
 const reportsRoutes = require('./routes/reports');
+const statsRoutes = require('./routes/stats');
 const firebaseConfig = require('./config/firebase');
 const errorHandler = require('./middleware/errorHandler');
 const { authMiddleware } = require('./middleware/auth');
@@ -192,6 +193,7 @@ app.use('/links', linksRoutes);
 app.use('/comments', commentsRoutes);
 app.use('/votes', votesRoutes);
 app.use('/reports', reportsRoutes);
+app.use('/stats', statsRoutes);
 
 // 404 handler
 app.use('*', (req, res) => {

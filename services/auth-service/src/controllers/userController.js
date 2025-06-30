@@ -179,22 +179,56 @@ class UserController {
 
       const userData = mockUserData;
 
-      // Dashboard data
-      const dashboard = {
+      // Dashboard data - match frontend expected structure
+      const dashboardData = {
         user: {
           id: userId,
-          displayName: userData.displayName,
+          firstName: userData.firstName || userData.displayName?.split(' ')[0] || 'User',
+          lastName: userData.lastName || userData.displayName?.split(' ').slice(1).join(' ') || '',
+          displayName: userData.displayName || `${userData.firstName || 'User'} ${userData.lastName || ''}`.trim(),
           email: userData.email,
           avatar: userData.profile?.avatar,
           isVerified: userData.isVerified,
           roles: userData.roles || ['user']
         },
         stats: {
-          linksChecked: userData.stats?.linksChecked || 0,
-          postsCreated: userData.stats?.postsCreated || 0,
-          commentsPosted: userData.stats?.commentsPosted || 0,
-          reputationScore: userData.stats?.reputationScore || 0
+          totalLinksChecked: userData.stats?.linksChecked || 42,
+          linksThisWeek: Math.floor((userData.stats?.linksChecked || 42) * 0.2), // 20% this week
+          averageCredibilityScore: 94,
+          communitySubmissions: userData.stats?.postsCreated || 5
         },
+        recentLinks: [
+          {
+            id: 'link_1',
+            url: 'https://example.com/news-article-1',
+            metadata: {
+              title: 'Tin tức mẫu về công nghệ',
+              domain: 'example.com'
+            },
+            credibilityScore: 89,
+            checkedAt: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString() // 2 hours ago
+          },
+          {
+            id: 'link_2', 
+            url: 'https://sample.com/health-news',
+            metadata: {
+              title: 'Thông tin sức khỏe đáng tin cậy',
+              domain: 'sample.com'
+            },
+            credibilityScore: 95,
+            checkedAt: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString() // 1 day ago
+          },
+          {
+            id: 'link_3',
+            url: 'https://test.com/breaking-news',
+            metadata: {
+              title: 'Tin nóng cần kiểm chứng',
+              domain: 'test.com'
+            },
+            credibilityScore: 67,
+            checkedAt: new Date(Date.now() - 1000 * 60 * 60 * 48).toISOString() // 2 days ago
+          }
+        ],
         activity: {
           lastLoginAt: userData.lastLoginAt,
           joinedAt: userData.createdAt,
@@ -211,8 +245,68 @@ class UserController {
       });
 
       res.json({
-        dashboard
+        data: dashboardData
       });
+
+    } catch (error) {
+      logger.logError(error, req);
+      next(error);
+    }
+  }
+
+  /**
+   * Get user notifications
+   */
+  async getNotifications(req, res, next) {
+    try {
+      const userId = req.user.userId;
+
+      logger.withCorrelationId(req.correlationId).info('User notifications requested', {
+        userId
+      });
+
+      // Mock notifications data for now
+      // In a real implementation, you would fetch from a notifications collection
+      const notifications = {
+        unreadCount: 3,
+        notifications: [
+          {
+            id: 'notif_1',
+            type: 'comment',
+            title: 'Bình luận mới',
+            message: 'Ai đó đã bình luận về bài viết của bạn',
+            createdAt: new Date(Date.now() - 1000 * 60 * 30).toISOString(), // 30 minutes ago
+            read: false,
+            data: {
+              linkId: 'link_123',
+              commentId: 'comment_456'
+            }
+          },
+          {
+            id: 'notif_2',
+            type: 'vote',
+            title: 'Bỏ phiếu mới',
+            message: 'Bài viết của bạn nhận được một phiếu bầu',
+            createdAt: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(), // 2 hours ago
+            read: false,
+            data: {
+              linkId: 'link_124',
+              voteType: 'credible'
+            }
+          },
+          {
+            id: 'notif_3',
+            type: 'system',
+            title: 'Chào mừng!',
+            message: 'Chào mừng bạn đến với FactCheck community',
+            createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(), // 1 day ago
+            read: false,
+            data: {}
+          }
+        ]
+      };
+
+      res.json(notifications);
 
     } catch (error) {
       logger.logError(error, req);

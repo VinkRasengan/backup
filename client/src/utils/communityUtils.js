@@ -1,4 +1,9 @@
-// Utility functions for community features
+/**
+ * Community utility functions for handling posts, comments, and voting
+ */
+
+import toast from 'react-hot-toast';
+import { isValidUrl as validateUrl } from './urlUtils';
 
 export const formatNumber = (num) => {
   if (num >= 1000000) {
@@ -202,14 +207,7 @@ export const validatePostData = (post) => {
   };
 };
 
-export const isValidUrl = (string) => {
-  try {
-    new URL(string);
-    return true;
-  } catch {
-    return false;
-  }
-};
+export const isValidUrl = validateUrl;
 
 export const sortPosts = (posts, sortBy = 'newest') => {
   const sortedPosts = [...posts];

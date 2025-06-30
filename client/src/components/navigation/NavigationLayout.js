@@ -54,9 +54,9 @@ const NavigationLayout = ({ children, showHamburger = true, className, ...props 
   const hideNavigation = ['/login', '/register'].includes(location.pathname) || (!user && location.pathname === '/');
 
   // Full-screen pages that should bypass navigation layout entirely
-  const isFullScreenPage = ['/chat'].includes(location.pathname);
+  const isFullScreenPage = [].includes(location.pathname);
 
-  // For full-screen pages like chat, render without navigation layout
+  // For full-screen pages, render without navigation layout
   if (isFullScreenPage) {
     return (
       <div

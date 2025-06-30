@@ -10,7 +10,7 @@ const os = require('os');
 class SimpleStop {
   constructor() {
     this.isWindows = os.platform() === 'win32';
-    this.ports = [3000, 3001, 3002, 3003, 3004, 3005, 3006, 8080, 9090, 3010, 9093, 9100, 8081, 5001];
+    this.ports = [3000, 3001, 3002, 3003, 3004, 3005, 3006, 8080, 9090, 3010, 9093, 9100, 8081, 4000, 5001];
     this.killedPids = new Set(); // Track killed PIDs to avoid duplicates
   }
 

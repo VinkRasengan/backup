@@ -46,21 +46,66 @@ class LinkController {
    */
   async checkLink(req, res, next) {
     try {
+      // Enhanced logging for debugging 400 errors
+      logger.withCorrelationId(req.correlationId).info('Link check request received', {
+        method: req.method,
+        url: req.url,
+        headers: req.headers,
+        body: req.body,
+        query: req.query
+      });
+
       const { url } = req.body;
       const userId = req.user?.userId;
 
       logger.withCorrelationId(req.correlationId).info('Link check request', {
         url,
-        userId
+        urlType: typeof url,
+        urlLength: url?.length,
+        userId,
+        bodyKeys: Object.keys(req.body || {}),
+        rawBody: JSON.stringify(req.body)
       });
+
+      // Enhanced URL validation with detailed logging
+      if (!url) {
+        logger.withCorrelationId(req.correlationId).warn('URL validation failed: URL is missing', {
+          body: req.body,
+          urlValue: url
+        });
+        return res.status(400).json({
+          error: 'URL is required',
+          code: 'MISSING_URL',
+          details: 'Request body must contain a valid "url" field'
+        });
+      }
+
+      if (typeof url !== 'string') {
+        logger.withCorrelationId(req.correlationId).warn('URL validation failed: URL is not a string', {
+          urlType: typeof url,
+          urlValue: url
+        });
+        return res.status(400).json({
+          error: 'URL must be a string',
+          code: 'INVALID_URL_TYPE',
+          details: `Expected string, got ${typeof url}`
+        });
+      }
 
       // Validate URL format
       try {
         new URL(url);
+        logger.withCorrelationId(req.correlationId).info('URL validation passed', { url });
       } catch (error) {
+        logger.withCorrelationId(req.correlationId).warn('URL validation failed: Invalid URL format', {
+          url,
+          error: error.message,
+          urlLength: url.length
+        });
         return res.status(400).json({
           error: 'Invalid URL format',
-          code: 'INVALID_URL'
+          code: 'INVALID_URL',
+          details: `URL "${url}" is not a valid URL. Error: ${error.message}`
         });
       }
 
@@ -216,8 +261,6 @@ class LinkController {
         success: true,
         result
       });
-
-
 
     } catch (error) {
       logger.logError(error, req);
@@ -410,8 +453,6 @@ class LinkController {
       next(error);
     }
   }
-
-
 
   /**
    * Helper method to check a single URL (used by bulk check)

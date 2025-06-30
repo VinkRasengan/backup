@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ArrowLeft, RefreshCw, AlertCircle } from 'lucide-react';
 import LinkDetailsCard from '../components/Community/LinkDetailsCard';
-import LoadingSpinner from '../components/ui/LoadingSpinner';
+import { LoadingSpinner } from '../components/common';
 import { Button } from '../components/ui/Button';
 
 const LinkDetails = () => {

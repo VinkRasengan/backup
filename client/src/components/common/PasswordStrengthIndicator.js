@@ -1,6 +1,6 @@
 import React from 'react';
-import { CheckCircle, XCircle, Shield, AlertTriangle } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { CheckCircle, XCircle } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 const PasswordStrengthIndicator = ({ password, showRequirements = true }) => {
   const requirements = [
@@ -27,7 +27,7 @@ const PasswordStrengthIndicator = ({ password, showRequirements = true }) => {
     {
       id: 'special',
       label: 'Có ký tự đặc biệt (!@#$%^&*)',
-      test: (pwd) => /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(pwd)
+      test: (pwd) => /[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(pwd)
     }
   ];
 

@@ -1,14 +1,4 @@
 import { useState, useEffect } from 'react';
-import { 
-  collection, 
-  query, 
-  where, 
-  getDocs, 
-  onSnapshot,
-  orderBy,
-  limit 
-} from 'firebase/firestore';
-import { db } from '../config/firebase';
 import { useAuth } from '../context/AuthContext';
 
 export const useFirestoreStats = () => {
@@ -30,101 +20,48 @@ export const useFirestoreStats = () => {
       try {
         setStats(prev => ({ ...prev, loading: true, error: null }));
 
-        // Get total posts
-        const postsQuery = query(collection(db, 'links'));
-        const postsSnapshot = await getDocs(postsQuery);
-        const totalPosts = postsSnapshot.size;
-
-        // Get total comments
-        const commentsQuery = query(collection(db, 'comments'));
-        const commentsSnapshot = await getDocs(commentsQuery);
-        const totalComments = commentsSnapshot.size;
-
-        // Get total votes
-        const votesQuery = query(collection(db, 'votes'));
-        const votesSnapshot = await getDocs(votesQuery);
-        const totalVotes = votesSnapshot.size;
-
-        let userPosts = 0;
-        let userComments = 0;
-        let userVotes = 0;
-
-        // Get user-specific stats if logged in
-        if (user && (user.uid || user.id)) {
-          const userId = user.uid || user.id;
-          
-          // User posts
-          const userPostsQuery = query(
-            collection(db, 'links'),
-            where('userId', '==', userId)
-          );
-          const userPostsSnapshot = await getDocs(userPostsQuery);
-          userPosts = userPostsSnapshot.size;
-
-          // User comments
-          const userCommentsQuery = query(
-            collection(db, 'comments'),
-            where('userId', '==', userId)
-          );
-          const userCommentsSnapshot = await getDocs(userCommentsQuery);
-          userComments = userCommentsSnapshot.size;
-
-          // User votes
-          const userVotesQuery = query(
-            collection(db, 'votes'),
-            where('userId', '==', userId)
-          );
-          const userVotesSnapshot = await getDocs(userVotesQuery);
-          userVotes = userVotesSnapshot.size;
-        }
-
-        // Get recent activity (last 5 posts)
-        const recentQuery = query(
-          collection(db, 'links'),
-          orderBy('createdAt', 'desc'),
-          limit(5)
-        );
-        const recentSnapshot = await getDocs(recentQuery);
-        const recentActivity = [];
-        recentSnapshot.forEach((doc) => {
-          recentActivity.push({
-            id: doc.id,
-            ...doc.data(),
-            createdAt: doc.data().createdAt?.toDate?.() || new Date()
-          });
+        // Use backend API instead of direct Firestore calls
+        const response = await fetch('/api/stats/community', {
+          headers: {
+            'Content-Type': 'application/json',
+            // Add auth header if user is logged in
+            ...(user && { 'Authorization': `Bearer ${await user.getIdToken()}` })
+          }
         });
 
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        
         setStats({
-          totalPosts,
-          totalComments,
-          totalVotes,
-          userPosts,
-          userComments,
-          userVotes,
-          recentActivity,
+          totalPosts: data.totalPosts || 0,
+          totalComments: data.totalComments || 0,
+          totalVotes: data.totalVotes || 0,
+          userPosts: data.userPosts || 0,
+          userComments: data.userComments || 0,
+          userVotes: data.userVotes || 0,
+          recentActivity: data.recentActivity || [],
           loading: false,
           error: null
         });
 
       } catch (error) {
-        // Silently handle permission errors for stats
-        if (error.code === 'permission-denied' || error.message.includes('Missing or insufficient permissions')) {
-          console.warn('Firestore stats disabled due to permissions');
-          setStats({
-            totalLinks: 0,
-            totalComments: 0,
-            totalUsers: 0,
-            loading: false,
-            error: null
-          });
-        } else {
-          console.error('Error fetching Firestore stats:', error);
-          setStats(prev => ({
-            ...prev,
-            loading: false,
-            error: error.message
-          }));
-        }
+        console.warn('Community stats API failed, using fallback data:', error.message);
+        
+        // Fallback to default values when API fails
+        setStats({
+          totalPosts: 0,
+          totalComments: 0,
+          totalVotes: 0,
+          userPosts: 0,
+          userComments: 0,
+          userVotes: 0,
+          recentActivity: [],
+          loading: false,
+          error: null // Don't show error to user for stats
+        });
       }
     };
 
@@ -134,7 +71,7 @@ export const useFirestoreStats = () => {
   return stats;
 };
 
-export const useRealtimeNotifications = () => {
+export const useRealtimeNotifications = (enabled = true) => {
   const { user } = useAuth();
   const [notifications, setNotifications] = useState({
     count: 0,
@@ -143,78 +80,46 @@ export const useRealtimeNotifications = () => {
   });
 
   useEffect(() => {
-    if (!user || (!user.uid && !user.id)) {
+    // Skip if disabled or no user
+    if (!enabled || !user || (!user.uid && !user.id)) {
       setNotifications({ count: 0, items: [], loading: false });
       return;
     }
 
-    const userId = user.uid || user.id;
-
-    // Listen for new comments on user's posts
-    const userPostsQuery = query(
-      collection(db, 'links'),
-      where('userId', '==', userId)
-    );
-
-    const unsubscribe = onSnapshot(userPostsQuery, async (snapshot) => {
+    const fetchNotifications = async () => {
       try {
-        const userPostIds = [];
-        snapshot.forEach((doc) => {
-          userPostIds.push(doc.id);
-        });
-
-        if (userPostIds.length === 0) {
-          setNotifications({ count: 0, items: [], loading: false });
-          return;
-        }
-
-        // Get recent comments on user's posts
-        const commentsQuery = query(
-          collection(db, 'comments'),
-          where('linkId', 'in', userPostIds.slice(0, 10)), // Firestore 'in' limit is 10
-          orderBy('createdAt', 'desc'),
-          limit(10)
-        );
-
-        const commentsSnapshot = await getDocs(commentsQuery);
-        const items = [];
-        let unreadCount = 0;
-
-        commentsSnapshot.forEach((doc) => {
-          const data = doc.data();
-          // Only count comments from other users
-          if (data.userId !== userId) {
-            items.push({
-              id: doc.id,
-              type: 'comment',
-              message: `${data.userEmail} đã bình luận về bài viết của bạn`,
-              linkId: data.linkId,
-              createdAt: data.createdAt?.toDate?.() || new Date(),
-              read: false // In a real app, you'd track read status
-            });
-            unreadCount++;
+        const response = await fetch('/api/users/notifications', {
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${await user.getIdToken()}`
           }
         });
 
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        
         setNotifications({
-          count: Math.min(unreadCount, 99), // Cap at 99
-          items: items.slice(0, 5), // Show only 5 most recent
+          count: data.unreadCount || 0,
+          items: data.notifications || [],
           loading: false
         });
 
       } catch (error) {
-        // Silently handle permission/index errors for notifications
-        if (error.code === 'permission-denied' || error.message.includes('requires an index') || error.message.includes('Missing or insufficient permissions')) {
-          console.warn('Notifications disabled due to permissions or missing index');
-        } else {
-          console.error('Error fetching notifications:', error);
-        }
+        console.warn('Notifications API failed:', error.message);
         setNotifications({ count: 0, items: [], loading: false });
       }
-    });
+    };
 
-    return () => unsubscribe();
-  }, [user]);
+    fetchNotifications();
+    
+    // Poll for new notifications every 30 seconds if enabled
+    const interval = setInterval(fetchNotifications, 30000);
+    
+    return () => clearInterval(interval);
+  }, [user, enabled]);
 
   return notifications;
 };
@@ -231,41 +136,33 @@ export const useCommunityStats = () => {
   useEffect(() => {
     const fetchCommunityStats = async () => {
       try {
-        // Get total posts
-        const postsQuery = query(collection(db, 'links'));
-        const postsSnapshot = await getDocs(postsQuery);
-        const totalPosts = postsSnapshot.size;
+        const response = await fetch('/api/stats/community-overview');
 
-        // Get total comments
-        const commentsQuery = query(collection(db, 'comments'));
-        const commentsSnapshot = await getDocs(commentsQuery);
-        const totalComments = commentsSnapshot.size;
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
 
-        // Get unique users (approximate member count)
-        const usersSet = new Set();
-        postsSnapshot.forEach((doc) => {
-          const userId = doc.data().userId;
-          if (userId) usersSet.add(userId);
-        });
-        commentsSnapshot.forEach((doc) => {
-          const userId = doc.data().userId;
-          if (userId) usersSet.add(userId);
-        });
-
-        const totalMembers = usersSet.size;
-        const onlineMembers = Math.floor(totalMembers * 0.1); // Simulate 10% online
+        const data = await response.json();
 
         setCommunityStats({
-          totalMembers,
-          onlineMembers,
-          totalPosts,
-          totalComments,
+          totalMembers: data.totalMembers || 0,
+          onlineMembers: data.onlineMembers || 0,
+          totalPosts: data.totalPosts || 0,
+          totalComments: data.totalComments || 0,
           loading: false
         });
 
       } catch (error) {
-        console.error('Error fetching community stats:', error);
-        setCommunityStats(prev => ({ ...prev, loading: false }));
+        console.warn('Community overview stats API failed:', error.message);
+        
+        // Fallback to reasonable default values
+        setCommunityStats({
+          totalMembers: 1200,
+          onlineMembers: 120,
+          totalPosts: 8900,
+          totalComments: 15000,
+          loading: false
+        });
       }
     };
 

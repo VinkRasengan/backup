@@ -184,4 +184,5 @@ class VirusTotalService {
   }
 }
 
-export default new VirusTotalService();
+const virusTotalService = new VirusTotalService();
+export default virusTotalService;

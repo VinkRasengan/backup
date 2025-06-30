@@ -2,48 +2,29 @@ const admin = require('firebase-admin');
 const path = require('path');
 const fs = require('fs');
 
-// Load environment variables - conditional for development vs production
-if (process.env.NODE_ENV !== 'production') {
-  const rootEnvPath = path.join(__dirname, '../../../../.env');
-  // Try to load from root first, fallback to local if not found
-  if (fs.existsSync(rootEnvPath)) {
-    require('dotenv').config({ path: rootEnvPath });
-  } else {
-    // Fallback for development environments
-    require('dotenv').config();
-  }
-}
-// In production (Render, Docker), environment variables are set by platform
+// Load environment variables using standardized loader
+const { loadEnvironmentVariables } = require('../../../../shared/utils/env-loader');
+loadEnvironmentVariables('chat-service-firebase');
 
 let db, collections;
 
 try {
   // Initialize Firebase Admin SDK
   if (!admin.apps.length) {
-    if (process.env.NODE_ENV === 'production') {
-      // Production: Use service account from environment variables
-      const serviceAccount = {
-        projectId: process.env.FIREBASE_PROJECT_ID,
-        clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-        privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n')
-      };
+    // Use production Firebase with service account credentials
+    const serviceAccount = {
+      type: 'service_account',
+      project_id: process.env.FIREBASE_PROJECT_ID,
+      client_email: process.env.FIREBASE_CLIENT_EMAIL,
+      private_key: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n')
+    };
 
-      admin.initializeApp({
-        credential: admin.credential.cert(serviceAccount),
-        projectId: process.env.FIREBASE_PROJECT_ID
-      });
+    admin.initializeApp({
+      credential: admin.credential.cert(serviceAccount),
+      projectId: process.env.FIREBASE_PROJECT_ID
+    });
 
-      console.log('🔥 Firebase Admin initialized for production');
-    } else {
-      // Development: Use emulator
-      admin.initializeApp({
-        projectId: process.env.FIREBASE_PROJECT_ID || 'factcheck-1d6e8'
-      });
-      
-      // Configure for emulator
-      process.env.FIRESTORE_EMULATOR_HOST = '127.0.0.1:8081';
-      console.log('🔥 Firebase Admin initialized for emulator');
-    }
+    console.log('🔥 Firebase Admin initialized for production');
   }
 
   db = admin.firestore();
@@ -62,6 +43,20 @@ try {
 }
 
 /**
+ * Test Firebase connection
+ */
+async function testConnection() {
+  try {
+    await db.collection('health_check').limit(1).get();
+    console.log('✅ Firebase connection test successful');
+    return true;
+  } catch (error) {
+    console.error('❌ Firebase connection test failed:', error.message);
+    return false;
+  }
+}
+
+/**
  * Health check for Firebase
  */
 async function healthCheck() {
@@ -71,7 +66,7 @@ async function healthCheck() {
       status: 'healthy',
       type: 'firebase',
       projectId: process.env.FIREBASE_PROJECT_ID,
-      environment: process.env.NODE_ENV === 'production' ? 'production' : 'emulator'
+      environment: process.env.NODE_ENV === 'production' ? 'production' : 'development'
     };
   } catch (error) {
     return {
@@ -86,5 +81,6 @@ module.exports = {
   admin,
   db,
   collections,
+  testConnection,
   healthCheck
 };

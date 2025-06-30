@@ -2,30 +2,53 @@
 
 A comprehensive microservices-based platform for link verification, community discussions, and AI-powered fact-checking.
 
-## 🚀 Quick Start
+## 🚀 Quick Start for New Developers
+
+**➡️ [DEVELOPER_SETUP.md](DEVELOPER_SETUP.md) - Complete setup guide in 5 minutes**
+
+### TL;DR Version
+
+```bash
+git clone https://github.com/VinkRasengan/backup.git
+cd backup
+npm run setup:full        # Install deps + create .env template
+npm run validate:cicd # Check for CI/CD issues
+npm run fix:cicd      # Auto-fix common issues
+# Edit .env with your Firebase credentials
+npm start           # Start all services
+```
+
+Then open http://localhost:3000
+
+## 📋 Requirements
+
+- Node.js 18+, npm 9+
+- Firebase account (free)
+- Gemini AI API key (free)
+
+## 🎯 Full Development Setup
 
 ### Local Development
 
-1. **Clone the repository**
+1. **Clone and Setup**
    ```bash
    git clone https://github.com/VinkRasengan/backup.git
    cd backup
+   npm run setup  # Handles everything automatically
    ```
 
-2. **Install dependencies**
+2. **Configure Environment**
    ```bash
-   npm run install:all
+   # .env file is auto-created, just add your credentials:
+   # Firebase: Get from Firebase Console > Project Settings > Service Accounts
+   # Gemini: Get from https://makersuite.google.com/app/apikey
    ```
 
-3. **Set up environment variables**
+3. **Start Development**
    ```bash
-   cp .env.example .env
-   # Edit .env with your configuration
-   ```
-
-4. **Start all services**
-   ```bash
-   npm start
+   npm start     # Start all services
+   npm stop      # Stop all services
+   npm restart   # Restart everything
    ```
 
 ### Production Deployment (Render)

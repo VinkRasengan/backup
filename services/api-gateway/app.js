@@ -7,16 +7,11 @@ const { createProxyMiddleware } = require('http-proxy-middleware');
 const path = require('path');
 const fs = require('fs');
 
-// Load environment variables from root directory with fallback
-const rootEnvPath = path.join(__dirname, '../../.env');
+// Load environment variables using standardized loader
+const { setupEnvironment, getRequiredVarsForService } = require('../../shared/utils/env-loader');
 
-// Try to load from root first, fallback to local if not found
-if (fs.existsSync(rootEnvPath)) {
-  require('dotenv').config({ path: rootEnvPath });
-} else {
-  // Fallback for production environments (Render, Docker)
-  require('dotenv').config();
-}
+// Setup environment with validation
+const envResult = setupEnvironment('api-gateway', getRequiredVarsForService('api-gateway'), true);
 
 // Simple logger implementation
 const logger = {
@@ -360,6 +355,19 @@ app.use('/api/links', createProxyMiddleware({
       url: req.url,
       target: services['community-service']
     });
+
+    // Forward authentication headers
+    if (req.headers.authorization) {
+      proxyReq.setHeader('Authorization', req.headers.authorization);
+    }
+
+    // Handle JSON body for POST/PUT requests
+    if (req.body && (req.method === 'POST' || req.method === 'PUT')) {
+      const bodyData = JSON.stringify(req.body);
+      proxyReq.setHeader('Content-Type', 'application/json');
+      proxyReq.setHeader('Content-Length', Buffer.byteLength(bodyData));
+      proxyReq.write(bodyData);
+    }
   },
   onProxyRes: (proxyRes, req, res) => {
     logger.info('Community links proxy response', {
@@ -369,7 +377,12 @@ app.use('/api/links', createProxyMiddleware({
     });
   },
   onError: (err, req, res) => {
-    logger.error('Community service proxy error (links)', { error: err.message });
+    logger.error('Community service proxy error (links)', { 
+      error: err.message,
+      stack: err.stack,
+      url: req.url,
+      method: req.method
+    });
     if (!res.headersSent) {
       res.status(503).json({
         error: 'Community service unavailable',
@@ -464,9 +477,40 @@ app.use('/api/community', createProxyMiddleware({
 app.use('/api/chat', createProxyMiddleware({
   target: services['chat-service'],
   changeOrigin: true,
+  timeout: 30000,
+  proxyTimeout: 30000,
   pathRewrite: { '^/api/chat': '/chat' },
+  onProxyReq: (proxyReq, req, res) => {
+    logger.info('Proxying chat request', {
+      method: req.method,
+      url: req.url,
+      target: services['chat-service'],
+      contentType: req.get('Content-Type'),
+      bodySize: req.body ? JSON.stringify(req.body).length : 0
+    });
+
+    // Handle JSON body for POST/PUT requests
+    if (req.body && (req.method === 'POST' || req.method === 'PUT')) {
+      const bodyData = JSON.stringify(req.body);
+      proxyReq.setHeader('Content-Type', 'application/json');
+      proxyReq.setHeader('Content-Length', Buffer.byteLength(bodyData));
+      proxyReq.write(bodyData);
+    }
+  },
+  onProxyRes: (proxyRes, req, res) => {
+    logger.info('Chat proxy response', {
+      status: proxyRes.statusCode,
+      url: req.url,
+      headers: proxyRes.headers['content-type']
+    });
+  },
   onError: (err, req, res) => {
-    logger.error('Chat service proxy error', { error: err.message });
+    logger.error('Chat service proxy error', { 
+      error: err.message,
+      stack: err.stack,
+      url: req.url,
+      method: req.method
+    });
     if (!res.headersSent) {
       res.status(503).json({
         error: 'Chat service unavailable',
@@ -557,9 +601,46 @@ app.use('/users', createProxyMiddleware({
 app.use('/link-check', createProxyMiddleware({
   target: services['link-service'],
   changeOrigin: true,
+  timeout: 60000, // Add timeout configuration
+  proxyTimeout: 60000, // Add proxy timeout
   pathRewrite: { '^/link-check': '/links' },
+  onProxyReq: (proxyReq, req, res) => {
+    logger.info('Proxying link-check request to link-service', {
+      method: req.method,
+      url: req.url,
+      target: `${services['link-service']}${proxyReq.path}`
+    });
+
+    // Set connection keep-alive to prevent timeouts
+    proxyReq.setHeader('Connection', 'keep-alive');
+    proxyReq.setHeader('Keep-Alive', 'timeout=60, max=1000');
+
+    // Forward authentication headers
+    if (req.headers.authorization) {
+      proxyReq.setHeader('Authorization', req.headers.authorization);
+    }
+
+    // Handle JSON body for POST/PUT requests
+    if (req.body && (req.method === 'POST' || req.method === 'PUT')) {
+      const bodyData = JSON.stringify(req.body);
+      proxyReq.setHeader('Content-Type', 'application/json');
+      proxyReq.setHeader('Content-Length', Buffer.byteLength(bodyData));
+      proxyReq.write(bodyData);
+    }
+  },
+  onProxyRes: (proxyRes, req, res) => {
+    logger.info('Link-check proxy response from link-service', {
+      status: proxyRes.statusCode,
+      url: req.url
+    });
+  },
   onError: (err, req, res) => {
-    logger.error('Link service proxy error', { error: err.message });
+    logger.error('Link service proxy error (link-check)', { 
+      error: err.message,
+      stack: err.stack,
+      url: req.url,
+      method: req.method
+    });
     if (!res.headersSent) {
       res.status(503).json({
         error: 'Link service unavailable',

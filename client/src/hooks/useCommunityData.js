@@ -27,8 +27,8 @@ class CommunityDataManager {
 
   // Generate cache key
   getCacheKey(params) {
-    const { sort, filter, search, page, newsOnly, userPostsOnly, includeNews } = params;
-    return `${sort}-${filter}-${search || 'none'}-${page}-${newsOnly || 'false'}-${userPostsOnly || 'false'}-${includeNews || 'true'}`;
+    const { sort, filter, search, page, newsOnly, userPostsOnly, includeNews, voteFilter, timeFilter, sourceFilter } = params;
+    return `${sort}-${filter}-${search || 'none'}-${page}-${newsOnly || 'false'}-${userPostsOnly || 'false'}-${includeNews || 'true'}-${voteFilter || 'all'}-${timeFilter || 'all'}-${sourceFilter || 'all'}`;
   }
 
   // Check if data is fresh
@@ -125,7 +125,7 @@ class CommunityDataManager {
     });
   }
 
-  // Enhanced API request with Facebook/Reddit-style optimization
+  // Enhanced API request with Facebook/Reddit-style optimization + new filters
   async makeRequest(params) {
     const {
       sort = 'trending',
@@ -134,7 +134,11 @@ class CommunityDataManager {
       page = 1,
       newsOnly = false,
       userPostsOnly = false,
-      includeNews = true
+      includeNews = true,
+      // New enhanced filter parameters
+      voteFilter = 'all',
+      timeFilter = 'all',
+      sourceFilter = 'all'
     } = params;
 
     const urlParams = new URLSearchParams({
@@ -143,17 +147,31 @@ class CommunityDataManager {
       limit: page === 1 ? 10 : 5, // Load fewer items for subsequent pages
     });
 
-    // Handle content type filters
-    if (newsOnly) {
+    // Handle content type filters (enhanced with sourceFilter)
+    if (sourceFilter === 'news_only' || newsOnly) {
       urlParams.append('newsOnly', 'true');
       urlParams.append('includeNews', 'false');
       urlParams.append('userPostsOnly', 'false');
-    } else if (userPostsOnly) {
+      urlParams.append('sourceFilter', 'news_only');
+    } else if (sourceFilter === 'user_posts' || userPostsOnly) {
       urlParams.append('userPostsOnly', 'true');
       urlParams.append('includeNews', 'false');
       urlParams.append('newsOnly', 'false');
+      urlParams.append('sourceFilter', 'user_posts');
     } else {
       urlParams.append('includeNews', includeNews ? 'true' : 'false');
+      if (sourceFilter !== 'all') {
+        urlParams.append('sourceFilter', sourceFilter);
+      }
+    }
+
+    // Add new filter parameters
+    if (voteFilter && voteFilter !== 'all') {
+      urlParams.append('voteFilter', voteFilter);
+    }
+
+    if (timeFilter && timeFilter !== 'all') {
+      urlParams.append('timeFilter', timeFilter);
     }
 
     if (filter !== 'all') {
@@ -164,7 +182,7 @@ class CommunityDataManager {
       urlParams.append('search', search.trim());
     }
 
-    console.log('🌐 API Request:', urlParams.toString());
+    console.log('🌐 Enhanced API Request with new filters:', urlParams.toString());
 
     // Enhanced token handling
     const token = localStorage.getItem('token') ||
@@ -188,6 +206,7 @@ class CommunityDataManager {
     console.log('🔍 API Response structure:', data);
     console.log('🔍 API Response data field:', data.data);
     console.log('🔍 API Response success field:', data.success);
+    console.log('🔍 Applied filters in response:', data.data?.filters);
 
     if (!data.success) {
       throw new Error(data.error || 'API returned unsuccessful response');

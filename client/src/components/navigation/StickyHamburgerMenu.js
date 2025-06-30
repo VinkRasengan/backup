@@ -1,9 +1,10 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { Menu, X } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
 import StickyNavigationMenu from './StickyNavigationMenu';
+import { useResponsive } from '../../utils/responsiveDesign';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -13,9 +14,38 @@ const StickyHamburgerMenu = () => {
   const menuRef = useRef();
   const iconRef = useRef();
   const { isDarkMode } = useTheme();
+  const { device, isMobile, isTablet, dimensions } = useResponsive();
   
   let lastScroll = 0;
   let scrollTimeout;
+
+  // Get responsive button size and positioning
+  const getMenuConfig = () => {
+    if (isMobile) {
+      return {
+        size: dimensions.width < 375 ? 'w-12 h-12' : 'w-14 h-14', // Smaller on very small screens
+        position: 'top-3 right-3', // Closer to edge on mobile
+        iconSize: dimensions.width < 375 ? 20 : 24,
+        zIndex: 'z-50'
+      };
+    } else if (isTablet) {
+      return {
+        size: 'w-16 h-16', // Larger on tablet
+        position: 'top-4 right-4',
+        iconSize: 26,
+        zIndex: 'z-50'
+      };
+    } else {
+      return {
+        size: 'w-18 h-18', // Largest on desktop
+        position: 'top-5 right-5',
+        iconSize: 28,
+        zIndex: 'z-50'
+      };
+    }
+  };
+
+  const menuConfig = getMenuConfig();
 
   useEffect(() => {
     const menuElement = menuRef.current;
@@ -32,14 +62,15 @@ const StickyHamburgerMenu = () => {
       return;
     }
 
-    // Initial setup
+    // Responsive initial setup
+    const initialScale = isMobile ? 0.9 : 1;
     gsap.set(menuElement, {
-      scale: 1,
+      scale: initialScale,
       opacity: 1,
       boxShadow: "0 2px 8px rgba(0,0,0,0.1)"
     });
 
-    // Enhanced scroll handler with sticky follow behavior
+    // Enhanced responsive scroll handler
     const handleScroll = () => {
       const currentScroll = window.scrollY;
       const scrollDirection = currentScroll > lastScroll ? 'down' : 'up';
@@ -48,8 +79,19 @@ const StickyHamburgerMenu = () => {
       // Clear existing timeout
       clearTimeout(scrollTimeout);
 
-      // Sticky follow effect - menu moves slightly with scroll
-      const followOffset = Math.min(currentScroll * 0.01, 10); // Max 10px follow
+      // Responsive scaling based on device and scroll
+      const getScrollScale = () => {
+        if (isMobile) {
+          return scrollDirection === 'down' ? 0.75 : 0.9;
+        } else if (isTablet) {
+          return scrollDirection === 'down' ? 0.85 : 0.95;
+        } else {
+          return scrollDirection === 'down' ? 0.85 : 1;
+        }
+      };
+
+      // Adaptive follow offset based on screen size
+      const followOffset = Math.min(currentScroll * (isMobile ? 0.005 : 0.01), isMobile ? 5 : 10);
 
       if (currentScroll > 100) {
         setIsScrolled(true);
@@ -57,9 +99,9 @@ const StickyHamburgerMenu = () => {
         if (scrollDirection === 'down') {
           // Scrolling down - compact mode with follow
           gsap.to(menuElement, {
-            scale: 0.85,
-            opacity: 0.9,
-            y: followOffset + 5, // Follow scroll + extra offset
+            scale: getScrollScale(),
+            opacity: isMobile ? 0.8 : 0.9,
+            y: followOffset + (isMobile ? 3 : 5),
             boxShadow: "0 4px 20px rgba(0,0,0,0.25)",
             duration: 0.4,
             ease: "power2.out"
@@ -67,7 +109,7 @@ const StickyHamburgerMenu = () => {
         } else {
           // Scrolling up - normal mode with follow
           gsap.to(menuElement, {
-            scale: 1,
+            scale: getScrollScale(),
             opacity: 1,
             y: followOffset,
             boxShadow: "0 6px 25px rgba(0,0,0,0.15)",
@@ -76,21 +118,21 @@ const StickyHamburgerMenu = () => {
           });
         }
 
-        // Fast scroll behavior
+        // Responsive fast scroll behavior
         if (scrollVelocity > 15) {
           if (scrollDirection === 'down') {
-            // Fast scroll down - menu slides down more
+            // Fast scroll down - more aggressive scaling on mobile
             gsap.to(menuElement, {
-              y: followOffset + 15,
-              scale: 0.8,
+              y: followOffset + (isMobile ? 10 : 15),
+              scale: isMobile ? 0.7 : 0.8,
               duration: 0.2,
               ease: "power2.out"
             });
           } else {
-            // Fast scroll up - menu bounces up
+            // Fast scroll up - bounce effect adjusted for screen size
             gsap.to(menuElement, {
-              y: Math.max(followOffset - 5, 0),
-              scale: 1.05,
+              y: Math.max(followOffset - (isMobile ? 3 : 5), 0),
+              scale: isMobile ? 0.95 : 1.05,
               duration: 0.3,
               ease: "back.out(1.7)"
             });
@@ -98,27 +140,27 @@ const StickyHamburgerMenu = () => {
         }
       } else {
         setIsScrolled(false);
-        // At top - reset to original state
+        // At top - reset to device-appropriate state
         gsap.to(menuElement, {
-          scale: 1,
+          scale: initialScale,
           opacity: 1,
-          y: 0, // Reset position
+          y: 0,
           boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
           duration: 0.4,
           ease: "power2.out"
         });
       }
 
-      // Auto-hide after 3 seconds of no scrolling
+      // Auto-hide timeout adjusted for device
       scrollTimeout = setTimeout(() => {
         if (currentScroll > 200 && !isMenuOpen) {
           gsap.to(menuElement, {
-            opacity: 0.6,
+            opacity: isMobile ? 0.5 : 0.6,
             duration: 1,
             ease: "power2.out"
           });
         }
-      }, 3000);
+      }, isMobile ? 2000 : 3000); // Shorter timeout on mobile
 
       lastScroll = currentScroll;
     };
@@ -126,43 +168,51 @@ const StickyHamburgerMenu = () => {
     // Scroll event listener
     window.addEventListener('scroll', handleScroll, { passive: true });
 
-    // Hover effects
+    // Responsive hover effects
     const handleMouseEnter = () => {
-      gsap.to(iconElement, {
-        rotation: 5,
-        scale: 1.1,
-        duration: 0.3,
-        ease: "power2.out"
-      });
-      
-      gsap.to(menuElement, {
-        opacity: 1,
-        duration: 0.3
-      });
+      if (!isMobile) { // Only on non-touch devices
+        gsap.to(iconElement, {
+          rotation: 5,
+          scale: 1.1,
+          duration: 0.3,
+          ease: "power2.out"
+        });
+        
+        gsap.to(menuElement, {
+          opacity: 1,
+          duration: 0.3
+        });
+      }
     };
 
     const handleMouseLeave = () => {
-      gsap.to(iconElement, {
-        rotation: 0,
-        scale: 1,
-        duration: 0.3,
-        ease: "power2.out"
-      });
+      if (!isMobile) {
+        gsap.to(iconElement, {
+          rotation: 0,
+          scale: 1,
+          duration: 0.3,
+          ease: "power2.out"
+        });
+      }
     };
 
-    menuElement.addEventListener('mouseenter', handleMouseEnter);
-    menuElement.addEventListener('mouseleave', handleMouseLeave);
+    if (!isMobile) {
+      menuElement.addEventListener('mouseenter', handleMouseEnter);
+      menuElement.addEventListener('mouseleave', handleMouseLeave);
+    }
 
     // Cleanup
     return () => {
       window.removeEventListener('scroll', handleScroll);
-      menuElement.removeEventListener('mouseenter', handleMouseEnter);
-      menuElement.removeEventListener('mouseleave', handleMouseLeave);
+      if (!isMobile) {
+        menuElement.removeEventListener('mouseenter', handleMouseEnter);
+        menuElement.removeEventListener('mouseleave', handleMouseLeave);
+      }
       clearTimeout(scrollTimeout);
     };
-  }, [isMenuOpen]);
+  }, [isMenuOpen, device, isMobile, isTablet, dimensions]);
 
-  // Menu toggle animation
+  // Menu toggle animation with responsive scaling
   const toggleMenu = () => {
     const iconElement = iconRef.current;
     
@@ -170,17 +220,17 @@ const StickyHamburgerMenu = () => {
     
     setIsMenuOpen(!isMenuOpen);
     
-    // Icon rotation animation
+    // Responsive icon rotation animation
     gsap.to(iconElement, {
       rotation: isMenuOpen ? 0 : 180,
-      scale: isMenuOpen ? 1 : 1.1,
+      scale: isMenuOpen ? 1 : (isMobile ? 1.05 : 1.1),
       duration: 0.4,
       ease: "back.out(1.7)"
     });
 
-    // Menu button pulse effect
+    // Responsive menu button pulse effect
     gsap.to(menuRef.current, {
-      scale: 0.95,
+      scale: isMobile ? 0.92 : 0.95,
       duration: 0.1,
       ease: "power2.out",
       yoyo: true,
@@ -188,55 +238,59 @@ const StickyHamburgerMenu = () => {
     });
   };
 
-  // ScrollTrigger for parallax follow behavior
+  // Enhanced ScrollTrigger for responsive parallax follow behavior
   useEffect(() => {
     const menuElement = menuRef.current;
     if (!menuElement) return;
 
-    // Parallax follow effect
+    // Responsive parallax follow effect
     ScrollTrigger.create({
       start: 0,
       end: 99999,
-      scrub: 0.3, // Smooth following
+      scrub: 0.3,
       onUpdate: (self) => {
         const velocity = self.getVelocity();
         const scrollY = window.scrollY;
 
-        // Calculate follow offset (menu moves slower than scroll)
-        const followY = scrollY * 0.008; // 0.8% of scroll distance
-        const maxFollow = 8; // Maximum follow distance
+        // Responsive follow calculations
+        const followMultiplier = isMobile ? 0.005 : 0.008;
+        const maxFollow = isMobile ? 5 : 8;
+        
+        const followY = scrollY * followMultiplier;
         const clampedFollow = Math.min(followY, maxFollow);
 
-        // Apply subtle parallax effect
+        // Apply responsive parallax effect
         gsap.set(menuElement, {
           y: clampedFollow
         });
 
-        // Velocity-based behavior
-        if (velocity < -400) {
-          // Very fast scroll up - menu bounces to attention
+        // Responsive velocity-based behavior
+        const velocityThreshold = isMobile ? 300 : 400;
+        
+        if (velocity < -velocityThreshold) {
+          // Very fast scroll up - responsive bounce
           gsap.to(menuElement, {
-            scale: 1.1,
+            scale: isMobile ? 1.05 : 1.1,
             duration: 0.2,
             ease: "power2.out",
             onComplete: () => {
               gsap.to(menuElement, {
-                scale: isScrolled ? 0.85 : 1,
+                scale: isScrolled ? (isMobile ? 0.75 : 0.85) : (isMobile ? 0.9 : 1),
                 duration: 0.3,
                 ease: "power2.out"
               });
             }
           });
-        } else if (velocity > 400) {
-          // Very fast scroll down - menu shrinks more
+        } else if (velocity > velocityThreshold) {
+          // Very fast scroll down - responsive shrink
           gsap.to(menuElement, {
-            scale: 0.75,
+            scale: isMobile ? 0.65 : 0.75,
             opacity: 0.8,
             duration: 0.2,
             ease: "power2.out",
             onComplete: () => {
               gsap.to(menuElement, {
-                scale: 0.85,
+                scale: isMobile ? 0.75 : 0.85,
                 opacity: 0.9,
                 duration: 0.3,
                 ease: "power2.out"
@@ -250,18 +304,19 @@ const StickyHamburgerMenu = () => {
     return () => {
       ScrollTrigger.getAll().forEach(st => st.kill());
     };
-  }, [isScrolled]);
+  }, [isScrolled, device, isMobile]);
 
   return (
     <>
-      {/* Sticky Hamburger Menu */}
+      {/* Responsive Sticky Hamburger Menu */}
       <button
         ref={menuRef}
-        className={`fixed top-4 right-4 z-50 w-14 h-14 rounded-full cursor-pointer transition-colors duration-300 ${
+        className={`fixed ${menuConfig.position} ${menuConfig.zIndex} ${menuConfig.size} rounded-full cursor-pointer transition-colors duration-300 ${
           isDarkMode
             ? 'bg-gray-800 hover:bg-gray-700'
             : 'bg-white hover:bg-gray-50'
-        } ${isScrolled ? 'backdrop-blur-md bg-opacity-90' : ''} focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2`}
+        } ${isScrolled ? 'backdrop-blur-md bg-opacity-90' : ''} focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 
+        shadow-lg hover:shadow-xl transition-shadow duration-300`}
         onClick={toggleMenu}
         onKeyDown={(e) => {
           if (e.key === 'Enter' || e.key === ' ') {
@@ -279,14 +334,14 @@ const StickyHamburgerMenu = () => {
           <div ref={iconRef}>
             {isMenuOpen ? (
               <X 
-                size={24} 
+                size={menuConfig.iconSize} 
                 className={`transition-colors duration-300 ${
                   isDarkMode ? 'text-white' : 'text-gray-700'
                 }`}
               />
             ) : (
               <Menu 
-                size={24} 
+                size={menuConfig.iconSize} 
                 className={`transition-colors duration-300 ${
                   isDarkMode ? 'text-white' : 'text-gray-700'
                 }`}
@@ -295,19 +350,28 @@ const StickyHamburgerMenu = () => {
           </div>
         </div>
 
-        {/* Ripple effect */}
+        {/* Enhanced ripple effect */}
         <div className="absolute inset-0 rounded-full bg-blue-500 opacity-0 scale-0 transition-all duration-300 pointer-events-none" />
         
-        {/* Pulse indicator when scrolled */}
+        {/* Responsive pulse indicator when scrolled */}
         {isScrolled && !isMenuOpen && (
-          <div className="absolute inset-0 rounded-full bg-blue-400 animate-ping opacity-20" />
+          <div className={`absolute inset-0 rounded-full bg-blue-400 animate-ping opacity-20 ${
+            isMobile ? 'animate-pulse' : 'animate-ping'
+          }`} />
+        )}
+
+        {/* Mobile-only active indicator */}
+        {isMobile && isMenuOpen && (
+          <div className="absolute -top-1 -right-1 w-3 h-3 bg-blue-500 rounded-full animate-pulse" />
         )}
       </button>
 
-      {/* Navigation Menu */}
+      {/* Enhanced Navigation Menu with responsive sizing */}
       <StickyNavigationMenu 
         isOpen={isMenuOpen} 
-        onClose={() => setIsMenuOpen(false)} 
+        onClose={() => setIsMenuOpen(false)}
+        device={device}
+        isMobile={isMobile}
       />
     </>
   );

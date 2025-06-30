@@ -5,153 +5,7 @@ import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
 import { useAuth } from '../context/AuthContext';
 import { Eye, EyeOff, Mail, Lock, User } from 'lucide-react';
-import styled from 'styled-components';
-import PasswordStrengthIndicator from '../components/PasswordStrengthIndicator';
-
-const RegisterContainer = styled.div`
-  min-height: calc(100vh - 4rem);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 2rem 1rem;
-  background: #f8fafc;
-`;
-
-const RegisterCard = styled.div`
-  background: white;
-  padding: 2rem;
-  border-radius: 0.75rem;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-  width: 100%;
-  max-width: 450px;
-`;
-
-const RegisterHeader = styled.div`
-  text-align: center;
-  margin-bottom: 2rem;
-`;
-
-const RegisterTitle = styled.h1`
-  font-size: 1.875rem;
-  font-weight: bold;
-  color: #1a202c;
-  margin-bottom: 0.5rem;
-`;
-
-const RegisterSubtitle = styled.p`
-  color: #6b7280;
-`;
-
-const Form = styled.form`
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-`;
-
-const InputRow = styled.div`
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1rem;
-
-  @media (max-width: 480px) {
-    grid-template-columns: 1fr;
-  }
-`;
-
-const InputGroup = styled.div`
-  position: relative;
-`;
-
-const InputIcon = styled.div`
-  position: absolute;
-  left: 0.75rem;
-  top: 50%;
-  transform: translateY(-50%);
-  color: #9ca3af;
-`;
-
-const Input = styled.input`
-  width: 100%;
-  padding: 0.75rem 0.75rem 0.75rem 2.5rem;
-  border: 2px solid ${props => props.error ? '#ef4444' : '#d1d5db'};
-  border-radius: 0.5rem;
-  font-size: 1rem;
-  transition: border-color 0.2s;
-
-  &:focus {
-    outline: none;
-    border-color: #3b82f6;
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-  }
-
-  &::placeholder {
-    color: #9ca3af;
-  }
-`;
-
-const PasswordToggle = styled.button`
-  position: absolute;
-  right: 0.75rem;
-  top: 50%;
-  transform: translateY(-50%);
-  background: none;
-  border: none;
-  color: #9ca3af;
-  cursor: pointer;
-  padding: 0.25rem;
-
-  &:hover {
-    color: #6b7280;
-  }
-`;
-
-const ErrorMessage = styled.span`
-  color: #ef4444;
-  font-size: 0.875rem;
-  margin-top: 0.25rem;
-  display: block;
-`;
-
-const SubmitButton = styled.button`
-  width: 100%;
-  padding: 0.75rem;
-  background: #3b82f6;
-  color: white;
-  border: none;
-  border-radius: 0.5rem;
-  font-size: 1rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background-color 0.2s;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-
-  &:hover:not(:disabled) {
-    background: #2563eb;
-  }
-
-  &:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-  }
-`;
-
-const RegisterFooter = styled.div`
-  text-align: center;
-  margin-top: 1.5rem;
-`;
-
-const FooterLink = styled(Link)`
-  color: #3b82f6;
-  text-decoration: none;
-  font-size: 0.875rem;
-
-  &:hover {
-    text-decoration: underline;
-  }
-`;
+import { PasswordStrengthIndicator } from '../components/common';
 
 const schema = yup.object({
   firstName: yup
@@ -201,15 +55,12 @@ const RegisterPage = () => {
   // Watch password value for strength indicator
   const passwordValue = watch('password', '');
 
-  // Force component update for Vietnamese interface
-
   const onSubmit = async (data) => {
     setIsLoading(true);
     try {
       const { confirmPassword, ...userData } = data;
       const result = await registerUser(userData);
       if (result.success) {
-        // Navigate to registration success page
         navigate('/registration-success');
       }
     } finally {
@@ -218,125 +69,169 @@ const RegisterPage = () => {
   };
 
   return (
-    <RegisterContainer>
-      <RegisterCard>
-        <RegisterHeader>
-          <RegisterTitle>Tạo Tài Khoản Mới</RegisterTitle>
-          <RegisterSubtitle>Tham gia FactCheck để bắt đầu xác minh thông tin</RegisterSubtitle>
-        </RegisterHeader>
+    <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center px-4 py-8 bg-gray-50">
+      <div className="bg-white p-8 rounded-xl shadow-lg w-full max-w-md">
+        <div className="text-center mb-8">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+            Tạo Tài Khoản Mới
+          </h1>
+          <p className="text-gray-600">
+            Tham gia FactCheck để bắt đầu xác minh thông tin
+          </p>
+        </div>
 
-        <Form onSubmit={handleSubmit(onSubmit)}>
-          <InputRow>
-            <InputGroup>
-              <InputIcon>
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="relative">
+              <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
                 <User size={20} />
-              </InputIcon>
-              <Input
+              </div>
+              <input
                 type="text"
                 placeholder="Họ"
-                error={errors.firstName}
+                className={`w-full pl-10 pr-4 py-3 border-2 rounded-lg text-base transition-colors focus:outline-none focus:ring-3 focus:ring-blue-100 ${
+                  errors.firstName 
+                    ? 'border-red-500 focus:border-red-500' 
+                    : 'border-gray-300 focus:border-blue-500'
+                }`}
                 {...register('firstName')}
               />
               {errors.firstName && (
-                <ErrorMessage>{errors.firstName.message}</ErrorMessage>
+                <span className="text-red-500 text-sm mt-1 block">
+                  {errors.firstName.message}
+                </span>
               )}
-            </InputGroup>
+            </div>
 
-            <InputGroup>
-              <InputIcon>
+            <div className="relative">
+              <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
                 <User size={20} />
-              </InputIcon>
-              <Input
+              </div>
+              <input
                 type="text"
                 placeholder="Tên"
-                error={errors.lastName}
+                className={`w-full pl-10 pr-4 py-3 border-2 rounded-lg text-base transition-colors focus:outline-none focus:ring-3 focus:ring-blue-100 ${
+                  errors.lastName 
+                    ? 'border-red-500 focus:border-red-500' 
+                    : 'border-gray-300 focus:border-blue-500'
+                }`}
                 {...register('lastName')}
               />
               {errors.lastName && (
-                <ErrorMessage>{errors.lastName.message}</ErrorMessage>
+                <span className="text-red-500 text-sm mt-1 block">
+                  {errors.lastName.message}
+                </span>
               )}
-            </InputGroup>
-          </InputRow>
+            </div>
+          </div>
 
-          <InputGroup>
-            <InputIcon>
+          <div className="relative">
+            <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
               <Mail size={20} />
-            </InputIcon>
-            <Input
+            </div>
+            <input
               type="email"
               placeholder="Nhập email của bạn"
-              error={errors.email}
+              className={`w-full pl-10 pr-4 py-3 border-2 rounded-lg text-base transition-colors focus:outline-none focus:ring-3 focus:ring-blue-100 ${
+                errors.email 
+                  ? 'border-red-500 focus:border-red-500' 
+                  : 'border-gray-300 focus:border-blue-500'
+              }`}
               {...register('email')}
             />
             {errors.email && (
-              <ErrorMessage>{errors.email.message}</ErrorMessage>
+              <span className="text-red-500 text-sm mt-1 block">
+                {errors.email.message}
+              </span>
             )}
-          </InputGroup>
+          </div>
 
-          <InputGroup>
-            <InputIcon>
+          <div className="relative">
+            <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
               <Lock size={20} />
-            </InputIcon>
-            <Input
+            </div>
+            <input
               type={showPassword ? 'text' : 'password'}
               placeholder="Tạo mật khẩu"
-              error={errors.password}
+              className={`w-full pl-10 pr-12 py-3 border-2 rounded-lg text-base transition-colors focus:outline-none focus:ring-3 focus:ring-blue-100 ${
+                errors.password 
+                  ? 'border-red-500 focus:border-red-500' 
+                  : 'border-gray-300 focus:border-blue-500'
+              }`}
               {...register('password')}
             />
-            <PasswordToggle
+            <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 p-1"
             >
               {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-            </PasswordToggle>
+            </button>
             {errors.password && (
-              <ErrorMessage>{errors.password.message}</ErrorMessage>
+              <span className="text-red-500 text-sm mt-1 block">
+                {errors.password.message}
+              </span>
             )}
             <PasswordStrengthIndicator
               password={passwordValue}
               showRequirements={true}
             />
-          </InputGroup>
+          </div>
 
-          <InputGroup>
-            <InputIcon>
+          <div className="relative">
+            <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
               <Lock size={20} />
-            </InputIcon>
-            <Input
+            </div>
+            <input
               type={showConfirmPassword ? 'text' : 'password'}
               placeholder="Xác nhận mật khẩu"
-              error={errors.confirmPassword}
+              className={`w-full pl-10 pr-12 py-3 border-2 rounded-lg text-base transition-colors focus:outline-none focus:ring-3 focus:ring-blue-100 ${
+                errors.confirmPassword 
+                  ? 'border-red-500 focus:border-red-500' 
+                  : 'border-gray-300 focus:border-blue-500'
+              }`}
               {...register('confirmPassword')}
             />
-            <PasswordToggle
+            <button
               type="button"
               onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 p-1"
             >
               {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-            </PasswordToggle>
+            </button>
             {errors.confirmPassword && (
-              <ErrorMessage>{errors.confirmPassword.message}</ErrorMessage>
+              <span className="text-red-500 text-sm mt-1 block">
+                {errors.confirmPassword.message}
+              </span>
             )}
-          </InputGroup>
+          </div>
 
-          <SubmitButton type="submit" disabled={isLoading}>
+          <button
+            type="submit"
+            disabled={isLoading}
+            className="w-full py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 disabled:cursor-not-allowed text-white font-semibold rounded-lg transition-colors flex items-center justify-center gap-2"
+          >
             {isLoading ? (
               <>
-                <div className="spinner" style={{ width: '1rem', height: '1rem' }} />
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
                 Đang tạo tài khoản...
               </>
             ) : (
               'Tạo Tài Khoản'
             )}
-          </SubmitButton>
-        </Form>
+          </button>
+        </form>
 
-        <RegisterFooter>
-          Đã có tài khoản?{' '}
-          <FooterLink to="/login">Đăng nhập tại đây</FooterLink>
-        </RegisterFooter>
-      </RegisterCard>
-    </RegisterContainer>
+        <div className="text-center mt-6">
+          <span className="text-gray-600 text-sm">
+            Đã có tài khoản?{' '}
+            <Link to="/login" className="text-blue-600 hover:underline">
+              Đăng nhập tại đây
+            </Link>
+          </span>
+        </div>
+      </div>
+    </div>
   );
 };
 

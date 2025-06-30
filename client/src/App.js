@@ -35,6 +35,7 @@ import AchievementsPage from './pages/AchievementsPage';
 import HelpPage from './pages/HelpPage';
 import TestIntegrationPage from './pages/TestIntegrationPage';
 import FirestoreTestPanel from './components/admin/FirestoreTestPanel';
+import TestSubmitAPI from './pages/TestSubmitAPI';
 
 // Components - organized imports
 import ProtectedRoute from './components/auth/ProtectedRoute';
@@ -123,6 +124,14 @@ function App() {
                 <AdminDashboard />
               </ProtectedRoute>
             }
+          />
+          <Route
+            path="/admin/dashboard"
+            element={
+              <ProtectedRoute>
+                <AdminDashboard />
+              </ProtectedRoute>
+            }
           />          <Route
             path="/community"
             element={<CommunityPage />}
@@ -206,6 +215,14 @@ function App() {
           <Route
             path="/test-integration"
             element={<TestIntegrationPage />}
+          />
+          <Route
+            path="/test-submit-api"
+            element={
+              <ProtectedRoute>
+                <TestSubmitAPI />
+              </ProtectedRoute>
+            }
           />
           
 

@@ -12,8 +12,8 @@ import {
 } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
 import SimpleVoteComponent from './SimpleVoteComponent';
-import CommentSection from './CommentSection.jsx';
-import CommentPreview from './CommentPreview.jsx';
+import CommentSection from './CommentSection';
+import CommentPreview from './CommentPreview';
 import {
   useResponsive,
   getSmartImageLayout,

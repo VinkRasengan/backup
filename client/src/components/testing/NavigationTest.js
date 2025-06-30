@@ -43,7 +43,7 @@ const NavigationTest = () => {
     { path: '/dashboard', label: 'Dashboard', icon: TrendingUp, requiresAuth: true },
     { path: '/profile', label: 'Hồ sơ', icon: User, requiresAuth: true },
     { path: '/notifications', label: 'Thông báo', icon: Bell, requiresAuth: true },
-    { path: '/favorites', label: 'Yêu thích', icon: Heart, requiresAuth: true },
+    { path: '/favorites', label: 'Đã Vote', icon: Heart, requiresAuth: true },
     { path: '/achievements', label: 'Thành tích', icon: Award, requiresAuth: true },
     { path: '/help', label: 'Trợ giúp', icon: HelpCircle, requiresAuth: false },
     { path: '/settings', label: 'Cài đặt', icon: Settings, requiresAuth: true }

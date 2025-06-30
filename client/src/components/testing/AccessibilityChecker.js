@@ -4,15 +4,12 @@ import {
   Eye, 
   EyeOff, 
   Volume2, 
-  VolumeX, 
   Keyboard, 
-  MousePointer,
   Contrast,
   Type,
   CheckCircle,
   AlertTriangle,
-  X,
-  Settings
+  X
 } from 'lucide-react';
 
 const AccessibilityChecker = ({ isOpen, onClose }) => {

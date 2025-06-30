@@ -15,8 +15,9 @@ const MobileTabBar = () => {
   const location = useLocation();
   const { user } = useAuth();
 
-  // Hide mobile tab bar on chat page since it has its own navigation
-  if (location.pathname === '/chat') {
+  // Don't show mobile tab bar on login/register pages
+  const hideOnPages = ['/login', '/register'];
+  if (hideOnPages.includes(location.pathname)) {
     return null;
   }
 

@@ -1,14 +1,16 @@
 import React, { useState } from 'react';
+import PropTypes from 'prop-types';
 import { useAuth } from '../../context/AuthContext';
 import { Mail, X, RefreshCw } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { isEmailVerifiedOrAdmin } from '../../utils/adminUtils';
 
 const EmailVerificationBanner = ({ onDismiss }) => {
   const { user, resendVerificationEmail } = useAuth();
   const [isResending, setIsResending] = useState(false);
 
-  // Don't show banner if user is verified or not logged in
-  if (!user || user.emailVerified) {
+  // Don't show banner if user is verified, admin, or not logged in
+  if (!user || isEmailVerifiedOrAdmin(user)) {
     return null;
   }
 
@@ -66,6 +68,11 @@ const EmailVerificationBanner = ({ onDismiss }) => {
       </div>
     </motion.div>
   );
+};
+
+// PropTypes validation
+EmailVerificationBanner.propTypes = {
+  onDismiss: PropTypes.func
 };
 
 export default EmailVerificationBanner;

@@ -21,18 +21,41 @@ class CommunityAPI {
     this.baseURL = API_BASE_URL;
   }
 
-  // Get auth token from localStorage
-  getAuthToken() {
-    return localStorage.getItem('backendToken') || localStorage.getItem('authToken');
+  // Get auth token from localStorage or Firebase
+  async getAuthToken() {
+    // First try localStorage
+    const storedToken = localStorage.getItem('backendToken') || localStorage.getItem('authToken') || localStorage.getItem('token') || localStorage.getItem('firebaseToken');
+    if (storedToken) {
+      console.log('🔑 Getting stored auth token:', `${storedToken.substring(0, 30)}...`);
+      return storedToken;
+    }
+
+    // Fallback to Firebase current user token
+    try {
+      const { auth } = await import('../config/firebase');
+      const user = auth.currentUser;
+      if (user) {
+        const token = await user.getIdToken();
+        console.log('🔑 Getting Firebase auth token:', `${token.substring(0, 30)}...`);
+        return token;
+      }
+    } catch (error) {
+      console.error('🔑 Error getting Firebase token:', error);
+    }
+
+    console.log('🔑 No auth token found');
+    return null;
   }
 
   // Common headers for authenticated requests
-  getAuthHeaders() {
-    const token = this.getAuthToken();
-    return {
+  async getAuthHeaders() {
+    const token = await this.getAuthToken();
+    const headers = {
       'Content-Type': 'application/json',
       ...(token && { 'Authorization': `Bearer ${token}` })
     };
+    console.log('🔑 Auth headers:', headers);
+    return headers;
   }
 
   // Handle API responses
@@ -47,14 +70,27 @@ class CommunityAPI {
   // LINKS ENDPOINTS
   // Get community links - use API Gateway routing
   async getPosts(params = {}) {
+    const abortController = new AbortController();
+    const timeoutId = setTimeout(() => abortController.abort(), 15000); // 15 second timeout
+
     try {
       const queryParams = new URLSearchParams(params);
+      const headers = await this.getAuthHeaders();
       const response = await fetch(`${this.baseURL}/api/links?${queryParams}`, {
         method: 'GET',
-        headers: this.getAuthHeaders()
+        headers: headers,
+        signal: abortController.signal
       });
+
+      clearTimeout(timeoutId);
       return await this.handleResponse(response);
     } catch (error) {
+      clearTimeout(timeoutId);
+
+      if (error.name === 'AbortError') {
+        throw new Error('Request timed out. Please check your connection and try again.');
+      }
+
       console.error('Get links error:', error);
       throw error;
     }
@@ -62,15 +98,42 @@ class CommunityAPI {
 
   // Submit to community (create new link) - use API Gateway routing
   async submitToCommunity(data) {
+    // Create AbortController for request timeout
+    const abortController = new AbortController();
+    const timeoutId = setTimeout(() => {
+      abortController.abort();
+    }, 30000); // 30 second timeout
+
     try {
-      const response = await fetch(`${this.baseURL}/api/links`, {
+      console.log('🌐 submitToCommunity called with data:', data);
+      const url = `${this.baseURL}/api/links`;
+      const headers = await this.getAuthHeaders();
+      console.log('🌐 Request URL:', url);
+      console.log('🌐 Request headers:', headers);
+      console.log('🌐 Request body:', JSON.stringify(data));
+
+      const response = await fetch(url, {
         method: 'POST',
-        headers: this.getAuthHeaders(),
-        body: JSON.stringify(data)
+        headers: headers,
+        body: JSON.stringify(data),
+        signal: abortController.signal // Add abort signal
       });
+
+      console.log('🌐 Response status:', response.status);
+      console.log('🌐 Response headers:', response.headers);
+
+      clearTimeout(timeoutId); // Clear timeout on successful response
       return await this.handleResponse(response);
     } catch (error) {
+      clearTimeout(timeoutId); // Clear timeout on error
+
+      if (error.name === 'AbortError') {
+        console.error('Submit to community request timed out');
+        throw new Error('Request timed out. Please check your connection and try again.');
+      }
+
       console.error('Submit to community error:', error);
+      console.error('Error stack:', error.stack);
       throw error;
     }
   }
@@ -78,9 +141,10 @@ class CommunityAPI {
   // Get my submissions (filter links by user) - use API Gateway routing
   async getMySubmissions() {
     try {
+      const headers = await this.getAuthHeaders();
       const response = await fetch(`${this.baseURL}/api/links?userPostsOnly=true`, {
         method: 'GET',
-        headers: this.getAuthHeaders()
+        headers: headers
       });
       return await this.handleResponse(response);
     } catch (error) {
@@ -92,9 +156,10 @@ class CommunityAPI {
   // Delete submission (delete link) - use API Gateway routing
   async deleteSubmission(id) {
     try {
+      const headers = await this.getAuthHeaders();
       const response = await fetch(`${this.baseURL}/api/links/${id}`, {
         method: 'DELETE',
-        headers: this.getAuthHeaders()
+        headers: headers
       });
       return await this.handleResponse(response);
     } catch (error) {
@@ -109,16 +174,17 @@ class CommunityAPI {
   async submitVote(linkId, voteType, userId = null, userEmail = null) {
     try {
       // Get user info from auth context if not provided
-      const authToken = this.getAuthToken();
+      const authToken = await this.getAuthToken();
       if (!userId && authToken) {
         // Try to extract user info from token or get from auth context
         userId = await this.getCurrentUserId();
         userEmail = await this.getCurrentUserEmail();
       }
 
+      const headers = await this.getAuthHeaders();
       const response = await fetch(`${this.baseURL}/api/votes/${linkId}`, {
         method: 'POST',
-        headers: this.getAuthHeaders(),
+        headers: headers,
         body: JSON.stringify({
           voteType, // 'upvote', 'downvote' (Reddit-style)
           userId,
@@ -135,9 +201,10 @@ class CommunityAPI {
   // Get vote statistics for a link
   async getVoteStats(linkId) {
     try {
+      const headers = await this.getAuthHeaders();
       const response = await fetch(`${this.baseURL}/api/votes/${linkId}/stats`, {
         method: 'GET',
-        headers: this.getAuthHeaders()
+        headers: headers
       });
       return await this.handleResponse(response);
     } catch (error) {
@@ -149,9 +216,10 @@ class CommunityAPI {
   // Get user's vote for a specific link
   async getUserVote(linkId) {
     try {
+      const headers = await this.getAuthHeaders();
       const response = await fetch(`${this.baseURL}/api/votes/${linkId}/user`, {
         method: 'GET',
-        headers: this.getAuthHeaders()
+        headers: headers
       });
       return await this.handleResponse(response);
     } catch (error) {
@@ -163,9 +231,10 @@ class CommunityAPI {
   // Delete user's vote
   async deleteVote(linkId) {
     try {
+      const headers = await this.getAuthHeaders();
       const response = await fetch(`${this.baseURL}/api/votes/${linkId}`, {
         method: 'DELETE',
-        headers: this.getAuthHeaders()
+        headers: headers
       });
       return await this.handleResponse(response);
     } catch (error) {
@@ -186,20 +255,65 @@ class CommunityAPI {
         displayName = await this.getCurrentUserDisplayName();
       }
 
+      // Check if user is authenticated
+      if (!userId) {
+        throw new Error('You must be logged in to add comments. Please sign in and try again.');
+      }
+
+      if (!linkId) {
+        throw new Error('Link ID is required to add a comment.');
+      }
+
+      if (!content || content.trim().length === 0) {
+        throw new Error('Comment content cannot be empty.');
+      }
+
+      console.log('🔄 Adding comment:', { linkId, userId, userEmail, displayName });
+
+      const headers = await this.getAuthHeaders();
+
+      const requestBody = {
+        linkId: linkId,
+        content: content.trim(),
+        userId,
+        userEmail,
+        displayName: displayName || 'Anonymous User'
+      };
+
+      console.log('📤 Comment request body:', requestBody);
+
       const response = await fetch(`${this.baseURL}/api/comments`, {
         method: 'POST',
-        headers: this.getAuthHeaders(),
-        body: JSON.stringify({
-          linkId: linkId,
-          content,
-          userId,
-          userEmail,
-          displayName: displayName || 'Anonymous User'
-        })
+        headers: headers,
+        body: JSON.stringify(requestBody)
       });
-      return await this.handleResponse(response);
+
+      console.log('📥 Comment response status:', response.status);
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        console.error('📥 Comment response error:', errorData);
+        
+        // Provide more specific error messages
+        if (response.status === 400) {
+          throw new Error(errorData.error || 'Invalid comment data. Please check all required fields.');
+        } else if (response.status === 401) {
+          throw new Error('Authentication failed. Please sign in again.');
+        } else if (response.status === 403) {
+          throw new Error('You are not authorized to add comments.');
+        } else if (response.status >= 500) {
+          throw new Error('Server error. Please try again later.');
+        } else {
+          throw new Error(errorData.error || `Comment failed with status ${response.status}`);
+        }
+      }
+
+      const result = await response.json();
+      console.log('✅ Comment added successfully:', result);
+      return result;
+
     } catch (error) {
-      console.error('Add comment error:', error);
+      console.error('❌ Add comment error:', error);
       throw error;
     }
   }
@@ -213,9 +327,11 @@ class CommunityAPI {
 
       console.log('🔍 Getting comments for linkId:', linkId, 'with params:', { limit, offset });
 
+      const headers = await this.getAuthHeaders();
+
       const response = await fetch(`${this.baseURL}/api/comments/${linkId}?${params}`, {
         method: 'GET',
-        headers: this.getAuthHeaders()
+        headers: headers
       });
 
       const result = await this.handleResponse(response);
@@ -231,9 +347,11 @@ class CommunityAPI {
   // Update a comment
   async updateComment(commentId, content) {
     try {
+      const headers = await this.getAuthHeaders();
+
       const response = await fetch(`${this.baseURL}/api/comments/${commentId}`, {
         method: 'PUT',
-        headers: this.getAuthHeaders(),
+        headers: headers,
         body: JSON.stringify({ content })
       });
       return await this.handleResponse(response);
@@ -246,9 +364,11 @@ class CommunityAPI {
   // Delete a comment
   async deleteComment(commentId) {
     try {
+      const headers = await this.getAuthHeaders();
+
       const response = await fetch(`${this.baseURL}/api/comments/${commentId}`, {
         method: 'DELETE',
-        headers: this.getAuthHeaders()
+        headers: headers
       });
       return await this.handleResponse(response);
     } catch (error) {
@@ -261,9 +381,11 @@ class CommunityAPI {
   async getUserComments(page = 1, limit = 10) {
     try {
       const params = new URLSearchParams({ page, limit });
+      const headers = await this.getAuthHeaders();
+
       const response = await fetch(`${this.baseURL}/api/comments/user/my-comments?${params}`, {
         method: 'GET',
-        headers: this.getAuthHeaders()
+        headers: headers
       });
       return await this.handleResponse(response);
     } catch (error) {
@@ -277,9 +399,11 @@ class CommunityAPI {
   // Submit a report for a link
   async submitReport(linkId, reason, description) {
     try {
+      const headers = await this.getAuthHeaders();
+
       const response = await fetch(`${this.baseURL}/api/reports/${linkId}`, {
         method: 'POST',
-        headers: this.getAuthHeaders(),
+        headers: headers,
         body: JSON.stringify({ reason, description })
       });
       return await this.handleResponse(response);
@@ -293,9 +417,11 @@ class CommunityAPI {
   async getUserReports(page = 1, limit = 10) {
     try {
       const params = new URLSearchParams({ page, limit });
+      const headers = await this.getAuthHeaders();
+
       const response = await fetch(`${this.baseURL}/api/reports/user/my-reports?${params}`, {
         method: 'GET',
-        headers: this.getAuthHeaders()
+        headers: headers
       });
       return await this.handleResponse(response);
     } catch (error) {
@@ -313,9 +439,11 @@ class CommunityAPI {
       if (status) params.append('status', status);
       if (reason) params.append('reason', reason);
       
+      const headers = await this.getAuthHeaders();
+
       const response = await fetch(`${this.baseURL}/api/admin/reports?${params}`, {
         method: 'GET',
-        headers: this.getAuthHeaders()
+        headers: headers
       });
       return await this.handleResponse(response);
     } catch (error) {
@@ -327,9 +455,11 @@ class CommunityAPI {
   // Update report status (admin only)
   async updateReportStatus(reportId, status, adminNotes = null) {
     try {
+      const headers = await this.getAuthHeaders();
+
       const response = await fetch(`${this.baseURL}/api/admin/reports/${reportId}/status`, {
         method: 'PUT',
-        headers: this.getAuthHeaders(),
+        headers: headers,
         body: JSON.stringify({ status, adminNotes })
       });
       return await this.handleResponse(response);
@@ -342,9 +472,11 @@ class CommunityAPI {
   // Get report statistics (admin only)
   async getReportStatistics() {
     try {
+      const headers = await this.getAuthHeaders();
+
       const response = await fetch(`${this.baseURL}/api/admin/reports/statistics`, {
         method: 'GET',
-        headers: this.getAuthHeaders()
+        headers: headers
       });
       return await this.handleResponse(response);
     } catch (error) {
@@ -356,9 +488,11 @@ class CommunityAPI {
   // Get admin notifications
   async getAdminNotifications() {
     try {
+      const headers = await this.getAuthHeaders();
+
       const response = await fetch(`${this.baseURL}/api/admin/notifications`, {
         method: 'GET',
-        headers: this.getAuthHeaders()
+        headers: headers
       });
       return await this.handleResponse(response);
     } catch (error) {
@@ -370,9 +504,11 @@ class CommunityAPI {
   // Mark notification as read
   async markNotificationRead(notificationId) {
     try {
+      const headers = await this.getAuthHeaders();
+
       const response = await fetch(`${this.baseURL}/api/admin/notifications/${notificationId}/read`, {
         method: 'PUT',
-        headers: this.getAuthHeaders()
+        headers: headers
       });
       return await this.handleResponse(response);
     } catch (error) {
@@ -384,9 +520,11 @@ class CommunityAPI {
   // Get admin dashboard stats
   async getAdminDashboardStats() {
     try {
+      const headers = await this.getAuthHeaders();
+
       const response = await fetch(`${this.baseURL}/api/admin/dashboard/stats`, {
         method: 'GET',
-        headers: this.getAuthHeaders()
+        headers: headers
       });
       return await this.handleResponse(response);
     } catch (error) {
@@ -472,7 +610,7 @@ class CommunityAPI {
     }
   }
 
-  // Get vote type display name
+  // Get vote type display
   getVoteTypeDisplay(voteType) {
     const displays = {
       upvote: 'Upvote',

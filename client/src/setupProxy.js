@@ -1,13 +1,14 @@
 const { createProxyMiddleware } = require('http-proxy-middleware');
 
+// Load environment variables if needed
+if (process.env.NODE_ENV !== 'production') {
+  require('dotenv').config({ path: require('path').join(__dirname, '../../.env') });
+}
+
 // Get proxy target based on environment
 const getProxyTarget = () => {
-  // In production on Render, use the API Gateway URL
-  if (process.env.NODE_ENV === 'production' && process.env.REACT_APP_API_URL) {
-    return process.env.REACT_APP_API_URL;
-  }
-  // Development fallback
-  return 'http://localhost:8080';
+  // Use REACT_APP_API_URL if set, otherwise default to local
+  return process.env.REACT_APP_API_URL || 'http://localhost:8080';
 };
 
 module.exports = function(app) {
@@ -67,33 +68,26 @@ module.exports = function(app) {
     }
   });
 
-  // Proxy auth routes
+  // Proxy auth routes (backend API)
   app.use('/auth', createProxyMiddleware(createCommonProxy('Auth', '🔐')));
 
-  // Proxy user routes
+  // Proxy user routes (backend API)
   app.use('/users', createProxyMiddleware(createCommonProxy('Users', '👤')));
 
-  // Proxy chat routes
-  app.use('/chat', createProxyMiddleware(createCommonProxy('Chat', '💬')));
+  // ❌ REMOVED: These are frontend routes, should be handled by React Router
+  // Frontend routes like /chat and /community should NOT be proxied to backend
+  // They should be handled by React Router for SPA functionality
+  // app.use('/chat', createProxyMiddleware(createCommonProxy('Chat', '💬')));
+  // app.use('/community', createProxyMiddleware(createCommonProxy('Community', '👥')));
 
-  // Proxy news routes
+  // Proxy backend API routes only
   app.use('/news', createProxyMiddleware(createCommonProxy('News', '📰')));
-
-  // Proxy links routes
   app.use('/links', createProxyMiddleware(createCommonProxy('Links', '🔗')));
-
-  // Proxy admin routes
-  app.use('/admin', createProxyMiddleware(createCommonProxy('Admin', '⚙️')));
-
-  // Proxy community routes
-  app.use('/community', createProxyMiddleware(createCommonProxy('Community', '👥')));
-
-  // Proxy posts routes (for community posts)
+  // ❌ REMOVED: /admin is a FRONTEND route, not backend API
+  // Frontend routes like /admin should be handled by React Router
+  // Backend admin APIs are at /api/admin/* (already handled by /api proxy above)
+  // app.use('/admin', createProxyMiddleware(createCommonProxy('Admin', '⚙️')));
   app.use('/posts', createProxyMiddleware(createCommonProxy('Posts', '📝')));
-
-  // Proxy votes routes
   app.use('/votes', createProxyMiddleware(createCommonProxy('Votes', '👍')));
-
-  // Proxy comments routes
   app.use('/comments', createProxyMiddleware(createCommonProxy('Comments', '💬')));
 };

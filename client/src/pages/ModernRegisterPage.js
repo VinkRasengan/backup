@@ -10,7 +10,7 @@ import { Button } from '../components/ui/Button';
 
 import { Input } from '../components/ui/Input';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '../components/ui/Card';
-import PasswordStrengthIndicator from '../components/PasswordStrengthIndicator';
+import { PasswordStrengthIndicator } from '../components/common';
 
 const schema = yup.object({
   firstName: yup

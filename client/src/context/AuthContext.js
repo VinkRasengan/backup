@@ -139,7 +139,9 @@ export const AuthProvider = ({ children }) => {
       console.log('Login attempt - User:', user.email, 'Email verified:', user.emailVerified);
 
       // Check if email is verified BEFORE allowing login
-      if (!user.emailVerified) {
+      // Admin users (@factcheck.com) bypass email verification
+      const isAdmin = user.email && user.email.endsWith('@factcheck.com');
+      if (!user.emailVerified && !isAdmin) {
         console.log('Email not verified, signing out user');
         // Sign out the user immediately
         await signOut(auth);
@@ -149,6 +151,10 @@ export const AuthProvider = ({ children }) => {
           error: 'Email chưa được xác minh',
           requiresVerification: true
         };
+      }
+
+      if (isAdmin) {
+        console.log('Admin user detected, bypassing email verification');
       }
 
       console.log('Email verified, proceeding with login');

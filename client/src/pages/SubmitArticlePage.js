@@ -24,20 +24,7 @@ import { useTheme } from '../context/ThemeContext';
 import toast from 'react-hot-toast';
 import { auth } from '../config/firebase';
 
-// Custom URL validation that auto-adds protocol
-const normalizeUrl = (url) => {
-  if (!url) return url;
-
-  // Remove whitespace
-  url = url.trim();
-
-  // If no protocol, add https://
-  if (!/^https?:\/\//i.test(url)) {
-    url = 'https://' + url;
-  }
-
-  return url;
-};
+import { normalizeUrl } from '../utils/urlUtils';
 
 const schema = yup.object({
   url: yup
@@ -149,12 +136,24 @@ const SubmitArticlePage = () => {
   };
 
   const onSubmit = async (data) => {
+    console.log('📝 onSubmit called with data:', data);
+    console.log('📝 checkResult exists:', !!checkResult);
+    console.log('📝 current step:', step);
+    
     if (!checkResult) {
+      console.log('📝 No checkResult, calling checkArticle...');
       await checkArticle();
       return;
     }
 
+    console.log('📝 Starting submission process...');
     setIsLoading(true);
+
+    // Add timeout warning after 10 seconds
+    const timeoutWarning = setTimeout(() => {
+      toast.info('Đang xử lý yêu cầu, vui lòng đợi...', { duration: 5000 });
+    }, 10000);
+
     try {
       // Submit article to community
       // Map status from checkResult to expected values
@@ -170,6 +169,7 @@ const SubmitArticlePage = () => {
 
       const articleData = {
         ...data,
+        content: data.description || data.title || 'No description provided', // Backend expects 'content' field
         checkResult,
         credibilityScore: checkResult.credibilityScore || checkResult.finalScore,
         securityScore: checkResult.securityScore,
@@ -196,9 +196,20 @@ const SubmitArticlePage = () => {
         return;
       }
 
-      // Force refresh token to ensure it's valid
+      // Force refresh token to ensure it's valid with timeout protection
       console.log('🔄 Getting fresh Firebase token...');
-      const token = await firebaseUser.getIdToken(true);
+      const tokenPromise = firebaseUser.getIdToken(true);
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Firebase token refresh timed out')), 10000)
+      );
+      const token = await Promise.race([tokenPromise, timeoutPromise]);
+      
+      // Store the token in localStorage so communityAPI can access it
+      if (token) {
+        localStorage.setItem('firebaseToken', token);
+        console.log('💾 Stored Firebase token in localStorage');
+      }
+      
       console.log('🚀 Submitting to community:', articleData);
       console.log('🔑 Using Firebase token:', token ? `${token.substring(0, 20)}...` : 'No token found');
       console.log('🔑 Token length:', token ? token.length : 0);
@@ -223,11 +234,20 @@ const SubmitArticlePage = () => {
       console.log('🔑 Token length:', token ? token.length : 'No token');
 
       try {
-        // Use API service instead of direct fetch to ensure correct backend URL
-        const api = (await import('../services/api')).default;
-        const response = await api.post('/links/submit-to-community', articleData);
+        // Test API connectivity first
+        console.log('🧪 Testing API connectivity...');
+        const testResponse = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:8080'}/health`);
+        console.log('🧪 API health check status:', testResponse.status);
+        
+        // Use communityAPI service with correct endpoint
+        console.log('📡 Importing communityAPI...');
+        const { communityAPI } = await import('../services/api');
+        console.log('📡 communityAPI imported:', communityAPI);
+        
+        console.log('🚀 Calling submitToCommunity with data:', articleData);
+        const response = await communityAPI.submitToCommunity(articleData);
 
-        console.log('✅ Submit success:', response.data);
+        console.log('✅ Submit success:', response);
 
         // Trigger community refresh
         localStorage.setItem('newCommunitySubmission', Date.now().toString());
@@ -239,14 +259,22 @@ const SubmitArticlePage = () => {
         }, 2000);
       } catch (fetchError) {
         console.error('❌ API error:', fetchError);
+        console.error('❌ Error type:', fetchError.constructor.name);
+        console.error('❌ Error message:', fetchError.message);
+        console.error('❌ Error stack:', fetchError.stack);
         console.error('❌ Response status:', fetchError.response?.status);
         console.error('❌ Response data:', fetchError.response?.data);
-        throw new Error(fetchError.response?.data?.message || fetchError.message || 'Failed to submit article');
+
+        // Show error toast
+        toast.error(fetchError.message || 'Không thể gửi bài viết');
+        // Don't return here - let finally block handle loading state
+        throw fetchError;
       }
     } catch (error) {
       console.error('Error submitting article:', error);
       toast.error('Không thể gửi bài viết');
     } finally {
+      clearTimeout(timeoutWarning);
       setIsLoading(false);
     }
   };
@@ -528,11 +556,37 @@ const SubmitArticlePage = () => {
                     Quay lại
                   </Button>
                   <Button
-                    onClick={handleSubmit(onSubmit)}
+                    onClick={async () => {
+                      console.log('🔘 Button "Gửi đến cộng đồng" clicked');
+                      const formData = {
+                        url: watchedUrl,
+                        title: watch('title'),
+                        category: watch('category'), 
+                        description: watch('description')
+                      };
+                      console.log('🔘 Form data:', formData);
+                      await onSubmit(formData);
+                    }}
                     loading={isLoading}
                     className="flex-1"
                   >
                     Gửi đến cộng đồng
+                  </Button>
+                  <Button
+                    onClick={() => {
+                      console.log('🐛 DEBUG INFO:');
+                      console.log('🐛 watchedUrl:', watchedUrl);
+                      console.log('🐛 watch title:', watch('title'));
+                      console.log('🐛 watch category:', watch('category'));
+                      console.log('🐛 watch description:', watch('description'));
+                      console.log('🐛 checkResult:', checkResult);
+                      console.log('🐛 step:', step);
+                      console.log('🐛 isLoading:', isLoading);
+                    }}
+                    variant="secondary"
+                    className="px-4"
+                  >
+                    Debug
                   </Button>
                 </div>
               </CardContent>
@@ -545,3 +599,147 @@ const SubmitArticlePage = () => {
 };
 
 export default SubmitArticlePage;
+
+// Debug helper function to test API connectivity
+window.testSubmitAPI = async () => {
+  console.log('🧪 Testing Submit API...');
+  
+  try {
+    // Test API Gateway health
+    const baseURL = process.env.REACT_APP_API_URL || 'http://localhost:8080';
+    console.log('🌐 Testing API Gateway at:', baseURL);
+    
+    const healthResponse = await fetch(`${baseURL}/health`);
+    console.log('🩺 Health check status:', healthResponse.status);
+    
+    if (healthResponse.ok) {
+      const healthData = await healthResponse.json();
+      console.log('🩺 Health data:', healthData);
+    }
+    
+    // Test community API
+    const { communityAPI } = await import('../services/api');
+    console.log('📡 CommunityAPI imported successfully');
+    
+    // Test auth headers
+    const headers = await communityAPI.getAuthHeaders();
+    console.log('🔑 Auth headers:', headers);
+    
+    return { success: true, message: 'API tests passed' };
+  } catch (error) {
+    console.error('❌ API test failed:', error);
+    return { success: false, error: error.message };
+  }
+};
+
+// Test complete submit flow
+window.testCompleteSubmitFlow = async () => {
+  console.log('🔥 Testing Complete Submit Flow...');
+  
+  try {
+    // 1. Test Firebase auth
+    const { auth } = await import('../config/firebase');
+    const user = auth.currentUser;
+    
+    if (!user) {
+      console.error('❌ No Firebase user logged in');
+      return { success: false, error: 'User not logged in' };
+    }
+    
+    console.log('✅ Firebase user:', user.uid, user.email);
+    
+    // 2. Test token refresh
+    const token = await user.getIdToken(true);
+    console.log('✅ Firebase token refreshed:', token.substring(0, 30) + '...');
+    
+    // Store token
+    localStorage.setItem('firebaseToken', token);
+    
+    // 3. Test community API
+    const { communityAPI } = await import('../services/api');
+    
+    // 4. Test submit with real data
+    const testArticleData = {
+      url: "https://example.com/test-article",
+      title: "Test Article From Debug",
+      content: "This is a test article submitted via debug function",
+      category: "technology",
+      checkResult: {
+        status: "safe",
+        credibilityScore: 85,
+        securityScore: 90
+      },
+      credibilityScore: 85,
+      securityScore: 90,
+      status: "safe"
+    };
+    
+    console.log('🚀 Submitting test article:', testArticleData);
+    
+    const response = await communityAPI.submitToCommunity(testArticleData);
+    console.log('✅ Submit successful:', response);
+    
+    return { success: true, response };
+    
+  } catch (error) {
+    console.error('❌ Complete submit flow failed:', error);
+    console.error('❌ Stack:', error.stack);
+    return { success: false, error: error.message };
+  }
+};
+
+// Test complete submit flow
+window.testCompleteSubmitFlow = async () => {
+  console.log('🔥 Testing Complete Submit Flow...');
+  
+  try {
+    // 1. Test Firebase auth
+    const { auth } = await import('../config/firebase');
+    const user = auth.currentUser;
+    
+    if (!user) {
+      console.error('❌ No Firebase user logged in');
+      return { success: false, error: 'User not logged in' };
+    }
+    
+    console.log('✅ Firebase user:', user.uid, user.email);
+    
+    // 2. Test token refresh
+    const token = await user.getIdToken(true);
+    console.log('✅ Firebase token refreshed:', token.substring(0, 30) + '...');
+    
+    // Store token
+    localStorage.setItem('firebaseToken', token);
+    
+    // 3. Test community API
+    const { communityAPI } = await import('../services/api');
+    
+    // 4. Test submit with real data
+    const testArticleData = {
+      url: "https://example.com/test-article",
+      title: "Test Article From Debug",
+      content: "This is a test article submitted via debug function",
+      category: "technology",
+      checkResult: {
+        status: "safe",
+        credibilityScore: 85,
+        securityScore: 90
+      },
+      credibilityScore: 85,
+      securityScore: 90,
+      status: "safe"
+    };
+    
+    console.log('🚀 Submitting test article:', testArticleData);
+    
+    const response = await communityAPI.submitToCommunity(testArticleData);
+    console.log('✅ Submit successful:', response);
+    
+    return { success: true, response };
+    
+  } catch (error) {
+    console.error('❌ Complete submit flow failed:', error);
+    console.error('❌ Stack:', error.stack);
+    return { success: false, error: error.message };
+  }
+};
