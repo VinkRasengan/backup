@@ -16,7 +16,6 @@ import {
 import { useTheme } from '../context/ThemeContext';
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/Card';
 import { Input } from '../components/ui/Input';
-import CreateKnowledgeArticleButton from '../components/temp/CreateKnowledgeArticleButton';
 import knowledgeArticlesService from '../services/knowledgeArticlesService';
 import { useNavigate } from 'react-router-dom';
 
@@ -142,7 +141,6 @@ const KnowledgeBasePage = () => {
 
   return (
     <div className={`min-h-screen ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
-      <CreateKnowledgeArticleButton />
       <div className="max-w-6xl mx-auto px-4 py-8">
         {/* Header */}
         <motion.div

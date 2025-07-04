@@ -268,3 +268,5 @@ restart-all.js
 # Backup directories
 backup-monolith/
 backup-monolith-manual/
+
+client/src/components/temp
