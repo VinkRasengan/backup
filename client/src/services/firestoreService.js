@@ -413,6 +413,93 @@ class FirestoreService {
       throw error;
     }
   }
+  // Knowledge Articles
+  async createKnowledgeArticle(articleData) {
+    try {
+      const { title, shortDescription, category, isOnTop, body } = articleData;
+
+      // Validate required fields
+      if (!title || !shortDescription || !body) {
+        throw new Error('Missing required parameters: title, shortDescription, and body are required');
+      }
+
+      const insertedTime = serverTimestamp();
+      const id = encodeURIComponent(title + '-' + Date.now()); // Use title + timestamp for unique ID
+
+      const newArticle = {
+        id,
+        title,
+        shortDescription,
+        time: insertedTime,
+        category,
+        isOnTop,
+        body
+      };
+
+      const finalArticle = this.cleanData(newArticle);
+      const docRef = await addDoc(collection(this.db, 'knowledgeArticles'), finalArticle);
+      return docRef.id;
+    } catch (error) {
+      console.error('Error creating knowledge article:', error);
+      throw error;
+    }
+  }
+
+  async getKnowledgeArticleById(articleId) {
+    try {
+      const docRef = doc(this.db, 'knowledgeArticles', articleId);
+      const docSnap = await getDoc(docRef);
+      
+      if (docSnap.exists()) {
+        return {
+          id: docSnap.id,
+          ...docSnap.data(),
+          time: docSnap.data().time?.toDate?.() || new Date()
+        };
+      } else {
+        throw new Error('Article not found');
+      }
+    } catch (error) {
+      console.error('Error fetching article:', error);
+      throw error;
+    }
+  }
+
+  async listKnowledgeArticles(options = {}) {
+    try {
+      const { limitCount = 10, category = null, isOnTop = null } = options;
+
+      let q = collection(this.db, 'knowledgeArticles');
+
+      // Add category filter if specified
+      if (category) {
+        q = query(q, where('category', '==', category));
+      }
+
+      // Add isOnTop filter if specified
+      if (isOnTop !== null) {
+        q = query(q, where('isOnTop', '==', isOnTop));
+      }
+
+      q = query(q, orderBy('time', 'desc'), limit(limitCount));
+
+      const snapshot = await getDocs(q);
+      const articles = [];
+      
+      snapshot.forEach((doc) => {
+        articles.push({
+          id: doc.id,
+          ...doc.data(),
+          time: doc.data().time?.toDate?.() || new Date()
+        });
+      });
+
+      return articles;
+    } catch (error) {
+      console.error('Error fetching knowledge articles:', error);
+      throw error;
+    }
+  }
 
   // Real-time listeners
   subscribeToComments(linkId, callback) {

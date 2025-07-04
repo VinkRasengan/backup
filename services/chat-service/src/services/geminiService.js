@@ -17,13 +17,13 @@ class GeminiService {
     this.apiKey = process.env.GEMINI_API_KEY;
     this.genAI = null;
     this.model = null;
-    
-    console.log('🔧 GeminiService initializing...', { 
+
+    console.log('🔧 GeminiService initializing...', {
       hasApiKey: !!this.apiKey,
       apiKeyPrefix: this.apiKey ? this.apiKey.substring(0, 10) + '...' : 'none',
       envPath: rootEnvPath
     });
-    
+
     if (this.apiKey) {
       try {
         this.genAI = new GoogleGenerativeAI(this.apiKey);
@@ -85,7 +85,7 @@ Hãy trả lời câu hỏi của người dùng theo phong cách và vai trò n
   optimizeResponse(text) {
     // Remove extra whitespace and normalize
     let optimized = text.trim().replace(/\s+/g, ' ');
-    
+
     // If response is too long (over 800 characters), try to shorten it
     if (optimized.length > 800) {
       // Split by sentences and keep only the most important ones
@@ -95,15 +95,15 @@ Hãy trả lời câu hỏi của người dùng theo phong cách và vai trò n
         // Keep sentences with key information
         return (
           sentence.length > 10 && // Not too short
-          (lower.includes('factcheck') || 
-           lower.includes('kiểm tra') || 
-           lower.includes('an toàn') ||
-           lower.includes('bảo mật') ||
-           lower.includes('⚠️') ||
-           lower.includes('✅') ||
-           lower.includes('🔍') ||
-           lower.includes('🛡️') ||
-           sentence.includes('*'))
+          (lower.includes('factcheck') ||
+            lower.includes('kiểm tra') ||
+            lower.includes('an toàn') ||
+            lower.includes('bảo mật') ||
+            lower.includes('⚠️') ||
+            lower.includes('✅') ||
+            lower.includes('🔍') ||
+            lower.includes('🛡️') ||
+            sentence.includes('*'))
         );
       });
 
@@ -138,25 +138,27 @@ Hãy trả lời câu hỏi của người dùng theo phong cách và vai trò n
 
       const result = await this.model.generateContent(fullPrompt);
       const response = await result.response;
-      let text = response.text();
+      let fullText = response.text();
 
-      // Optimize the response length
-      text = this.optimizeResponse(text);
+      // Optimize the response length for short version
+      let shortText = this.optimizeResponse(fullText);
 
       return {
         success: true,
-        response: text,
+        response: {
+          full: fullText,
+          short: shortText
+        },
         usage: {
           promptTokens: fullPrompt.length,
-          completionTokens: text.length,
-          totalTokens: fullPrompt.length + text.length
+          completionTokens: fullText.length,
+          totalTokens: fullPrompt.length + fullText.length
         },
         optimized: true
       };
 
     } catch (error) {
       console.error('Gemini API Error:', error);
-      
       // Return fallback response if API fails
       return this.getFallbackResponse(userMessage);
     }
@@ -167,9 +169,9 @@ Hãy trả lời câu hỏi của người dùng theo phong cách và vai trò n
    */
   getFallbackResponse(userMessage) {
     const messageText = userMessage.toLowerCase();
-    
+
     let response = '';
-    
+
     if (messageText.includes('xin chào') || messageText.includes('hello') || messageText.includes('hi')) {
       response = `Xin chào! 👋 Tôi là trợ lý FactCheck AI.
 
@@ -250,4 +252,4 @@ Bạn cần gì cụ thể?`;
   }
 }
 
-module.exports = new GeminiService(); 
+module.exports = new GeminiService();

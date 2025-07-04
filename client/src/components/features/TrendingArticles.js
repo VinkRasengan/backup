@@ -11,6 +11,7 @@ import {
 import { useTheme } from '../../context/ThemeContext';
 import { Card, CardHeader, CardTitle, CardContent } from '../ui/Card';
 import { gsap } from '../../utils/gsap';
+import CreateKnowledgeArticleButton from '../temp/CreateKnowledgeArticleButton';
 
 // Get API base URL (same logic as api.js)
 const getApiBaseUrl = () => {
@@ -249,6 +250,7 @@ const TrendingArticles = () => {
   }
   return (
     <div ref={cardRef} className="h-full">
+      <CreateKnowledgeArticleButton />
       {/* Modern Header */}
       <div className="p-6 pb-4">
         <div className="flex items-center justify-between mb-2">

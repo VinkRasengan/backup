@@ -34,6 +34,8 @@ import FavoritesPage from './pages/FavoritesPage';
 import AchievementsPage from './pages/AchievementsPage';
 import HelpPage from './pages/HelpPage';
 import TestIntegrationPage from './pages/TestIntegrationPage';
+import KnowledgeArticleDetailPage from './pages/KnowledgeArticlePage';
+
 import FirestoreTestPanel from './components/admin/FirestoreTestPanel';
 import TestSubmitAPI from './pages/TestSubmitAPI';
 
@@ -164,6 +166,7 @@ function App() {
             path="/knowledge"
             element={<KnowledgeBasePage />}
           />
+          <Route path="/knowledge/:id" element={<KnowledgeArticleDetailPage />} />
           <Route
             path="/settings"
             element={

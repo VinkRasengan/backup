@@ -389,7 +389,7 @@ const NavigationSidebar = ({ isOpen, onToggle }) => {
           )}
 
           {/* Navigation Items - Scrollable */}
-          <nav className="flex-1 overflow-y-auto p-4 space-y-2">
+          <nav className="overflow-y-auto p-4 space-y-2 nav-container-overflow">
             {allItems.map((item) => {
               const Icon = item.icon;
               const active = isActive(item.path);

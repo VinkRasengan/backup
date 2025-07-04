@@ -96,7 +96,7 @@ router.post('/gemini', async (req, res) => {
           content: geminiResult.response,
           timestamp: new Date().toISOString(),
           type: geminiResult.fallback ? 'fallback_response' : 'ai_response',
-          model: 'gemini-1.5-flash',
+          model: 'gemini-2.5-flash',
           usage: geminiResult.usage || null
         },
         message: geminiResult.response // Fallback for different frontend response handling

@@ -23,6 +23,7 @@ import {
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import EmojiPicker from './EmojiPicker';
+import ReactMarkdown from 'react-markdown';
 import './MessengerLayout.css';
 import './ChatTheme.css';
 
@@ -136,7 +137,7 @@ const ModernMessengerLayout = () => {
   // Send message function - moved before useEffect to avoid initialization error
   const handleSendMessage = useCallback(async () => {
     if (!message.trim()) return;
-    
+
     const newMessage = {
       id: Date.now().toString(),
       text: message.trim(),
@@ -153,9 +154,9 @@ const ModernMessengerLayout = () => {
 
     // Update message status to sent
     setTimeout(() => {
-      setChatHistory(prev => 
-        prev.map(msg => 
-          msg.id === newMessage.id 
+      setChatHistory(prev =>
+        prev.map(msg =>
+          msg.id === newMessage.id
             ? { ...msg, status: 'sent' }
             : msg
         )
@@ -165,31 +166,58 @@ const ModernMessengerLayout = () => {
     // Send to AI if it's FactCheck AI or support
     if (selectedChat.type === 'ai' || selectedChat.type === 'support') {
       setIsTyping(true);
-      
+
       try {
-              // Use correct API endpoint through Gateway
-      const response = await fetch('http://localhost:8080/api/chat/gemini', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify({ message: message.trim() })
-      });
+        // Use correct API endpoint through Gateway
+        const response = await fetch('http://localhost:8080/api/chat/gemini', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          credentials: 'include',
+          body: JSON.stringify({ message: message.trim() })
+        });
 
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
 
         const data = await response.json();
-        
-        // Handle response structure
-        let responseContent;
-        if (data.data?.response?.content) {
+
+        let responseContent = '';
+        let isExpandable = false;
+        let fullContent = '';
+
+        // Ưu tiên lấy từ data.data.response.content nếu có {full, short}
+        if (
+          data.data?.response?.content &&
+          typeof data.data.response.content === 'object' &&
+          typeof data.data.response.content.short === 'string' &&
+          typeof data.data.response.content.full === 'string'
+        ) {
+          responseContent = data.data.response.content.short;
+          fullContent = data.data.response.content.full;
+          isExpandable = fullContent !== responseContent;
+        }
+        // Nếu không có, fallback sang data.data.message (cũng có thể là {full, short})
+        else if (
+          data.data?.message &&
+          typeof data.data.message === 'object' &&
+          typeof data.data.message.short === 'string' &&
+          typeof data.data.message.full === 'string'
+        ) {
+          responseContent = data.data.message.short;
+          fullContent = data.data.message.full;
+          isExpandable = fullContent !== responseContent;
+        }
+        // Nếu không, fallback các trường hợp cũ
+        else if (typeof data.data?.response === 'string') {
+          responseContent = data.data.response;
+        } else if (data.data?.response?.content && typeof data.data.response.content === 'string') {
           responseContent = data.data.response.content;
-        } else if (data.data?.message) {
+        } else if (typeof data.data?.message === 'string') {
           responseContent = data.data.message;
-        } else if (data.message) {
+        } else if (typeof data.message === 'string') {
           responseContent = data.message;
         } else {
           responseContent = 'Cảm ơn bạn đã liên hệ! Hiện tại tôi đang xử lý yêu cầu của bạn.';
@@ -197,21 +225,23 @@ const ModernMessengerLayout = () => {
 
         const botResponse = {
           id: (Date.now() + 1).toString(),
-          text: responseContent,
+          text: typeof responseContent === 'string' ? responseContent : JSON.stringify(responseContent),
           sender: 'bot',
           timestamp: new Date(),
           reactions: [],
           status: 'sent',
-          isRead: false
+          isRead: false,
+          isExpandable,
+          fullContent: typeof fullContent === 'string' ? fullContent : ''
         };
 
         setChatHistory(prev => [...prev, botResponse]);
-        
+
         // Mark user message as read
         setTimeout(() => {
-          setChatHistory(prev => 
-            prev.map(msg => 
-              msg.id === newMessage.id 
+          setChatHistory(prev =>
+            prev.map(msg =>
+              msg.id === newMessage.id
                 ? { ...msg, status: 'read', isRead: true }
                 : msg
             )
@@ -220,10 +250,10 @@ const ModernMessengerLayout = () => {
 
       } catch (error) {
         console.error('Chat API Error:', error);
-        
+
         // Enhanced error handling with retry suggestion
         let errorText = 'Xin lỗi, hiện tại tôi gặp sự cố kỹ thuật. ';
-        
+
         if (error.message?.includes('network') || error.message?.includes('fetch')) {
           errorText += 'Vui lòng kiểm tra kết nối mạng và thử lại.';
         } else if (error.message?.includes('timeout')) {
@@ -411,11 +441,11 @@ const ModernMessengerLayout = () => {
       setUserTyping(true);
       // Simulate sending typing status to other users
     }
-    
+
     if (typingTimeoutRef.current) {
       clearTimeout(typingTimeoutRef.current);
     }
-    
+
     typingTimeoutRef.current = setTimeout(() => {
       setUserTyping(false);
     }, 2000);
@@ -429,7 +459,7 @@ const ModernMessengerLayout = () => {
         if (msg.id === messageId) {
           const existingReaction = msg.reactions?.find(r => r.emoji === emoji);
           let newReactions = [...(msg.reactions || [])];
-          
+
           if (existingReaction) {
             newReactions = newReactions.map(r =>
               r.emoji === emoji
@@ -439,7 +469,7 @@ const ModernMessengerLayout = () => {
           } else {
             newReactions.push({ emoji, count: 1 });
           }
-          
+
           return { ...msg, reactions: newReactions };
         }
         return msg;
@@ -450,7 +480,7 @@ const ModernMessengerLayout = () => {
   const formatTime = (date) => {
     const now = new Date();
     const diff = now - date;
-    
+
     if (diff < 60000) return 'Vừa xong';
     if (diff < 3600000) return `${Math.floor(diff / 60000)} phút`;
     if (diff < 86400000) return `${Math.floor(diff / 3600000)} giờ`;
@@ -579,9 +609,8 @@ const ModernMessengerLayout = () => {
               <motion.div
                 key={conversation.id}
                 onClick={() => setSelectedChat(conversation)}
-                className={`${sidebarCollapsed ? 'p-3' : 'p-4'} cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-all duration-200 ${
-                  selectedChat?.id === conversation.id ? 'bg-blue-50 dark:bg-blue-900/20 border-r-3 border-blue-500' : ''
-                }`}
+                className={`${sidebarCollapsed ? 'p-3' : 'p-4'} cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-all duration-200 ${selectedChat?.id === conversation.id ? 'bg-blue-50 dark:bg-blue-900/20 border-r-3 border-blue-500' : ''
+                  }`}
                 whileHover={{ x: sidebarCollapsed ? 0 : 2 }}
                 transition={{ duration: 0.2 }}
                 title={sidebarCollapsed ? conversation.name : ''}
@@ -714,9 +743,9 @@ const ModernMessengerLayout = () => {
                     <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-all duration-200" title="Video call">
                       <Video size={18} className="text-gray-600 dark:text-gray-400" />
                     </button>
-                    <button 
+                    <button
                       onClick={() => setShowChatInfo(!showChatInfo)}
-                      className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-all duration-200" 
+                      className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-all duration-200"
                       title="Thông tin cuộc trò chuyện (Ctrl+F)"
                     >
                       <Info size={18} className="text-gray-600 dark:text-gray-400" />
@@ -729,8 +758,8 @@ const ModernMessengerLayout = () => {
               </div>
 
               {/* Messages Area - Messenger Bubble Style */}
-              <div className="messenger-messages-area">
-                <div className="messenger-bubble-container">
+              <div className="messenger-messages-area px-0">
+                <div className="messenger-bubble-container mx-0 w-[100%] px-0 max-w-full">
                   {/* Message limit notification */}
                   {chatHistory.length > MAX_MESSAGES && (
                     <div className="text-center py-2 mb-4">
@@ -739,7 +768,7 @@ const ModernMessengerLayout = () => {
                       </span>
                     </div>
                   )}
-                  
+
                   <AnimatePresence>
                     {displayMessages.map((msg) => (
                       <motion.div
@@ -748,20 +777,37 @@ const ModernMessengerLayout = () => {
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -10 }}
                         className={`message-container ${msg.sender}`}
+                        style={{
+                          display: 'flex',
+                          flexDirection: 'row',
+                          alignItems: 'flex-end',
+                          justifyContent: msg.sender === 'user' ? 'flex-end' : 'flex-start',
+                          marginBottom: '12px',
+                          width: '100%',
+                          paddingRight: msg.sender === 'user' ? 0 : undefined,
+                          paddingLeft: msg.sender === 'user' ? undefined : 0
+                        }}
                       >
+
+                        {/* Avatar bot chỉ render 1 lần bên trái */}
                         {msg.sender === 'bot' && (
-                          <div className="message-avatar">
+                          <div className="message-avatar" style={{ marginRight: 8 }}>
                             🤖
                           </div>
                         )}
 
-                        <div className="message-content">
+
+                        <div className="message-content" style={{ width: 'auto', display: 'flex', flexDirection: 'column', alignItems: msg.sender === 'user' ? 'flex-end' : 'flex-start' }}>
                           <div className="relative group">
                             <div
                               className={`message-bubble ${msg.sender}`}
-                              onDoubleClick={() => handleMessageReaction(msg.id, '❤️')}
                               style={{
-                                // Enhanced text rendering
+                                marginLeft: msg.sender === 'user' ? 'auto' : '',
+                                marginRight: msg.sender === 'user' ? '0' : '',
+                                alignSelf: msg.sender === 'user' ? 'flex-end' : 'flex-start',
+                                maxWidth: msg.sender === 'user' ? '700px' : '70%',
+                                minWidth: '120px',
+                                width: 'auto',
                                 wordWrap: 'break-word',
                                 wordBreak: 'break-word',
                                 overflowWrap: 'break-word',
@@ -769,20 +815,27 @@ const ModernMessengerLayout = () => {
                                 hyphens: 'auto',
                                 WebkitHyphens: 'auto',
                                 lineHeight: '1.5',
-                                width: 'fit-content',
-                                minWidth: '60px',
-                                maxWidth: '100%',
-                                boxSizing: 'border-box'
+                                boxSizing: 'border-box',
+                                background: msg.sender === 'user' ? '#269af2' : '',
+                                color: msg.sender === 'user' ? '#fff' : ''
                               }}
                             >
-                              <div 
+                              <div
                                 style={{
                                   wordSpacing: 'normal',
                                   letterSpacing: 'normal',
-                                  textAlign: msg.sender === 'user' ? 'left' : 'left'
+                                  textAlign: 'left'
                                 }}
                               >
-                                {msg.text}
+                                {/* Show short, and expand to full if needed */}
+                                {msg.isExpandable ? (
+                                  <ExpandableMessage
+                                    short={typeof msg.text === 'string' ? msg.text : ''} // Ensure string
+                                    full={typeof msg.fullContent === 'string' ? msg.fullContent : ''} // Ensure string
+                                  />
+                                ) : (
+                                  typeof msg.text === 'string' ? msg.text : '' // Ensure string here too
+                                )}
                               </div>
                             </div>
 
@@ -826,12 +879,13 @@ const ModernMessengerLayout = () => {
                             )}
                           </div>
                         </div>
-
+                        {/* Avatar user chỉ render 1 lần bên phải */}
                         {msg.sender === 'user' && (
-                          <div className="message-avatar">
+                          <div className="message-avatar" style={{ marginLeft: 8, marginRight: 0 }}>
                             {user?.displayName?.charAt(0) || user?.email?.charAt(0) || 'U'}
                           </div>
                         )}
+
                       </motion.div>
                     ))}
                   </AnimatePresence>
@@ -864,7 +918,7 @@ const ModernMessengerLayout = () => {
                   onEmojiSelect={(emoji) => setMessage(prev => prev + emoji)}
                   onClose={() => setShowEmojiPicker(false)}
                 />
-                
+
                 {/* Attachment buttons */}
                 <button
                   className="messenger-attachment-button"
@@ -907,7 +961,7 @@ const ModernMessengerLayout = () => {
                 >
                   <Image size={18} />
                 </button>
-                
+
                 {/* Input box */}
                 <textarea
                   ref={inputRef}
@@ -925,7 +979,7 @@ const ModernMessengerLayout = () => {
                   className="messenger-input-box"
                   rows={1}
                 />
-                
+
                 {/* Emoji button */}
                 <button
                   onClick={() => setShowEmojiPicker(!showEmojiPicker)}
@@ -935,7 +989,7 @@ const ModernMessengerLayout = () => {
                 >
                   <Smile size={18} />
                 </button>
-                
+
                 {/* Send button or Voice button */}
                 {message.trim() ? (
                   <button
@@ -964,11 +1018,10 @@ const ModernMessengerLayout = () => {
                         console.log('Recording cancelled...');
                       }
                     }}
-                    className={`messenger-send-button transition-all duration-200 ${
-                      isRecording
-                        ? 'bg-red-500 hover:bg-red-600 scale-110 animate-pulse'
-                        : 'bg-gray-400 hover:bg-gray-500'
-                    }`}
+                    className={`messenger-send-button transition-all duration-200 ${isRecording
+                      ? 'bg-red-500 hover:bg-red-600 scale-110 animate-pulse'
+                      : 'bg-gray-400 hover:bg-gray-500'
+                      }`}
                     title={isRecording ? "Đang ghi âm... (thả để gửi)" : "Giữ để ghi âm"}
                     aria-label={isRecording ? "Đang ghi âm tin nhắn" : "Giữ để ghi âm tin nhắn"}
                   >
@@ -1010,5 +1063,49 @@ const ModernMessengerLayout = () => {
     </div>
   );
 };
+
+function ExpandableMessage({ short, full }) {
+  const [expanded, setExpanded] = useState(false);
+
+  // Clean up excessive newlines: replace 3+ \n with just 1
+  const cleanText = (text) =>
+    typeof text === 'string'
+      ? text
+        // Xóa các dòng chỉ có khoảng trắng hoặc chỉ có \n
+        .replace(/^\s*[\r\n]/gm, '')
+        // Thay thế 3+ dấu xuống dòng liên tiếp thành 2
+        .replace(/\n{2,}/g, '\n\n')
+        // Loại bỏ khoảng trắng đầu/cuối
+        .trim()
+      : '';
+
+  return (
+    <>
+      {expanded ? (
+        <>
+          <ReactMarkdown>{cleanText(full)}</ReactMarkdown>
+          <button
+            className="ml-2 text-blue-500 underline text-xs"
+            onClick={() => setExpanded(false)}
+            style={{ cursor: 'pointer' }}
+          >
+            Thu gọn
+          </button>
+        </>
+      ) : (
+        <>
+          <ReactMarkdown>{cleanText(short)}</ReactMarkdown>
+          <button
+            className="ml-2 text-blue-500 underline text-xs"
+            onClick={() => setExpanded(true)}
+            style={{ cursor: 'pointer' }}
+          >
+            Xem đầy đủ
+          </button>
+        </>
+      )}
+    </>
+  );
+}
 
 export default ModernMessengerLayout;

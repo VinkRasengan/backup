@@ -1,11 +1,13 @@
 # 🗄️ Database Management Guide
 
 ## 📋 **Overview**
+
 This guide covers all database management tasks for the FactCheck application, including development, staging, and production environments.
 
 ## 🚀 **Quick Start**
 
 ### **Development (Emulator)**
+
 ```bash
 # Start Firestore emulator
 firebase emulators:start --only firestore
@@ -21,6 +23,7 @@ npm run db:seed
 ```
 
 ### **Production**
+
 ```bash
 # 1. Download service account key from Firebase Console
 # 2. Save as config/firebase-service-account.json
@@ -34,6 +37,7 @@ npm run db:migrate:production
 ## 📊 **Database Structure**
 
 ### **Current Optimized Structure**
+
 ```
 📁 users/                    # User accounts and profiles
 📁 posts/                    # Main content (user posts + news)
@@ -51,6 +55,7 @@ npm run db:migrate:production
 ```
 
 ### **Legacy Structure (Pre-Migration)**
+
 ```
 📁 users/
 📁 community_submissions/    # → migrated to posts/
@@ -66,6 +71,7 @@ npm run db:migrate:production
 ## 🛠️ **Available Scripts**
 
 ### **Development Scripts**
+
 ```bash
 # Database migration (emulator)
 npm run db:migrate              # Migrate database structure
@@ -78,6 +84,7 @@ firebase emulators:kill                      # Stop emulator
 ```
 
 ### **Production Scripts**
+
 ```bash
 # Analysis and migration
 npm run db:analyze              # Analyze production database
@@ -91,6 +98,7 @@ firebase firestore:import gs://factcheck-1d6e8.appspot.com/backups/YYYYMMDD
 ## 🔧 **Configuration**
 
 ### **Environment Variables**
+
 ```bash
 # Development (automatic)
 FIRESTORE_EMULATOR_HOST=127.0.0.1:8080
@@ -101,6 +109,7 @@ FIREBASE_PROJECT_ID=factcheck-1d6e8
 ```
 
 ### **Service Account Setup**
+
 1. **Go to Firebase Console**: https://console.firebase.google.com/u/0/project/factcheck-1d6e8/settings/serviceaccounts/adminsdk
 2. **Generate Key**: Click "Generate new private key"
 3. **Save File**: Save as `config/firebase-service-account.json`
@@ -109,12 +118,14 @@ FIREBASE_PROJECT_ID=factcheck-1d6e8
 ## 📈 **Migration Process**
 
 ### **Step 1: Analysis**
+
 ```bash
 # Analyze current database structure
 FIREBASE_SERVICE_ACCOUNT=./config/firebase-service-account.json npm run db:analyze
 ```
 
 **Output Example:**
+
 ```
 ✅ Existing Collections:
    📁 community_submissions: 25 documents
@@ -135,14 +146,16 @@ FIREBASE_SERVICE_ACCOUNT=./config/firebase-service-account.json npm run db:analy
 ```
 
 ### **Step 2: Migration**
+
 ```bash
 # Run migration with safety delay
 FIREBASE_SERVICE_ACCOUNT=./config/firebase-service-account.json npm run db:migrate:production
 ```
 
 **Migration Process:**
+
 1. **Safety Delay**: 5-second countdown to cancel
-2. **Data Migration**: 
+2. **Data Migration**:
    - `community_submissions` → `posts`
    - `links` → `link_analysis`
    - Update `votes` structure
@@ -151,6 +164,7 @@ FIREBASE_SERVICE_ACCOUNT=./config/firebase-service-account.json npm run db:migra
 5. **Verification**: Check data integrity
 
 ### **Step 3: Verification**
+
 ```bash
 # Re-analyze to verify migration
 npm run db:analyze
@@ -162,6 +176,7 @@ npm run start:full
 ## 🔍 **Data Models**
 
 ### **Posts Collection**
+
 ```javascript
 {
   id: "post123",
@@ -195,7 +210,45 @@ npm run start:full
 }
 ```
 
+#### **Article Models**
+
+```javascript
+{
+  id: "post123",
+  title: 'Cách nhận biết tin giả trên mạng xã hội',
+        description: 'Hướng dẫn chi tiết về các dấu hiệu nhận biết tin giả và cách xác minh thông tin trên các nền tảng mạng xã hội.',
+        category: 'basics',
+        readTime: '5 phút',
+        views: 1250,
+        featured: true,
+        // Store content as a string with image links and text (for easier rendering)
+        content: `
+## Các dấu hiệu nhận biết tin giả
+
+### 1. Kiểm tra nguồn thông tin
+abc
+img:https://example.com/image1.jpg
+- Xem xét độ uy tín của trang web
+- Kiểm tra thông tin về tác giả
+- Tìm hiểu lịch sử của nguồn tin
+
+### 2. Phân tích nội dung
+img:https://example.com/image2.jpg
+- Chú ý đến ngôn ngữ cảm xúc quá mức
+- Kiểm tra tính logic của thông tin
+- So sánh với các nguồn khác
+
+### 3. Xác minh bằng công cụ
+- Sử dụng Google Reverse Image Search
+img:https://example.com/image3.jpg
+- Kiểm tra trên các trang fact-check
+- Tìm kiếm thông tin gốc
+  // ...other fields as needed
+}
+```
+
 ### **Votes Collection**
+
 ```javascript
 {
   linkId: "post123",        // References posts collection
@@ -208,6 +261,7 @@ npm run start:full
 ```
 
 ### **Link Analysis Collection**
+
 ```javascript
 {
   url: "https://example.com",
@@ -234,37 +288,49 @@ npm run start:full
 ### **Common Issues**
 
 #### **Permission Denied**
+
 ```bash
 Error: 7 PERMISSION_DENIED: Missing or insufficient permissions
 ```
+
 **Solution:**
+
 1. Verify service account has Firestore Admin role
 2. Check project ID matches
 3. Ensure service account file is valid JSON
 
 #### **Network Timeout**
+
 ```bash
 Error: Request timeout
 ```
+
 **Solution:**
+
 1. Check internet connection
 2. Increase timeout in script
 3. Run migration in smaller batches
 
 #### **Quota Exceeded**
+
 ```bash
 Error: Quota exceeded
 ```
+
 **Solution:**
+
 1. Wait for quota reset (daily/hourly)
 2. Request quota increase in Google Cloud Console
 3. Optimize queries to use fewer operations
 
 #### **Emulator Connection Failed**
+
 ```bash
 Error: ECONNREFUSED 127.0.0.1:8080
 ```
+
 **Solution:**
+
 1. Start Firestore emulator: `firebase emulators:start --only firestore`
 2. Check port 8080 is not in use
 3. Verify firebase.json configuration
@@ -272,6 +338,7 @@ Error: ECONNREFUSED 127.0.0.1:8080
 ### **Data Recovery**
 
 #### **Restore from Backup**
+
 ```bash
 # List available backups
 gsutil ls gs://factcheck-1d6e8.appspot.com/backups/
@@ -281,6 +348,7 @@ firebase firestore:import gs://factcheck-1d6e8.appspot.com/backups/20240618
 ```
 
 #### **Partial Recovery**
+
 ```bash
 # Export specific collection
 firebase firestore:export --collection-ids=posts gs://factcheck-1d6e8.appspot.com/exports/posts-$(date +%Y%m%d)
@@ -292,46 +360,49 @@ firebase firestore:import --collection-ids=posts_backup gs://factcheck-1d6e8.app
 ## 📊 **Performance Optimization**
 
 ### **Recommended Indexes**
+
 Create these indexes in Firebase Console for optimal performance:
 
 ```javascript
 // Posts collection
 posts: [
-  { fields: ['type', 'createdAt'], order: 'desc' },
-  { fields: ['category', 'createdAt'], order: 'desc' },
-  { fields: ['author.uid', 'createdAt'], order: 'desc' },
-  { fields: ['status', 'voteScore'], order: 'desc' }
-]
+  { fields: ["type", "createdAt"], order: "desc" },
+  { fields: ["category", "createdAt"], order: "desc" },
+  { fields: ["author.uid", "createdAt"], order: "desc" },
+  { fields: ["status", "voteScore"], order: "desc" },
+];
 
 // Votes collection
 votes: [
-  { fields: ['linkId', 'userId'] },
-  { fields: ['userId', 'createdAt'], order: 'desc' }
-]
+  { fields: ["linkId", "userId"] },
+  { fields: ["userId", "createdAt"], order: "desc" },
+];
 
 // Comments collection
 comments: [
-  { fields: ['postId', 'createdAt'], order: 'desc' },
-  { fields: ['author.uid', 'createdAt'], order: 'desc' }
-]
+  { fields: ["postId", "createdAt"], order: "desc" },
+  { fields: ["author.uid", "createdAt"], order: "desc" },
+];
 ```
 
 ### **Query Optimization**
+
 ```javascript
 // ✅ Good: Use indexes
-db.collection('posts')
-  .where('type', '==', 'user_post')
-  .orderBy('createdAt', 'desc')
-  .limit(20)
+db.collection("posts")
+  .where("type", "==", "user_post")
+  .orderBy("createdAt", "desc")
+  .limit(20);
 
 // ❌ Bad: No index support
-db.collection('posts')
-  .where('title', '>=', searchTerm)
-  .where('category', '==', 'phishing')
-  .orderBy('voteScore', 'desc')
+db.collection("posts")
+  .where("title", ">=", searchTerm)
+  .where("category", "==", "phishing")
+  .orderBy("voteScore", "desc");
 ```
 
 ## 🔗 **Related Documentation**
+
 - [Firestore Structure](./firestore-structure.md) - Detailed database schema
 - [Production Migration Guide](./production-migration-guide.md) - Step-by-step migration
 - [API Documentation](./api-documentation.md) - Service endpoints

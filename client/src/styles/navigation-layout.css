@@ -3,10 +3,18 @@
 /* Fix double scroll issue - Remove height constraints from container */
 .nav-container {
   position: relative;
-  overflow-x: hidden;
-  overflow-y: visible;
-  height: auto;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  height: 400px !important;
   transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+
+.nav-container-overflow {
+  position: relative;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  max-height: calc(100vh - 69px - 90px - 193px - 82px) !important;
 }
 
 .nav-container.with-sidebar {
