@@ -248,7 +248,6 @@ const TrendingArticles = () => {
   }
   return (
     <div ref={cardRef} className="h-full">
-      <CreateKnowledgeArticleButton />
       {/* Modern Header */}
       <div className="p-6 pb-4">
         <div className="flex items-center justify-between mb-2">
