@@ -11,8 +11,6 @@ import {
 import { useTheme } from '../../context/ThemeContext';
 import { Card, CardHeader, CardTitle, CardContent } from '../ui/Card';
 import { gsap } from '../../utils/gsap';
-import CreateKnowledgeArticleButton from '../temp/CreateKnowledgeArticleButton';
-
 // Get API base URL (same logic as api.js)
 const getApiBaseUrl = () => {
   if (process.env.REACT_APP_API_URL) {
