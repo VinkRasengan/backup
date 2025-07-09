@@ -9,12 +9,26 @@ const logger = new Logger('community-service');
 
 // Helper function to check if user is admin
 const isAdmin = (req) => {
-  return req.user?.roles?.includes('admin') || req.user?.permissions?.includes('admin-operations');
+  // Check by roles/permissions (Firebase custom claims)
+  const hasAdminRole = req.user?.roles?.includes('admin') || req.user?.permissions?.includes('admin-operations');
+  
+  // Check by email (fallback for admin accounts)
+  const adminEmails = ['admin@factcheck.com', 'admin@example.com'];
+  const hasAdminEmail = adminEmails.includes(req.user?.email);
+  
+  return hasAdminRole || hasAdminEmail;
 };
 
 // Helper function to check if user is moderator
 const isModerator = (req) => {
-  return req.user?.roles?.includes('moderator') || req.user?.permissions?.includes('moderate_content');
+  // Check by roles/permissions (Firebase custom claims)
+  const hasModeratorRole = req.user?.roles?.includes('moderator') || req.user?.permissions?.includes('moderate_content');
+  
+  // Check by email (fallback for admin accounts - admins are also moderators)
+  const adminEmails = ['admin@factcheck.com', 'admin@example.com'];
+  const hasAdminEmail = adminEmails.includes(req.user?.email);
+  
+  return hasModeratorRole || hasAdminEmail;
 };
 
 // Helper function to require admin or moderator access

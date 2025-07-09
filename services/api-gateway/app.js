@@ -569,13 +569,46 @@ app.use('/api/news', createProxyMiddleware({
   }
 }));
 
-// Admin service
-app.use('/api/admin', createProxyMiddleware({
+// Admin reports routes (proxy to admin service) - MUST come before general admin route
+app.use('/api/admin/reports', createProxyMiddleware({
   target: services['admin-service'],
   changeOrigin: true,
-  pathRewrite: { '^/api/admin': '/admin' },
+  timeout: 30000,
+  proxyTimeout: 30000,
+  pathRewrite: { '^/api/admin/reports': '/admin/reports' },
+  onProxyReq: (proxyReq, req, res) => {
+    logger.info('Proxying admin reports request', {
+      method: req.method,
+      url: req.url,
+      target: services['admin-service']
+    });
+
+    // Forward authentication headers
+    if (req.headers.authorization) {
+      proxyReq.setHeader('Authorization', req.headers.authorization);
+    }
+
+    // Handle JSON body for POST/PUT requests
+    if (req.body && (req.method === 'POST' || req.method === 'PUT')) {
+      const bodyData = JSON.stringify(req.body);
+      proxyReq.setHeader('Content-Type', 'application/json');
+      proxyReq.setHeader('Content-Length', Buffer.byteLength(bodyData));
+      proxyReq.write(bodyData);
+    }
+  },
+  onProxyRes: (proxyRes, req, res) => {
+    logger.info('Admin reports proxy response', {
+      status: proxyRes.statusCode,
+      url: req.url
+    });
+  },
   onError: (err, req, res) => {
-    logger.error('Admin service proxy error', { error: err.message });
+    logger.error('Admin service proxy error (admin reports)', { 
+      error: err.message,
+      stack: err.stack,
+      url: req.url,
+      method: req.method
+    });
     if (!res.headersSent) {
       res.status(503).json({
         error: 'Admin service unavailable',
@@ -585,16 +618,16 @@ app.use('/api/admin', createProxyMiddleware({
   }
 }));
 
-// Admin reports routes (proxy to community service)
-app.use('/api/admin/reports', createProxyMiddleware({
-  target: services['community-service'],
+// Admin service (general routes)
+app.use('/api/admin', createProxyMiddleware({
+  target: services['admin-service'],
   changeOrigin: true,
-  pathRewrite: { '^/api/admin/reports': '/reports/admin' },
+  pathRewrite: { '^/api/admin': '/admin' },
   onError: (err, req, res) => {
-    logger.error('Community service proxy error (admin reports)', { error: err.message });
+    logger.error('Admin service proxy error', { error: err.message });
     if (!res.headersSent) {
       res.status(503).json({
-        error: 'Community service unavailable',
+        error: 'Admin service unavailable',
         code: 'SERVICE_UNAVAILABLE'
       });
     }

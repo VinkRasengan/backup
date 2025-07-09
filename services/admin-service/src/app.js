@@ -16,6 +16,9 @@ const envResult = setupEnvironment('admin-service', getRequiredVarsForService('a
 const { Logger } = require('@factcheck/shared');
 const { HealthCheck, commonChecks } = require('@factcheck/shared');
 
+// Import Firebase configuration
+const { admin, db, collections } = require('./config/firebase');
+
 const app = express();
 // Prometheus metrics setup
 const collectDefaultMetrics = promClient.collectDefaultMetrics;
@@ -160,20 +163,142 @@ app.get('/admin/users', (req, res) => {
   });
 });
 
-app.get('/admin/reports', (req, res) => {
-  res.json({
-    success: true,
-    reports: [
-      {
-        id: '1',
-        type: 'spam',
-        url: 'https://suspicious-site.com',
-        reportedBy: 'user@example.com',
-        status: 'pending',
-        createdAt: new Date().toISOString()
+app.get('/admin/reports', async (req, res) => {
+  try {
+    const { page = 1, limit = 20, status = null, reason = null } = req.query;
+    const pageNum = parseInt(page, 10);
+    const limitNum = parseInt(limit, 10);
+    const offset = (pageNum - 1) * limitNum;
+
+    // Build query
+    let reportsQuery = db.collection(collections.REPORTS);
+    
+    // Add filters
+    if (status && status !== 'all') {
+      reportsQuery = reportsQuery.where('status', '==', status);
+    }
+    if (reason && reason !== 'all') {
+      reportsQuery = reportsQuery.where('reason', '==', reason);
+    }
+
+    // Order by creation date (newest first)
+    reportsQuery = reportsQuery.orderBy('createdAt', 'desc');
+
+    // Get total count for pagination
+    const totalSnapshot = await reportsQuery.get();
+    const totalReports = totalSnapshot.size;
+
+    // Apply pagination
+    const paginatedQuery = reportsQuery.offset(offset).limit(limitNum);
+    const snapshot = await paginatedQuery.get();
+
+    const reports = [];
+    snapshot.forEach(doc => {
+      const data = doc.data();
+      reports.push({
+        id: doc.id,
+        ...data,
+        createdAt: data.createdAt?.toDate ? data.createdAt.toDate().toISOString() : data.createdAt,
+        updatedAt: data.updatedAt?.toDate ? data.updatedAt.toDate().toISOString() : data.updatedAt,
+        reviewedAt: data.reviewedAt?.toDate ? data.reviewedAt.toDate().toISOString() : data.reviewedAt
+      });
+    });
+
+    const totalPages = Math.ceil(totalReports / limitNum);
+
+    res.json({
+      success: true,
+      reports,
+      pagination: {
+        currentPage: pageNum,
+        totalPages,
+        totalReports,
+        limit: limitNum,
+        hasNext: pageNum < totalPages,
+        hasPrev: pageNum > 1
       }
-    ]
-  });
+    });
+  } catch (error) {
+    console.error('Error fetching reports:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch reports',
+      code: 'FETCH_ERROR'
+    });
+  }
+});
+
+// Admin reports statistics endpoint
+app.get('/admin/reports/statistics', async (req, res) => {
+  try {
+    // Get all reports for statistics
+    const snapshot = await db.collection(collections.REPORTS).get();
+    
+    const stats = {
+      total: snapshot.size,
+      byStatus: {
+        pending: 0,
+        reviewed: 0,
+        resolved: 0,
+        dismissed: 0
+      },
+      byReason: {
+        spam: 0,
+        fake_news: 0,
+        misleading: 0,
+        harassment: 0,
+        other: 0
+      },
+      recent: {
+        today: 0,
+        thisWeek: 0,
+        thisMonth: 0
+      }
+    };
+
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const weekAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const monthAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
+
+    snapshot.forEach(doc => {
+      const data = doc.data();
+      
+      // Count by status
+      if (stats.byStatus.hasOwnProperty(data.status)) {
+        stats.byStatus[data.status]++;
+      }
+      
+      // Count by reason
+      if (stats.byReason.hasOwnProperty(data.reason)) {
+        stats.byReason[data.reason]++;
+      }
+      
+      // Count recent reports
+      const createdAt = data.createdAt?.toDate ? data.createdAt.toDate() : new Date(data.createdAt);
+      if (createdAt >= today) {
+        stats.recent.today++;
+      }
+      if (createdAt >= weekAgo) {
+        stats.recent.thisWeek++;
+      }
+      if (createdAt >= monthAgo) {
+        stats.recent.thisMonth++;
+      }
+    });
+
+    res.json({
+      success: true,
+      statistics: stats
+    });
+  } catch (error) {
+    console.error('Error fetching report statistics:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch report statistics',
+      code: 'STATS_ERROR'
+    });
+  }
 });
 
 // 404 handler
@@ -209,6 +334,8 @@ process.on('SIGINT', () => {
   logger.info('SIGINT received, shutting down gracefully');
   process.exit(0);
 });
+
+
 
 // Start server
 const server = app.listen(PORT, () => {
