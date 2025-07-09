@@ -411,14 +411,19 @@ class CommunityAPI {
   // REPORTS ENDPOINTS
 
   // Submit a report for a link
-  async submitReport(linkId, reason, description) {
+  async submitReport(linkId, reason, description, url = null) {
     try {
       const headers = await this.getAuthHeaders();
+
+      const requestBody = { reason, description };
+      if (url) {
+        requestBody.url = url;
+      }
 
       const response = await fetch(`${this.baseURL}/api/reports/${linkId}`, {
         method: 'POST',
         headers: headers,
-        body: JSON.stringify({ reason, description })
+        body: JSON.stringify(requestBody)
       });
       return await this.handleResponse(response);
     } catch (error) {

@@ -74,10 +74,24 @@ router.post('/:linkId', requireAuth, validateReport, async (req, res) => {
     let linkDoc = await db.collection(collections.POSTS).doc(linkId).get();
     if (!linkDoc.exists) {
       // Create a placeholder link entry for reporting
+      const reportedUrl = req.body.url;
+      
+      // If no URL provided in request, try to extract from linkId or use a placeholder
+      let placeholderUrl;
+      if (reportedUrl) {
+        placeholderUrl = reportedUrl;
+      } else if (linkId.startsWith('http')) {
+        // Sometimes linkId might be the URL itself
+        placeholderUrl = linkId;
+      } else {
+        // Last resort fallback
+        placeholderUrl = `https://reported-link-${Date.now()}`;
+      }
+      
       const placeholderLinkData = {
         title: `Reported Link ${linkId}`,
         content: 'This link was reported without being posted first.',
-        url: req.body.url || `https://reported-link-${linkId}`,
+        url: placeholderUrl,
         author: {
           uid: 'system',
           email: 'system@factcheck.com',
@@ -96,7 +110,7 @@ router.post('/:linkId', requireAuth, validateReport, async (req, res) => {
       };
 
       await db.collection(collections.POSTS).doc(linkId).set(placeholderLinkData);
-      logger.info('Created placeholder link for reporting', { linkId });
+      logger.info('Created placeholder link for reporting', { linkId, url: placeholderUrl });
     }
 
     // Check if user already reported this link

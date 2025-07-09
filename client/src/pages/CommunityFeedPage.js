@@ -44,7 +44,7 @@ const CommunityFeedPage = () => {
   const [sourceFilter, setSourceFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [showComments, setShowComments] = useState({});
-  const [showReportModal, setShowReportModal] = useState(null);
+  const [showReportModal, setShowReportModal] = useState(null); // { id: linkId, url: linkUrl }
   const [page, setPage] = useState(1);
   const [isSearching, setIsSearching] = useState(false);
   const [showSettingsMenu, setShowSettingsMenu] = useState(false);
@@ -379,7 +379,7 @@ const CommunityFeedPage = () => {
             </button>
 
             <button
-              onClick={() => setShowReportModal(article.id)}
+              onClick={() => setShowReportModal({ id: article.id, url: article.url })}
               className={`flex items-center space-x-1 px-3 py-1.5 rounded-full transition-colors text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20`}
             >
               <AlertTriangle size={16} />
@@ -896,7 +896,8 @@ const CommunityFeedPage = () => {
       {/* Report Modal */}
       {showReportModal && (
         <ReportModal
-          linkId={showReportModal}
+          linkId={showReportModal.id}
+          linkUrl={showReportModal.url}
           onClose={() => setShowReportModal(null)}
         />
       )}

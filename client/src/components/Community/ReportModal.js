@@ -47,7 +47,7 @@ const ReportModal = ({ isOpen, onClose, linkId, linkUrl }) => {
       setSubmitting(true);
       setError(null);
 
-      await communityAPI.submitReport(linkId, reason, description.trim());
+      await communityAPI.submitReport(linkId, reason, description.trim(), linkUrl);
       setSuccess(true);
       
       // Auto close after 2 seconds
