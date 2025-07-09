@@ -204,11 +204,31 @@ app.get('/admin/reports', async (req, res) => {
       });
     });
 
+    // Enrich reports with link information
+    const enrichedReports = await Promise.all(reports.map(async (report) => {
+      if (report.linkId) {
+        try {
+          const linkDoc = await db.collection(collections.LINKS).doc(report.linkId).get();
+          if (linkDoc.exists) {
+            const linkData = linkDoc.data();
+            report.linkInfo = {
+              url: linkData.url,
+              title: linkData.title,
+              description: linkData.description
+            };
+          }
+        } catch (linkError) {
+          console.error(`Error fetching link ${report.linkId}:`, linkError);
+        }
+      }
+      return report;
+    }));
+
     const totalPages = Math.ceil(totalReports / limitNum);
 
     res.json({
       success: true,
-      reports,
+      reports: enrichedReports,
       pagination: {
         currentPage: pageNum,
         totalPages,
