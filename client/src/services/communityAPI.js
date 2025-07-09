@@ -64,7 +64,21 @@ class CommunityAPI {
       const error = await response.json().catch(() => ({ error: 'Network error' }));
       throw new Error(error.error || `HTTP ${response.status}`);
     }
-    return response.json();
+    
+    const data = await response.json();
+    
+    // Handle different response formats
+    if (data.success !== undefined) {
+      // New format with success flag
+      if (data.success) {
+        return data.data || data;
+      } else {
+        throw new Error(data.error || 'Request failed');
+      }
+    }
+    
+    // Legacy format without success flag
+    return data;
   }
 
   // LINKS ENDPOINTS

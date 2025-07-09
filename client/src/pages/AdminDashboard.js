@@ -54,6 +54,14 @@ const AdminDashboard = () => {
           totalPages: 1,
           totalReports: 0
         });
+      } else if (Array.isArray(reportsResponse)) {
+        // Handle legacy array format
+        setReports(reportsResponse);
+        setPagination({
+          currentPage: 1,
+          totalPages: 1,
+          totalReports: reportsResponse.length
+        });
       } else {
         // Fallback for empty/failed response
         setReports([]);
@@ -67,11 +75,11 @@ const AdminDashboard = () => {
       // Load statistics with error handling
       try {
         const statsResponse = await communityAPI.getReportStatistics();
-        setStatistics(statsResponse?.statistics || {
+        setStatistics(statsResponse?.byStatus || {
           pending: 0,
           reviewed: 0,
           resolved: 0,
-          total: 0
+          dismissed: 0
         });
       } catch (statsError) {
         console.error('Failed to load statistics:', statsError);
@@ -79,7 +87,7 @@ const AdminDashboard = () => {
           pending: 0,
           reviewed: 0,
           resolved: 0,
-          total: 0
+          dismissed: 0
         });
       }
 
@@ -107,7 +115,7 @@ const AdminDashboard = () => {
         pending: 0,
         reviewed: 0,
         resolved: 0,
-        total: 0
+        dismissed: 0
       });
       setNotifications([]);
     } finally {
@@ -259,7 +267,9 @@ const AdminDashboard = () => {
                   </div>
                   <div className="ml-4">
                     <p className="text-sm font-medium text-gray-600 dark:text-gray-300">Tổng báo cáo</p>
-                    <p className="text-2xl font-bold text-gray-900 dark:text-white">{statistics.total || 0}</p>
+                    <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                      {(statistics.pending || 0) + (statistics.reviewed || 0) + (statistics.resolved || 0) + (statistics.dismissed || 0)}
+                    </p>
                   </div>
                 </div>
               </CardContent>
@@ -367,7 +377,7 @@ const AdminDashboard = () => {
                           </p>
                           
                           <p className="text-xs text-gray-500 dark:text-gray-400">
-                            Báo cáo bởi: {report.reporter?.firstName} {report.reporter?.lastName}
+                            Báo cáo bởi: {report.reporter?.displayName || report.reporter?.email || 'Người dùng ẩn danh'}
                           </p>
                         </div>
                         

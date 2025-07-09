@@ -445,9 +445,42 @@ app.use('/api/comments', createProxyMiddleware({
 app.use('/api/reports', createProxyMiddleware({
   target: services['community-service'],
   changeOrigin: true,
+  timeout: 30000,
+  proxyTimeout: 30000,
   pathRewrite: { '^/api/reports': '/reports' },
+  onProxyReq: (proxyReq, req, res) => {
+    logger.info('Proxying reports request', {
+      method: req.method,
+      url: req.url,
+      target: services['community-service']
+    });
+
+    // Forward authentication headers
+    if (req.headers.authorization) {
+      proxyReq.setHeader('Authorization', req.headers.authorization);
+    }
+
+    // Handle JSON body for POST/PUT requests
+    if (req.body && (req.method === 'POST' || req.method === 'PUT')) {
+      const bodyData = JSON.stringify(req.body);
+      proxyReq.setHeader('Content-Type', 'application/json');
+      proxyReq.setHeader('Content-Length', Buffer.byteLength(bodyData));
+      proxyReq.write(bodyData);
+    }
+  },
+  onProxyRes: (proxyRes, req, res) => {
+    logger.info('Reports proxy response', {
+      status: proxyRes.statusCode,
+      url: req.url
+    });
+  },
   onError: (err, req, res) => {
-    logger.error('Community service proxy error (reports)', { error: err.message });
+    logger.error('Community service proxy error (reports)', { 
+      error: err.message,
+      stack: err.stack,
+      url: req.url,
+      method: req.method
+    });
     if (!res.headersSent) {
       res.status(503).json({
         error: 'Community service unavailable',
@@ -546,6 +579,22 @@ app.use('/api/admin', createProxyMiddleware({
     if (!res.headersSent) {
       res.status(503).json({
         error: 'Admin service unavailable',
+        code: 'SERVICE_UNAVAILABLE'
+      });
+    }
+  }
+}));
+
+// Admin reports routes (proxy to community service)
+app.use('/api/admin/reports', createProxyMiddleware({
+  target: services['community-service'],
+  changeOrigin: true,
+  pathRewrite: { '^/api/admin/reports': '/reports/admin' },
+  onError: (err, req, res) => {
+    logger.error('Community service proxy error (admin reports)', { error: err.message });
+    if (!res.headersSent) {
+      res.status(503).json({
+        error: 'Community service unavailable',
         code: 'SERVICE_UNAVAILABLE'
       });
     }
