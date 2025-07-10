@@ -15,10 +15,9 @@ function formatDate(date) {
 // Preprocess content to convert img:href:alt to markdown images with alt as caption
 function preprocessContent(content) {
   if (!content) return '';
-  // Replace img:href:alt with a custom token to be handled in markdown rendering
-  // We'll use a unique marker: [img-custom]:href:alt
-  return content.replace(/img:(\S+):([^\n]+)/g, (match, url, alt) => {
-    return `\n[img-custom]:${url}:${alt}\n`;
+  // Convert img:link:alt or img:link to standard markdown image syntax
+  return content.replace(/img:(\S+)(?::([^\n]+))?/g, (match, url, alt) => {
+    return `![${alt || ''}](${url})`;
   });
 }
 
@@ -76,16 +75,16 @@ const components = {
   h2: ({ node, ...props }) => <h2 style={markdownStyles.h2} {...props} />,
   h3: ({ node, ...props }) => <h3 style={markdownStyles.h3} {...props} />,
   p: ({ node, children, ...props }) => {
-    // Check for our custom image marker
+
     if (
       typeof children[0] === 'string' &&
       children[0].startsWith('[img-custom]:')
     ) {
-      // Extract url and alt
-      const match = children[0].match(/^\[img-custom\]:(\S+):([^\n]+)/);
+      // Updated regex: alt is now optional
+      const match = children[0].match(/^\[img-custom\]:(\S+):([^\n]*)/);
       if (match) {
         const url = match[1];
-        const alt = match[2];
+        const alt = match[2] || '';
         return (
           <div style={{ textAlign: 'center', margin: '2rem 0' }}>
             <img
@@ -98,17 +97,27 @@ const components = {
                 display: 'block',
               }}
             />
-            <div style={{ fontStyle: 'italic', color: '#444', marginTop: '0.5rem' }}>{alt}</div>
+            {alt && (
+              <div style={{ fontStyle: 'italic', color: '#444', marginTop: '0.5rem' }}>{alt}</div>
+            )}
           </div>
         );
       }
     }
-    // Default paragraph
     return <p style={markdownStyles.p} {...props}>{children}</p>;
   },
   ul: ({ node, ...props }) => <ul style={markdownStyles.ul} {...props} />,
   li: ({ node, ...props }) => <li style={markdownStyles.li} {...props} />,
-  img: ({ node, ...props }) => <img style={markdownStyles.img} alt="" {...props} />,
+  img: ({ node, ...props }) => (
+    <div style={{ textAlign: 'center', margin: '2rem 0' }}>
+      <img style={markdownStyles.img} alt={props.alt} {...props} />
+      {props.alt && (
+        <div style={{ fontStyle: 'italic', color: '#444', marginTop: '0.5rem' }}>
+          {props.alt}
+        </div>
+      )}
+    </div>
+  ),
 };
 
 const KnowledgeArticleDetailPage = () => {
@@ -149,8 +158,8 @@ const KnowledgeArticleDetailPage = () => {
             onClick={() => navigate('/knowledge/')}
             className="text-white px-4 py-2 rounded hover:bg-[#350052] transition"
             style={{
-            background: 'linear-gradient(135deg, #3b82f6 0%, #a259f7 100%)', // matches the blue-purple gradient
-          }}
+              background: 'linear-gradient(135deg, #3b82f6 0%, #a259f7 100%)', // matches the blue-purple gradient
+            }}
           >
             ← Quay lại
           </button>
