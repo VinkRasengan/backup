@@ -80,7 +80,7 @@ const schemas = {
 
   // Report validation
   report: Joi.object({
-    reason: Joi.string().valid('spam', 'harassment', 'inappropriate', 'misinformation', 'other').required(),
+    reason: Joi.string().valid('fake_news', 'scam', 'malicious_content', 'spam', 'inappropriate', 'other').required(),
     description: Joi.string().max(500).optional().allow(''),
     category: Joi.string().valid('content', 'user', 'technical').default('content')
   }),
@@ -104,17 +104,17 @@ const validate = (schema, source = 'body') => {
       // Get data from specified source
       let data;
       switch (source) {
-        case 'body':
-          data = req.body;
-          break;
-        case 'query':
-          data = req.query;
-          break;
-        case 'params':
-          data = req.params;
-          break;
-        default:
-          data = req.body;
+      case 'body':
+        data = req.body;
+        break;
+      case 'query':
+        data = req.query;
+        break;
+      case 'params':
+        data = req.params;
+        break;
+      default:
+        data = req.body;
       }
 
       // Sanitize input data
@@ -152,15 +152,15 @@ const validate = (schema, source = 'body') => {
 
       // Replace original data with validated and sanitized data
       switch (source) {
-        case 'body':
-          req.body = value;
-          break;
-        case 'query':
-          req.query = value;
-          break;
-        case 'params':
-          req.params = value;
-          break;
+      case 'body':
+        req.body = value;
+        break;
+      case 'query':
+        req.query = value;
+        break;
+      case 'params':
+        req.params = value;
+        break;
       }
 
       next();

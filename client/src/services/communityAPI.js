@@ -64,7 +64,21 @@ class CommunityAPI {
       const error = await response.json().catch(() => ({ error: 'Network error' }));
       throw new Error(error.error || `HTTP ${response.status}`);
     }
-    return response.json();
+    
+    const data = await response.json();
+    
+    // Handle different response formats
+    if (data.success !== undefined) {
+      // New format with success flag
+      if (data.success) {
+        return data.data || data;
+      } else {
+        throw new Error(data.error || 'Request failed');
+      }
+    }
+    
+    // Legacy format without success flag
+    return data;
   }
 
   // LINKS ENDPOINTS
@@ -397,14 +411,19 @@ class CommunityAPI {
   // REPORTS ENDPOINTS
 
   // Submit a report for a link
-  async submitReport(linkId, reason, description) {
+  async submitReport(linkId, reason, description, url = null) {
     try {
       const headers = await this.getAuthHeaders();
+
+      const requestBody = { reason, description };
+      if (url) {
+        requestBody.url = url;
+      }
 
       const response = await fetch(`${this.baseURL}/api/reports/${linkId}`, {
         method: 'POST',
         headers: headers,
-        body: JSON.stringify({ reason, description })
+        body: JSON.stringify(requestBody)
       });
       return await this.handleResponse(response);
     } catch (error) {

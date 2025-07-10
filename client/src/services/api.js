@@ -304,8 +304,8 @@ export const communityAPI = {
   deleteComment: (commentId) => communityAPIService.deleteComment(commentId),
 
   // Reports methods - delegate to dedicated service
-  submitReport: (linkId, reason, description) =>
-    communityAPIService.submitReport(linkId, reason, description),
+  submitReport: (linkId, reason, description, url) =>
+    communityAPIService.submitReport(linkId, reason, description, url),
   getUserReports: (page, limit) => communityAPIService.getUserReports(page, limit),
 
   // Admin methods - delegate to dedicated service
