@@ -3,7 +3,9 @@ version: 2.1
 executors:
   node-executor:
     docker:
-      - image: cimg/node:20.11
+      - image: cimg/node:20.18
+    environment:
+      PUPPETEER_SKIP_CHROMIUM_DOWNLOAD: "true"
     working_directory: ~/repo
 
 commands:
@@ -14,16 +16,27 @@ commands:
         type: string
     steps:
       - checkout
+      - run: # step to install a browser
+          name: Install Chromium
+          command: |
+            sudo apt-get update && sudo apt-get install -y chromium-browser
+      - restore_cache:
+          keys:
+            - v1-dependencies-{{ checksum "<< parameters.path >>/package-lock.json" }}
+            - v1-dependencies-
       - run:
           name: Install dependencies
           command: |
             cd << parameters.path >>
             if [ -f package-lock.json ]; then
-              npm ci
+              npm ci --loglevel verbose || npm install --loglevel verbose
             else
-              npm install
+              npm install --loglevel verbose
             fi
-
+      - save_cache:
+          paths:
+            - << parameters.path >>/node_modules
+          key: v1-dependencies-{{ checksum "<< parameters.path >>/package-lock.json" }}
   # run_tests:
   #   description: "Run tests"
   #   parameters:
@@ -39,7 +52,6 @@ commands:
 jobs:
   test_auth_service:
     executor: node-executor
-    context: factcheck-auth
     steps:
       - install_deps:
           path: services/auth-service
@@ -48,7 +60,6 @@ jobs:
 
   test_link_service:
     executor: node-executor
-    context: factcheck-link
     steps:
       - install_deps:
           path: services/link-service
@@ -57,7 +68,6 @@ jobs:
 
   test_community_service:
     executor: node-executor
-    context: factcheck-community
     steps:
       - install_deps:
           path: services/community-service
@@ -66,7 +76,6 @@ jobs:
 
   test_chat_service:
     executor: node-executor
-    context: factcheck-chat
     steps:
       - install_deps:
           path: services/chat-service
@@ -75,7 +84,6 @@ jobs:
 
   test_news_service:
     executor: node-executor
-    context: factcheck-news
     steps:
       - install_deps:
           path: services/news-service
@@ -84,7 +92,6 @@ jobs:
 
   test_admin_service:
     executor: node-executor
-    context: factcheck-admin
     steps:
       - install_deps:
           path: services/admin-service
@@ -93,7 +100,6 @@ jobs:
 
   test_phishtank_service:
     executor: node-executor
-    context: factcheck-phishtank
     steps:
       - install_deps:
           path: services/phishtank-service
@@ -102,7 +108,6 @@ jobs:
 
   test_criminalip_service:
     executor: node-executor
-    context: factcheck-criminalip
     steps:
       - install_deps:
           path: services/criminalip-service
@@ -111,7 +116,6 @@ jobs:
 
   test_api_gateway:
     executor: node-executor
-    context: factcheck-api-gateway
     steps:
       - install_deps:
           path: services/api-gateway
@@ -120,7 +124,6 @@ jobs:
 
   test_frontend:
     executor: node-executor
-    context: factcheck-frontend
     steps:
       - install_deps:
           path: client
@@ -134,13 +137,23 @@ workflows:
   version: 2
   ci:
     jobs:
-      - test_auth_service
-      - test_link_service
-      - test_community_service
-      - test_chat_service
-      - test_news_service
-      - test_admin_service
-      - test_phishtank_service
-      - test_criminalip_service
-      - test_api_gateway
-      - test_frontend
+      - test_auth_service:
+          context: factcheck-auth
+      - test_link_service:
+          context: factcheck-link
+      - test_community_service:
+          context: factcheck-community
+      - test_chat_service:
+          context: factcheck-chat
+      - test_news_service:
+          context: factcheck-news
+      - test_admin_service:
+          context: factcheck-admin
+      - test_phishtank_service:
+          context: factcheck-phishtank
+      - test_criminalip_service:
+          context: factcheck-criminalip
+      - test_api_gateway:
+          context: factcheck-api-gateway
+      - test_frontend:
+          context: factcheck-frontend
