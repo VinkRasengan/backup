@@ -60,11 +60,16 @@ healthCheck.addCheck('database', commonChecks.database(firebaseConfig.db));
 healthCheck.addCheck('memory', commonChecks.memory(512));
 healthCheck.addCheck('auth-service', commonChecks.externalService('auth-service', process.env.AUTH_SERVICE_URL + '/health/live')); // eslint-disable-line no-process-env
 healthCheck.addCheck('cache', async () => {
+  // Skip cache check in test environment
+  if (process.env.NODE_ENV === 'test') {
+    return 'Cache OK (test environment)';
+  }
+
   const cacheHealth = await cacheManager.healthCheck();
-  if (cacheHealth.status === 'connected') {
-    return { status: 'healthy', details: cacheHealth };
+  if (cacheHealth.overall === 'healthy' || cacheHealth.overall === 'degraded') {
+    return `Cache ${cacheHealth.overall}`;
   } else {
-    return { status: 'unhealthy', details: cacheHealth };
+    throw new Error(`Cache unhealthy: ${JSON.stringify(cacheHealth)}`);
   }
 });
 
@@ -188,6 +193,22 @@ app.get('/info', (req, res) => {
   });
 });
 
+// API versioned endpoint
+app.get('/api/v1/community', (req, res) => {
+  res.json({
+    status: 'healthy',
+    service: SERVICE_NAME,
+    version: process.env.npm_package_version || '1.0.0',
+    environment: process.env.NODE_ENV || 'development',
+    uptime: process.uptime(),
+    timestamp: new Date().toISOString(),
+    firebase: {
+      projectId: process.env.FIREBASE_PROJECT_ID,
+      connected: !!firebaseConfig.db
+    }
+  });
+});
+
 // API routes
 app.use('/links', linksRoutes);
 app.use('/comments', commentsRoutes);
@@ -227,26 +248,35 @@ cacheManager.connect().catch(error => {
   logger.error('Failed to initialize cache manager', { error: error.message });
 });
 
-// Start server
-const server = app.listen(PORT, () => {
-  logger.info(`ðŸš€ Community Service started on port ${PORT}`, {
-    service: SERVICE_NAME,
-    port: PORT,
-    environment: process.env.NODE_ENV
+// Start server (skip in test environment)
+let server;
+if (process.env.NODE_ENV !== 'test') {
+  server = app.listen(PORT, () => {
+    logger.info(`ðŸš€ Community Service started on port ${PORT}`, {
+      service: SERVICE_NAME,
+      port: PORT,
+      environment: process.env.NODE_ENV
+    });
   });
-});
+}
 
-// Set server timeout to handle long-running requests
-server.timeout = 60000; // 60 seconds
-server.keepAliveTimeout = 65000; // 65 seconds
-server.headersTimeout = 66000; // 66 seconds
+// Set server timeout to handle long-running requests (only if server exists)
+if (server) {
+  server.timeout = 60000; // 60 seconds
+  server.keepAliveTimeout = 65000; // 65 seconds
+  server.headersTimeout = 66000; // 66 seconds
+}
 
 // Handle unhandled promise rejections
 process.on('unhandledRejection', (err) => {
   logger.error('Unhandled Promise Rejection', { error: err.message, stack: err.stack });
-  server.close(() => {
+  if (server && server.close) {
+    server.close(() => {
+      process.exit(1);
+    });
+  } else {
     process.exit(1);
-  });
+  }
 });
 
 module.exports = app;

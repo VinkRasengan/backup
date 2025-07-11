@@ -18,9 +18,10 @@ describe('Chat Service', () => {
     process.env.PORT = '3004';
     process.env.FIREBASE_PROJECT_ID = 'test-project';
     process.env.JWT_SECRET = 'test-secret';
-    
+
     // Require app after setting env vars
-    app = require('../app');
+    const chatService = require('../app');
+    app = chatService.app;
   });
 
   describe('Health Check', () => {

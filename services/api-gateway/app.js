@@ -172,6 +172,20 @@ app.get('/info', (req, res) => {
   });
 });
 
+// API versioned info endpoint
+app.get('/api/v1/gateway/info', (req, res) => {
+  res.json({
+    service: SERVICE_NAME,
+    version: process.env.npm_package_version || '1.0.0',
+    environment: process.env.NODE_ENV || 'development',
+    uptime: process.uptime(),
+    timestamp: new Date().toISOString(),
+    port: PORT,
+    corsOrigins: process.env.ALLOWED_ORIGINS || 'not-set',
+    services
+  });
+});
+
 // Test CORS endpoint
 app.get('/test-cors', (req, res) => {
   res.json({
@@ -891,33 +905,36 @@ process.on('SIGINT', () => {
   process.exit(0);
 });
 
-// Start server
-const server = app.listen(PORT, () => {
-  logger.info(`🚀 API Gateway started on port ${PORT}`, {
-    service: SERVICE_NAME,
-    port: PORT,
-    environment: process.env.NODE_ENV || 'development',
-    services: Object.keys(services).length
-  });
+// Start server (skip in test environment)
+let server;
+if (process.env.NODE_ENV !== 'test') {
+  server = app.listen(PORT, () => {
+    logger.info(`🚀 API Gateway started on port ${PORT}`, {
+      service: SERVICE_NAME,
+      port: PORT,
+      environment: process.env.NODE_ENV || 'development',
+      services: Object.keys(services).length
+    });
 
-  console.log(`Available endpoints:`);
-  console.log(`  - GET /health`);
-  console.log(`  - GET /info`);
-  console.log(`  - GET /test-cors`);
-  console.log(`  - GET /community/links`);
-  console.log(`  - GET /news/latest`);
-  console.log(`  - /api/votes/* (proxied to community service)`);
-  console.log(`  - /api/links/* (proxied to community service)`);
-  console.log(`  - /api/posts/* (backward compatibility - proxied to community service)`);
-  console.log(`  - /api/comments/* (proxied to community service)`);
-  console.log(`  - /api/reports/* (proxied to community service)`);
-  console.log(`  - /api/auth/* (proxied to auth service - user management only)`);
-  console.log(`  - /api/users/* (proxied to auth service - user management only)`);
-  console.log(`  - /link-check/* (proxied to link service)`);
-  console.log(`  - /api/chat/* (proxied to chat service)`);
-  console.log(`  - /api/news/* (proxied to news service)`);
-  console.log(`  - /api/admin/* (proxied to admin service)`);
-});
+    console.log(`Available endpoints:`);
+    console.log(`  - GET /health`);
+    console.log(`  - GET /info`);
+    console.log(`  - GET /test-cors`);
+    console.log(`  - GET /community/links`);
+    console.log(`  - GET /news/latest`);
+    console.log(`  - /api/votes/* (proxied to community service)`);
+    console.log(`  - /api/links/* (proxied to community service)`);
+    console.log(`  - /api/posts/* (backward compatibility - proxied to community service)`);
+    console.log(`  - /api/comments/* (proxied to community service)`);
+    console.log(`  - /api/reports/* (proxied to community service)`);
+    console.log(`  - /api/auth/* (proxied to auth service - user management only)`);
+    console.log(`  - /api/users/* (proxied to auth service - user management only)`);
+    console.log(`  - /link-check/* (proxied to link service)`);
+    console.log(`  - /api/chat/* (proxied to chat service)`);
+    console.log(`  - /api/news/* (proxied to news service)`);
+    console.log(`  - /api/admin/* (proxied to admin service)`);
+  });
+}
 
 // Handle unhandled promise rejections
 process.on('unhandledRejection', (err) => {

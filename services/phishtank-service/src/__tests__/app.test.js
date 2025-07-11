@@ -2,15 +2,29 @@ const request = require('supertest');
 
 describe('PhishTank Service', () => {
   let app;
+  let server;
 
   beforeAll(() => {
     // Set required environment variables
     process.env.NODE_ENV = 'test';
     process.env.PORT = '3007';
     process.env.JWT_SECRET = 'test-secret';
-    
+    process.env.PHISHTANK_SERVICE_PORT = '3007';
+
     // Require app after setting env vars
     app = require('../app');
+  });
+
+  afterAll(async () => {
+    // Clean up any open handles
+    if (server && server.close) {
+      await new Promise((resolve) => {
+        server.close(resolve);
+      });
+    }
+
+    // Give Jest time to clean up
+    await new Promise(resolve => setTimeout(resolve, 100));
   });
 
   describe('Health Check', () => {

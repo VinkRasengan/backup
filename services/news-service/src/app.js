@@ -127,6 +127,18 @@ app.get('/info', (req, res) => {
   });
 });
 
+// API versioned endpoint
+app.get('/api/v1/news', (req, res) => {
+  res.json({
+    status: 'healthy',
+    service: SERVICE_NAME,
+    version: process.env.npm_package_version || '1.0.0',
+    environment: process.env.NODE_ENV || 'development',
+    uptime: process.uptime(),
+    timestamp: new Date().toISOString()
+  });
+});
+
 // Mock news endpoints
 app.get('/news/latest', (req, res) => {
   const { source = 'all', pageSize = 10, page = 1 } = req.query;
@@ -278,21 +290,28 @@ process.on('SIGINT', () => {
   process.exit(0);
 });
 
-// Start server
-const server = app.listen(PORT, () => {
-  logger.info(`ðŸš€ News Service started on port ${PORT}`, {
-    service: SERVICE_NAME,
-    port: PORT,
-    environment: process.env.NODE_ENV
+// Start server (skip in test environment)
+let server;
+if (process.env.NODE_ENV !== 'test') {
+  server = app.listen(PORT, () => {
+    logger.info(`ðŸš€ News Service started on port ${PORT}`, {
+      service: SERVICE_NAME,
+      port: PORT,
+      environment: process.env.NODE_ENV
+    });
   });
-});
+}
 
 // Handle unhandled promise rejections
 process.on('unhandledRejection', (err) => {
   logger.error('Unhandled Promise Rejection', { error: err.message, stack: err.stack });
-  server.close(() => {
+  if (server && server.close) {
+    server.close(() => {
+      process.exit(1);
+    });
+  } else {
     process.exit(1);
-  });
+  }
 });
 
 module.exports = app;

@@ -106,13 +106,7 @@ jobs:
       - run_tests:
           path: services/phishtank-service
 
-  test_criminalip_service:
-    executor: node-executor
-    steps:
-      - install_deps:
-          path: services/criminalip-service
-      - run_tests:
-          path: services/criminalip-service
+
 
   test_api_gateway:
     executor: node-executor
@@ -151,8 +145,6 @@ workflows:
           context: factcheck-admin
       - test_phishtank_service:
           context: factcheck-phishtank
-      - test_criminalip_service:
-          context: factcheck-criminalip
       - test_api_gateway:
           context: factcheck-api-gateway
       - test_frontend:

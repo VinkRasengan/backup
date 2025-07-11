@@ -1,0 +1,147 @@
+{
+  "consumer": {
+    "name": "api-gateway"
+  },
+  "interactions": [
+    {
+      "description": "a request for user profile",
+      "request": {
+        "headers": {
+          "Authorization": "Bearer valid.jwt.token"
+        },
+        "method": "GET",
+        "path": "/users/123"
+      },
+      "response": {
+        "body": {
+          "createdAt": "2024-01-01T00:00:00Z",
+          "email": "user@example.com",
+          "emailVerified": true,
+          "id": "123",
+          "lastLogin": "2024-01-01T12:00:00Z",
+          "name": "Test User",
+          "roles": [
+            "user"
+          ]
+        },
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "status": 200
+      }
+    },
+    {
+      "description": "a request to login",
+      "request": {
+        "body": {
+          "email": "user@example.com",
+          "password": "correctPassword"
+        },
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "method": "POST",
+        "path": "/auth/login"
+      },
+      "response": {
+        "body": {
+          "refreshToken": "refresh.token",
+          "success": true,
+          "token": "login.jwt.token",
+          "user": {
+            "email": "user@example.com",
+            "id": "123",
+            "name": "Test User",
+            "roles": [
+              "user"
+            ]
+          }
+        },
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "status": 200
+      }
+    },
+    {
+      "description": "a request to register new user",
+      "request": {
+        "body": {
+          "email": "newuser@example.com",
+          "name": "New User",
+          "password": "securePassword123"
+        },
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "method": "POST",
+        "path": "/auth/register"
+      },
+      "response": {
+        "body": {
+          "success": true,
+          "token": "new.jwt.token",
+          "user": {
+            "email": "newuser@example.com",
+            "emailVerified": false,
+            "id": "456",
+            "name": "New User",
+            "roles": [
+              "user"
+            ]
+          }
+        },
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "status": 201
+      }
+    },
+    {
+      "description": "a request to verify token",
+      "request": {
+        "body": {
+          "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.test.token"
+        },
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "method": "POST",
+        "path": "/auth/verify"
+      },
+      "response": {
+        "body": {
+          "success": true,
+          "user": {
+            "email": "user@example.com",
+            "emailVerified": true,
+            "id": "123",
+            "name": "Test User",
+            "roles": [
+              "user"
+            ]
+          }
+        },
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "status": 200
+      }
+    }
+  ],
+  "metadata": {
+    "pact-js": {
+      "version": "12.5.2"
+    },
+    "pactRust": {
+      "ffi": "0.4.20",
+      "models": "1.2.0"
+    },
+    "pactSpecification": {
+      "version": "2.0.0"
+    }
+  },
+  "provider": {
+    "name": "auth-service"
+  }
+}

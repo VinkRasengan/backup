@@ -129,6 +129,17 @@ app.get('/info', (req, res) => {
   });
 });
 
+// API versioned info endpoint
+app.get('/api/v1/admin/info', (req, res) => {
+  res.json({
+    service: SERVICE_NAME,
+    version: process.env.npm_package_version || '1.0.0',
+    environment: process.env.NODE_ENV || 'development',
+    uptime: process.uptime(),
+    timestamp: new Date().toISOString()
+  });
+});
+
 // Mock admin endpoints
 app.get('/admin/dashboard', (req, res) => {
   res.json({
@@ -357,21 +368,28 @@ process.on('SIGINT', () => {
 
 
 
-// Start server
-const server = app.listen(PORT, () => {
-  logger.info(`ðŸš€ Admin Service started on port ${PORT}`, {
-    service: SERVICE_NAME,
-    port: PORT,
-    environment: process.env.NODE_ENV
+// Start server (skip in test environment)
+let server;
+if (process.env.NODE_ENV !== 'test') {
+  server = app.listen(PORT, () => {
+    logger.info(`ðŸš€ Admin Service started on port ${PORT}`, {
+      service: SERVICE_NAME,
+      port: PORT,
+      environment: process.env.NODE_ENV
+    });
   });
-});
+}
 
 // Handle unhandled promise rejections
-process.on('unhandled Rejection', (err) => {
+process.on('unhandledRejection', (err) => {
   logger.error('Unhandled Promise Rejection', { error: err.message, stack: err.stack });
-  server.close(() => {
+  if (server && server.close) {
+    server.close(() => {
+      process.exit(1);
+    });
+  } else {
     process.exit(1);
-  });
+  }
 });
 
 module.exports = app;

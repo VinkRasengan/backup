@@ -156,6 +156,28 @@ app.get('/info', (req, res) => {
   });
 });
 
+// API versioned info endpoint
+app.get('/api/v1/chat/info', (req, res) => {
+  res.json({
+    service: SERVICE_NAME,
+    version: process.env.npm_package_version || '1.0.0',
+    environment: process.env.NODE_ENV || 'development',
+    uptime: process.uptime(),
+    timestamp: new Date().toISOString(),
+    firebase: {
+      projectId: process.env.FIREBASE_PROJECT_ID,
+      connected: !!firebaseConfig.db
+    },
+    ai: {
+      geminiEnabled: !!process.env.GEMINI_API_KEY
+    },
+    websocket: {
+      enabled: true,
+      connectedClients: io.engine.clientsCount
+    }
+  });
+});
+
 // API routes
 app.use('/chat', chatRoutes);
 app.use('/conversations', conversationsRoutes);
@@ -198,22 +220,28 @@ process.on('SIGINT', () => {
   });
 });
 
-// Start server
-server.listen(PORT, () => {
-  logger.info(`ðŸš€ Chat Service started on port ${PORT}`, {
-    service: SERVICE_NAME,
-    port: PORT,
-    environment: process.env.NODE_ENV,
-    websocket: true
+// Start server (skip in test environment)
+if (process.env.NODE_ENV !== 'test') {
+  server.listen(PORT, () => {
+    logger.info(`ðŸš€ Chat Service started on port ${PORT}`, {
+      service: SERVICE_NAME,
+      port: PORT,
+      environment: process.env.NODE_ENV,
+      websocket: true
+    });
   });
-});
+}
 
 // Handle unhandled promise rejections
 process.on('unhandledRejection', (err) => {
   logger.error('Unhandled Promise Rejection', { error: err.message, stack: err.stack });
-  server.close(() => {
+  if (server && server.close) {
+    server.close(() => {
+      process.exit(1);
+    });
+  } else {
     process.exit(1);
-  });
+  }
 });
 
 module.exports = { app, server, io };

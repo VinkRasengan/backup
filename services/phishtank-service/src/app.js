@@ -94,6 +94,7 @@ app.get('/info', (req, res) => {
 // Import routes
 const phishtankRoutes = require('./routes/phishtank');
 app.use('/phishtank', phishtankRoutes);
+app.use('/api/v1/phishtank', phishtankRoutes);
 
 // 404 handler
 app.use('*', (req, res) => {
@@ -118,24 +119,27 @@ app.use((error, req, res, next) => {
   });
 });
 
-// Schedule database updates (every 6 hours)
-cron.schedule('0 */6 * * *', () => {
-  console.log('🔄 Scheduled PhishTank database update...');
-  const updateDatabase = require('./scripts/updateDatabase');
-  updateDatabase.updatePhishTankDatabase();
-});
+// Only start cron and server if not in test environment
+if (process.env.NODE_ENV !== 'test') {
+  // Schedule database updates (every 6 hours)
+  cron.schedule('0 */6 * * *', () => {
+    console.log('🔄 Scheduled PhishTank database update...');
+    const updateDatabase = require('./scripts/updateDatabase');
+    updateDatabase.updatePhishTankDatabase();
+  });
 
-// Start server
-const server = app.listen(PORT, () => {
-  console.log(`🚀 ${SERVICE_NAME} started on port ${PORT}`);
-  console.log(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
-  console.log(`🎣 Features: Phishing Detection, URL Analysis, Offline Database`);
-  console.log(`⏰ Auto-update: Every 6 hours`);
-  
-  // Initial database update
-  const updateDatabase = require('./scripts/updateDatabase');
-  updateDatabase.updatePhishTankDatabase();
-});
+  // Start server
+  const server = app.listen(PORT, () => {
+    console.log(`🚀 ${SERVICE_NAME} started on port ${PORT}`);
+    console.log(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
+    console.log(`🎣 Features: Phishing Detection, URL Analysis, Offline Database`);
+    console.log(`⏰ Auto-update: Every 6 hours`);
+
+    // Initial database update
+    const updateDatabase = require('./scripts/updateDatabase');
+    updateDatabase.updatePhishTankDatabase();
+  });
+}
 
 // Graceful shutdown
 process.on('SIGTERM', () => {
