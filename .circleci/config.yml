@@ -37,17 +37,17 @@ commands:
           paths:
             - << parameters.path >>/node_modules
           key: v1-dependencies-{{ checksum "<< parameters.path >>/package-lock.json" }}
-  # run_tests:
-  #   description: "Run tests"
-  #   parameters:
-  #     path:
-  #       type: string
-  #   steps:
-  #     - run:
-  #         name: Run tests
-  #         command: |
-  #           cd << parameters.path >>
-  #           npm test
+  run_tests:
+    description: "Run tests"
+    parameters:
+      path:
+        type: string
+    steps:
+      - run:
+          name: Run tests
+          command: |
+            cd << parameters.path >>
+            npm test
 
 jobs:
   test_auth_service:
@@ -55,83 +55,83 @@ jobs:
     steps:
       - install_deps:
           path: services/auth-service
-      # - run_tests:
-      #     path: services/auth-service
+      - run_tests:
+          path: services/auth-service
 
-  # test_link_service:
-  #   executor: node-executor
-  #   steps:
-  #     - install_deps:
-  #         path: services/link-service
-      # - run_tests:
-      #     path: services/link-service
+  test_link_service:
+    executor: node-executor
+    steps:
+      - install_deps:
+          path: services/link-service
+      - run_tests:
+          path: services/link-service
 
   test_community_service:
     executor: node-executor
     steps:
       - install_deps:
           path: services/community-service
-      # - run_tests:
-      #     path: services/community-service
+      - run_tests:
+          path: services/community-service
 
   test_chat_service:
     executor: node-executor
     steps:
       - install_deps:
           path: services/chat-service
-      # - run_tests:
-      #     path: services/chat-service
+      - run_tests:
+          path: services/chat-service
 
   test_news_service:
     executor: node-executor
     steps:
       - install_deps:
           path: services/news-service
-      # - run_tests:
-      #     path: services/news-service
+      - run_tests:
+          path: services/news-service
 
   test_admin_service:
     executor: node-executor
     steps:
       - install_deps:
           path: services/admin-service
-      # - run_tests:
-      #     path: services/admin-service
+      - run_tests:
+          path: services/admin-service
 
   test_phishtank_service:
     executor: node-executor
     steps:
       - install_deps:
           path: services/phishtank-service
-      # - run_tests:
-      #     path: services/phishtank-service
+      - run_tests:
+          path: services/phishtank-service
 
   test_criminalip_service:
     executor: node-executor
     steps:
       - install_deps:
           path: services/criminalip-service
-      # - run_tests:
-      #     path: services/criminalip-service
+      - run_tests:
+          path: services/criminalip-service
 
   test_api_gateway:
     executor: node-executor
     steps:
       - install_deps:
           path: services/api-gateway
-      # - run_tests:
-      #     path: services/api-gateway
+      - run_tests:
+          path: services/api-gateway
 
   test_frontend:
     executor: node-executor
     steps:
       - install_deps:
           path: client
-      # - run:
-      #     name: Run frontend tests
-      #     command: |
-      #       cd client
-      #       npm test -- --watchAll=false
+      - run:
+          name: Run frontend tests
+          command: |
+            cd client
+            npm test -- --watchAll=false
 
 workflows:
   version: 2
@@ -139,8 +139,8 @@ workflows:
     jobs:
       - test_auth_service:
           context: factcheck-auth
-      # - test_link_service:
-      #     context: factcheck-link
+      - test_link_service:
+          context: factcheck-link
       - test_community_service:
           context: factcheck-community
       - test_chat_service:
