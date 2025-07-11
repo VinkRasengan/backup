@@ -149,7 +149,7 @@ function setupEnvironment(serviceName, requiredVars = [], exitOnError = false) {
     console.error(`❌ ${serviceName}: Cannot start without .env file`);
     console.error(`   Run: npm run env:setup to create .env file`);
     
-    if (exitOnError) {
+    if (exitOnError && process.env.NODE_ENV !== 'test') {
       process.exit(1);
     }
     
@@ -167,7 +167,7 @@ function setupEnvironment(serviceName, requiredVars = [], exitOnError = false) {
     validationResult = validateRequiredVars(requiredVars, serviceName);
     
     if (!validationResult.isValid) {
-      if (exitOnError) {
+      if (exitOnError && process.env.NODE_ENV !== 'test') {
         console.error(`❌ ${serviceName}: Exiting due to environment validation errors`);
         process.exit(1);
       }

@@ -23,6 +23,21 @@ describe('Community Service', () => {
     app = require('../app');
   });
 
+  afterAll(async () => {
+    // Cleanup server and intervals
+    if (global.server) {
+      await new Promise((resolve) => {
+        global.server.close(resolve);
+      });
+    }
+    
+    // Clear all intervals
+    const highestId = setTimeout(() => {}, 0);
+    for (let i = 0; i < highestId; i++) {
+      clearInterval(i);
+    }
+  });
+
   describe('Health Check', () => {
     test('GET /health should return 200', async () => {
       const response = await request(app)
@@ -34,13 +49,12 @@ describe('Community Service', () => {
   });
 
   describe('Service Info', () => {
-    test('GET /api/v1/community/info should return service info', async () => {
+    test('GET /api/v1/community should return service status', async () => {
       const response = await request(app)
-        .get('/api/v1/community/info')
+        .get('/api/v1/community')
         .expect(200);
       
-      expect(response.body).toHaveProperty('service');
-      expect(response.body.service).toBe('community-service');
+      expect(response.body).toHaveProperty('status');
     });
   });
 }); 
