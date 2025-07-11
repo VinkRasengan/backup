@@ -30,6 +30,7 @@
   "author": "Anti-Fraud Platform",
   "license": "MIT",
   "dependencies": {
+    "@factcheck/shared": "file:../../shared",
     "axios": "^1.6.2",
     "cors": "^2.8.5",
     "crypto": "^1.0.1",
@@ -44,7 +45,7 @@
     "path": "^0.12.7",
     "redis": "^4.6.10",
     "uuid": "^11.1.0",
-    "@factcheck/shared": "file:../../shared"
+    "winston": "^3.17.0"
   },
   "devDependencies": {
     "@pact-foundation/pact": "^12.1.0",

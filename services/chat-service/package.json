@@ -25,6 +25,8 @@
     "prod:start": "NODE_ENV=production npm start"
   },
   "dependencies": {
+    "@factcheck/shared": "file:../../shared",
+    "@google/generative-ai": "^0.2.1",
     "axios": "^1.6.2",
     "cors": "^2.8.5",
     "crypto": "^1.0.1",
@@ -37,12 +39,11 @@
     "joi": "^17.11.0",
     "jsonwebtoken": "^9.0.2",
     "morgan": "^1.10.0",
+    "prom-client": "^15.1.0",
     "redis": "^4.6.10",
     "socket.io": "^4.7.4",
     "uuid": "^11.1.0",
-    "prom-client": "^15.1.0",
-    "@google/generative-ai": "^0.2.1",
-    "@factcheck/shared": "file:../../shared"
+    "winston": "^3.17.0"
   },
   "devDependencies": {
     "@pact-foundation/pact": "^12.1.0",
