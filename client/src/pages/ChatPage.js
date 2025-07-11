@@ -13,7 +13,8 @@ const ChatPage = () => {
   }, []);
 
   return (
-    <div className="h-screen w-full bg-gray-50 dark:bg-gray-900 overflow-hidden">
+    <div className="h-screen w-full bg-gray-50 dark:bg-gray-900 overflow-hidden pl-[80px]">
+
       <ModernMessengerLayout />
     </div>
   );

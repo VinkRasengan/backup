@@ -240,6 +240,7 @@ const CheckLinkPage = () => {
 
   return (
     <PageLayout
+      
       title="Kiểm Tra Link"
       subtitle="Xác minh độ tin cậy của bài viết và nguồn thông tin"
       maxWidth="6xl"

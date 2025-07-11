@@ -161,13 +161,13 @@
 /* Messenger-like Chat Optimizations */
 .messenger-layout {
   height: 100vh !important;
-  width: 100vw !important;
+  width: calc(100vw - 90px) !important; /* Adjusted for sidebar */
   overflow: hidden !important;
   display: flex !important;
   flex-direction: column !important;
   position: fixed !important;
+  left: 90px !important;
   top: 0 !important;
-  left: 0 !important;
   right: 0 !important;
   bottom: 0 !important;
   background: white !important;
@@ -206,8 +206,8 @@
   display: flex !important;
   flex-direction: row !important;
   overflow: hidden !important;
-  height: calc(100vh - 56px) !important; /* Subtract header height */
-  max-height: calc(100vh - 56px) !important;
+  height: calc(100vh) !important; /* Subtract header height */
+  max-height: calc(100vh) !important;
 }
 
 .messenger-messages {
@@ -391,7 +391,7 @@ body:has(.chat-fullscreen) {
     height: 64px !important; /* Better touch targets */
     min-height: 64px !important;
     max-height: 64px !important;
-    padding: 12px 16px !important;
+    padding: 12px 90px 12px 16px !important;
   }
 
   .messenger-messages-area {
@@ -466,7 +466,7 @@ body:has(.chat-fullscreen) {
 
   .messenger-input-container {
     height: 64px !important;
-    padding: 16px 24px !important;
+    padding: 16px 90px 16px 24px !important;
   }
 
   .messenger-messages-area {
@@ -627,7 +627,7 @@ body:has(.chat-fullscreen) {
 .messenger-input-container {
   background: white !important;
   border-top: 1px solid #E4E6EA !important;
-  padding: 12px 16px !important;
+  padding: 12px 90px 12px 16px !important;
   display: flex !important;
   align-items: flex-end !important;
   gap: 8px !important;

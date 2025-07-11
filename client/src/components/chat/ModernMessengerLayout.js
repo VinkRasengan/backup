@@ -693,7 +693,7 @@ const ModernMessengerLayout = () => {
           {selectedChat ? (
             <>
               {/* Enhanced Chat Header */}
-              <div className="flex-shrink-0 h-16 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 shadow-sm px-4 py-2">
+              <div className="flex-shrink-0 h-16 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 shadow-sm pl-4 py-2 pr-[130px]">
                 <div className="flex items-center justify-between h-full">
                   <div className="flex items-center space-x-3">
                     {isMobile && (

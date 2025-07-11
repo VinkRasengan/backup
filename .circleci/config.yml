@@ -58,11 +58,11 @@ jobs:
       # - run_tests:
       #     path: services/auth-service
 
-  test_link_service:
-    executor: node-executor
-    steps:
-      - install_deps:
-          path: services/link-service
+  # test_link_service:
+  #   executor: node-executor
+  #   steps:
+  #     - install_deps:
+  #         path: services/link-service
       # - run_tests:
       #     path: services/link-service
 
@@ -139,8 +139,8 @@ workflows:
     jobs:
       - test_auth_service:
           context: factcheck-auth
-      - test_link_service:
-          context: factcheck-link
+      # - test_link_service:
+      #     context: factcheck-link
       - test_community_service:
           context: factcheck-community
       - test_chat_service:

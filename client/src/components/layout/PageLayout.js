@@ -37,9 +37,9 @@ const PageLayout = ({
   return (
     <div
       id="main-content"
-      className={cn(
+      className={` mx-[80px] ${cn(
         className
-      )}
+      )}`}
       {...props}
     >
       {/* Page Header */}
