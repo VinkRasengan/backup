@@ -71,7 +71,7 @@ class CommunityAPI {
     if (data.success !== undefined) {
       // New format with success flag
       if (data.success) {
-        return data.data || data;
+        return data; // Return full response object to preserve success flag
       } else {
         throw new Error(data.error || 'Request failed');
       }
