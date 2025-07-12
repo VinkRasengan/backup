@@ -9,14 +9,19 @@ import {
   User,
   Shield,
   TrendingUp,
-  Settings
+  Settings,
+  BarChart3,
+  Star,
+  Bell
 } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
+import { useAuth } from '../../context/AuthContext';
 
 const TabNavigation = ({ className = '' }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { isDarkMode } = useTheme();
+  const { user } = useAuth();
 
   const tabs = [
     {
@@ -48,20 +53,57 @@ const TabNavigation = ({ className = '' }) => {
       color: 'indigo'
     },
     {
+      id: 'analytics',
+      label: 'Thống kê',
+      icon: BarChart3,
+      path: '/analytics',
+      color: 'blue',
+      requireAuth: true
+    },
+    {
+      id: 'premium',
+      label: 'Premium',
+      icon: Star,
+      path: '/premium',
+      color: 'yellow',
+      requireAuth: true
+    },
+    {
       id: 'dashboard',
       label: 'Dashboard',
       icon: TrendingUp,
       path: '/dashboard',
-      color: 'orange'
+      color: 'orange',
+      requireAuth: true
+    },
+    {
+      id: 'notifications',
+      label: 'Thông báo',
+      icon: Bell,
+      path: '/notifications',
+      color: 'blue',
+      requireAuth: true
     },
     {
       id: 'profile',
       label: 'Hồ sơ',
       icon: User,
       path: '/profile',
-      color: 'pink'
+      color: 'pink',
+      requireAuth: true
+    },
+    {
+      id: 'settings',
+      label: 'Cài đặt',
+      icon: Settings,
+      path: '/settings',
+      color: 'gray',
+      requireAuth: true
     }
   ];
+
+  // Filter tabs based on authentication
+  const visibleTabs = tabs.filter(tab => !tab.requireAuth || user);
 
   const isActive = (path) => {
     if (path === '/') {
@@ -89,7 +131,13 @@ const TabNavigation = ({ className = '' }) => {
         : 'text-gray-600 dark:text-gray-400 hover:text-orange-600 dark:hover:text-orange-400',
       pink: active 
         ? 'bg-pink-100 text-pink-600 dark:bg-pink-900/30 dark:text-pink-400' 
-        : 'text-gray-600 dark:text-gray-400 hover:text-pink-600 dark:hover:text-pink-400'
+        : 'text-gray-600 dark:text-gray-400 hover:text-pink-600 dark:hover:text-pink-400',
+      yellow: active 
+        ? 'bg-yellow-100 text-yellow-600 dark:bg-yellow-900/30 dark:text-yellow-400' 
+        : 'text-gray-600 dark:text-gray-400 hover:text-yellow-600 dark:hover:text-yellow-400',
+      gray: active 
+        ? 'bg-gray-100 text-gray-600 dark:bg-gray-900/30 dark:text-gray-400' 
+        : 'text-gray-600 dark:text-gray-400 hover:text-gray-600 dark:hover:text-gray-400'
     };
     return colors[color] || colors.blue;
   };
@@ -98,7 +146,7 @@ const TabNavigation = ({ className = '' }) => {
     <div className={`bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 ${className}`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex space-x-1 overflow-x-auto scrollbar-hide">
-          {tabs.map((tab) => {
+          {visibleTabs.map((tab) => {
             const Icon = tab.icon;
             const active = isActive(tab.path);
             

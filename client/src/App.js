@@ -177,9 +177,30 @@ function App() {
           />
 
           {/* New feature pages */}
-          <Route path="/security" element={<SecurityPage />} />
-          <Route path="/analytics" element={<AnalyticsPage />} />
-          <Route path="/premium" element={<PremiumPage />} />
+          <Route 
+            path="/security" 
+            element={
+              <ProtectedRoute>
+                <SecurityPage />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/analytics" 
+            element={
+              <ProtectedRoute>
+                <AnalyticsPage />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/premium" 
+            element={
+              <ProtectedRoute>
+                <PremiumPage />
+              </ProtectedRoute>
+            } 
+          />
           <Route
             path="/notifications"
             element={
@@ -205,6 +226,40 @@ function App() {
             }
           />
           <Route path="/help" element={<HelpPage />} />
+
+          {/* Settings sub-routes */}
+          <Route
+            path="/settings/account"
+            element={
+              <ProtectedRoute>
+                <SettingsPage activeTab="account" />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/settings/security"
+            element={
+              <ProtectedRoute>
+                <SettingsPage activeTab="security" />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/settings/notifications"
+            element={
+              <ProtectedRoute>
+                <SettingsPage activeTab="notifications" />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/settings/appearance"
+            element={
+              <ProtectedRoute>
+                <SettingsPage activeTab="appearance" />
+              </ProtectedRoute>
+            }
+          />
 
           {/* Admin/Test Routes */}
           <Route
