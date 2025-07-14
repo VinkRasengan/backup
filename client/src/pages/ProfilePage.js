@@ -17,11 +17,13 @@ const profileSchema = yup.object({
     .string()
     .min(2, 'Tên phải có ít nhất 2 ký tự')
     .max(50, 'Tên không được vượt quá 50 ký tự')
+    .matches(/^[a-zA-ZÀ-ỹà-ỹ\s]+$/, 'Tên không được chứa ký tự đặc biệt')
     .required('Tên là bắt buộc'),
   lastName: yup
     .string()
     .min(2, 'Họ phải có ít nhất 2 ký tự')
     .max(50, 'Họ không được vượt quá 50 ký tự')
+    .matches(/^[a-zA-ZÀ-ỹà-ỹ\s]+$/, 'Họ không được chứa ký tự đặc biệt')
     .required('Họ là bắt buộc'),
   bio: yup
     .string()
@@ -362,8 +364,14 @@ const ProfilePage = () => {
                         </div>
                         <div>
                           <div className="text-sm text-gray-600 dark:text-gray-400">Email</div>
-                          <div className="font-medium text-gray-900 dark:text-white">
-                            {user.email}
+                          <div className="font-medium text-gray-900 dark:text-white relative group">
+                            <span className="max-w-[17ch] truncate inline-block align-bottom cursor-pointer group-hover:underline">
+                              {user.email}
+                            </span>
+                            <div className="absolute right-0 -top-4 z-10 hidden group-hover:block bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-xs px-3 py-2 rounded shadow-lg border border-gray-200 dark:border-gray-700 min-w-max"
+                              style={{ transform: 'translateY(-100%)' }}>
+                              {user.email}
+                            </div>
                           </div>
                         </div>
                       </div>
