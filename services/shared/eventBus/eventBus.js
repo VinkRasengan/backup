@@ -126,7 +126,8 @@ class EventBus extends EventEmitter {
 
     try {
       await this.publisher.publish(channel, message);
-      console.log(`Event published: ${eventType} from ${this.serviceName}`);
+      // Log event chi tiết cho demo event sourcing
+      console.log(`\x1b[36m[EVENT SOURCING]\x1b[0m ${event.type} | Data: ${JSON.stringify(event.data)} | Source: ${event.source} | Time: ${event.timestamp}`);
       this.emit('published', event);
       return event.id;
     } catch (error) {
