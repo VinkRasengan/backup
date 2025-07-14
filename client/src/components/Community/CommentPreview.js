@@ -36,10 +36,10 @@ const CommentPreview = ({ linkId, onToggleFullComments }) => {
       const response = await communityAPI.getComments(linkId, 1, 2, 'newest');
       console.log('📝 Comments API response:', response);
 
-      // Fix: Check response.success instead of response.data.success
+      // Check response.success and handle data structure
       if (response && response.success) {
-        const comments = response.data?.comments || [];
-        const pagination = response.data?.pagination || {};
+        const comments = response.data?.comments || response.comments || [];
+        const pagination = response.data?.pagination || response.pagination || {};
 
         console.log('🔍 Raw comments data:', comments);
         console.log('🔍 Pagination data:', pagination);

@@ -31,7 +31,7 @@ const VoteComponent = ({
       ]);
       
       if (statsResponse.success) {
-        const stats = statsResponse.data.statistics || statsResponse.data || {};
+        const stats = statsResponse.data?.statistics || statsResponse.data || {};
         const userVoteData = userVoteResponse.success ? userVoteResponse.data : null;
         
         // FIXED: Use backend vote types and sync with server

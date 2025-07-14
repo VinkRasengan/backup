@@ -103,8 +103,10 @@ const updateMemoryMetrics = () => {
   memoryUsage.labels('external').set(memUsage.external);
 };
 
-// Update memory metrics every 10 seconds
-setInterval(updateMemoryMetrics, 10000);
+// Update memory metrics every 10 seconds (skip in test environment)
+if (process.env.NODE_ENV !== 'test') {
+  setInterval(updateMemoryMetrics, 10000);
+}
 
 // Metrics endpoint handler
 const metricsHandler = async (req, res) => {

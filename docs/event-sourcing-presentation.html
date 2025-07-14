@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Event Sourcing trong Microservices - Thuyết trình</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+            overflow: hidden;
+        }
+
+        .presentation-container {
+            width: 100vw;
+            height: 100vh;
+            position: relative;
+        }
+
+        .slide {
+            width: 100%;
+            height: 100%;
+            display: none;
+            padding: 60px;
+            background: white;
+            border-radius: 20px;
+            margin: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+
+        .slide.active {
+            display: block;
+        }
+
+        .slide h1 {
+            font-size: 3.5rem;
+            color: #2c3e50;
+            margin-bottom: 30px;
+            text-align: center;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .slide h2 {
+            font-size: 2.5rem;
+            color: #34495e;
+            margin-bottom: 25px;
+            text-align: center;
+        }
+
+        .slide h3 {
+            font-size: 2rem;
+            color: #2c3e50;
+            margin-bottom: 20px;
+        }
+
+        .slide p, .slide li {
+            font-size: 1.4rem;
+            line-height: 1.8;
+            margin-bottom: 15px;
+            color: #555;
+        }
+
+        .slide ul {
+            margin-left: 30px;
+            margin-bottom: 20px;
+        }
+
+        .slide code {
+            background: #f8f9fa;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            font-size: 1.1rem;
+            color: #e83e8c;
+        }
+
+        .slide pre {
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 20px;
+            border-radius: 10px;
+            font-family: 'Courier New', monospace;
+            font-size: 1rem;
+            line-height: 1.6;
+            margin: 20px 0;
+            overflow-x: auto;
+        }
+
+        .architecture-diagram {
+            width: 100%;
+            max-width: 800px;
+            margin: 30px auto;
+            display: block;
+        }
+
+        .demo-steps {
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 15px;
+            border-left: 5px solid #667eea;
+            margin: 20px 0;
+        }
+
+        .checklist {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin: 30px 0;
+        }
+
+        .checklist-item {
+            background: #e8f5e8;
+            padding: 20px;
+            border-radius: 10px;
+            border-left: 4px solid #28a745;
+        }
+
+        .checklist-item h4 {
+            color: #28a745;
+            margin-bottom: 10px;
+        }
+
+        .navigation {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 15px;
+            z-index: 1000;
+        }
+
+        .nav-btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .nav-btn:hover {
+            background: #5a67d8;
+            transform: translateY(-2px);
+        }
+
+        .nav-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .slide-counter {
+            position: fixed;
+            top: 30px;
+            right: 30px;
+            background: rgba(255,255,255,0.9);
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-size: 1.2rem;
+            color: #333;
+        }
+
+        .highlight {
+            background: linear-gradient(120deg, #a8edea 0%, #fed6e3 100%);
+            padding: 2px 8px;
+            border-radius: 4px;
+        }
+
+        .command-block {
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            font-family: 'Courier New', monospace;
+        }
+
+        .benefits-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin: 30px 0;
+        }
+
+        .benefit-card {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 25px;
+            border-radius: 15px;
+            text-align: center;
+        }
+
+        .benefit-card h4 {
+            font-size: 1.5rem;
+            margin-bottom: 15px;
+        }
+
+        .benefit-card p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+    </style>
+</head>
+<body>
+    <div class="presentation-container">
+        <!-- Slide 1: Tiêu đề -->
+        <div class="slide active" id="slide1">
+            <h1>Event Sourcing trong Microservices</h1>
+            <div style="text-align: center; margin-top: 50px;">
+                <h2>Kiến trúc hiện đại cho hệ thống phân tán</h2>
+                <p style="font-size: 1.6rem; margin-top: 30px; color: #666;">
+                    Từ lý thuyết đến thực hành trong project
+                </p>
+            </div>
+        </div>
+
+        <!-- Slide 2: Định nghĩa Event Sourcing -->
+        <div class="slide" id="slide2">
+            <h2>Event Sourcing là gì?</h2>
+            <div style="margin: 40px 0;">
+                <p style="font-size: 1.6rem; text-align: center; margin-bottom: 30px;">
+                    <span class="highlight">Event Sourcing</span> là một pattern lưu trữ tất cả các thay đổi trạng thái của ứng dụng dưới dạng chuỗi các event.
+                </p>
+                
+                <div class="benefits-grid">
+                    <div class="benefit-card">
+                        <h4>Audit Trail</h4>
+                        <p>Lưu trữ đầy đủ lịch sử thay đổi</p>
+                    </div>
+                    <div class="benefit-card">
+                        <h4>Time Travel</h4>
+                        <p>Có thể quay lại trạng thái bất kỳ</p>
+                    </div>
+                    <div class="benefit-card">
+                        <h4>Scalability</h4>
+                        <p>Dễ dàng mở rộng và phân tán</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 3: Nguyên lý hoạt động -->
+        <div class="slide" id="slide3">
+            <h2>Nguyên lý hoạt động</h2>
+            <div style="margin: 30px 0;">
+                <h3>1. Command → Event</h3>
+                <p>Mọi thay đổi bắt đầu từ một command, tạo ra event tương ứng.</p>
+                
+                <h3>2. Event Store</h3>
+                <p>Lưu trữ tất cả events theo thứ tự thời gian.</p>
+                
+                <h3>3. Event Replay</h3>
+                <p>Xây dựng lại trạng thái bằng cách replay các events.</p>
+                
+                <h3>4. Materialized Views</h3>
+                <p>Tạo các view được tối ưu cho query và hiển thị.</p>
+            </div>
+        </div>
+
+        <!-- Slide 4: Lợi ích -->
+        <div class="slide" id="slide4">
+            <h2>Lợi ích của Event Sourcing</h2>
+            <div class="checklist">
+                <div class="checklist-item">
+                    <h4>🔍 Audit & Compliance</h4>
+                    <p>Lưu trữ đầy đủ lịch sử thay đổi, đáp ứng yêu cầu tuân thủ.</p>
+                </div>
+                <div class="checklist-item">
+                    <h4>🔄 Event Replay</h4>
+                    <p>Có thể replay lại các events để debug hoặc khôi phục trạng thái.</p>
+                </div>
+                <div class="checklist-item">
+                    <h4>📈 Scalability</h4>
+                    <p>Dễ dàng mở rộng và phân tán across multiple services.</p>
+                </div>
+                <div class="checklist-item">
+                    <h4>🔗 Loose Coupling</h4>
+                    <p>Giảm coupling giữa các services, tăng tính linh hoạt.</p>
+                </div>
+                <div class="checklist-item">
+                    <h4>⚡ Performance</h4>
+                    <p>Append-only writes, tối ưu cho write-heavy workloads.</p>
+                </div>
+                <div class="checklist-item">
+                    <h4>🛡️ Data Integrity</h4>
+                    <p>Đảm bảo tính nhất quán và toàn vẹn dữ liệu.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 5: Kiến trúc hiện tại -->
+        <div class="slide" id="slide5">
+            <h2>Kiến trúc Event Sourcing hiện tại</h2>
+            <div style="margin: 30px 0;">
+                <ul style="font-size: 1.4rem;">
+                    <li><strong>EventBus:</strong> Publish events giữa các services</li>
+                    <li><strong>KurrentDB:</strong> Event Store lưu trữ events</li>
+                    <li><strong>Materialized Views:</strong> Xây dựng trạng thái từ events</li>
+                    <li><strong>CLI Demo:</strong> Tương tác với event store</li>
+                </ul>
+                
+                <div class="demo-steps">
+                    <h3>🎯 Đã triển khai:</h3>
+                    <ul>
+                        <li>EventBus với log chi tiết</li>
+                        <li>KurrentDB Event Store</li>
+                        <li>CLI demo tương tác</li>
+                        <li>Materialized Views</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 6: Sơ đồ kiến trúc -->
+        <div class="slide" id="slide6">
+            <h2>Sơ đồ kiến trúc demo</h2>
+            <img src="event-sourcing-demo-diagram.svg" alt="Event Sourcing Demo Architecture" class="architecture-diagram">
+            <div style="text-align: center; margin-top: 20px;">
+                <p style="font-size: 1.2rem; color: #666;">
+                    CLI Demo ↔ EventBus ↔ KurrentDB Event Store ↔ Materialized View
+                </p>
+            </div>
+        </div>
+
+        <!-- Slide 7: Hướng dẫn demo -->
+        <div class="slide" id="slide7">
+            <h2>Hướng dẫn chạy demo CLI</h2>
+            <div style="margin: 30px 0;">
+                <h3>1. Cài đặt dependencies</h3>
+                <div class="command-block">
+                    npm install
+                </div>
+                
+                <h3>2. Chạy CLI demo</h3>
+                <div class="command-block">
+                    node scripts/factcheck-cli.js
+                </div>
+                
+                <h3>3. Các thao tác có thể thực hiện:</h3>
+                <ul style="font-size: 1.3rem;">
+                    <li>✅ Tạo user mới</li>
+                    <li>✅ Update thông tin user</li>
+                    <li>✅ Xóa user</li>
+                    <li>✅ Xem event log</li>
+                    <li>✅ Replay events</li>
+                    <li>✅ Xem trạng thái hiện tại</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Slide 8: Quan sát log event -->
+        <div class="slide" id="slide8">
+            <h2>Quan sát log event khi chạy project</h2>
+            <div style="margin: 30px 0;">
+                <div class="demo-steps">
+                    <h3>📋 Khi chạy các service:</h3>
+                    <ul>
+                        <li>Mọi event sẽ được log rõ ràng ra console</li>
+                        <li>Có thể kiểm tra event log qua CLI demo</li>
+                        <li>Replay events để debug hoặc khôi phục</li>
+                        <li>Kiểm tra trạng thái hiện tại</li>
+                    </ul>
+                </div>
+                
+                <h3>🎯 Demo thực tế:</h3>
+                <p style="font-size: 1.3rem;">
+                    Kết hợp <span class="highlight">log event chi tiết</span> + <span class="highlight">CLI demo tương tác</span> 
+                    = Bộ demo Event Sourcing hoàn chỉnh
+                </p>
+            </div>
+        </div>
+
+        <!-- Slide 9: Checklist demo -->
+        <div class="slide" id="slide9">
+            <h2>Checklist demo hoàn chỉnh</h2>
+            <div class="checklist">
+                <div class="checklist-item">
+                    <h4>✅ Log event chi tiết</h4>
+                    <p>EventBus log rõ ràng mỗi khi publish event</p>
+                </div>
+                <div class="checklist-item">
+                    <h4>✅ CLI demo tương tác</h4>
+                    <p>Script CLI cho phép thao tác trực tiếp</p>
+                </div>
+                <div class="checklist-item">
+                    <h4>✅ Xem event log</h4>
+                    <p>Kiểm tra lịch sử events đã lưu</p>
+                </div>
+                <div class="checklist-item">
+                    <h4>✅ Replay events</h4>
+                    <p>Khôi phục trạng thái từ events</p>
+                </div>
+                <div class="checklist-item">
+                    <h4>✅ Xem trạng thái</h4>
+                    <p>Materialized view hiển thị trạng thái hiện tại</p>
+                </div>
+                <div class="checklist-item">
+                    <h4>✅ Sơ đồ kiến trúc</h4>
+                    <p>SVG minh họa rõ ràng luồng hoạt động</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 10: Kết luận -->
+        <div class="slide" id="slide10">
+            <h1>Kết luận</h1>
+            <div style="margin: 50px 0; text-align: center;">
+                <h2 style="color: #667eea; margin-bottom: 30px;">
+                    Event Sourcing - Giải pháp tối ưu cho Microservices
+                </h2>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin: 40px 0;">
+                    <div>
+                        <h3>🎯 Đã triển khai</h3>
+                        <ul style="text-align: left; font-size: 1.3rem;">
+                            <li>EventBus với log chi tiết</li>
+                            <li>KurrentDB Event Store</li>
+                            <li>CLI demo tương tác</li>
+                            <li>Materialized Views</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h3>🚀 Lợi ích đạt được</h3>
+                        <ul style="text-align: left; font-size: 1.3rem;">
+                            <li>Audit trail đầy đủ</li>
+                            <li>Event replay capability</li>
+                            <li>Scalable architecture</li>
+                            <li>Loose coupling</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <p style="font-size: 1.5rem; color: #666; margin-top: 40px;">
+                    <strong>Demo sẵn sàng!</strong> Chạy CLI để trải nghiệm Event Sourcing
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Navigation -->
+    <div class="navigation">
+        <button class="nav-btn" onclick="previousSlide()" id="prevBtn">← Trước</button>
+        <button class="nav-btn" onclick="nextSlide()" id="nextBtn">Tiếp →</button>
+    </div>
+
+    <!-- Slide counter -->
+    <div class="slide-counter" id="slideCounter">
+        Slide 1 / 10
+    </div>
+
+    <script>
+        let currentSlide = 1;
+        const totalSlides = 10;
+
+        function showSlide(n) {
+            // Hide all slides
+            const slides = document.querySelectorAll('.slide');
+            slides.forEach(slide => slide.classList.remove('active'));
+            
+            // Show current slide
+            document.getElementById(`slide${n}`).classList.add('active');
+            
+            // Update counter
+            document.getElementById('slideCounter').textContent = `Slide ${n} / ${totalSlides}`;
+            
+            // Update navigation buttons
+            document.getElementById('prevBtn').disabled = n === 1;
+            document.getElementById('nextBtn').disabled = n === totalSlides;
+        }
+
+        function nextSlide() {
+            if (currentSlide < totalSlides) {
+                currentSlide++;
+                showSlide(currentSlide);
+            }
+        }
+
+        function previousSlide() {
+            if (currentSlide > 1) {
+                currentSlide--;
+                showSlide(currentSlide);
+            }
+        }
+
+        // Keyboard navigation
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'ArrowRight' || e.key === ' ') {
+                nextSlide();
+            } else if (e.key === 'ArrowLeft') {
+                previousSlide();
+            }
+        });
+
+        // Initialize
+        showSlide(1);
+    </script>
+</body>
+</html> 

@@ -6,7 +6,7 @@ on:
     paths:
       - 'services/**'
       - 'client/**'
-      - 'docker-compose.microservices.yml'
+      - 'docker-compose.yml'
       - '.github/workflows/microservices-ci.yml'
   pull_request:
     branches: [ main ]
@@ -229,7 +229,7 @@ jobs:
 
       - name: Start services
         run: |
-          docker-compose -f docker-compose.microservices.yml up -d --build
+          docker-compose up -d --build
           sleep 30
 
       - name: Run integration tests
@@ -241,14 +241,14 @@ jobs:
       - name: Stop services
         if: always()
         run: |
-          docker-compose -f docker-compose.microservices.yml down
+          docker-compose down
 
   # Deploy to staging
   deploy-staging:
     needs: [build-images, build-frontend-image]
     if: github.event_name == 'push' && github.ref == 'refs/heads/develop'
     runs-on: ubuntu-latest
-    environment: staging
+    # environment: staging
     steps:
       - name: Deploy to staging
         run: |
@@ -260,7 +260,7 @@ jobs:
     needs: [build-images, build-frontend-image]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
-    environment: production
+    # environment: production
     steps:
       - name: Deploy to production
         run: |

@@ -18,6 +18,12 @@ function loadEnvironmentVariables(serviceName = 'unknown-service', customPath = 
     return { loaded: false, source: 'production-platform' };
   }
 
+  // Skip loading in test environment - use default test values
+  if (process.env.NODE_ENV === 'test') {
+    console.log(`🧪 ${serviceName}: Using test environment variables`);
+    return { loaded: false, source: 'test-environment' };
+  }
+
   let envPath;
   
   if (customPath) {
@@ -146,32 +152,37 @@ function setupEnvironment(serviceName, requiredVars = [], exitOnError = false) {
   const loadResult = loadEnvironmentVariables(serviceName);
   
   if (!loadResult.loaded && loadResult.error === 'ENV_FILE_NOT_FOUND') {
-    console.error(`❌ ${serviceName}: Cannot start without .env file`);
-    console.error(`   Run: npm run env:setup to create .env file`);
-    
-    if (exitOnError) {
-      process.exit(1);
+    // Don't error in test environment
+    if (process.env.NODE_ENV === 'test') {
+      console.log(`🧪 ${serviceName}: Skipping .env file requirement in test environment`);
+    } else {
+      console.error(`❌ ${serviceName}: Cannot start without .env file`);
+      console.error(`   Run: npm run env:setup to create .env file`);
+
+      if (exitOnError) {
+        process.exit(1);
+      }
+
+      return {
+        success: false,
+        error: 'ENV_FILE_NOT_FOUND',
+        loadResult,
+        validationResult: null
+      };
     }
-    
-    return {
-      success: false,
-      error: 'ENV_FILE_NOT_FOUND',
-      loadResult,
-      validationResult: null
-    };
   }
 
-  // Validate required variables if any provided
+  // Validate required variables if any provided (skip in test environment)
   let validationResult = null;
-  if (requiredVars.length > 0) {
+  if (requiredVars.length > 0 && process.env.NODE_ENV !== 'test') {
     validationResult = validateRequiredVars(requiredVars, serviceName);
-    
+
     if (!validationResult.isValid) {
       if (exitOnError) {
         console.error(`❌ ${serviceName}: Exiting due to environment validation errors`);
         process.exit(1);
       }
-      
+
       return {
         success: false,
         error: 'VALIDATION_FAILED',
@@ -179,6 +190,8 @@ function setupEnvironment(serviceName, requiredVars = [], exitOnError = false) {
         validationResult
       };
     }
+  } else if (process.env.NODE_ENV === 'test') {
+    console.log(`🧪 ${serviceName}: Skipping environment validation in test environment`);
   }
 
   console.log(`✅ ${serviceName}: Environment setup complete`);

@@ -12,6 +12,25 @@ router.get('/test', (req, res) => {
   });
 });
 
+// Service info endpoint (for API versioning)
+router.get('/info', (req, res) => {
+  res.json({
+    service: 'phishtank-service',
+    version: '1.0.0',
+    description: 'PhishTank Opensource Service using Public Data Feed',
+    environment: process.env.NODE_ENV || 'development',
+    uptime: process.uptime(),
+    timestamp: new Date().toISOString(),
+    features: {
+      phishingDetection: true,
+      urlAnalysis: true,
+      offlineDatabase: true,
+      autoUpdate: true
+    },
+    dataSource: 'http://data.phishtank.com/data/online-valid.json'
+  });
+});
+
 // Get database status
 router.get('/status', async (req, res) => {
   try {

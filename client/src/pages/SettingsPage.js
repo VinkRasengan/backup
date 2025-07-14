@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
+import { useLocation, useNavigate } from 'react-router-dom';
 import {
   User,
   Bell,
@@ -18,11 +19,16 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
-import NavigationTest from '../components/testing/NavigationTest';
 
-const SettingsPage = () => {
+
+const SettingsPage = ({ activeTab = 'account' }) => {
   const { user, updateProfile } = useAuth();
   const { isDarkMode, toggleTheme } = useTheme();
+  const location = useLocation();
+  const navigate = useNavigate();
+  
+  // Determine active tab from URL or prop
+  const currentTab = activeTab || location.pathname.split('/')[2] || 'account';
   
   // Form states
   const [profile, setProfile] = useState({
@@ -54,6 +60,18 @@ const SettingsPage = () => {
   
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
+
+  // Tab navigation
+  const tabs = [
+    { id: 'account', label: 'Tài khoản', icon: User, path: '/settings/account' },
+    { id: 'security', label: 'Bảo mật', icon: Shield, path: '/settings/security' },
+    { id: 'notifications', label: 'Thông báo', icon: Bell, path: '/settings/notifications' },
+    { id: 'appearance', label: 'Giao diện', icon: Moon, path: '/settings/appearance' }
+  ];
+
+  const handleTabChange = (tabId) => {
+    navigate(`/settings/${tabId}`);
+  };
 
   const handleProfileUpdate = async (e) => {
     e.preventDefault();
@@ -147,184 +165,213 @@ const SettingsPage = () => {
           </motion.div>
         )}
 
-        {/* Profile Settings */}
-        <SettingSection title="Thông tin cá nhân" icon={User}>
-          <form onSubmit={handleProfileUpdate} className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Tên hiển thị
-                </label>
-                <input
-                  type="text"
-                  value={profile.name}
-                  onChange={(e) => setProfile({...profile, name: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Email
-                </label>
-                <input
-                  type="email"
-                  value={profile.email}
-                  onChange={(e) => setProfile({...profile, email: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                />
-              </div>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Giới thiệu
-              </label>
-              <textarea
-                value={profile.bio}
-                onChange={(e) => setProfile({...profile, bio: e.target.value})}
-                rows={3}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                placeholder="Viết vài dòng về bản thân..."
-              />
-            </div>
+        {/* Tab Navigation */}
+        <div className="flex space-x-2 mb-6 border-b border-gray-200 dark:border-gray-700">
+          {tabs.map((tab) => (
             <button
-              type="submit"
-              disabled={loading}
-              className="flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white px-4 py-2 rounded-lg transition-colors"
+              key={tab.id}
+              onClick={() => handleTabChange(tab.id)}
+              className={`py-2 px-4 text-sm font-medium transition-colors ${
+                currentTab === tab.id
+                  ? 'border-blue-600 text-blue-600 dark:border-blue-500 dark:text-blue-400'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
+              }`}
             >
-              <Save size={16} />
-              <span>{loading ? 'Đang lưu...' : 'Lưu thay đổi'}</span>
+              <div className="flex items-center space-x-2">
+                <tab.icon size={18} />
+                <span>{tab.label}</span>
+              </div>
             </button>
-          </form>
-        </SettingSection>
+          ))}
+        </div>
+
+        {/* Profile Settings */}
+        {currentTab === 'account' && (
+          <SettingSection title="Thông tin cá nhân" icon={User}>
+            <form onSubmit={handleProfileUpdate} className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Tên hiển thị
+                  </label>
+                  <input
+                    type="text"
+                    value={profile.name}
+                    onChange={(e) => setProfile({...profile, name: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Email
+                  </label>
+                  <input
+                    type="email"
+                    value={profile.email}
+                    onChange={(e) => setProfile({...profile, email: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Giới thiệu
+                </label>
+                <textarea
+                  value={profile.bio}
+                  onChange={(e) => setProfile({...profile, bio: e.target.value})}
+                  rows={3}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  placeholder="Viết vài dòng về bản thân..."
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={loading}
+                className="flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white px-4 py-2 rounded-lg transition-colors"
+              >
+                <Save size={16} />
+                <span>{loading ? 'Đang lưu...' : 'Lưu thay đổi'}</span>
+              </button>
+            </form>
+          </SettingSection>
+        )}
 
         {/* Password Change */}
-        <SettingSection title="Đổi mật khẩu" icon={Key}>
-          <form onSubmit={handlePasswordChange} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Mật khẩu hiện tại
-              </label>
-              <div className="relative">
-                <input
-                  type={showPassword ? "text" : "password"}
-                  value={passwords.current}
-                  onChange={(e) => setPasswords({...passwords, current: e.target.value})}
-                  className="w-full px-3 py-2 pr-10 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                >
-                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                </button>
-              </div>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {currentTab === 'security' && (
+          <SettingSection title="Đổi mật khẩu" icon={Key}>
+            <form onSubmit={handlePasswordChange} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Mật khẩu mới
+                  Mật khẩu hiện tại
                 </label>
-                <input
-                  type={showPassword ? "text" : "password"}
-                  value={passwords.new}
-                  onChange={(e) => setPasswords({...passwords, new: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                />
+                <div className="relative">
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    value={passwords.current}
+                    onChange={(e) => setPasswords({...passwords, current: e.target.value})}
+                    className="w-full px-3 py-2 pr-10 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  >
+                    {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+                </div>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Xác nhận mật khẩu
-                </label>
-                <input
-                  type={showPassword ? "text" : "password"}
-                  value={passwords.confirm}
-                  onChange={(e) => setPasswords({...passwords, confirm: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Mật khẩu mới
+                  </label>
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    value={passwords.new}
+                    onChange={(e) => setPasswords({...passwords, new: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Xác nhận mật khẩu
+                  </label>
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    value={passwords.confirm}
+                    onChange={(e) => setPasswords({...passwords, confirm: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  />
+                </div>
               </div>
-            </div>
-            <button
-              type="submit"
-              disabled={loading}
-              className="flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white px-4 py-2 rounded-lg transition-colors"
-            >
-              <Key size={16} />
-              <span>{loading ? 'Đang cập nhật...' : 'Đổi mật khẩu'}</span>
-            </button>
-          </form>
-        </SettingSection>
+              <button
+                type="submit"
+                disabled={loading}
+                className="flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white px-4 py-2 rounded-lg transition-colors"
+              >
+                <Key size={16} />
+                <span>{loading ? 'Đang cập nhật...' : 'Đổi mật khẩu'}</span>
+              </button>
+            </form>
+          </SettingSection>
+        )}
 
         {/* Theme Settings */}
-        <SettingSection title="Giao diện" icon={isDarkMode ? Moon : Sun}>
-          <ToggleSwitch
-            checked={isDarkMode}
-            onChange={toggleTheme}
-            label="Chế độ tối"
-            description="Sử dụng giao diện tối để bảo vệ mắt"
-          />
-        </SettingSection>
+        {currentTab === 'appearance' && (
+          <SettingSection title="Giao diện" icon={isDarkMode ? Moon : Sun}>
+            <ToggleSwitch
+              checked={isDarkMode}
+              onChange={toggleTheme}
+              label="Chế độ tối"
+              description="Sử dụng giao diện tối để bảo vệ mắt"
+            />
+          </SettingSection>
+        )}
 
         {/* Notification Settings */}
-        <SettingSection title="Thông báo" icon={Bell}>
-          <div className="space-y-2">
-            <ToggleSwitch
-              checked={notifications.email}
-              onChange={(value) => setNotifications({...notifications, email: value})}
-              label="Email thông báo"
-              description="Nhận thông báo qua email"
-            />
-            <ToggleSwitch
-              checked={notifications.community}
-              onChange={(value) => setNotifications({...notifications, community: value})}
-              label="Hoạt động cộng đồng"
-              description="Thông báo về bình luận và tương tác"
-            />
-            <ToggleSwitch
-              checked={notifications.security}
-              onChange={(value) => setNotifications({...notifications, security: value})}
-              label="Cảnh báo bảo mật"
-              description="Thông báo về hoạt động đáng ngờ"
-            />
-          </div>
-        </SettingSection>
+        {currentTab === 'notifications' && (
+          <SettingSection title="Thông báo" icon={Bell}>
+            <div className="space-y-2">
+              <ToggleSwitch
+                checked={notifications.email}
+                onChange={(value) => setNotifications({...notifications, email: value})}
+                label="Email thông báo"
+                description="Nhận thông báo qua email"
+              />
+              <ToggleSwitch
+                checked={notifications.community}
+                onChange={(value) => setNotifications({...notifications, community: value})}
+                label="Hoạt động cộng đồng"
+                description="Thông báo về bình luận và tương tác"
+              />
+              <ToggleSwitch
+                checked={notifications.security}
+                onChange={(value) => setNotifications({...notifications, security: value})}
+                label="Cảnh báo bảo mật"
+                description="Thông báo về hoạt động đáng ngờ"
+              />
+            </div>
+          </SettingSection>
+        )}
 
         {/* Privacy Settings */}
-        <SettingSection title="Quyền riêng tư" icon={Shield}>
-          <div className="space-y-2">
-            <ToggleSwitch
-              checked={privacy.profileVisible}
-              onChange={(value) => setPrivacy({...privacy, profileVisible: value})}
-              label="Hồ sơ công khai"
-              description="Cho phép người khác xem hồ sơ của bạn"
-            />
-            <ToggleSwitch
-              checked={privacy.activityVisible}
-              onChange={(value) => setPrivacy({...privacy, activityVisible: value})}
-              label="Hiển thị hoạt động"
-              description="Cho phép người khác xem hoạt động của bạn"
-            />
-          </div>
-        </SettingSection>
+        {currentTab === 'security' && (
+          <SettingSection title="Quyền riêng tư" icon={Shield}>
+            <div className="space-y-2">
+              <ToggleSwitch
+                checked={privacy.profileVisible}
+                onChange={(value) => setPrivacy({...privacy, profileVisible: value})}
+                label="Hồ sơ công khai"
+                description="Cho phép người khác xem hồ sơ của bạn"
+              />
+              <ToggleSwitch
+                checked={privacy.activityVisible}
+                onChange={(value) => setPrivacy({...privacy, activityVisible: value})}
+                label="Hiển thị hoạt động"
+                description="Cho phép người khác xem hoạt động của bạn"
+              />
+            </div>
+          </SettingSection>
+        )}
 
-        {/* Navigation Test */}
-        <SettingSection title="Navigation Test" icon={Database}>
-          <NavigationTest />
-        </SettingSection>
+
 
         {/* Data Management */}
-        <SettingSection title="Quản lý dữ liệu" icon={Database}>
-          <div className="space-y-4">
-            <button className="flex items-center space-x-2 text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300">
-              <Download size={16} />
-              <span>Tải xuống dữ liệu của tôi</span>
-            </button>
-            <button className="flex items-center space-x-2 text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300">
-              <Trash2 size={16} />
-              <span>Xóa tài khoản</span>
-            </button>
-          </div>
-        </SettingSection>
+        {currentTab === 'account' && (
+          <SettingSection title="Quản lý dữ liệu" icon={Database}>
+            <div className="space-y-4">
+              <button className="flex items-center space-x-2 text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300">
+                <Download size={16} />
+                <span>Tải xuống dữ liệu của tôi</span>
+              </button>
+              <button className="flex items-center space-x-2 text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300">
+                <Trash2 size={16} />
+                <span>Xóa tài khoản</span>
+              </button>
+            </div>
+          </SettingSection>
+        )}
     </div>
   );
 };

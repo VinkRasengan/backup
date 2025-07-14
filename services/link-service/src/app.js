@@ -179,6 +179,27 @@ app.get('/info', (req, res) => {
   });
 });
 
+// API versioned info endpoint
+app.get('/api/v1/links/info', (req, res) => {
+  res.json({
+    service: SERVICE_NAME,
+    version: process.env.npm_package_version || '1.0.0',
+    environment: process.env.NODE_ENV || 'development',
+    uptime: process.uptime(),
+    timestamp: new Date().toISOString(),
+    firebase: {
+      projectId: process.env.FIREBASE_PROJECT_ID,
+      connected: !!firebaseConfig.db
+    },
+    externalAPIs: {
+      virusTotal: !!process.env.VIRUSTOTAL_API_KEY,
+      scamAdviser: !!process.env.SCAMADVISER_API_KEY,
+      screenshotLayer: !!process.env.SCREENSHOTLAYER_API_KEY,
+      geminiAI: !!process.env.GEMINI_API_KEY
+    }
+  });
+});
+
 // API routes
 app.use('/links', linkRoutes);
 app.use('/security', securityRoutes);
@@ -210,30 +231,37 @@ process.on('SIGINT', () => {
   process.exit(0);
 });
 
-// Start server
-const server = app.listen(PORT, () => {
-  logger.info(`ðŸš€ Link Service started on port ${PORT}`, {
-    service: SERVICE_NAME,
-    port: PORT,
-    environment: process.env.NODE_ENV,
-    firebase: {
-      projectId: process.env.FIREBASE_PROJECT_ID,
-      environment: process.env.NODE_ENV === 'production' ? 'production' : 'emulator'
-    },
-    externalAPIs: {
-      virusTotal: !!process.env.VIRUSTOTAL_API_KEY,
-      scamAdviser: !!process.env.SCAMADVISER_API_KEY,
-      screenshotLayer: !!process.env.SCREENSHOTLAYER_API_KEY
-    }
+// Start server (skip in test environment)
+let server;
+if (process.env.NODE_ENV !== 'test') {
+  server = app.listen(PORT, () => {
+    logger.info(`ðŸš€ Link Service started on port ${PORT}`, {
+      service: SERVICE_NAME,
+      port: PORT,
+      environment: process.env.NODE_ENV,
+      firebase: {
+        projectId: process.env.FIREBASE_PROJECT_ID,
+        environment: process.env.NODE_ENV === 'production' ? 'production' : 'emulator'
+      },
+      externalAPIs: {
+        virusTotal: !!process.env.VIRUSTOTAL_API_KEY,
+        scamAdviser: !!process.env.SCAMADVISER_API_KEY,
+        screenshotLayer: !!process.env.SCREENSHOTLAYER_API_KEY
+      }
+    });
   });
-});
+}
 
 // Handle unhandled promise rejections
 process.on('unhandledRejection', (err) => {
   logger.error('Unhandled Promise Rejection', { error: err.message, stack: err.stack });
-  server.close(() => {
+  if (server && server.close) {
+    server.close(() => {
+      process.exit(1);
+    });
+  } else {
     process.exit(1);
-  });
+  }
 });
 
 module.exports = app;
