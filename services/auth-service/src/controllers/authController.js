@@ -1,10 +1,16 @@
 const jwt = require('jsonwebtoken');
 const { auth, db, collections } = require('../config/firebase');
 const { Logger } = require('@factcheck/shared');
+const AuthEventHandler = require('../events/authEventHandler');
 
 const logger = new Logger('auth-service');
 
 class AuthController {
+  constructor() {
+    // Enable EventBus with Redis Cloud
+    this.authEventHandler = new AuthEventHandler();
+  }
+
   /**
    * Register user - sync user data to Firestore after Firebase Auth registration
    */
@@ -184,8 +190,32 @@ class AuthController {
       // Log successful login
       logger.withCorrelationId(req.correlationId).info('User logged in successfully', {
         userId: decodedToken.uid,
-        email: decodedToken.email
+        email: decodedToken.email,
+        hasEventHandler: !!this.authEventHandler
       });
+
+      // Publish login event to Event Sourcing system
+      if (this.authEventHandler) {
+        logger.withCorrelationId(req.correlationId).info('Publishing login event', {
+          userId: decodedToken.uid,
+          email: decodedToken.email
+        });
+        
+        await this.authEventHandler.publishLoginEvent({
+          id: decodedToken.uid,
+          email: decodedToken.email,
+          ...userData
+        }, {
+          ipAddress: req.ip,
+          userAgent: req.get('User-Agent'),
+          location: req.get('CF-IPCountry') || 'Unknown'
+        });
+      } else {
+        logger.withCorrelationId(req.correlationId).warn('Cannot publish login event - EventHandler not available', {
+          userId: decodedToken.uid,
+          email: decodedToken.email
+        });
+      }
 
       res.json({
         message: 'Login successful',
@@ -215,10 +245,28 @@ class AuthController {
   async logout(req, res, next) {
     try {
       const userId = req.user?.userId;
+      const user = req.user;
       
-      if (userId) {
-        logger.withCorrelationId(req.correlationId).info('User logout', {
+      logger.withCorrelationId(req.correlationId).info('User logout attempt', {
+        userId,
+        hasUser: !!user,
+        hasEventHandler: !!this.authEventHandler
+      });
+      
+      if (userId && user && this.authEventHandler) {
+        logger.withCorrelationId(req.correlationId).info('Publishing logout event', {
           userId
+        });
+
+        // Publish logout event to Event Sourcing system
+        await this.authEventHandler.publishLogoutEvent(user, {
+          sessionDuration: req.sessionDuration || 0
+        });
+      } else {
+        logger.withCorrelationId(req.correlationId).warn('Cannot publish logout event', {
+          userId,
+          hasUser: !!user,
+          hasEventHandler: !!this.authEventHandler
         });
       }
 
@@ -365,4 +413,4 @@ class AuthController {
   }
 }
 
-module.exports = new AuthController();
+module.exports = AuthController;

@@ -4,10 +4,14 @@ const linkController = require('../controllers/linkController');
 const { authMiddleware: AuthMiddleware } = require('@factcheck/shared');
 const { validateRequest, schemas } = require('../middleware/validation');
 const { Logger } = require('@factcheck/shared');
+const LinkEventHandler = require('../events/linkEventHandler');
 
 // Initialize auth middleware
 const authMiddleware = new AuthMiddleware(process.env.AUTH_SERVICE_URL);
 const logger = new Logger('link-service-routes');
+
+// Initialize event handler
+const eventHandler = new LinkEventHandler();
 
 // Debug middleware for link check requests
 const debugLinkCheckMiddleware = (req, res, next) => {

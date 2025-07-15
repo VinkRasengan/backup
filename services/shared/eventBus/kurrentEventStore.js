@@ -16,6 +16,9 @@ class KurrentEventStore {
     this.isConnected = false;
     this.kurrent = null;
     
+    // Mock event storage
+    this.mockEvents = [];
+    
     this.connect();
   }
 
@@ -58,6 +61,17 @@ class KurrentEventStore {
           correlationId: event.correlationId,
           eventId: event.id
         }
+      });
+
+      // Store event in mock storage
+      this.mockEvents.push({
+        id: event.id,
+        type: event.type,
+        data: event.data,
+        source: event.source,
+        timestamp: event.timestamp,
+        correlationId: event.correlationId,
+        metadata: event.metadata
       });
 
       console.log(`📝 Event appended: ${event.type} (${event.id})`);
@@ -190,6 +204,7 @@ class KurrentEventStore {
     // Simulate network delay
     await new Promise(resolve => setTimeout(resolve, 10));
     
+    // This is already handled in appendEvent method
     return {
       stream: params.stream,
       version: Math.floor(Math.random() * 1000),
@@ -229,6 +244,59 @@ class KurrentEventStore {
       eventCount: Math.floor(Math.random() * 10000),
       lastEventTimestamp: new Date().toISOString()
     };
+  }
+
+  /**
+   * Get all events from all streams
+   */
+  async getAllEvents() {
+    if (!this.isConnected) {
+      throw new Error('KurrentDB Event Store not connected');
+    }
+
+    try {
+      // Mock implementation - return stored events
+      console.log(`📖 Getting all events from Event Store`);
+      return this.mockEvents || [];
+    } catch (error) {
+      console.error('❌ Failed to get all events:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get events by type
+   */
+  async getEventsByType(eventType) {
+    if (!this.isConnected) {
+      throw new Error('KurrentDB Event Store not connected');
+    }
+
+    try {
+      console.log(`📖 Getting events by type: ${eventType}`);
+      const allEvents = this.mockEvents || [];
+      return allEvents.filter(event => event.type === eventType);
+    } catch (error) {
+      console.error('❌ Failed to get events by type:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get events by stream
+   */
+  async getEventsByStream(streamName) {
+    if (!this.isConnected) {
+      throw new Error('KurrentDB Event Store not connected');
+    }
+
+    try {
+      console.log(`📖 Getting events by stream: ${streamName}`);
+      return await this.readEvents(streamName);
+    } catch (error) {
+      console.error('❌ Failed to get events by stream:', error);
+      throw error;
+    }
   }
 }
 

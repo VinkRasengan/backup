@@ -10,10 +10,7 @@ const logger = require('../utils/logger');
 class AuthEventHandler {
   constructor() {
     this.eventBus = new EventBus({
-      serviceName: 'auth-service',
-      host: process.env.REDIS_HOST,
-      port: process.env.REDIS_PORT,
-      password: process.env.REDIS_PASSWORD
+      serviceName: 'auth-service'
     });
 
     this.setupEventListeners();
@@ -146,6 +143,12 @@ class AuthEventHandler {
    */
   async publishLoginEvent(userData, metadata = {}) {
     try {
+      logger.info('🔥 Publishing login event', { 
+        userId: userData.id,
+        email: userData.email,
+        eventBusConnected: this.eventBus.isConnected 
+      });
+      
       await this.eventBus.publishAuthEvent('login', {
         userId: userData.id,
         email: userData.email,
@@ -155,14 +158,24 @@ class AuthEventHandler {
         location: metadata.location
       });
       
-      logger.info('Login event published', { userId: userData.id });
+      logger.info('✅ Login event published successfully', { userId: userData.id });
     } catch (error) {
-      logger.error('Failed to publish login event', { error: error.message });
+      logger.error('❌ Failed to publish login event', { 
+        error: error.message,
+        stack: error.stack,
+        userId: userData.id 
+      });
     }
   }
 
   async publishLogoutEvent(userData, metadata = {}) {
     try {
+      logger.info('🔥 Publishing logout event', { 
+        userId: userData.id,
+        email: userData.email,
+        eventBusConnected: this.eventBus.isConnected 
+      });
+      
       await this.eventBus.publishAuthEvent('logout', {
         userId: userData.id,
         email: userData.email,
@@ -170,9 +183,13 @@ class AuthEventHandler {
         sessionDuration: metadata.sessionDuration
       });
       
-      logger.info('Logout event published', { userId: userData.id });
+      logger.info('✅ Logout event published successfully', { userId: userData.id });
     } catch (error) {
-      logger.error('Failed to publish logout event', { error: error.message });
+      logger.error('❌ Failed to publish logout event', { 
+        error: error.message,
+        stack: error.stack,
+        userId: userData.id 
+      });
     }
   }
 

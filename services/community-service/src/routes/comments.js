@@ -3,8 +3,12 @@ const router = express.Router();
 const { db, collections } = require('../config/firebase');
 const Logger = require('../../../../shared/utils/logger');
 const { getUserId, getUserEmail, getUserDisplayName } = require('../middleware/auth');
+const CommunityEventHandler = require('../events/communityEventHandler');
 
 const logger = new Logger('community-service');
+
+// Initialize event handler
+const eventHandler = new CommunityEventHandler();
 
 // Get comments for a link (Facebook-style with pagination)
 router.get('/:linkId', async (req, res) => {
@@ -194,6 +198,9 @@ router.post('/', async (req, res) => {
       createdAt: newComment.createdAt.toISOString(),
       updatedAt: newComment.updatedAt.toISOString()
     };
+
+    // Publish comment created event
+    await eventHandler.publishCommentCreatedEvent(createdComment);
 
     console.log('🐛 DEBUG: Sending success response');
 

@@ -4,8 +4,12 @@ const { db, collections } = require('../config/firebase');
 const Logger = require('../../../../shared/utils/logger');
 const { getUserId, getUserEmail, getUserDisplayName } = require('../middleware/auth');
 const { createSampleData, clearSampleData } = require('../utils/sampleData');
+const CommunityEventHandler = require('../events/communityEventHandler');
 
 const logger = new Logger('community-service');
+
+// Initialize event handler
+const eventHandler = new CommunityEventHandler();
 
 // Get links with filters (Facebook-style with pagination)
 router.get('/', async (req, res) => {
@@ -331,6 +335,13 @@ router.post('/', async (req, res) => {
       title,
       userId
     });
+
+    // Publish post created event
+    const postData = {
+      id: docRef.id,
+      ...linkData
+    };
+    await eventHandler.publishPostCreatedEvent(postData);
 
     res.status(201).json({
       success: true,

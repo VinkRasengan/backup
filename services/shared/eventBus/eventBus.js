@@ -5,20 +5,43 @@
 
 const Redis = require('redis');
 const EventEmitter = require('events');
+const KurrentEventStore = require('./kurrentEventStore');
 
 class EventBus extends EventEmitter {
   constructor(options = {}) {
     super();
-    
-    this.redisConfig = {
-      host: options.host || process.env.REDIS_HOST || 'localhost',
-      port: options.port || process.env.REDIS_PORT || 6379,
-      password: options.password || process.env.REDIS_PASSWORD,
-      db: options.db || process.env.REDIS_DB || 0,
-      retryDelayOnFailover: 100,
-      enableReadyCheck: true,
-      maxRetriesPerRequest: 3
-    };
+
+    // Support Redis Cloud URL format with fallback
+    this.redisEnabled = false;
+    this.mockMode = options.mockMode || false;
+
+    if (process.env.REDIS_URL && !this.mockMode) {
+      this.redisConfig = {
+        url: process.env.REDIS_URL,
+        retryDelayOnFailover: 100,
+        enableReadyCheck: true,
+        maxRetriesPerRequest: 3,
+        socket: {
+          reconnectStrategy: (retries) => Math.min(retries * 50, 500)
+        }
+      };
+      this.redisEnabled = true;
+    } else if (!this.mockMode) {
+      this.redisConfig = {
+        host: options.host || process.env.REDIS_HOST || 'localhost',
+        port: options.port || process.env.REDIS_PORT || 6379,
+        password: options.password || process.env.REDIS_PASSWORD,
+        username: options.username || process.env.REDIS_USERNAME || 'default',
+        db: options.db || process.env.REDIS_DB || 0,
+        retryDelayOnFailover: 100,
+        enableReadyCheck: true,
+        maxRetriesPerRequest: 3,
+        socket: {
+          reconnectStrategy: (retries) => Math.min(retries * 50, 500)
+        }
+      };
+      this.redisEnabled = true;
+    }
 
     this.publisher = null;
     this.subscriber = null;
@@ -26,7 +49,12 @@ class EventBus extends EventEmitter {
     this.eventHandlers = new Map();
     this.serviceName = options.serviceName || 'unknown-service';
     this.eventPrefix = options.eventPrefix || 'antifraud';
-    
+
+    // Initialize KurrentDB Event Store
+    this.eventStore = new KurrentEventStore({
+      database: `${this.serviceName}-events`
+    });
+
     // Event patterns for different types
     this.eventPatterns = {
       USER: `${this.eventPrefix}:user:*`,
@@ -39,35 +67,55 @@ class EventBus extends EventEmitter {
       SYSTEM: `${this.eventPrefix}:system:*`
     };
 
+    // Mock event storage for fallback
+    this.mockEventQueue = [];
+    this.mockSubscriptions = new Map();
+
     this.connect();
   }
 
   /**
-   * Connect to Redis
+   * Connect to Redis with fallback to mock mode
    */
   async connect() {
+    if (!this.redisEnabled) {
+      // Mock mode - immediate connection
+      this.isConnected = true;
+      console.log(`EventBus connected for service: ${this.serviceName} (Mock Mode)`);
+      this.emit('connected');
+      return;
+    }
+
     try {
       // Create publisher client
       this.publisher = Redis.createClient(this.redisConfig);
       this.publisher.on('error', (err) => {
         console.error('Redis Publisher Error:', err);
-        this.emit('error', err);
+        this.fallbackToMockMode();
       });
 
       // Create subscriber client
       this.subscriber = Redis.createClient(this.redisConfig);
       this.subscriber.on('error', (err) => {
         console.error('Redis Subscriber Error:', err);
-        this.emit('error', err);
+        this.fallbackToMockMode();
       });
 
-      // Handle messages
+      // Handle messages with proper error handling
       this.subscriber.on('message', (channel, message) => {
-        this.handleMessage(channel, message);
+        try {
+          this.handleMessage(channel, message);
+        } catch (error) {
+          console.error('Error handling message:', error);
+        }
       });
 
       this.subscriber.on('pmessage', (pattern, channel, message) => {
-        this.handleMessage(channel, message, pattern);
+        try {
+          this.handleMessage(channel, message, pattern);
+        } catch (error) {
+          console.error('Error handling pmessage:', error);
+        }
       });
 
       await this.publisher.connect();
@@ -79,8 +127,19 @@ class EventBus extends EventEmitter {
 
     } catch (error) {
       console.error('Failed to connect to Redis:', error);
-      this.emit('error', error);
+      this.fallbackToMockMode();
     }
+  }
+
+  /**
+   * Fallback to mock mode when Redis fails
+   */
+  fallbackToMockMode() {
+    console.log(`EventBus falling back to mock mode for service: ${this.serviceName}`);
+    this.redisEnabled = false;
+    this.mockMode = true;
+    this.isConnected = true;
+    this.emit('connected');
   }
 
   /**
@@ -103,7 +162,7 @@ class EventBus extends EventEmitter {
   }
 
   /**
-   * Publish an event
+   * Publish an event with fallback support
    */
   async publish(eventType, eventData, options = {}) {
     if (!this.isConnected) {
@@ -125,7 +184,20 @@ class EventBus extends EventEmitter {
     const message = JSON.stringify(event);
 
     try {
-      await this.publisher.publish(channel, message);
+      // Store event in KurrentDB Event Store first
+      await this.eventStore.appendEvent(event);
+
+      if (this.redisEnabled && this.publisher) {
+        // Publish to Redis pub/sub
+        await this.publisher.publish(channel, message);
+      } else {
+        // Mock mode - store in memory queue
+        this.mockEventQueue.push(event);
+
+        // Process mock subscriptions
+        this.processMockSubscriptions(event, channel);
+      }
+
       // Log event chi tiết cho demo event sourcing
       console.log(`\x1b[36m[EVENT SOURCING]\x1b[0m ${event.type} | Data: ${JSON.stringify(event.data)} | Source: ${event.source} | Time: ${event.timestamp}`);
       this.emit('published', event);
@@ -137,7 +209,37 @@ class EventBus extends EventEmitter {
   }
 
   /**
-   * Subscribe to events
+   * Process mock subscriptions for testing
+   */
+  processMockSubscriptions(event, channel) {
+    for (const [pattern, handlers] of this.mockSubscriptions) {
+      if (this.matchesPattern(channel, pattern)) {
+        handlers.forEach(handler => {
+          try {
+            // Use setTimeout to simulate async behavior
+            setTimeout(() => handler(event, channel, pattern), 0);
+          } catch (error) {
+            console.error('Error in mock subscription handler:', error);
+          }
+        });
+      }
+    }
+  }
+
+  /**
+   * Check if channel matches pattern
+   */
+  matchesPattern(channel, pattern) {
+    if (pattern === channel) return true;
+    if (pattern.includes('*')) {
+      const regex = new RegExp(pattern.replace(/\*/g, '.*'));
+      return regex.test(channel);
+    }
+    return false;
+  }
+
+  /**
+   * Subscribe to events with fallback support
    */
   async subscribe(eventPattern, handler) {
     if (!this.isConnected) {
@@ -145,25 +247,40 @@ class EventBus extends EventEmitter {
     }
 
     const channel = this.getChannelName(eventPattern);
-    
-    // Store handler
+
+    // Store handler for Redis mode
     if (!this.eventHandlers.has(channel)) {
       this.eventHandlers.set(channel, []);
     }
     this.eventHandlers.get(channel).push(handler);
 
+    // Store handler for mock mode
+    if (!this.mockSubscriptions.has(channel)) {
+      this.mockSubscriptions.set(channel, []);
+    }
+    this.mockSubscriptions.get(channel).push(handler);
+
     try {
-      if (eventPattern.includes('*')) {
-        await this.subscriber.pSubscribe(channel);
-      } else {
-        await this.subscriber.subscribe(channel);
+      if (this.redisEnabled && this.subscriber) {
+        if (eventPattern.includes('*')) {
+          await this.subscriber.pSubscribe(channel, (message, channel) => {
+            this.handleMessage(channel, message);
+          });
+        } else {
+          await this.subscriber.subscribe(channel, (message, channel) => {
+            this.handleMessage(channel, message);
+          });
+        }
       }
-      
+
       console.log(`Subscribed to: ${channel}`);
       this.emit('subscribed', { pattern: eventPattern, channel });
     } catch (error) {
       console.error('Failed to subscribe:', error);
-      throw error;
+      // Don't throw error in mock mode
+      if (this.redisEnabled) {
+        throw error;
+      }
     }
   }
 
@@ -244,7 +361,7 @@ class EventBus extends EventEmitter {
    * Generate unique event ID
    */
   generateEventId() {
-    return `${this.serviceName}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    return `${this.serviceName}-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
   }
 
   /**
@@ -331,8 +448,12 @@ class EventBus extends EventEmitter {
     return {
       connected: this.isConnected,
       serviceName: this.serviceName,
+      redisEnabled: this.redisEnabled,
+      mockMode: this.mockMode,
       subscribedChannels: Array.from(this.eventHandlers.keys()),
-      handlerCount: Array.from(this.eventHandlers.values()).reduce((sum, handlers) => sum + handlers.length, 0)
+      handlerCount: Array.from(this.eventHandlers.values()).reduce((sum, handlers) => sum + handlers.length, 0),
+      mockEventQueueSize: this.mockEventQueue.length,
+      mockSubscriptionsCount: this.mockSubscriptions.size
     };
   }
 
@@ -342,22 +463,88 @@ class EventBus extends EventEmitter {
   async healthCheck() {
     try {
       if (!this.isConnected) {
-        return { status: 'unhealthy', reason: 'Not connected to Redis' };
+        return { status: 'unhealthy', reason: 'Not connected' };
       }
 
-      // Test Redis connection
-      await this.publisher.ping();
-      
-      return {
-        status: 'healthy',
-        connected: this.isConnected,
-        subscribedChannels: this.eventHandlers.size
-      };
+      if (this.redisEnabled && this.publisher) {
+        // Test Redis connection
+        await this.publisher.ping();
+        return {
+          status: 'healthy',
+          mode: 'redis',
+          connected: this.isConnected,
+          subscribedChannels: this.eventHandlers.size,
+          eventStore: this.eventStore.isConnected ? 'connected' : 'disconnected'
+        };
+      } else {
+        // Mock mode
+        return {
+          status: 'healthy',
+          mode: 'mock',
+          connected: this.isConnected,
+          mockEventQueueSize: this.mockEventQueue.length,
+          eventStore: this.eventStore.isConnected ? 'connected' : 'disconnected'
+        };
+      }
     } catch (error) {
       return {
         status: 'unhealthy',
-        reason: error.message
+        reason: error.message,
+        mode: this.redisEnabled ? 'redis' : 'mock'
       };
+    }
+  }
+
+  /**
+   * Get mock events for testing
+   */
+  getMockEvents() {
+    return this.mockEventQueue;
+  }
+
+  /**
+   * Clear mock events
+   */
+  clearMockEvents() {
+    this.mockEventQueue = [];
+  }
+
+  /**
+   * Get all events from Event Store
+   */
+  async getAllEvents() {
+    try {
+      if (!this.eventStore || !this.eventStore.isConnected) {
+        throw new Error('Event Store not connected');
+      }
+      return await this.eventStore.getAllEvents();
+    } catch (error) {
+      console.error('Failed to get all events:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get events by type from Event Store
+   */
+  async getEventsByType(eventType) {
+    try {
+      return await this.eventStore.getEventsByType(eventType);
+    } catch (error) {
+      console.error('Failed to get events by type:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get events by stream from Event Store
+   */
+  async getEventsByStream(streamName) {
+    try {
+      return await this.eventStore.getEventsByStream(streamName);
+    } catch (error) {
+      console.error('Failed to get events by stream:', error);
+      throw error;
     }
   }
 }

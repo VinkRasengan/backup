@@ -1,7 +1,10 @@
 const express = require('express');
 const router = express.Router();
-const authController = require('../controllers/authController');
+const AuthController = require('../controllers/authController');
 const { validateRequest, schemas } = require('../middleware/validation');
+
+// Create instance of AuthController
+const authController = new AuthController();
 
 // @route   POST /auth/register
 // @desc    Register user - sync user data after Firebase Auth registration

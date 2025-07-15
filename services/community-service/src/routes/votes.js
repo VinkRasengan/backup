@@ -4,8 +4,12 @@ const { db, collections } = require('../config/firebase');
 const Logger = require('../../../../shared/utils/logger');
 const { getUserId, getUserEmail } = require('../middleware/auth');
 const { cacheManager, SimpleCache } = require('../utils/cache');
+const CommunityEventHandler = require('../events/communityEventHandler');
 
 const logger = new Logger('community-service');
+
+// Initialize event handler
+const eventHandler = new CommunityEventHandler();
 
 // Use unified cache for vote statistics with shorter TTL
 const voteStatsCache = new SimpleCache(30000); // 30 seconds TTL
@@ -262,6 +266,16 @@ router.post('/:linkId', async (req, res) => {
     });
 
     const { voteDoc, action } = result;
+
+    // Publish vote event
+    const voteEventData = {
+      linkId,
+      userId: finalUserId,
+      voteType: action === 'removed' ? null : voteType,
+      action,
+      previousVote: action === 'updated' ? (voteType === 'upvote' ? 'downvote' : 'upvote') : null
+    };
+    await eventHandler.publishVoteEvent(voteEventData);
 
     // Prepare response based on action
     const response = {

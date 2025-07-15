@@ -5,9 +5,13 @@ const securityAPIService = require('../services/securityAPIService');
 const screenshotService = require('../services/screenshotService');
 const geminiService = require('../services/geminiService');
 const crawlerService = require('../services/crawlerService');
+const LinkEventHandler = require('../events/linkEventHandler');
 
 const logger = new Logger('link-service');
 const authMiddleware = new AuthMiddleware(process.env.AUTH_SERVICE_URL);
+
+// Initialize event handler
+const eventHandler = new LinkEventHandler();
 
 /**
  * Generate summary text based on analysis results
@@ -109,9 +113,19 @@ class LinkController {
         });
       }
 
+      // Publish link scan requested event
+      await eventHandler.publishLinkScanRequestedEvent({
+        url,
+        userId,
+        userEmail: req.user?.email,
+        scanType: 'comprehensive',
+        requestId: req.correlationId
+      });
+
       // Run comprehensive analysis with new security APIs
       logger.withCorrelationId(req.correlationId).info('Starting comprehensive analysis', { url });
 
+      const scanStartTime = Date.now();
       const [securityAnalysis, screenshotAnalysis, geminiAnalysis] = await Promise.allSettled([
         securityAPIService.comprehensiveCheck(url),
         screenshotService.takeScreenshotWithRetry(url),
@@ -232,6 +246,44 @@ class LinkController {
         securityScore,
         servicesChecked: securityData.results?.length || 0
       });
+
+      // Publish link scan completed event
+      const scanDuration = Date.now() - scanStartTime;
+      await eventHandler.publishLinkScanCompletedEvent({
+        url,
+        linkId: result.id,
+        safetyScore: finalScore,
+        riskLevel: status,
+        threats: Object.keys(threats).filter(key => threats[key]),
+        securityScores: {
+          security: securityScore,
+          credibility: credibilityScore,
+          final: finalScore
+        },
+        scanDuration,
+        scanType: 'comprehensive'
+      });
+
+      // Publish threat detected events if any threats found
+      if (threats.phishing || threats.malware || threats.scam) {
+        const detectedThreats = [];
+        if (threats.phishing) detectedThreats.push('phishing');
+        if (threats.malware) detectedThreats.push('malware');
+        if (threats.scam) detectedThreats.push('scam');
+
+        for (const threatType of detectedThreats) {
+          await eventHandler.publishThreatDetectedEvent({
+            url,
+            linkId: result.id,
+            threatType,
+            severity: finalScore < 30 ? 'high' : finalScore < 60 ? 'medium' : 'low',
+            description: `${threatType} detected during comprehensive scan`,
+            source: 'comprehensive-scan',
+            confidence: Math.round((100 - finalScore) / 100 * 100),
+            details: { securityScore, credibilityScore, finalScore }
+          });
+        }
+      }
 
       // Save result to database if user is authenticated
       if (userId) {
