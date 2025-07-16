@@ -1,9 +1,9 @@
 const axios = require('axios');
 const cheerio = require('cheerio');
 const crypto = require('crypto');
-const { Logger } = require('@factcheck/shared');
+const logger = require('../utils/logger');
 
-const logger = new Logger('link-service');
+// Logger already initialized
 
 class CrawlerService {
   constructor() {

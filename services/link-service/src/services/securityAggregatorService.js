@@ -5,9 +5,9 @@ const googleSafeBrowsingService = require('./googleSafeBrowsingService');
 const ipQualityScoreService = require('./ipQualityScoreService');
 const criminalIPService = require('./criminalIPService');
 const vietnameseSecurityService = require('./vietnameseSecurityService');
-const { Logger } = require('@factcheck/shared');
+const logger = require('../utils/logger');
 
-const logger = new Logger('link-service');
+// Logger already initialized
 
 class SecurityAggregatorService {
   constructor() {

@@ -1,11 +1,9 @@
 const express = require('express');
 const router = express.Router();
 const { admin, db, collections } = require('../config/firebase');
-const Logger = require('../../../../shared/utils/logger');
+const logger = require('../utils/logger');
 const { getUserId, getUserEmail, getUserDisplayName, requireAuth } = require('../middleware/auth');
 const { validateReport, validateQueryParams } = require('../middleware/validation');
-
-const logger = new Logger('community-service');
 
 // Helper function to check if user is admin
 const isAdmin = (req) => {

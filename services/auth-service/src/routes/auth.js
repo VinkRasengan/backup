@@ -14,6 +14,18 @@ router.post('/register',
   authController.register
 );
 
+// @route   POST /auth/test
+// @desc    Test endpoint for debugging
+// @access  Public
+router.post('/test', (req, res) => {
+  res.json({
+    success: true,
+    message: 'Auth service is working',
+    timestamp: new Date().toISOString(),
+    body: req.body
+  });
+});
+
 // @route   POST /auth/login
 // @desc    Login user - sync user data after Firebase Auth login
 // @access  Public

@@ -1,7 +1,5 @@
 const redis = require('redis');
-const Logger = require('../../../../shared/utils/logger');
-
-const logger = new Logger('community-service');
+const logger = require('../utils/logger');
 
 /**
  * Unified Cache Manager with Redis + In-Memory Fallback
@@ -40,29 +38,30 @@ class CacheManager {
    * Initialize Redis connection with improved configuration
    */
   async connect() {
+    // Skip Redis connection if not available, use memory cache only
+    if (!process.env.REDIS_URL && process.env.NODE_ENV === 'development') {
+      logger.info('Redis URL not configured, using memory cache only');
+      return;
+    }
+
     try {
       const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
-      
+
       this.client = redis.createClient({
         url: redisUrl,
         // Improved retry strategy for Redis v4+
         socket: {
           reconnectStrategy: (retries) => {
-            if (retries > 10) {
+            if (retries > 3) {
               logger.error('Redis max reconnection attempts reached');
               return new Error('Max reconnection attempts reached');
             }
-            const delay = Math.min(retries * 100, 3000);
+            const delay = Math.min(retries * 100, 1000);
             logger.info(`Redis reconnecting in ${delay}ms (attempt ${retries})`);
             return delay;
           },
-          connectTimeout: 10000,
+          connectTimeout: 5000, // Reduced timeout
           lazyConnect: true
-        },
-        // Graceful handling
-        isolationPoolOptions: {
-          min: 2,
-          max: 10
         }
       });
 
@@ -71,7 +70,7 @@ class CacheManager {
         logger.error('Redis client error', { error: err.message });
         this.isConnected = false;
         this.stats.errors++;
-        this.scheduleRetry();
+        // Don't schedule retry to avoid blocking
       });
 
       this.client.on('connect', () => {
@@ -94,16 +93,21 @@ class CacheManager {
         logger.info('Redis client reconnecting...');
       });
 
-      // Connect to Redis
-      await this.client.connect();
+      // Try to connect to Redis with timeout
+      const connectPromise = this.client.connect();
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Redis connection timeout')), 3000);
+      });
+
+      await Promise.race([connectPromise, timeoutPromise]);
       logger.info('Cache manager initialized with Redis');
-      
+
     } catch (error) {
-      logger.error('Failed to connect to Redis, using memory cache only', { 
-        error: error.message 
+      logger.error('Failed to connect to Redis, using memory cache only', {
+        error: error.message
       });
       this.isConnected = false;
-      this.scheduleRetry();
+      // Don't schedule retry to avoid blocking service startup
     }
   }
 

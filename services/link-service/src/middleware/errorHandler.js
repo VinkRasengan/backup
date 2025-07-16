@@ -2,8 +2,8 @@
  * Error handling middleware for Link Service
  */
 
-const { Logger } = require('@factcheck/shared');
-const logger = new Logger('link-service');
+const logger = require('../utils/logger');
+// Logger already initialized
 
 const errorHandler = (error, req, res, next) => {
   // Log the error

@@ -3,15 +3,12 @@
  * Handles event-driven communication for authentication service
  */
 
-const EventBus = require('../../../shared/eventBus/eventBus');
-const { EventTypes, EventHelpers } = require('../../../shared/eventBus/eventTypes');
+const SimpleEventBus = require('../utils/eventBus');
 const logger = require('../utils/logger');
 
 class AuthEventHandler {
   constructor() {
-    this.eventBus = new EventBus({
-      serviceName: 'auth-service'
-    });
+    this.eventBus = new SimpleEventBus('auth-service');
 
     this.setupEventListeners();
     this.initializeSubscriptions();
@@ -63,15 +60,15 @@ class AuthEventHandler {
   async handleSystemEvent(event) {
     try {
       switch (event.type) {
-        case EventTypes.SYSTEM.SERVICE_HEALTH_CHANGED:
+        case 'SYSTEM.SERVICE_HEALTH_CHANGED':
           await this.handleServiceHealthChange(event.data);
           break;
         
-        case EventTypes.SYSTEM.CIRCUIT_BREAKER_OPENED:
+        case 'SYSTEM.CIRCUIT_BREAKER_OPENED':
           await this.handleCircuitBreakerOpened(event.data);
           break;
         
-        case EventTypes.SYSTEM.RATE_LIMIT_EXCEEDED:
+        case 'SYSTEM.RATE_LIMIT_EXCEEDED':
           await this.handleRateLimitExceeded(event.data);
           break;
         
@@ -92,12 +89,12 @@ class AuthEventHandler {
   async handleUserEvent(event) {
     try {
       switch (event.type) {
-        case EventTypes.USER.PROFILE_UPDATED:
+        case 'USER.PROFILE_UPDATED':
           // Update cached user data
           await this.updateUserCache(event.data);
           break;
         
-        case EventTypes.USER.STATUS_CHANGED:
+        case 'USER.STATUS_CHANGED':
           // Handle user status changes
           await this.handleUserStatusChange(event.data);
           break;
@@ -119,11 +116,11 @@ class AuthEventHandler {
   async handleAdminEvent(event) {
     try {
       switch (event.type) {
-        case EventTypes.ADMIN.USER_MODERATED:
+        case 'ADMIN.USER_MODERATED':
           await this.handleUserModeration(event.data);
           break;
         
-        case EventTypes.ADMIN.CONFIGURATION_CHANGED:
+        case 'ADMIN.CONFIGURATION_CHANGED':
           await this.handleConfigurationChange(event.data);
           break;
         

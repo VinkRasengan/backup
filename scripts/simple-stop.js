@@ -1,22 +1,35 @@
 #!/usr/bin/env node
 
 /**
- * Enhanced Simple Stop Script - Stops all services completely
+ * Enhanced Stop Script - Stops all services and processes from npm start
+ * Handles both "together" and "separate" modes
  */
 
 const { spawn, exec } = require('child_process');
 const os = require('os');
+const path = require('path');
 
-class SimpleStop {
+class EnhancedStop {
   constructor() {
     this.isWindows = os.platform() === 'win32';
     this.ports = [3000, 3001, 3002, 3003, 3004, 3005, 3006, 8080, 9090, 3010, 9093, 9100, 8081, 4000, 5001];
     this.killedPids = new Set(); // Track killed PIDs to avoid duplicates
+    this.serviceNames = [
+      'auth-service',
+      'link-service', 
+      'community-service',
+      'chat-service',
+      'news-service',
+      'admin-service',
+      'api-gateway',
+      'factcheck-platform', // Main process
+      'concurrently'
+    ];
   }
 
   async stop() {
-    console.log('🛑 Stopping Anti-Fraud Platform...');
-    console.log('='.repeat(40));
+    console.log('🛑 Stopping FactCheck Platform (All modes)...');
+    console.log('='.repeat(50));
 
     try {
       // Method 1: Kill by port (enhanced)
@@ -27,16 +40,24 @@ class SimpleStop {
       console.log('2. 🛑 Stopping Node.js processes...');
       await this.stopNodeProcesses();
 
-      // Method 3: Kill specific service processes
-      console.log('3. 📦 Stopping service processes...');
+      // Method 3: Kill npm start related processes
+      console.log('3. 📦 Stopping npm start processes...');
+      await this.stopNpmStartProcesses();
+
+      // Method 4: Kill concurrently processes
+      console.log('4. 🔄 Stopping concurrently processes...');
+      await this.stopConcurrentlyProcesses();
+
+      // Method 5: Kill specific service processes
+      console.log('5. 🔧 Stopping service processes...');
       await this.stopServiceProcesses();
 
-      // Method 4: Clean up Docker containers
-      console.log('4. 🐳 Cleaning up Docker containers...');
+      // Method 6: Clean up Docker containers
+      console.log('6. 🐳 Cleaning up Docker containers...');
       await this.cleanupDocker();
 
-      // Method 5: Final cleanup
-      console.log('5. 🧹 Final cleanup...');
+      // Method 7: Final cleanup
+      console.log('7. 🧹 Final cleanup...');
       await this.finalCleanup();
 
       console.log('✅ All services stopped successfully!');
@@ -93,21 +114,131 @@ class SimpleStop {
     try {
       if (this.isWindows) {
         // Kill all node.exe processes more aggressively
-        await this.runCommand('taskkill /F /IM node.exe /T', { silent: true }); // /T kills child processes too
-        console.log('  ✅ Node.js processes stopped');
-        
-        // Also kill npm processes
-        await this.runCommand('taskkill /F /IM npm.cmd /T', { silent: true });
-        await this.runCommand('taskkill /F /IM npm /T', { silent: true });
-        console.log('  ✅ NPM processes stopped');
+        const nodeCommands = [
+          'taskkill /F /IM node.exe /T',  // Kill all node processes with child processes
+          'taskkill /F /IM npm.cmd /T',   // Kill npm.cmd processes
+          'taskkill /F /IM npm /T',       // Kill npm processes
+          'taskkill /F /FI "IMAGENAME eq node.exe" /FI "COMMANDLINE eq *factcheck*" /T',
+          'taskkill /F /FI "IMAGENAME eq node.exe" /FI "COMMANDLINE eq *start*" /T',
+          'taskkill /F /FI "IMAGENAME eq node.exe" /FI "COMMANDLINE eq *concurrently*" /T'
+        ];
+
+        let nodeKilled = 0;
+        for (const cmd of nodeCommands) {
+          try {
+            await this.runCommand(cmd, { silent: true });
+            nodeKilled++;
+          } catch (error) {
+            // Ignore errors for processes that don't exist
+          }
+        }
+
+        if (nodeKilled > 0) {
+          console.log(`  ✅ Node.js processes stopped (${nodeKilled} commands executed)`);
+        }
       } else {
-        await this.runCommand('pkill -f node', { silent: true });
-        await this.runCommand('pkill -f npm', { silent: true });
-        console.log('  ✅ Node.js and NPM processes stopped');
+        // Linux/Mac: Kill node processes more comprehensively
+        const nodeCommands = [
+          'pkill -f "node.*factcheck"',
+          'pkill -f "node.*start"',
+          'pkill -f "node.*concurrently"',
+          'pkill -f "npm.*start"',
+          'pkill -9 -f node',  // Force kill all node processes
+          'pkill -9 -f npm'    // Force kill all npm processes
+        ];
+
+        let nodeKilled = 0;
+        for (const cmd of nodeCommands) {
+          try {
+            await this.runCommand(cmd, { silent: true });
+            nodeKilled++;
+          } catch (error) {
+            // Ignore errors for processes that don't exist
+          }
+        }
+
+        if (nodeKilled > 0) {
+          console.log(`  ✅ Node.js and NPM processes stopped (${nodeKilled} commands executed)`);
+        }
       }
-    } catch {
+    } catch (error) {
       console.log('  ℹ️  No Node.js processes to stop');
     }
+  }
+
+  /**
+   * Stop npm start related processes
+   */
+  async stopNpmStartProcesses() {
+    return new Promise((resolve) => {
+      if (this.isWindows) {
+        // Windows: Find and kill npm start processes
+        const commands = [
+          'taskkill /F /FI "IMAGENAME eq npm.cmd" /T',
+          'taskkill /F /FI "IMAGENAME eq node.exe" /FI "WINDOWTITLE eq npm*" /T',
+          'taskkill /F /FI "IMAGENAME eq cmd.exe" /FI "WINDOWTITLE eq *npm start*" /T',
+          'taskkill /F /FI "IMAGENAME eq cmd.exe" /FI "WINDOWTITLE eq *factcheck*" /T',
+          'taskkill /F /FI "IMAGENAME eq cmd.exe" /FI "WINDOWTITLE eq *Service*" /T'
+        ];
+
+        let completed = 0;
+        commands.forEach(cmd => {
+          exec(cmd, (error, stdout, stderr) => {
+            if (stdout && !stdout.includes('No tasks running')) {
+              console.log(`   ✅ Killed npm processes: ${stdout.trim()}`);
+            }
+            completed++;
+            if (completed === commands.length) resolve();
+          });
+        });
+      } else {
+        // Linux/Mac: Kill npm start processes
+        const commands = [
+          'pkill -f "npm.*start"',
+          'pkill -f "node.*start"',
+          'pkill -f "factcheck-platform"',
+          'pkill -f "concurrently"'
+        ];
+
+        let completed = 0;
+        commands.forEach(cmd => {
+          exec(cmd, (error, stdout, stderr) => {
+            if (!error) {
+              console.log(`   ✅ Killed npm processes`);
+            }
+            completed++;
+            if (completed === commands.length) resolve();
+          });
+        });
+      }
+    });
+  }
+
+  /**
+   * Stop concurrently processes
+   */
+  async stopConcurrentlyProcesses() {
+    return new Promise((resolve) => {
+      if (this.isWindows) {
+        // Windows: Kill concurrently processes
+        const command = 'taskkill /F /FI "IMAGENAME eq node.exe" /FI "COMMANDLINE eq *concurrently*" /T';
+        exec(command, (error, stdout, stderr) => {
+          if (stdout && !stdout.includes('No tasks running')) {
+            console.log(`   ✅ Killed concurrently processes`);
+          }
+          resolve();
+        });
+      } else {
+        // Linux/Mac: Kill concurrently processes
+        const command = 'pkill -f concurrently';
+        exec(command, (error, stdout, stderr) => {
+          if (!error) {
+            console.log(`   ✅ Killed concurrently processes`);
+          }
+          resolve();
+        });
+      }
+    });
   }
 
   async stopServiceProcesses() {
@@ -214,8 +345,8 @@ class SimpleStop {
 
 // Run if called directly
 if (require.main === module) {
-  const stopper = new SimpleStop();
+  const stopper = new EnhancedStop();
   stopper.stop().catch(console.error);
 }
 
-module.exports = SimpleStop;
+module.exports = EnhancedStop;

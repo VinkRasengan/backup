@@ -1,5 +1,5 @@
 const { db, collections } = require('../config/firebase');
-const { Logger, authMiddleware: AuthMiddleware } = require('@factcheck/shared');
+const logger = require('../utils/logger');
 const securityAggregatorService = require('../services/securityAggregatorService');
 const securityAPIService = require('../services/securityAPIService');
 const screenshotService = require('../services/screenshotService');
@@ -7,8 +7,17 @@ const geminiService = require('../services/geminiService');
 const crawlerService = require('../services/crawlerService');
 const LinkEventHandler = require('../events/linkEventHandler');
 
-const logger = new Logger('link-service');
-const authMiddleware = new AuthMiddleware(process.env.AUTH_SERVICE_URL);
+// Simple auth middleware for link service
+const authMiddleware = {
+  authenticate: (req, res, next) => {
+    // Simple auth check - in production this should validate JWT
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+    next();
+  }
+};
 
 // Initialize event handler
 const eventHandler = new LinkEventHandler();

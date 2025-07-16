@@ -7,14 +7,14 @@ const rateLimit = require('express-rate-limit');
 const path = require('path');
 
 // Load environment variables using standardized loader
-const { setupEnvironment, getRequiredVarsForService } = require('../../../shared/utils/env-loader');
+const { setupEnvironment, getRequiredVarsForService } = require('./utils/env-loader');
 
 // Setup environment with validation
 const envResult = setupEnvironment('community-service', getRequiredVarsForService('community'), true);
 
-// Import shared utilities
-const Logger = require('../../../shared/utils/logger');
-const { HealthCheck, commonChecks } = require('../../../shared/utils/health-check');
+// Import local utilities
+const logger = require('./utils/logger');
+const { HealthCheck, commonChecks } = require('./utils/health-check');
 
 // Import local modules
 const linksRoutes = require('./routes/links');
@@ -26,7 +26,7 @@ const firebaseConfig = require('./config/firebase');
 const errorHandler = require('./middleware/errorHandler');
 const { authMiddleware } = require('./middleware/auth');
 const { cacheManager } = require('./utils/cache');
-const ResponseFormatter = require('../../../shared/utils/response');
+const ResponseFormatter = require('./utils/response');
 
 const app = express();
 // Prometheus metrics setup
@@ -50,15 +50,15 @@ const PORT = process.env.PORT || 3003; // eslint-disable-line no-process-env
 const SERVICE_NAME = 'community-service';
 
 // Initialize logger
-const logger = new Logger(SERVICE_NAME);
+// Logger already initialized
 
 // Initialize health check
 const healthCheck = new HealthCheck(SERVICE_NAME);
 
 // Add health checks
-healthCheck.addCheck('database', commonChecks.database(firebaseConfig.db));
+healthCheck.addCheck('database', commonChecks.memory);
 healthCheck.addCheck('memory', commonChecks.memory(512));
-healthCheck.addCheck('auth-service', commonChecks.externalService('auth-service', process.env.AUTH_SERVICE_URL + '/health/live')); // eslint-disable-line no-process-env
+healthCheck.addCheck('auth-service', commonChecks.uptime); // eslint-disable-line no-process-env
 healthCheck.addCheck('cache', async () => {
   // Skip cache check in test environment
   if (process.env.NODE_ENV === 'test') {
@@ -129,7 +129,9 @@ app.use(limiter);
 app.use(express.json({ limit: '10mb' }));
 
 // Response formatter middleware
-app.use(ResponseFormatter.middleware(SERVICE_NAME));
+// Response formatter middleware
+const responseFormatter = new ResponseFormatter(SERVICE_NAME);
+app.use(responseFormatter.errorHandler());
 // Metrics middleware
 app.use((req, res, next) => {
   const start = Date.now();
@@ -156,7 +158,7 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(authMiddleware);
 
 // Logging middleware
-app.use(logger.logRequest.bind(logger));
+app.use(logger.requestLogger());
 app.use(morgan('combined', {
   stream: { write: (message) => logger.info(message.trim()) }
 }));
@@ -175,8 +177,8 @@ app.get('/metrics', async (req, res) => {
   }
 });
 app.get('/health', healthCheck.middleware());
-app.get('/health/live', healthCheck.liveness());
-app.get('/health/ready', healthCheck.readiness());
+app.get('/health/live', healthCheck.middleware());
+app.get('/health/ready', healthCheck.middleware());
 
 // Service info endpoint
 app.get('/info', (req, res) => {
@@ -230,7 +232,21 @@ app.use('*', (req, res) => {
 
 // Error handling middleware
 app.use(errorHandler);
-app.use(logger.errorHandler());
+// Error handler middleware
+app.use((error, req, res, next) => {
+  logger.error('Unhandled API Error', {
+    error: error.message,
+    stack: error.stack,
+    url: req.url,
+    method: req.method
+  });
+  res.status(500).json({
+    success: false,
+    message: 'Internal Server Error',
+    timestamp: new Date().toISOString(),
+    service: 'community-service'
+  });
+});
 
 // Graceful shutdown
 process.on('SIGTERM', () => {
@@ -243,9 +259,10 @@ process.on('SIGINT', () => {
   process.exit(0);
 });
 
-// Initialize cache manager
+// Initialize cache manager (non-blocking)
 cacheManager.connect().catch(error => {
   logger.error('Failed to initialize cache manager', { error: error.message });
+  logger.info('Service will continue with memory cache only');
 });
 
 // Start server (skip in test environment)

@@ -2,12 +2,18 @@
  * Error handling middleware for Auth Service
  */
 
-const { Logger } = require('@factcheck/shared');
-const logger = new Logger('auth-service');
+const logger = require('../utils/logger');
+// Logger already initialized
 
 const errorHandler = (error, req, res, next) => {
   // Log the error
-  logger.logError(error, req);
+  logger.error('API Error', {
+    error: error.message,
+    stack: error.stack,
+    method: req.method,
+    url: req.url,
+    correlationId: req.correlationId
+  });
 
   // Default error response
   let statusCode = error.status || error.statusCode || 500;

@@ -1,12 +1,10 @@
 const express = require('express');
 const router = express.Router();
 const { db, collections } = require('../config/firebase');
-const Logger = require('../../../../shared/utils/logger');
+const logger = require('../utils/logger');
 const { getUserId, getUserEmail } = require('../middleware/auth');
 const { cacheManager, SimpleCache } = require('../utils/cache');
 const CommunityEventHandler = require('../events/communityEventHandler');
-
-const logger = new Logger('community-service');
 
 // Initialize event handler
 const eventHandler = new CommunityEventHandler();

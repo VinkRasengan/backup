@@ -31,7 +31,6 @@
     "prod:start": "NODE_ENV=production npm start"
   },
   "dependencies": {
-    "@factcheck/shared": "file:../../shared",
     "axios": "^1.6.2",
     "cors": "^2.8.5",
     "crypto": "^1.0.1",

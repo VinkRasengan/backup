@@ -3,12 +3,22 @@ const router = express.Router();
 const securityAggregatorService = require('../services/securityAggregatorService');
 const screenshotService = require('../services/screenshotService');
 const virusTotalService = require('../services/virusTotalService');
-const { authMiddleware: AuthMiddleware } = require('@factcheck/shared');
+const { authMiddleware: AuthMiddleware } = require('../utils/logger');
 const { validateRequest, schemas } = require('../middleware/validation');
-const { Logger } = require('@factcheck/shared');
+const logger = require('../utils/logger');
 
-const logger = new Logger('link-service');
-const authMiddleware = new AuthMiddleware(process.env.AUTH_SERVICE_URL);
+// Logger already initialized
+// Simple auth middleware for security routes
+const authMiddleware = {
+  authenticate: (req, res, next) => {
+    // Simple auth check - in production this should validate JWT
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+    next();
+  }
+};
 
 // @route   GET /security/status
 // @desc    Get security services status

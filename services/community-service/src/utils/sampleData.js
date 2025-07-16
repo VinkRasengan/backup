@@ -1,7 +1,7 @@
 const { db, collections } = require('../config/firebase');
-const { Logger } = require('@factcheck/shared');
+const logger = require('./logger');
 
-const logger = new Logger('community-service');
+// Logger already initialized
 
 // Sample data for links and comments
 const sampleLinks = [

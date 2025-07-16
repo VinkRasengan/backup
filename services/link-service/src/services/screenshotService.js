@@ -1,9 +1,9 @@
 const axios = require('axios');
 const crypto = require('crypto');
-const { Logger } = require('@factcheck/shared');
+const logger = require('../utils/logger');
 const { config } = require('../config/thirdPartyAPIs');
 
-const logger = new Logger('link-service');
+// Logger already initialized
 
 class ScreenshotService {
   constructor() {

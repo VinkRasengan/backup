@@ -1,9 +1,9 @@
 const jwt = require('jsonwebtoken');
 const { auth, db, collections } = require('../config/firebase');
-const { Logger } = require('@factcheck/shared');
+const logger = require('../utils/logger');
 const AuthEventHandler = require('../events/authEventHandler');
 
-const logger = new Logger('auth-service');
+// Logger already initialized
 
 class AuthController {
   constructor() {
@@ -100,8 +100,12 @@ class AuthController {
       });
 
     } catch (error) {
-      logger.logError(error, req);
-      
+      logger.error('User registration error', {
+        error: error.message,
+        stack: error.stack,
+        correlationId: req.correlationId
+      });
+
       if (error.code && error.code.startsWith('auth/')) {
         return res.status(401).json({
           error: 'Invalid Firebase token',
@@ -194,14 +198,15 @@ class AuthController {
         hasEventHandler: !!this.authEventHandler
       });
 
-      // Publish login event to Event Sourcing system
+      // Publish login event to Event Sourcing system (non-blocking)
       if (this.authEventHandler) {
         logger.withCorrelationId(req.correlationId).info('Publishing login event', {
           userId: decodedToken.uid,
           email: decodedToken.email
         });
-        
-        await this.authEventHandler.publishLoginEvent({
+
+        // Make this non-blocking to prevent timeout
+        this.authEventHandler.publishLoginEvent({
           id: decodedToken.uid,
           email: decodedToken.email,
           ...userData
@@ -209,6 +214,8 @@ class AuthController {
           ipAddress: req.ip,
           userAgent: req.get('User-Agent'),
           location: req.get('CF-IPCountry') || 'Unknown'
+        }).catch(error => {
+          logger.error('Failed to publish login event (non-blocking)', { error: error.message });
         });
       } else {
         logger.withCorrelationId(req.correlationId).warn('Cannot publish login event - EventHandler not available', {
@@ -227,8 +234,12 @@ class AuthController {
       });
 
     } catch (error) {
-      logger.logError(error, req);
-      
+      logger.error('User login error', {
+        error: error.message,
+        stack: error.stack,
+        correlationId: req.correlationId
+      });
+
       if (error.code?.startsWith('auth/')) {
         return res.status(401).json({
           error: 'Invalid Firebase token',
@@ -326,8 +337,12 @@ class AuthController {
       });
 
     } catch (error) {
-      logger.logError(error, req);
-      
+      logger.error('Token refresh error', {
+        error: error.message,
+        stack: error.stack,
+        correlationId: req.correlationId
+      });
+
       if (error.code?.startsWith('auth/')) {
         return res.status(401).json({
           error: 'Invalid Firebase token',
@@ -394,7 +409,11 @@ class AuthController {
         });
       }
 
-      logger.logError(error, req);
+      logger.error('Token verification error', {
+        error: error.message,
+        stack: error.stack,
+        correlationId: req.correlationId
+      });
       next(error);
     }
   }

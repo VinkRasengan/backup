@@ -25,7 +25,6 @@
     "prod:start": "NODE_ENV=production npm start"
   },
   "dependencies": {
-    "@factcheck/shared": "file:../../shared",
     "axios": "^1.6.2",
     "cheerio": "^1.0.0-rc.12",
     "cors": "^2.8.5",

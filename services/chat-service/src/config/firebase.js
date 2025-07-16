@@ -3,8 +3,8 @@ const path = require('path');
 const fs = require('fs');
 
 // Load environment variables using standardized loader
-const { loadEnvironmentVariables } = require('../../../../shared/utils/env-loader');
-loadEnvironmentVariables('chat-service-firebase');
+const { setupEnvironment } = require('../utils/env-loader');
+setupEnvironment('chat-service-firebase');
 
 let db, collections;
 

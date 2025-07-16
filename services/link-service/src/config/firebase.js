@@ -3,8 +3,8 @@ const path = require('path');
 const fs = require('fs');
 
 // Load environment variables using standardized loader
-const { loadEnvironmentVariables } = require('../../../../shared/utils/env-loader');
-loadEnvironmentVariables('link-service-firebase');
+const { setupEnvironment } = require('../utils/env-loader');
+setupEnvironment('link-service-firebase');
 
 let db, collections;
 

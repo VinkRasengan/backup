@@ -1,7 +1,7 @@
 const { auth } = require('../config/firebase');
-const { Logger } = require('@factcheck/shared');
+const logger = require('../utils/logger');
 
-const logger = new Logger('auth-service');
+// Logger already initialized
 
 /**
  * Firebase authentication middleware for Auth Service

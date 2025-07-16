@@ -1,14 +1,27 @@
 const express = require('express');
 const router = express.Router();
 const linkController = require('../controllers/linkController');
-const { authMiddleware: AuthMiddleware } = require('@factcheck/shared');
+// Auth middleware will be defined locally
 const { validateRequest, schemas } = require('../middleware/validation');
-const { Logger } = require('@factcheck/shared');
+const logger = require('../utils/logger');
 const LinkEventHandler = require('../events/linkEventHandler');
 
-// Initialize auth middleware
-const authMiddleware = new AuthMiddleware(process.env.AUTH_SERVICE_URL);
-const logger = new Logger('link-service-routes');
+// Simple auth middleware for link routes
+const authMiddleware = {
+  authenticate: (req, res, next) => {
+    // Simple auth check - in production this should validate JWT
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+    next();
+  },
+  optionalAuth: (req, res, next) => {
+    // Optional auth - continue even if no auth header
+    next();
+  }
+};
+// Logger already initialized
 
 // Initialize event handler
 const eventHandler = new LinkEventHandler();

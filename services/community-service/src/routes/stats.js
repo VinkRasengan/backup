@@ -1,10 +1,9 @@
 const express = require('express');
 const { db, collections } = require('../config/firebase');
-const Logger = require('../../../../shared/utils/logger');
-const ResponseFormatter = require('../../../../shared/utils/response');
+const logger = require('../utils/logger');
+const ResponseFormatter = require('../utils/response');
 
 const router = express.Router();
-const logger = new Logger('community-stats');
 
 // Get community-wide statistics
 router.get('/community', async (req, res) => {

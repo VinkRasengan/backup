@@ -1,7 +1,7 @@
 const Joi = require('joi');
-const { Logger } = require('@factcheck/shared');
+const logger = require('../utils/logger');
 
-const logger = new Logger('community-service');
+// Logger already initialized
 
 // Input sanitization function
 const sanitizeInput = (input) => {

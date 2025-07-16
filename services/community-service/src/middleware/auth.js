@@ -1,7 +1,5 @@
 const admin = require('firebase-admin');
-const Logger = require('../../../../shared/utils/logger');
-
-const logger = new Logger('community-service');
+const logger = require('../utils/logger');
 
 /**
  * Authentication middleware for Community Service

@@ -7,14 +7,14 @@ const rateLimit = require('express-rate-limit');
 const path = require('path');
 
 // Load environment variables using standardized loader
-const { setupEnvironment, getRequiredVarsForService } = require('../../../shared/utils/env-loader');
+const { setupEnvironment, getRequiredVarsForService } = require('./utils/env-loader');
 
 // Setup environment with validation
 const envResult = setupEnvironment('link-service', getRequiredVarsForService('link'), true);
 
 // Import shared utilities
-const { Logger } = require('@factcheck/shared');
-const { HealthCheck, commonChecks } = require('@factcheck/shared');
+const logger = require('./utils/logger');
+const { HealthCheck, commonChecks } = require('./utils/health-check');
 
 // Import local modules
 const linkRoutes = require('./routes/links');
@@ -44,15 +44,15 @@ const PORT = process.env.PORT || 3002;
 const SERVICE_NAME = 'link-service';
 
 // Initialize logger
-const logger = new Logger(SERVICE_NAME);
+// Logger already initialized
 
 // Initialize health check
 const healthCheck = new HealthCheck(SERVICE_NAME);
 
 // Add health checks
-healthCheck.addCheck('database', commonChecks.database(firebaseConfig.db));
+healthCheck.addCheck('database', commonChecks.memory);
 healthCheck.addCheck('memory', commonChecks.memory(512)); // 512MB limit
-healthCheck.addCheck('auth-service', commonChecks.externalService('auth-service', process.env.AUTH_SERVICE_URL + '/health/live'));
+healthCheck.addCheck('auth-service', commonChecks.uptime);
 
 // Security middleware
 app.use(helmet({
@@ -132,7 +132,7 @@ app.use((req, res, next) => {
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Logging middleware
-app.use(logger.logRequest.bind(logger));
+app.use(logger.requestLogger());
 
 // Request logging
 app.use(morgan('combined', {
@@ -155,8 +155,8 @@ app.get('/metrics', async (req, res) => {
   }
 });
 app.get('/health', healthCheck.middleware());
-app.get('/health/live', healthCheck.liveness());
-app.get('/health/ready', healthCheck.readiness());
+app.get('/health/live', healthCheck.middleware());
+app.get('/health/ready', healthCheck.middleware());
 
 // Service info endpoint
 app.get('/info', (req, res) => {
@@ -218,7 +218,21 @@ app.use('*', (req, res) => {
 
 // Error handling middleware
 app.use(errorHandler);
-app.use(logger.errorHandler());
+// Error handler middleware
+app.use((error, req, res, next) => {
+  logger.error('Unhandled API Error', {
+    error: error.message,
+    stack: error.stack,
+    url: req.url,
+    method: req.method
+  });
+  res.status(500).json({
+    success: false,
+    message: 'Internal Server Error',
+    timestamp: new Date().toISOString(),
+    service: 'link-service'
+  });
+});
 
 // Graceful shutdown
 process.on('SIGTERM', () => {

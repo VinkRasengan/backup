@@ -2,8 +2,7 @@
  * Error handling middleware for Community Service
  */
 
-const Logger = require('../../../../shared/utils/logger');
-const logger = new Logger('community-service');
+const logger = require('../utils/logger');
 
 const errorHandler = (error, req, res, next) => {
   // Log the error

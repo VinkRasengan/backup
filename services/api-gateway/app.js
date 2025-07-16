@@ -7,8 +7,11 @@ const { createProxyMiddleware } = require('http-proxy-middleware');
 const path = require('path');
 const fs = require('fs');
 
-// Load environment variables using standardized loader
-const { setupEnvironment, getRequiredVarsForService } = require('../../shared/utils/env-loader');
+// Load environment variables first
+require('dotenv').config({ path: path.join(__dirname, '../../.env') });
+
+// Load environment variables using local loader
+const { setupEnvironment, getRequiredVarsForService } = require('./src/utils/env-loader');
 
 // Setup environment with validation
 const envResult = setupEnvironment('api-gateway', getRequiredVarsForService('api-gateway'), true);
@@ -667,7 +670,7 @@ app.use('/community', createProxyMiddleware({
 app.use('/auth', createProxyMiddleware({
   target: services['auth-service'],
   changeOrigin: true,
-  pathRewrite: { '^/auth': '/auth' },
+  timeout: 10000, // 10 second timeout
   onError: (err, req, res) => {
     logger.error('Auth service proxy error', { error: err.message });
     if (!res.headersSent) {

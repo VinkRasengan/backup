@@ -2,8 +2,8 @@
  * Error handling middleware for Chat Service
  */
 
-const { Logger } = require('@factcheck/shared');
-const logger = new Logger('chat-service');
+const logger = require('../utils/logger');
+// Logger already initialized
 
 const errorHandler = (error, req, res, next) => {
   // Log the error

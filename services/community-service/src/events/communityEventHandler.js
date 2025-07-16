@@ -3,14 +3,12 @@
  * Handles event-driven communication for community service
  */
 
-const EventBus = require('../../../shared/eventBus/eventBus');
-const { EventTypes, EventHelpers } = require('../../../shared/eventBus/eventTypes');
+const SimpleEventBus = require('../utils/eventBus');
+// Event types are now handled locally
 
 class CommunityEventHandler {
   constructor() {
-    this.eventBus = new EventBus({
-      serviceName: 'community-service'
-    });
+    this.eventBus = new SimpleEventBus('community-service');
 
     this.setupEventListeners();
     this.initializeSubscriptions();
@@ -62,11 +60,11 @@ class CommunityEventHandler {
   async handleUserEvent(event) {
     try {
       switch (event.type) {
-        case EventTypes.USER.CREATED:
+        case 'USER.CREATED':
           await this.handleUserCreated(event.data);
           break;
         
-        case EventTypes.USER.UPDATED:
+        case 'USER.UPDATED':
           await this.handleUserUpdated(event.data);
           break;
         
@@ -87,11 +85,11 @@ class CommunityEventHandler {
   async handleAuthEvent(event) {
     try {
       switch (event.type) {
-        case EventTypes.AUTH.LOGIN:
+        case 'AUTH.LOGIN':
           await this.handleUserLogin(event.data);
           break;
         
-        case EventTypes.AUTH.LOGOUT:
+        case 'AUTH.LOGOUT':
           await this.handleUserLogout(event.data);
           break;
         
@@ -112,7 +110,7 @@ class CommunityEventHandler {
   async handleSystemEvent(event) {
     try {
       switch (event.type) {
-        case EventTypes.SYSTEM.SERVICE_HEALTH_CHANGED:
+        case 'SYSTEM.SERVICE_HEALTH_CHANGED':
           await this.handleServiceHealthChange(event.data);
           break;
         

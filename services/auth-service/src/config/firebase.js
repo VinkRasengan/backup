@@ -3,8 +3,8 @@ const path = require('path');
 const fs = require('fs');
 
 // Load environment variables using standardized loader
-const { loadEnvironmentVariables } = require('../../../../shared/utils/env-loader');
-loadEnvironmentVariables('auth-service-firebase');
+const { setupEnvironment, getRequiredVarsForService } = require('../utils/env-loader');
+setupEnvironment('auth-service', getRequiredVarsForService('auth'), false);
 
 let db, auth, collections;
 

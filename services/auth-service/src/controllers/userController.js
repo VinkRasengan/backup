@@ -1,7 +1,7 @@
 const { db, collections } = require('../config/firebase');
-const { Logger } = require('@factcheck/shared');
+const logger = require('../utils/logger');
 
-const logger = new Logger('auth-service');
+// Logger already initialized
 
 class UserController {
   /**
@@ -37,7 +37,12 @@ class UserController {
       });
 
     } catch (error) {
-      logger.logError(error, req);
+      logger.error('User profile error', {
+        error: error.message,
+        stack: error.stack,
+        userId: req.user?.userId,
+        correlationId: req.correlationId
+      });
       next(error);
     }
   }
@@ -138,7 +143,12 @@ class UserController {
       });
 
     } catch (error) {
-      logger.logError(error, req);
+      logger.error('User stats error', {
+        error: error.message,
+        stack: error.stack,
+        userId: req.user?.userId,
+        correlationId: req.correlationId
+      });
       next(error);
     }
   }
@@ -249,7 +259,12 @@ class UserController {
       });
 
     } catch (error) {
-      logger.logError(error, req);
+      logger.error('User dashboard error', {
+        error: error.message,
+        stack: error.stack,
+        userId: req.user?.userId,
+        correlationId: req.correlationId
+      });
       next(error);
     }
   }

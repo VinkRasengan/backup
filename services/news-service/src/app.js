@@ -8,14 +8,14 @@ const path = require('path');
 const fs = require('fs');
 
 // Load environment variables using standardized loader
-const { setupEnvironment, getRequiredVarsForService } = require('../../../shared/utils/env-loader');
+const { setupEnvironment, getRequiredVarsForService } = require('./utils/env-loader');
 
 // Setup environment with validation
 const envResult = setupEnvironment('news-service', getRequiredVarsForService('news'), true);
 
-// Import shared utilities
-const { Logger } = require('@factcheck/shared');
-const { HealthCheck, commonChecks } = require('@factcheck/shared');
+// Import local utilities
+const logger = require('./utils/logger');
+const { HealthCheck, commonChecks } = require('./utils/health-check');
 
 const app = express();
 // Prometheus metrics setup
@@ -39,7 +39,7 @@ const PORT = process.env.PORT || 3005;
 const SERVICE_NAME = 'news-service';
 
 // Initialize logger
-const logger = new Logger(SERVICE_NAME);
+// Logger already initialized
 
 // Initialize health check
 const healthCheck = new HealthCheck(SERVICE_NAME);
@@ -94,7 +94,7 @@ app.use((req, res, next) => {
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Logging middleware
-app.use(logger.logRequest.bind(logger));
+app.use(logger.requestLogger());
 app.use(morgan('combined', {
   stream: { write: (message) => logger.info(message.trim()) }
 }));
@@ -113,8 +113,8 @@ app.get('/metrics', async (req, res) => {
   }
 });
 app.get('/health', healthCheck.middleware());
-app.get('/health/live', healthCheck.liveness());
-app.get('/health/ready', healthCheck.readiness());
+app.get('/health/live', healthCheck.middleware());
+app.get('/health/ready', healthCheck.middleware());
 
 // Service info endpoint
 app.get('/info', (req, res) => {

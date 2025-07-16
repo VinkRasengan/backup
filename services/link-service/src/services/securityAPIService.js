@@ -5,9 +5,9 @@
 
 const axios = require('axios');
 const { config } = require('../config/thirdPartyAPIs');
-const { Logger } = require('@factcheck/shared');
+const logger = require('../utils/logger');
 
-const logger = new Logger('link-service');
+// Logger already initialized
 
 class SecurityAPIService {
   constructor() {
