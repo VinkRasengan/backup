@@ -58,6 +58,7 @@
     "health:production": "node scripts/health-check-production.js",
     "dashboard:production": "node scripts/deployment-dashboard.js",
     "monitor:production": "node scripts/deployment-dashboard.js --monitor",
+    "test:routing": "node scripts/test-frontend-routing.js",
     "deploy:k8s": "node scripts/antifraud.js k8s",
     "deploy:k8s:istio": "node scripts/antifraud.js k8s-istio",
     "deploy:k8s:consul": "node scripts/antifraud.js k8s-consul",

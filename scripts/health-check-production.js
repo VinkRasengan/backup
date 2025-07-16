@@ -8,18 +8,10 @@
 const axios = require('axios');
 const fs = require('fs');
 
-// Production service URLs
+// Production service URLs - Current deployment
 const PRODUCTION_SERVICES = {
-  'auth-service': 'https://factcheck-auth-production.onrender.com',
-  'link-service': 'https://factcheck-link-production.onrender.com',
-  'community-service': 'https://factcheck-community-production.onrender.com',
-  'chat-service': 'https://factcheck-chat-production.onrender.com',
-  'news-service': 'https://factcheck-news-production.onrender.com',
-  'admin-service': 'https://factcheck-admin-production.onrender.com',
-  'phishtank-service': 'https://factcheck-phishtank-production.onrender.com',
-  'criminalip-service': 'https://factcheck-criminalip-production.onrender.com',
-  'api-gateway': 'https://factcheck-api-gateway-production.onrender.com',
-  'frontend': 'https://factcheck-frontend-production.onrender.com'
+  'api-gateway': 'https://backup-zhhs.onrender.com',
+  'frontend': 'https://frontend-eklp.onrender.com'
 };
 
 class ProductionHealthChecker {
@@ -190,19 +182,15 @@ class ProductionHealthChecker {
     const criticalEndpoints = [
       {
         name: 'API Gateway Info',
-        url: 'https://factcheck-api-gateway-production.onrender.com/info'
+        url: 'https://backup-zhhs.onrender.com/info'
       },
       {
         name: 'API Gateway CORS Test',
-        url: 'https://factcheck-api-gateway-production.onrender.com/test-cors'
+        url: 'https://backup-zhhs.onrender.com/test-cors'
       },
       {
-        name: 'Auth Service Health',
-        url: 'https://factcheck-auth-production.onrender.com/health'
-      },
-      {
-        name: 'Community Service Health',
-        url: 'https://factcheck-community-production.onrender.com/health'
+        name: 'API Gateway Health',
+        url: 'https://backup-zhhs.onrender.com/health'
       }
     ];
 

@@ -30,7 +30,7 @@ FROM nginx:alpine AS production
 # Copy built app to nginx
 COPY --from=build /app/build /usr/share/nginx/html
 
-# Copy nginx configuration
+# Copy nginx configuration for React Router SPA
 COPY <<EOF /etc/nginx/conf.d/default.conf
 server {
     listen 3000;
@@ -38,18 +38,24 @@ server {
     root /usr/share/nginx/html;
     index index.html;
 
-    # Handle client-side routing
+    # Handle client-side routing - CRITICAL for React Router
     location / {
+        try_files \$uri \$uri/ @fallback;
+    }
+
+    # Fallback for React Router
+    location @fallback {
+        rewrite ^.*\$ /index.html last;
+    }
+
+    # Handle specific frontend routes explicitly
+    location ~ ^/(community|chat|admin|profile|settings|auth) {
         try_files \$uri \$uri/ /index.html;
     }
 
-    # API proxy to gateway
+    # API routes should not be handled by React Router
     location /api/ {
-        proxy_pass http://api-gateway:8080/;
-        proxy_set_header Host \$host;
-        proxy_set_header X-Real-IP \$remote_addr;
-        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto \$scheme;
+        return 404;
     }
 
     # Security headers
@@ -57,6 +63,7 @@ server {
     add_header X-Content-Type-Options "nosniff" always;
     add_header X-XSS-Protection "1; mode=block" always;
     add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+    add_header Cache-Control "no-cache, no-store, must-revalidate" always;
 
     # Gzip compression
     gzip on;
@@ -64,10 +71,17 @@ server {
     gzip_min_length 1024;
     gzip_types text/plain text/css text/xml text/javascript application/javascript application/xml+rss application/json;
 
-    # Cache static assets
-    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg)$ {
+    # Cache static assets (but not index.html)
+    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
         expires 1y;
         add_header Cache-Control "public, immutable";
+    }
+
+    # Don't cache index.html to ensure updates are reflected
+    location = /index.html {
+        add_header Cache-Control "no-cache, no-store, must-revalidate";
+        add_header Pragma "no-cache";
+        add_header Expires "0";
     }
 }
 EOF

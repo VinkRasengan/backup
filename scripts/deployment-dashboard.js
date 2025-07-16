@@ -11,16 +11,8 @@ const fs = require('fs');
 class DeploymentDashboard {
   constructor() {
     this.services = {
-      'auth-service': 'https://factcheck-auth-production.onrender.com',
-      'link-service': 'https://factcheck-link-production.onrender.com',
-      'community-service': 'https://factcheck-community-production.onrender.com',
-      'chat-service': 'https://factcheck-chat-production.onrender.com',
-      'news-service': 'https://factcheck-news-production.onrender.com',
-      'admin-service': 'https://factcheck-admin-production.onrender.com',
-      'phishtank-service': 'https://factcheck-phishtank-production.onrender.com',
-      'criminalip-service': 'https://factcheck-criminalip-production.onrender.com',
-      'api-gateway': 'https://factcheck-api-gateway-production.onrender.com',
-      'frontend': 'https://factcheck-frontend-production.onrender.com'
+      'api-gateway': 'https://backup-zhhs.onrender.com',
+      'frontend': 'https://frontend-eklp.onrender.com'
     };
     
     this.status = {};
