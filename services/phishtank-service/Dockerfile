@@ -14,12 +14,12 @@ COPY src/ ./src/
 COPY data/ ./data/
 
 # Create non-root user
-RUN addgroup -g 1001 -S nodejs && \
-    adduser -S phishtank -u 1001
+RUN addgroup -g 1001 -S nodejs
+RUN adduser -S nodejs -u 1001
 
 # Change ownership
-RUN chown -R phishtank:nodejs /app
-USER phishtank
+RUN chown -R nodejs:nodejs /app
+USER nodejs
 
 # Expose port
 EXPOSE 3007
