@@ -1,22 +1,12 @@
-# Render Redirects for FactCheck App
+# Render Redirects for FactCheck App - Production
+# CRITICAL: Order matters! More specific rules first, catch-all last
 
-# Redirect all API calls to API Gateway (backend services only)
-# Note: These URLs will be replaced during build process with actual environment variables
+# API routes - proxy to backend
 /api/* https://backup-zhhs.onrender.com/api/:splat 200
-/auth/* https://backup-zhhs.onrender.com/auth/:splat 200
-/users/* https://backup-zhhs.onrender.com/users/:splat 200
 
-# These routes are frontend routes and should be handled by SPA fallback, not backend redirects
-# /chat/* https://backup-zhhs.onrender.com/chat/:splat 200
-# /community/* https://backup-zhhs.onrender.com/community/:splat 200
+# Health check
+/health https://backup-zhhs.onrender.com/health 200
 
-# API routes only (backend services)
-/news/* https://backup-zhhs.onrender.com/news/:splat 200
-/links/* https://backup-zhhs.onrender.com/links/:splat 200
-/admin/* https://backup-zhhs.onrender.com/admin/:splat 200
-/posts/* https://backup-zhhs.onrender.com/posts/:splat 200
-/votes/* https://backup-zhhs.onrender.com/votes/:splat 200
-/comments/* https://factcheck-api-gateway.onrender.com/comments/:splat 200
-
-# SPA fallback - all other routes (including /community, /chat) serve index.html
+# SPA fallback - MUST BE LAST RULE
+# All other routes serve React app (including /community, /chat, /admin, etc.)
 /* /index.html 200
