@@ -28,7 +28,8 @@
     "metrics": "curl -s http://localhost:8080/metrics || echo \"Metrics not available\"",
     "logs:tail": "tail -f logs/*.log || echo \"No logs found\"",
     "dev:debug": "NODE_ENV=development DEBUG=* npm start",
-    "prod:start": "NODE_ENV=production npm start"
+    "prod:start": "NODE_ENV=production npm start",
+    "start:prod": "NODE_ENV=production node src/app.js"
   },
   "dependencies": {
     "axios": "^1.6.2",
