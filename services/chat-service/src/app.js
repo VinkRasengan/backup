@@ -62,8 +62,6 @@ const healthCheck = new HealthCheck(SERVICE_NAME);
 
 // Add health checks
 healthCheck.addCheck('memory', commonChecks.memory);
-healthCheck.addCheck('memory', commonChecks.memory(512));
-healthCheck.addCheck('auth-service', commonChecks.uptime);
 
 // Security middleware
 app.use(helmet());

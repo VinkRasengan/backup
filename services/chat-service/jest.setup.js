@@ -86,27 +86,11 @@ jest.mock('winston', () => ({
   }
 }));
 
-// Mock Express
-jest.mock('express', () => {
-  const express = jest.fn(() => ({
-    use: jest.fn(),
-    get: jest.fn(),
-    post: jest.fn(),
-    put: jest.fn(),
-    delete: jest.fn(),
-    listen: jest.fn(),
-    set: jest.fn()
-  }));
-  express.json = jest.fn();
-  express.urlencoded = jest.fn();
-  return express;
-});
-
 // Mock CORS
-jest.mock('cors', () => jest.fn());
+jest.mock('cors', () => () => (req, res, next) => next());
 
 // Mock Helmet
-jest.mock('helmet', () => jest.fn());
+jest.mock('helmet', () => () => (req, res, next) => next());
 
 // Mock Morgan
 jest.mock('morgan', () => jest.fn(() => (req, res, next) => next()));
@@ -151,6 +135,7 @@ jest.mock('prom-client', () => ({
     metrics: jest.fn(() => 'test-metrics'),
     contentType: 'text/plain'
   })),
+  collectDefaultMetrics: jest.fn(),
   Counter: jest.fn(() => ({
     inc: jest.fn(),
     reset: jest.fn()
@@ -171,15 +156,3 @@ jest.mock('prom-client', () => ({
 const originalConsoleLog = console.log;
 const originalConsoleError = console.error;
 const originalConsoleWarn = console.warn;
-
-beforeAll(() => {
-  console.log = jest.fn();
-  console.error = jest.fn();
-  console.warn = jest.fn();
-});
-
-afterAll(() => {
-  console.log = originalConsoleLog;
-  console.error = originalConsoleError;
-  console.warn = originalConsoleWarn;
-});
