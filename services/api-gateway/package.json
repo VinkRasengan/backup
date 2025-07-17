@@ -4,7 +4,7 @@
   "description": "API Gateway for Anti-Fraud Platform Microservices",
   "main": "app.js",
   "scripts": {
-    "start": "node app.js",
+    "start": "node src/app.js",
     "start:debug": "node start-debug.js",
     "start:full": "node src/app.js",
     "dev": "nodemon src/app.js",

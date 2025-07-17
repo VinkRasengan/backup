@@ -183,7 +183,7 @@
     {
       "type": "static",
       "name": "factcheck-frontend",
-      "buildCommand": "cd client && npm install && npm run build",
+      "buildCommand": "cd client && npm ci && npm run build",
       "staticPublishPath": "./client/build",
       "repo": "https://github.com/VinkRasengan/backup",
       "branch": "main",
