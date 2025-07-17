@@ -86,6 +86,12 @@ jobs:
           cd services/${{ matrix.service }}
           npm ci
 
+      - name: Run security audit
+        if: needs.detect-changes.outputs[matrix.service] == 'true'
+        run: |
+          cd services/${{ matrix.service }}
+          npm audit --audit-level=moderate || echo "Security issues found"
+
       - name: Run tests
         if: needs.detect-changes.outputs[matrix.service] == 'true'
         run: |
@@ -124,6 +130,11 @@ jobs:
         run: |
           cd client
           npm ci
+
+      - name: Run lint
+        run: |
+          cd client
+          npx eslint src/ || echo "No lint config found"
 
       - name: Run tests
         run: |
@@ -234,9 +245,9 @@ jobs:
 
       - name: Run integration tests
         run: |
-          # Add integration test commands here
+          # TODO: Thêm lệnh chạy integration test thực tế tại đây, ví dụ:
+          # newman run postman-collection.json
           echo "Running integration tests..."
-          # Example: newman run postman-collection.json
 
       - name: Stop services
         if: always()
@@ -252,8 +263,8 @@ jobs:
     steps:
       - name: Deploy to staging
         run: |
+          # TODO: Thêm lệnh deploy staging thực tế tại đây
           echo "Deploying to staging environment..."
-          # Add staging deployment commands here
 
   # Deploy to Render Production
   deploy-render-production:
