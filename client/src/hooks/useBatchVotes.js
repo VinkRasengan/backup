@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8080';
+const API_BASE_URL = process.env.REACT_APP_API_URL || '${process.env.REACT_APP_API_URL || "http://localhost:8080"}';
 
 export const useBatchVotes = () => {
     const [votesData, setVotesData] = useState({});

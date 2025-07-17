@@ -236,7 +236,7 @@ const SubmitArticlePage = () => {
       try {
         // Test API connectivity first
         console.log('🧪 Testing API connectivity...');
-        const testResponse = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:8080'}/health`);
+        const testResponse = await fetch(`${process.env.REACT_APP_API_URL || '${process.env.REACT_APP_API_URL || "http://localhost:8080"}'}/health`);
         console.log('🧪 API health check status:', testResponse.status);
         
         // Use communityAPI service with correct endpoint
@@ -606,7 +606,7 @@ window.testSubmitAPI = async () => {
   
   try {
     // Test API Gateway health
-    const baseURL = process.env.REACT_APP_API_URL || 'http://localhost:8080';
+    const baseURL = process.env.REACT_APP_API_URL || '${process.env.REACT_APP_API_URL || "http://localhost:8080"}';
     console.log('🌐 Testing API Gateway at:', baseURL);
     
     const healthResponse = await fetch(`${baseURL}/health`);
