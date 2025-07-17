@@ -25,8 +25,7 @@ COPY package*.json ./
 RUN npm ci
 # Copy shared utilities first
 # COPY shared/ ./shared/
-# Copy service-specific code
-COPY services/api-gateway/ ./
+COPY . ./
 USER nodejs
 EXPOSE 8080
 CMD ["dumb-init", "npm", "run", "dev"]
@@ -37,8 +36,7 @@ FROM base AS production
 # Copy production dependencies
 COPY --from=deps --chown=nodejs:nodejs /app/node_modules ./node_modules
 
-# Copy shared utilities first
-# COPY --chown=nodejs:nodejs shared/ ./shared/
+COPY --chown=nodejs:nodejs ../shared/ ./shared/
 COPY --chown=nodejs:nodejs . ./
 
 # Copy service-specific code
