@@ -61,7 +61,10 @@ const corsOptions = {
     if (!origin) return callback(null, true);
     
     const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',') || [
+      'https://frontend-j8de.onrender.com',
       'https://frontend-eklp.onrender.com',
+      'https://factcheck-frontend-production.onrender.com',
+      'https://client-21c1.onrender.com',
       'http://localhost:3000',
       'http://localhost:8080'
     ];

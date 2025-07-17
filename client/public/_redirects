@@ -2,10 +2,10 @@
 # CRITICAL: Order matters! More specific rules first, catch-all last
 
 # API routes - proxy to backend
-/api/* https://backup-zhhs.onrender.com/api/:splat 200
+/api/* https://api-gateway-3lr5.onrender.com/api/:splat 200
 
 # Health check
-/health https://backup-zhhs.onrender.com/health 200
+/health https://api-gateway-3lr5.onrender.com/health 200
 
 # SPA fallback - MUST BE LAST RULE
 # All other routes serve React app (including /community, /chat, /admin, etc.)

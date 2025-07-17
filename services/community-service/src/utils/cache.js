@@ -39,13 +39,13 @@ class CacheManager {
    */
   async connect() {
     // Skip Redis connection if not available, use memory cache only
-    if (!process.env.REDIS_URL && process.env.NODE_ENV === 'development') {
+    if (!process.env.REDIS_URL) {
       logger.info('Redis URL not configured, using memory cache only');
       return;
     }
 
     try {
-      const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
+      const redisUrl = process.env.REDIS_URL;
 
       this.client = redis.createClient({
         url: redisUrl,
