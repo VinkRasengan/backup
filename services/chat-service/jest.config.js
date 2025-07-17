@@ -20,7 +20,8 @@ module.exports = {
       useESM: true,
     },
   },
-  moduleNameMapping: {
+  // Đổi từ moduleNameMapping sang moduleNameMapper để đúng với cấu hình của Jest
+  moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
   },
   transform: {
