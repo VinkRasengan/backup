@@ -5,6 +5,7 @@
   "private": true,
   "scripts": {
     "start": "powershell -ExecutionPolicy Bypass -File ./scripts/start-services.ps1",
+    "start:all": "powershell -ExecutionPolicy Bypass -File ./start-all.ps1",
     "start:together": "concurrently --kill-others-on-fail --prefix-colors \"bgBlue.bold,bgMagenta.bold,bgGreen.bold,bgYellow.bold,bgRed.bold,bgCyan.bold,bgWhite.bold\" \"npm run start:auth\" \"npm run start:link\" \"npm run start:community\" \"npm run start:chat\" \"npm run start:news\" \"npm run start:admin\" \"npm run start:gateway\"",
     "start:separate": "node scripts/start-services-separate.js",
     "start:separate:ps1": "powershell -ExecutionPolicy Bypass -File scripts/start-services-separate.ps1",

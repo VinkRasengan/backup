@@ -30,3 +30,13 @@ services:
     ports: ["3010:3000"]
     environment:
       - GF_SECURITY_ADMIN_PASSWORD=admin
+
+  community-service:
+    build: ./services/community-service
+    ports:
+      - "3002:3002"
+    environment:
+      - REDIS_HOST=redis
+      - EVENT_BUS_ENABLED=true
+    depends_on:
+      - redis

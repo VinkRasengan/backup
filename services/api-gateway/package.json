@@ -4,10 +4,10 @@
   "description": "API Gateway for Anti-Fraud Platform Microservices",
   "main": "app.js",
   "scripts": {
-    "start": "node src/app.js",
+    "start": "node app.js",
     "start:debug": "node start-debug.js",
-    "start:full": "node src/app.js",
-    "dev": "nodemon src/app.js",
+    "start:full": "node app.js",
+    "dev": "nodemon app.js",
     "test": "jest --forceExit --detectOpenHandles",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
@@ -29,7 +29,7 @@
     "logs:tail": "tail -f logs/*.log || echo \"No logs found\"",
     "dev:debug": "NODE_ENV=development DEBUG=* npm start",
     "prod:start": "NODE_ENV=production npm start",
-    "start:prod": "NODE_ENV=production node src/app.js"
+    "start:prod": "NODE_ENV=production node app.js"
   },
   "dependencies": {
     "axios": "^1.6.2",
