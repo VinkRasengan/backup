@@ -1,0 +1,170 @@
+name: Security & Quality Scan
+
+on:
+  push:
+    branches:  main, develop ]
+  pull_request:
+    branches:  main, develop ]
+  schedule:
+    # Chạy hàng tuần vào thứ 2lúc 2 AM UTC
+    - cron: '0 2 * * 1'
+  workflow_dispatch:
+
+env:
+  NODE_VERSION: '18
+  DOCKER_BUILDKIT: 1
+
+jobs:
+  # Security scanning
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: npm   - name: Install dependencies
+      run: |
+        npm ci
+        cd client && npm ci
+        for service in services/*/; do
+          if [ -f$service/package.json" ]; then
+            echo "Installing dependencies for $service"
+            cd "$service"
+            npm ci
+            cd - > /dev/null
+          fi
+        done
+
+    - name: Run npm audit
+      run: |
+        npm audit --audit-level=moderate
+        cd client && npm audit --audit-level=moderate
+        for service in services/*/; do
+          if [ -f$service/package.json" ]; then
+            echo Running npm audit for $service"
+            cd "$service"
+            npm audit --audit-level=moderate || true
+            cd - > /dev/null
+          fi
+        done
+
+    - name: Run Snyk security scan
+      uses: snyk/actions/node@master
+      env:
+        SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+      with:
+        args: --severity-threshold=high
+
+  # Code quality checks
+  code-quality:
+    name: Code Quality
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: npm   - name: Install dependencies
+      run: |
+        npm ci
+        cd client && npm ci
+
+    - name: Run ESLint
+      run: |
+        npx eslint . --ext .js,.jsx,.ts,.tsx || echo "ESLint issues found"
+        cd client && npx eslint . --ext .js,.jsx,.ts,.tsx || echo "Client ESLint issues found   - name: Run Prettier check
+      run: |
+        npx prettier --check . || echo "Prettier formatting issues found"
+        cd client && npx prettier --check . || echo "Client Prettier issues found"
+
+    - name: Check for console.log statements
+      run: |
+        if grep -r "console\.log" . --include=*.js --include="*.jsx --include=*.ts --include="*.tsx" | grep -v "node_modules" | grep -v ".git"; then
+          echoWarning: console.log statements found in production code
+          exit1fi
+
+  # Dependency vulnerability scan
+  dependency-scan:
+    name: Dependency Vulnerability Scan
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4    - name: Run Trivy vulnerability scanner
+      uses: aquasecurity/trivy-action@master
+      with:
+        scan-type:fs
+        scan-ref: .'
+        format: 'sarif'
+        output: trivy-results.sarif'
+
+    - name: Upload Trivy scan results to GitHub Security tab
+      uses: github/codeql-action/upload-sarif@v3     if: always()
+      with:
+        sarif_file: trivy-results.sarif'
+
+  # Docker image security scan
+  docker-security:
+    name: Docker Security Scan
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push&& github.ref == refs/heads/main steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Build Docker images
+      run: |
+        for service in services/*/; do
+          service_name=$(basename "$service")
+          if [ -f "$service/Dockerfile" ]; then
+            echo "Building Docker image for $service_name"
+            docker build -t "antifraud-$service_name:security-scan" "$service"
+          fi
+        done
+
+    - name: Run Trivy on Docker images
+      uses: aquasecurity/trivy-action@master
+      with:
+        scan-type: 'image
+        scan-ref: 'antifraud-api-gateway:security-scan'
+        format: 'sarif'
+        output:docker-trivy-results.sarif'
+
+    - name: Upload Docker scan results
+      uses: github/codeql-action/upload-sarif@v3     if: always()
+      with:
+        sarif_file:docker-trivy-results.sarif
+
+  # Performance testing
+  performance-test:
+    name: Performance Test
+    runs-on: ubuntu-latest
+    if: github.event_name == pull_request steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: npm   - name: Install dependencies
+      run: npm ci
+
+    - name: Run performance tests
+      run: |
+        # Chạy performance tests nếu có
+        if [ -f "scripts/performance-test.js" ]; then
+          node scripts/performance-test.js
+        else
+          echo "No performance tests found"
+        fi
+
+    - name: Generate performance report
+      run: |
+        echoPerformance test completed       # Có thể thêm logic tạo report ở đây 
