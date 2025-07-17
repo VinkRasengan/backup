@@ -9,9 +9,6 @@ import HamburgerMenu from './HamburgerMenu';
 import MobileTabBar from './MobileTabBar';
 import NotificationWidget from '../widgets/NotificationWidget';
 import QuickActionWidget from '../widgets/QuickActionWidget';
-import PerformanceMonitor from '../testing/PerformanceMonitor';
-import TestingDashboard from '../testing/TestingDashboard';
-import ScrollDebugPanel from '../debug/ScrollDebugPanel';
 import { cn } from '../../utils/cn';
 
 const NavigationLayout = ({ children, showHamburger = true, className, ...props }) => {
@@ -115,23 +112,8 @@ const NavigationLayout = ({ children, showHamburger = true, className, ...props 
         </>
       )}
 
-      {/* Performance Monitor */}
-      <PerformanceMonitor
-        isOpen={performanceMonitorOpen}
-        onClose={() => setPerformanceMonitorOpen(false)}
-      />
-
-      {/* Testing Dashboard */}
-      <TestingDashboard
-        isOpen={testingDashboardOpen}
-        onClose={() => setTestingDashboardOpen(false)}
-      />
-
       {/* Mobile Navigation Bar */}
       <MobileTabBar />
-
-      {/* Debug Tools */}
-      <ScrollDebugPanel />
 
       {/* Accessibility Skip Link */}
       <a

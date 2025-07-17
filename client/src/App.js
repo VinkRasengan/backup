@@ -5,7 +5,6 @@ import { useAuth } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { initAccessibility } from './utils/accessibility';
 import { globalCleanup } from './utils/requestOptimizer';
-import './utils/scrollDebugger';
 
 // Pages
 import HomePage from './pages/HomePage';
@@ -33,11 +32,7 @@ import NotificationsPage from './pages/NotificationsPage';
 import FavoritesPage from './pages/FavoritesPage';
 import AchievementsPage from './pages/AchievementsPage';
 import HelpPage from './pages/HelpPage';
-import TestIntegrationPage from './pages/TestIntegrationPage';
 import KnowledgeArticleDetailPage from './pages/KnowledgeArticlePage';
-
-import FirestoreTestPanel from './components/admin/FirestoreTestPanel';
-import TestSubmitAPI from './pages/TestSubmitAPI';
 
 // Components - organized imports
 import ProtectedRoute from './components/auth/ProtectedRoute';
@@ -261,30 +256,6 @@ function App() {
             }
           />
 
-          {/* Admin/Test Routes */}
-          <Route
-            path="/admin/firestore-test"
-            element={
-              <ProtectedRoute>
-                <FirestoreTestPanel />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/test-integration"
-            element={<TestIntegrationPage />}
-          />
-          <Route
-            path="/test-submit-api"
-            element={
-              <ProtectedRoute>
-                <TestSubmitAPI />
-              </ProtectedRoute>
-            }
-          />
-          
-
-          
           {/* Catch all route */}
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>
