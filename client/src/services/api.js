@@ -125,9 +125,10 @@ export const linkAPI = {
 
     // ✅ Strategy 1: Direct Link Service (fastest & most reliable)
     try {
-      console.log('🚀 Using direct link service (http://localhost:3002)');
-      const directResponse = await axios.post('http://localhost:3002/links/check', { url }, requestConfig);
-      
+      const linkServiceUrl = process.env.REACT_APP_LINK_SERVICE_URL || `${getApiBaseUrl()}/api/links`;
+      console.log(`🚀 Using direct link service (${linkServiceUrl})`);
+      const directResponse = await axios.post(`${linkServiceUrl}/check`, { url }, requestConfig);
+
       if (directResponse.status >= 200 && directResponse.status < 300) {
         console.log('✅ Direct link service success');
         return directResponse;
