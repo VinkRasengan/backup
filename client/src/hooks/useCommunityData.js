@@ -10,7 +10,8 @@ const getApiBaseUrl = () => {
   }
 
   // Fixed: Use API Gateway port 8080
-  return '${process.env.REACT_APP_API_URL || "http://localhost:8080"}/api';
+  const apiBaseUrl = process.env.REACT_APP_API_URL || "http://localhost:8080";
+    return `${apiBaseUrl}/api`;
 };
 
 // Smart Community Data Manager with Caching & Prefetching

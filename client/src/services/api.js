@@ -226,7 +226,7 @@ export const chatAPI = {
   sendGeminiMessage: async (message) => {
     try {
       console.log('Sending message to Gemini API:', message);
-      const response = await fetch(`${getApiBaseUrl()}/chat/gemini`, {
+      const response = await fetch(`${getApiBaseUrl()}/api/chat/gemini`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

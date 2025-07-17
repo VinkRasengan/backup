@@ -21,7 +21,8 @@ const getApiBaseUrl = () => {
     return '/api';
   }
 
-  return '${process.env.REACT_APP_API_URL || "http://localhost:8080"}/api';
+  const apiBaseUrl = process.env.REACT_APP_API_URL || "http://localhost:8080";
+    return `${apiBaseUrl}/api`;
 };
 
 const LatestNews = () => {

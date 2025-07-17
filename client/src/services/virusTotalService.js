@@ -2,7 +2,7 @@
 class VirusTotalService {
   constructor() {
     // ✅ Remove direct API access - all calls go through backend
-    this.baseURL = process.env.REACT_APP_API_URL || '${process.env.REACT_APP_API_URL || "http://localhost:8080"}';
+    this.baseURL = process.env.REACT_APP_API_URL || "http://localhost:8080";
     this.lastRequestTime = 0;
     this.rateLimitDelay = 1000; // Reduced delay since backend handles rate limiting
   }

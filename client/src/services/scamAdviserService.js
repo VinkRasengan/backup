@@ -3,7 +3,7 @@ import axios from 'axios';
 class ScamAdviserService {
   constructor() {
     // ✅ Use API Gateway instead of direct backend service
-    this.apiUrl = process.env.REACT_APP_API_URL || '${process.env.REACT_APP_API_URL || "http://localhost:8080"}';
+    this.apiUrl = process.env.REACT_APP_API_URL || "http://localhost:8080";
   }
 
   /**
