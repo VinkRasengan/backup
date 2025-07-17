@@ -770,6 +770,8 @@ const CheckLinkPage = () => {
                     </div>
 
                     {/* ScamAdviser Section */}
+                    
+                  
                     <div className="space-y-4">
                       <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
                         <div className="w-6 h-6 bg-orange-600 rounded flex items-center justify-center">
