@@ -12,7 +12,7 @@ RUN addgroup -g 1001 -S nodejs
 RUN adduser -S nodejs -u 1001
 
 # Copy service package files first (for better caching)
-COPY services/admin-service/package*.json ./
+COPY package*.json ./
 
 # Install dependencies with timeout and retry
 FROM base AS deps
@@ -24,13 +24,10 @@ RUN npm config set fetch-timeout 300000 && \
 
 # Development stage
 FROM base AS dev
-# Copy service package files
-COPY services/admin-service/package*.json ./
+COPY package*.json ./
 RUN npm ci
-# Copy shared utilities first
-COPY shared/ ./shared/
-# Copy service-specific code
-COPY services/admin-service/ ./
+COPY ../shared/ ./shared/
+COPY . ./
 USER nodejs
 EXPOSE 3006
 CMD ["dumb-init", "npm", "run", "dev"]
@@ -41,8 +38,7 @@ FROM base AS production
 # Copy production dependencies
 COPY --from=deps --chown=nodejs:nodejs /app/node_modules ./node_modules
 
-# Copy service-specific code (skip shared folder if not exists)
-COPY --chown=nodejs:nodejs services/admin-service/ ./
+COPY --chown=nodejs:nodejs . ./
 
 # Switch to non-root user
 USER nodejs
