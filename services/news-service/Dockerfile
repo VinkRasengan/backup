@@ -1,51 +1,33 @@
-# Multi-stage build for news-service
+# Dockerfile production cho news-service - chỉ sử dụng file trong thư mục này
 FROM node:18-alpine AS base
 
-# Install dumb-init for proper signal handling
-RUN apk add --no-cache dumb-init
+# Cài đặt các gói cần thiết
+RUN apk add --no-cache dumb-init curl
 
-# Create app directory
+# Tạo thư mục app và user không phải root
 WORKDIR /app
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S nodejs -u 1001
 
-# Create non-root user
-RUN addgroup -g 1001 -S nodejs
-RUN adduser -S nodejs -u 1001
-
-# Copy service package files first (for better caching)
+# Copy file package.json và package-lock.json để cài dependencies
 COPY package*.json ./
 
-# Install dependencies
-FROM base AS deps
-RUN npm install --only=production && npm cache clean --force
+# Cài dependencies production
+RUN npm ci --only=production && npm cache clean --force
 
-# Development stage
-FROM base AS dev
-COPY package*.json ./
-RUN npm ci
-COPY . ./
-USER nodejs
-EXPOSE 3003
-CMD ["dumb-init", "npm", "run", "dev"]
+# Copy mã nguồn (chỉ src và các file cấu hình cần thiết)
+COPY src/ ./src/
 
-# Production stage
-FROM base AS production
-
-# Copy production dependencies
-COPY --from=deps --chown=nodejs:nodejs /app/node_modules ./node_modules
-
-COPY --chown=nodejs:nodejs ../shared/ ./shared/
-
-COPY --chown=nodejs:nodejs . ./
-
-# Switch to non-root user
+# Đảm bảo quyền cho user nodejs
+RUN chown -R nodejs:nodejs /app
 USER nodejs
 
-# Expose port
-EXPOSE 3003
+# Expose port 3005
+EXPOSE 3005
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD curl -f http://localhost:3003/health/live || exit 1
+# Healthcheck
+HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
+  CMD curl -f http://localhost:3005/health || exit 1
 
-# Start the application
+# Start service
 CMD ["dumb-init", "node", "src/app.js"]
