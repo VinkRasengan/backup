@@ -1,53 +1,39 @@
-# Multi-stage build for admin-service
-FROM node:18-alpine AS base
+# syntax=docker/dockerfile:1
 
-# Install dumb-init and curl for health checks
+FROM node:18-alpine
+
+# Cài đặt các package cần thiết
 RUN apk add --no-cache dumb-init curl
 
-# Create app directory
+# Tạo thư mục app và user không phải root
 WORKDIR /app
+RUN addgroup -g 1001 -S nodejs && adduser -S nodejs -u 1001
 
-# Create non-root user
-RUN addgroup -g 1001 -S nodejs
-RUN adduser -S nodejs -u 1001
-
-# Copy service package files first (for better caching)
+# Copy package.json và package-lock.json vào trước để cache layer dependencies
 COPY package*.json ./
 
-# Install dependencies with timeout and retry
-FROM base AS deps
-RUN npm config set fetch-timeout 300000 && \
+# Cài đặt dependencies production
+RUN npm config set fetch-timeout 600000 && \
     npm config set fetch-retry-mintimeout 20000 && \
     npm config set fetch-retry-maxtimeout 120000 && \
-    npm install --only=production --no-audit --no-fund && \
+    npm install --only=production --no-audit --no-fund --prefer-offline && \
     npm cache clean --force
 
-# Development stage
-FROM base AS dev
-COPY package*.json ./
-RUN npm ci
-COPY . ./
-USER nodejs
-EXPOSE 3006
-CMD ["dumb-init", "npm", "run", "dev"]
+# Copy toàn bộ mã nguồn vào image
+COPY . .
 
-# Production stage
-FROM base AS production
+# Tạo thư mục logs và phân quyền
+RUN mkdir -p /app/logs && chown -R nodejs:nodejs /app
 
-# Copy production dependencies
-COPY --from=deps --chown=nodejs:nodejs /app/node_modules ./node_modules
-
-COPY --chown=nodejs:nodejs . ./
-
-# Switch to non-root user
+# Chạy bằng user không phải root
 USER nodejs
 
-# Expose port
+# Expose port (nên để đúng với PORT app sử dụng, ví dụ 3006)
 EXPOSE 3006
 
-# Health check with proper endpoint
+# Healthcheck (có thể chỉnh lại port nếu cần)
 HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
   CMD curl -f http://localhost:3006/health || exit 1
 
-# Start the application
+# Lệnh khởi động app
 CMD ["dumb-init", "node", "src/app.js"]
