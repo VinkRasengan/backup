@@ -1,53 +1,39 @@
-# Multi-stage build for community-service
-FROM node:18-alpine AS base
+# syntax=docker/dockerfile:1
 
-# Install dumb-init for proper signal handling
-RUN apk add --no-cache dumb-init
+FROM node:18-alpine
 
-# Create app directory
+# Cài curl để healthcheck
+RUN apk add --no-cache curl
+
+# Tạo thư mục app và user không phải root
 WORKDIR /app
+RUN addgroup -g 1001 -S nodejs && adduser -S nodejs -u 1001
 
-# Create non-root user
-RUN addgroup -g 1001 -S nodejs
-RUN adduser -S nodejs -u 1001
-
-# Copy service package files first (for better caching)
+# Copy package.json và package-lock.json vào trước để cache layer dependencies
 COPY package*.json ./
 
-# Install dependencies
-FROM base AS deps
-RUN npm install --only=production && npm cache clean --force
+# Cài đặt dependencies production
+RUN npm config set fetch-timeout 600000 && \
+    npm config set fetch-retry-mintimeout 20000 && \
+    npm config set fetch-retry-maxtimeout 120000 && \
+    npm install --only=production --no-audit --no-fund --prefer-offline && \
+    npm cache clean --force
 
-# Development stage
-FROM base AS dev
-# Copy service package files
-COPY package*.json ./
-RUN npm ci
-# Copy shared utilities first
-COPY . ./
-USER nodejs
-EXPOSE 3005
-CMD ["dumb-init", "npm", "run", "dev"]
+# Copy toàn bộ mã nguồn vào image
+COPY . .
 
-# Production stage
-FROM base AS production
+# Chown thư mục cho user nodejs
+RUN chown -R nodejs:nodejs /app
 
-# Copy production dependencies
-COPY --from=deps --chown=nodejs:nodejs /app/node_modules ./node_modules
-
-COPY --chown=nodejs:nodejs . ./
-
-# Copy service-specific code
-
-# Switch to non-root user
+# Chạy bằng user không phải root
 USER nodejs
 
-# Expose port
-EXPOSE 3005
+# Expose port đúng với app (3003)
+EXPOSE 3003
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD curl -f http://localhost:3005/health/live || exit 1
+# Healthcheck đúng endpoint
+HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
+  CMD curl -f http://localhost:3003/health || exit 1
 
-# Start the application
-CMD ["dumb-init", "node", "src/app.js"]
+# Lệnh khởi động app
+CMD ["node", "src/app.js"]
