@@ -24,7 +24,6 @@ FROM base AS dev
 COPY package*.json ./
 RUN npm ci
 # Copy shared utilities first
-COPY shared/ ./shared/
 COPY . ./
 USER nodejs
 EXPOSE 8080

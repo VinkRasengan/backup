@@ -22,7 +22,6 @@ RUN npm install --only=production && npm cache clean --force
 FROM base AS dev
 COPY package*.json ./
 RUN npm ci
-COPY ../shared/ ./shared/
 COPY . ./
 USER nodejs
 EXPOSE 3003

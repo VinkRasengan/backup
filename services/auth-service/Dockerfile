@@ -24,7 +24,6 @@ FROM base AS dev
 COPY package*.json ./
 RUN npm ci
 # Copy shared utilities first
-# COPY shared/ ./shared/
 COPY . ./
 USER nodejs
 EXPOSE 3001
@@ -36,7 +35,7 @@ FROM base AS production
 # Copy production dependencies
 COPY --from=deps --chown=nodejs:nodejs /app/node_modules ./node_modules
 
-COPY --chown=nodejs:nodejs ../shared/ ./shared/
+COPY --chown=nodejs:nodejs shared/ ./shared/
 COPY --chown=nodejs:nodejs . ./
 
 # Copy service-specific code

@@ -26,7 +26,6 @@ RUN npm config set fetch-timeout 300000 && \
 FROM base AS dev
 COPY package*.json ./
 RUN npm ci
-COPY ../shared/ ./shared/
 COPY . ./
 USER nodejs
 EXPOSE 3006

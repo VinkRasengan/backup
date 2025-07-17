@@ -24,7 +24,6 @@ FROM base AS dev
 COPY services/link-service/package*.json ./
 RUN npm ci
 # Copy shared utilities first
-COPY shared/ ./shared/
 # Copy service-specific code
 COPY services/link-service/ ./
 USER nodejs
