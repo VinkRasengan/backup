@@ -1,53 +1,39 @@
-# Multi-stage build for auth-service
+# Optimized Dockerfile for auth-service (chỉ sử dụng file nội bộ, multi-stage build)
 FROM node:18-alpine AS base
 
-# Install dumb-init for proper signal handling
-RUN apk add --no-cache dumb-init
+# Cài đặt các package cần thiết
+RUN apk add --no-cache dumb-init curl
 
-# Create app directory
+# Tạo thư mục app và user không phải root
 WORKDIR /app
+RUN addgroup -g 1001 -S nodejs && adduser -S nodejs -u 1001
 
-# Create non-root user
-RUN addgroup -g 1001 -S nodejs
-RUN adduser -S nodejs -u 1001
-
-# Copy service package files first (for better caching)
-COPY package*.json ./
-
-# Install dependencies
+# Stage cài dependencies production
 FROM base AS deps
-RUN npm install --only=production && npm cache clean --force
+COPY package*.json ./
+RUN npm config set fetch-timeout 600000 && \
+    npm config set fetch-retry-mintimeout 20000 && \
+    npm config set fetch-retry-maxtimeout 120000 && \
+    npm install --only=production --no-audit --no-fund --prefer-offline && \
+    npm cache clean --force
 
-# Development stage
+# Stage dev (cài full dependencies cho phát triển)
 FROM base AS dev
-# Copy service package files
 COPY package*.json ./
 RUN npm ci
-# Copy shared utilities first
-COPY . ./
+COPY . .
+RUN chown -R nodejs:nodejs /app
 USER nodejs
 EXPOSE 3001
 CMD ["dumb-init", "npm", "run", "dev"]
 
-# Production stage
+# Stage production
 FROM base AS production
-
-# Copy production dependencies
 COPY --from=deps --chown=nodejs:nodejs /app/node_modules ./node_modules
-
-COPY --chown=nodejs:nodejs . ./
-
-# Copy service-specific code
-
-# Switch to non-root user
+COPY --chown=nodejs:nodejs . .
+RUN mkdir -p /app/logs && chown -R nodejs:nodejs /app
 USER nodejs
-
-# Expose port
 EXPOSE 3001
-
-# Health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD curl -f http://localhost:3001/health/live || exit 1
-
-# Start the application
+HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
+  CMD curl -f http://localhost:3001/health || exit 1
 CMD ["dumb-init", "node", "src/app.js"]
