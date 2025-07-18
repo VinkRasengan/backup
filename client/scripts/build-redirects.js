@@ -27,10 +27,10 @@ function buildRedirects() {
     process.exit(1);
   }
 
-  // Get API Gateway URL from environment
-  const apiGatewayUrl = process.env.REACT_APP_API_GATEWAY_URL ||
-                       process.env.REACT_APP_API_URL ||
-                       'https://backup-zhhs.onrender.com';
+  // Get API Gateway URL from environment (updated for current deployment)
+  const apiGatewayUrl = process.env.REACT_APP_API_URL ||
+                       process.env.REACT_APP_API_GATEWAY_URL ||
+                       'https://api-gateway-3lr5.onrender.com';
 
   console.log('🔗 Using API Gateway URL:', apiGatewayUrl);
 

@@ -1,9 +1,14 @@
-# Render Static Site Redirects
+# Render Static Site Redirects - Production
 # API routes - proxy to backend
 /api/* https://api-gateway-3lr5.onrender.com/api/:splat 200
 
 # Health check
 /health https://api-gateway-3lr5.onrender.com/health 200
 
-# SPA fallback for all other routes
+# Static assets (don't redirect these)
+/static/* /static/:splat 200
+/favicon.ico /favicon.ico 200
+/manifest.json /manifest.json 200
+
+# SPA fallback for all other routes (React Router)
 /* /index.html 200

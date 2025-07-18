@@ -1,0 +1,9 @@
+# Render Static Site Redirects Template
+# API routes - proxy to backend (environment variable will be replaced during build)
+/api/* __API_GATEWAY_URL__/api/:splat 200
+
+# Health check
+/health __API_GATEWAY_URL__/health 200
+
+# SPA fallback for all other routes (React Router)
+/* /index.html 200
