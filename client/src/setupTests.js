@@ -129,6 +129,66 @@ jest.mock('js-cookie', () => ({
   remove: jest.fn()
 }));
 
+// Mock axios
+jest.mock('axios', () => ({
+  default: {
+    create: jest.fn(() => ({
+      get: jest.fn(() => Promise.resolve({ data: {} })),
+      post: jest.fn(() => Promise.resolve({ data: {} })),
+      put: jest.fn(() => Promise.resolve({ data: {} })),
+      delete: jest.fn(() => Promise.resolve({ data: {} })),
+      interceptors: {
+        request: { use: jest.fn() },
+        response: { use: jest.fn() }
+      },
+      defaults: { baseURL: 'http://localhost:8080' }
+    })),
+    get: jest.fn(() => Promise.resolve({ data: {} })),
+    post: jest.fn(() => Promise.resolve({ data: {} })),
+    put: jest.fn(() => Promise.resolve({ data: {} })),
+    delete: jest.fn(() => Promise.resolve({ data: {} }))
+  },
+  create: jest.fn(() => ({
+    get: jest.fn(() => Promise.resolve({ data: {} })),
+    post: jest.fn(() => Promise.resolve({ data: {} })),
+    put: jest.fn(() => Promise.resolve({ data: {} })),
+    delete: jest.fn(() => Promise.resolve({ data: {} })),
+    interceptors: {
+      request: { use: jest.fn() },
+      response: { use: jest.fn() }
+    },
+    defaults: { baseURL: 'http://localhost:8080' }
+  }))
+}));
+
+// Mock framer-motion
+jest.mock('framer-motion', () => ({
+  motion: {
+    div: 'div',
+    span: 'span',
+    button: 'button',
+    form: 'form',
+    input: 'input',
+    textarea: 'textarea',
+    select: 'select',
+    option: 'option',
+    h1: 'h1',
+    h2: 'h2',
+    h3: 'h3',
+    p: 'p',
+    a: 'a',
+    img: 'img',
+    ul: 'ul',
+    li: 'li'
+  },
+  AnimatePresence: ({ children }) => children,
+  useAnimation: () => ({
+    start: jest.fn(),
+    stop: jest.fn(),
+    set: jest.fn()
+  })
+}));
+
 // Suppress console warnings in tests
 const originalError = console.error;
 beforeAll(() => {
