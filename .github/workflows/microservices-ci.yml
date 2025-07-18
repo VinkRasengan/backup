@@ -8,6 +8,8 @@ on:
       - 'client/**'
       - 'docker-compose.yml'
       - '.github/workflows/microservices-ci.yml'
+      - 'package.json'
+      - 'package-lock.json'
   pull_request:
     branches: [ main ]
     paths:
@@ -36,6 +38,7 @@ jobs:
       phishtank-service: ${{ steps.changes.outputs.phishtank-service }}
       criminalip-service: ${{ steps.changes.outputs.criminalip-service }}
       frontend: ${{ steps.changes.outputs.frontend }}
+      any-service: ${{ steps.changes.outputs.api-gateway || steps.changes.outputs.auth-service || steps.changes.outputs.link-service || steps.changes.outputs.community-service || steps.changes.outputs.chat-service || steps.changes.outputs.news-service || steps.changes.outputs.admin-service || steps.changes.outputs.phishtank-service || steps.changes.outputs.criminalip-service }}
     steps:
       - uses: actions/checkout@v4
       - uses: dorny/paths-filter@v3
@@ -82,19 +85,61 @@ jobs:
           npm ci --silent
         timeout-minutes: 10
 
+      - name: Check required scripts
+        run: |
+          echo "🔍 Checking required scripts..."
+          required_scripts=(
+            "scripts/ci-cd-validator.js"
+            "scripts/ci-cd-auto-fix.js"
+            "scripts/deploy-render-production.js"
+          )
+          
+          for script in "${required_scripts[@]}"; do
+            if [ ! -f "$script" ]; then
+              echo "❌ Missing required script: $script"
+              exit 1
+            else
+              echo "✅ Found: $script"
+            fi
+          done
+
       - name: Run CI/CD validation
         run: |
           npm run validate:cicd || echo "Validation completed with warnings"
+        continue-on-error: true
 
       - name: Auto-fix CI/CD issues
         run: |
           npm run fix:cicd || echo "Auto-fix completed"
+        continue-on-error: true
+
+      - name: Basic validation fallback
+        run: |
+          echo "🔍 Running basic validation..."
+          
+          # Check if all required directories exist
+          for dir in client services scripts; do
+            if [ ! -d "$dir" ]; then
+              echo "❌ Missing directory: $dir"
+              exit 1
+            fi
+          done
+          
+          # Check if package.json files exist
+          for pkg in package.json client/package.json; do
+            if [ ! -f "$pkg" ]; then
+              echo "❌ Missing package.json: $pkg"
+              exit 1
+            fi
+          done
+          
+          echo "✅ Basic validation passed"
 
   # Test and build services
   test-and-build:
     needs: [detect-changes, validate-cicd]
     runs-on: ubuntu-latest
-    if: ${{ needs.detect-changes.outputs.api-gateway == 'true' || needs.detect-changes.outputs.auth-service == 'true' || needs.detect-changes.outputs.link-service == 'true' || needs.detect-changes.outputs.community-service == 'true' || needs.detect-changes.outputs.chat-service == 'true' || needs.detect-changes.outputs.news-service == 'true' || needs.detect-changes.outputs.admin-service == 'true' || needs.detect-changes.outputs.phishtank-service == 'true' || needs.detect-changes.outputs.criminalip-service == 'true' }}
+    if: needs.detect-changes.outputs.any-service == 'true'
     strategy:
       fail-fast: false
       matrix:
@@ -139,6 +184,18 @@ jobs:
           npm audit --audit-level=high || echo "⚠️ Security vulnerabilities found in ${{ matrix.service }}"
         continue-on-error: true
 
+      - name: Check for tests
+        if: needs.detect-changes.outputs[matrix.service] == 'true' && steps.check-service.outputs.exists == 'true'
+        run: |
+          cd services/${{ matrix.service }}
+          if [ ! -d "src/__tests__" ] && [ ! -d "tests" ] && [ ! -d "__tests__" ]; then
+            echo "❌ No tests found for ${{ matrix.service }}"
+            echo "Please add tests to ensure code quality"
+            exit 1
+          else
+            echo "✅ Tests found for ${{ matrix.service }}"
+          fi
+
       - name: Run linting
         if: needs.detect-changes.outputs[matrix.service] == 'true' && steps.check-service.outputs.exists == 'true'
         run: |
@@ -146,9 +203,9 @@ jobs:
           if npm run lint --if-present; then
             echo "✅ Linting passed for ${{ matrix.service }}"
           else
-            echo "⚠️ Linting issues found in ${{ matrix.service }}"
+            echo "❌ Linting failed for ${{ matrix.service }}"
+            exit 1
           fi
-        continue-on-error: true
 
       - name: Run tests
         if: needs.detect-changes.outputs[matrix.service] == 'true' && steps.check-service.outputs.exists == 'true'
@@ -157,7 +214,7 @@ jobs:
           if npm test -- --passWithNoTests --forceExit --detectOpenHandles --maxWorkers=2; then
             echo "✅ Tests passed for ${{ matrix.service }}"
           else
-            echo "⚠️ Tests failed for ${{ matrix.service }}"
+            echo "❌ Tests failed for ${{ matrix.service }}"
             exit 1
           fi
         timeout-minutes: 10
@@ -211,15 +268,26 @@ jobs:
             "
           fi
 
+      - name: Check for frontend tests
+        run: |
+          cd client
+          if [ ! -d "src/__tests__" ] && [ ! -d "tests" ] && [ ! -d "__tests__" ]; then
+            echo "❌ No tests found for frontend"
+            echo "Please add tests to ensure code quality"
+            exit 1
+          else
+            echo "✅ Tests found for frontend"
+          fi
+
       - name: Run lint
         run: |
           cd client
           if npm run lint --if-present; then
             echo "✅ Frontend linting passed"
           else
-            echo "⚠️ Frontend linting issues found"
+            echo "❌ Frontend linting failed"
+            exit 1
           fi
-        continue-on-error: true
 
       - name: Run tests
         run: |
@@ -243,7 +311,7 @@ jobs:
   # Build and push Docker images
   build-images:
     needs: [detect-changes, test-and-build]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.detect-changes.outputs.any-service == 'true'
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -288,7 +356,21 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
-          platforms: linux/amd64
+          platforms: linux/amd64,linux/arm64
+
+      - name: Scan for vulnerabilities
+        if: needs.detect-changes.outputs[matrix.service] == 'true'
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/${{ matrix.service }}:${{ github.sha }}
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+
+      - name: Upload Trivy scan results to GitHub Security tab
+        if: needs.detect-changes.outputs[matrix.service] == 'true'
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: 'trivy-results.sarif'
 
   # Build and push frontend image
   build-frontend-image:
@@ -329,7 +411,19 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
-          platforms: linux/amd64
+          platforms: linux/amd64,linux/arm64
+
+      - name: Scan for vulnerabilities
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/frontend:${{ github.sha }}
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+
+      - name: Upload Trivy scan results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: 'trivy-results.sarif'
 
   # Integration tests
   integration-tests:
@@ -364,18 +458,23 @@ jobs:
 
       - name: Create test environment
         run: |
-          cp .env.example .env
-          echo "FIREBASE_PROJECT_ID=test-project" >> .env
-          echo "JWT_SECRET=test-secret-for-integration-tests-very-long-key" >> .env
-          echo "GEMINI_API_KEY=test-key" >> .env
+          cp .env.example .env 2>/dev/null || echo "No .env.example found, creating basic .env"
+          echo "FIREBASE_PROJECT_ID=${{ secrets.FIREBASE_PROJECT_ID || 'test-project' }}" >> .env
+          echo "JWT_SECRET=${{ secrets.JWT_SECRET || 'test-secret-for-integration-tests-very-long-key' }}" >> .env
+          echo "GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY || 'test-key' }}" >> .env
           echo "REDIS_HOST=localhost" >> .env
           echo "REDIS_PORT=6379" >> .env
 
       - name: Start services with Docker Compose
         run: |
           docker-compose up -d --build
-          sleep 60
         timeout-minutes: 10
+
+      - name: Wait for Redis to be ready
+        run: |
+          echo "Waiting for Redis to be ready..."
+          timeout 60 bash -c 'until nc -z localhost 6379; do sleep 1; done' || exit 1
+          echo "✅ Redis is ready"
 
       - name: Wait for services to be ready
         run: |
@@ -417,7 +516,6 @@ jobs:
     needs: [build-images, build-frontend-image]
     if: github.event_name == 'push' && github.ref == 'refs/heads/develop'
     runs-on: ubuntu-latest
-    environment: staging
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -457,7 +555,6 @@ jobs:
     needs: [build-images, build-frontend-image]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
-    environment: production
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -516,3 +613,24 @@ jobs:
           else
             echo "⚠️ Some deployments may have failed"
           fi
+
+      - name: Notify Slack
+        if: always()
+        uses: slackapi/slack-github-action@v1.24.0
+        with:
+          payload: |
+            {
+              "text": "Deployment ${{ github.event_name }} completed: ${{ job.status }}",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*Deployment Status*\n• Event: ${{ github.event_name }}\n• Status: ${{ job.status }}\n• Branch: ${{ github.ref }}\n• Commit: ${{ github.sha }}"
+                  }
+                }
+              ]
+            }
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+        continue-on-error: true

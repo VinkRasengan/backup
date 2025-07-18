@@ -1,0 +1,24 @@
+# Logging configuration for microservices
+log_level: info
+log_format: json
+log_output: stdout
+
+# Structured logging fields
+log_fields:
+  service: unknown
+  version: 1.0.0
+  environment: development
+
+# Log rotation
+log_rotation:
+  max_size: 100MB
+  max_files: 5
+  max_age: 7d
+
+# Error tracking
+error_tracking:
+  enabled: true
+  sample_rate: 1.0
+  ignore_patterns:
+    - "ECONNREFUSED"
+    - "ENOTFOUND"

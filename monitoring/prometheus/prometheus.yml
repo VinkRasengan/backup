@@ -12,91 +12,54 @@ alerting:
           - alertmanager:9093
 
 scrape_configs:
-  # Prometheus itself
-  - job_name: 'prometheus'
-    static_configs:
-      - targets: ['localhost:9090']
-
-  # Node Exporter for system metrics
-  - job_name: 'node-exporter'
-    static_configs:
-      - targets: ['node-exporter:9100']
-
-  # API Gateway Service
   - job_name: 'api-gateway'
     static_configs:
-      - targets: ['host.docker.internal:8080']
+      - targets: ['api-gateway:3000']
     metrics_path: '/metrics'
-    scrape_interval: 10s
-    scrape_timeout: 5s
-  # Auth Service
+    scrape_interval: 5s
+
   - job_name: 'auth-service'
     static_configs:
-      - targets: ['host.docker.internal:3001']
+      - targets: ['auth-service:3001']
     metrics_path: '/metrics'
-    scrape_interval: 10s
-    scrape_timeout: 5s
+    scrape_interval: 5s
 
-  # Link Service
   - job_name: 'link-service'
     static_configs:
       - targets: ['link-service:3002']
     metrics_path: '/metrics'
-    scrape_interval: 10s
-    scrape_timeout: 5s
+    scrape_interval: 5s
 
-  # News Service
-  - job_name: 'news-service'
-    static_configs:
-      - targets: ['news-service:3005']
-    metrics_path: '/metrics'
-    scrape_interval: 10s
-    scrape_timeout: 5s
-
-  # Chat Service
-  - job_name: 'chat-service'
-    static_configs:
-      - targets: ['chat-service:3004']
-    metrics_path: '/metrics'
-    scrape_interval: 10s
-    scrape_timeout: 5s
-
-  # Community Service
   - job_name: 'community-service'
     static_configs:
       - targets: ['community-service:3003']
     metrics_path: '/metrics'
-    scrape_interval: 10s
-    scrape_timeout: 5s
+    scrape_interval: 5s
 
-  # Admin Service
+  - job_name: 'chat-service'
+    static_configs:
+      - targets: ['chat-service:3004']
+    metrics_path: '/metrics'
+    scrape_interval: 5s
+
+  - job_name: 'news-service'
+    static_configs:
+      - targets: ['news-service:3005']
+    metrics_path: '/metrics'
+    scrape_interval: 5s
+
   - job_name: 'admin-service'
     static_configs:
       - targets: ['admin-service:3006']
     metrics_path: '/metrics'
-    scrape_interval: 10s
-    scrape_timeout: 5s
+    scrape_interval: 5s
 
-  # CriminalIP Service
-  - job_name: 'criminalip-service'
+  - job_name: 'node-exporter'
     static_configs:
-      - targets: ['criminalip-service:3007']
-    metrics_path: '/metrics'
+      - targets: ['node-exporter:9100']
     scrape_interval: 10s
-    scrape_timeout: 5s
 
-  # PhishTank Service
-  - job_name: 'phishtank-service'
+  - job_name: 'redis-exporter'
     static_configs:
-      - targets: ['phishtank-service:3008']
-    metrics_path: '/metrics'
+      - targets: ['redis-exporter:9121']
     scrape_interval: 10s
-    scrape_timeout: 5s
-
-  # Frontend Health Check
-  - job_name: 'frontend'
-    static_configs:
-      - targets: ['frontend:3000']
-    metrics_path: '/health'
-    scrape_interval: 30s
-    scrape_timeout: 10s

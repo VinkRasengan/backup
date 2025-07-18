@@ -11,7 +11,6 @@
     "restart": "npm run stop && npm run start",
     "status": "node scripts/simple-status.js",
     "health": "node scripts/simple-status.js",
-
     "// === SERVICE MANAGEMENT ===": "",
     "start:auth": "cd services/auth-service && npm start",
     "start:link": "cd services/link-service && npm start",
@@ -21,7 +20,6 @@
     "start:admin": "cd services/admin-service && npm start",
     "start:gateway": "cd services/api-gateway && npm start",
     "start:client": "cd client && npm start",
-
     "dev:auth": "cd services/auth-service && npm run dev",
     "dev:link": "cd services/link-service && npm run dev",
     "dev:community": "cd services/community-service && npm run dev",
@@ -29,7 +27,6 @@
     "dev:news": "cd services/news-service && npm run dev",
     "dev:admin": "cd services/admin-service && npm run dev",
     "dev:gateway": "cd services/api-gateway && npm run dev",
-
     "// === SETUP & INSTALLATION ===": "",
     "setup": "npm install && npm run install:all && npm run env:setup",
     "setup:full": "npm run setup && npm run setup:validate",
@@ -37,7 +34,6 @@
     "install:all": "npm install --ignore-scripts && cd client && npm install && cd ../services/api-gateway && npm install && cd ../auth-service && npm install && cd ../link-service && npm install && cd ../community-service && npm install && cd ../chat-service && npm install && cd ../news-service && npm install && cd ../admin-service && npm install && cd ../phishtank-service && npm install && cd ../criminalip-service && npm install",
     "env:setup": "node scripts/env-setup.js",
     "generate:jwt": "node scripts/generate-jwt-secret.js",
-
     "// === TESTING ===": "",
     "test": "node scripts/antifraud.js test",
     "test:unit": "node scripts/antifraud.js test-unit",
@@ -54,43 +50,48 @@
     "test:phishtank": "cd services/phishtank-service && npm test",
     "test:criminalip": "cd services/criminalip-service && npm test",
     "test:client": "cd client && npm test",
-
     "// === DEPLOYMENT ===": "",
     "deploy": "node scripts/antifraud.js docker",
     "deploy:render": "node scripts/deploy-render-production.js",
     "deploy:k8s": "node scripts/antifraud.js k8s",
     "deploy:k8s:istio": "node scripts/antifraud.js k8s-istio",
     "deploy:k8s:consul": "node scripts/antifraud.js k8s-consul",
-
     "// === DOCKER ===": "",
     "docker": "node scripts/antifraud.js docker",
     "docker:logs": "node scripts/antifraud.js logs",
-
     "// === KUBERNETES ===": "",
     "k8s:apply": "kubectl apply -f k8s/",
     "k8s:delete": "kubectl delete namespace antifraud",
     "k8s:status": "kubectl get pods -n antifraud",
     "k8s:logs": "kubectl logs -f deployment/api-gateway -n antifraud",
-
     "// === MONITORING ===": "",
     "monitoring:start": "docker-compose -f docker-compose.monitoring.yml up -d",
     "monitoring:stop": "docker-compose -f docker-compose.monitoring.yml down",
     "monitoring:restart": "npm run monitoring:stop && npm run monitoring:start",
     "monitoring:logs": "docker-compose -f docker-compose.monitoring.yml logs -f",
-
     "// === PRODUCTION ===": "",
     "validate:production": "node scripts/validate-production-deployment.js",
     "health:production": "node scripts/health-check-production.js",
     "dashboard:production": "node scripts/deployment-dashboard.js",
     "monitor:production": "node scripts/deployment-dashboard.js --monitor",
-
     "// === UTILITIES ===": "",
     "health-check": "node scripts/project-health-check.js",
     "validate:cicd": "node scripts/ci-cd-validator.js",
     "fix:cicd": "node scripts/ci-cd-auto-fix.js",
+    "improve:cicd": "node scripts/improve-cicd-workflow.js",
+    "setup:monitoring": "node scripts/enhanced-monitoring.js",
+    "health:check": "./scripts/health-check.sh",
+    "monitoring:start": "docker-compose -f docker-compose.monitoring.yml up -d",
+    "monitoring:stop": "docker-compose -f docker-compose.monitoring.yml down",
+    "monitoring:logs": "docker-compose -f docker-compose.monitoring.yml logs -f",
     "info": "echo Frontend: http://localhost:3000, API Gateway: http://localhost:8080",
     "open": "start http://localhost:3000 || open http://localhost:3000 || xdg-open http://localhost:3000",
-    "help": "node scripts/antifraud.js help"
+    "help": "node scripts/antifraud.js help",
+    "improve:cicd": "node scripts/improve-cicd-workflow.js",
+    "// === WORKFLOW LINTER ===": "",
+    "workflow:check": "node scripts/check-workflow-status.js",
+    "workflow:fix": "node scripts/fix-workflow-linter-errors.js",
+    "workflow:validate": "node scripts/check-workflow-status.js && node scripts/fix-workflow-linter-errors.js"
   },
   "dependencies": {
     "axios": "^1.10.0",
