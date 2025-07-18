@@ -1,39 +1,52 @@
-# syntax=docker/dockerfile:1
-
+# Multi-stage Dockerfile for API Gateway
+# Supports development, production, and Render deployment
 FROM node:18-alpine
 
-# Cài đặt dumb-init để xử lý tín hiệu tốt hơn
+# Build arguments for different environments
+ARG NODE_ENV=production
+ARG BUILD_CONTEXT=local
+ARG DEFAULT_PORT=8080
+
+# Install system dependencies
 RUN apk add --no-cache dumb-init curl
 
-# Tạo thư mục app và user không phải root
+# Create app directory and non-root user
 WORKDIR /app
 RUN addgroup -g 1001 -S nodejs && adduser -S nodejs -u 1001
 
-# Copy file package để cache layer dependencies
+# Copy package files for better layer caching
 COPY package*.json ./
 
-# Cài đặt dependencies production
+# Install dependencies based on environment
 RUN npm config set fetch-timeout 600000 && \
     npm config set fetch-retry-mintimeout 20000 && \
     npm config set fetch-retry-maxtimeout 120000 && \
-    npm install --only=production --no-audit --no-fund --prefer-offline && \
+    if [ "$NODE_ENV" = "development" ]; then \
+        npm ci; \
+    else \
+        npm install --only=production --no-audit --no-fund --prefer-offline; \
+    fi && \
     npm cache clean --force
 
-# Copy toàn bộ mã nguồn vào image (chỉ nội bộ)
+# Copy application code
 COPY . .
 
-# Tạo thư mục logs và phân quyền
+# Create logs directory and set permissions
 RUN mkdir -p /app/logs && chown -R nodejs:nodejs /app
 
-# Chạy bằng user không phải root
+# Switch to non-root user
 USER nodejs
 
-# Expose port (mặc định 8080, có thể override qua biến môi trường)
-EXPOSE 8080
+# Expose port (configurable via build arg)
+EXPOSE ${DEFAULT_PORT}
 
-# Healthcheck (endpoint /health)
-HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
-  CMD curl -f http://localhost:${PORT:-8080}/health || exit 1
+# Health check with configurable port
+HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
+  CMD curl -f http://localhost:${PORT:-${DEFAULT_PORT}}/health || exit 1
 
-# Lệnh khởi động app
-CMD ["dumb-init", "node", "app.js"]
+# Start command based on environment
+CMD if [ "$NODE_ENV" = "development" ]; then \
+        dumb-init npm run dev; \
+    else \
+        dumb-init node app.js; \
+    fi

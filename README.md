@@ -120,11 +120,34 @@ JWT_SECRET=your-jwt-secret
 
 ### Available Scripts
 
-- `npm start` - Start all services in development mode
-- `npm run build` - Build for production
-- `npm test` - Run tests
-- `npm run lint` - Run linting
-- `npm run deploy` - Deploy to production
+#### Core Development
+- `npm start` - Start all services (cross-platform)
+- `npm run dev` - Start all services in development mode
+- `npm stop` - Stop all services
+- `npm restart` - Restart all services
+- `npm run status` - Check service status
+
+#### Setup & Installation
+- `npm run setup` - Install dependencies and setup environment
+- `npm run setup:full` - Complete setup with validation
+- `npm run env:setup` - Setup environment variables
+- `npm run generate:jwt` - Generate JWT secret
+
+#### Testing
+- `npm test` - Run all tests
+- `npm run test:services` - Test all microservices
+- `npm run test:unit` - Run unit tests
+- `npm run test:integration` - Run integration tests
+
+#### Deployment
+- `npm run deploy` - Deploy with Docker
+- `npm run deploy:render` - Deploy to Render
+- `npm run deploy:k8s` - Deploy to Kubernetes
+
+#### Monitoring & Production
+- `npm run health:production` - Check production health
+- `npm run dashboard:production` - Open production dashboard
+- `npm run monitoring:start` - Start monitoring stack
 
 ### Project Structure
 
