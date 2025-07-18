@@ -5,10 +5,19 @@ if (process.env.NODE_ENV !== 'production') {
   require('dotenv').config({ path: require('path').join(__dirname, '../../.env') });
 }
 
-// Get proxy target based on environment
+// Get proxy target with strict validation
 const getProxyTarget = () => {
-  // Use REACT_APP_API_URL if set, otherwise default to local
-  return process.env.REACT_APP_API_URL || 'http://localhost:8080';
+  if (process.env.REACT_APP_API_URL) {
+    return process.env.REACT_APP_API_URL;
+  }
+
+  // Warn about missing configuration
+  console.warn('⚠️  REACT_APP_API_URL not configured for proxy');
+  console.warn('💡 Set REACT_APP_API_URL in your .env file');
+  console.warn('💡 Local dev: REACT_APP_API_URL=http://localhost:8080');
+  console.warn('💡 Docker dev: REACT_APP_API_URL=http://api-gateway:8080');
+
+  return 'http://localhost:8080'; // Development fallback with warning
 };
 
 module.exports = function(app) {

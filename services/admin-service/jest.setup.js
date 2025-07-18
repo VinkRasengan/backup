@@ -1,3 +1,4 @@
+// Jest setup for admin-service
 // Polyfills for Node.js test environment
 const { TextEncoder, TextDecoder } = require('util');
 const { URL, URLSearchParams } = require('url');
@@ -10,6 +11,10 @@ global.URLSearchParams = URLSearchParams;
 // Mock environment variables for tests
 process.env.NODE_ENV = 'test';
 process.env.TEST_MODE = 'true';
+process.env.JWT_SECRET = 'test-jwt-secret-for-testing-minimum-32-characters';
+process.env.FIREBASE_PROJECT_ID = 'test-project';
+process.env.REDIS_HOST = 'localhost';
+process.env.REDIS_PORT = '6379';
 
 // Mock Firebase Admin
 jest.mock('firebase-admin', () => ({
@@ -21,13 +26,24 @@ jest.mock('firebase-admin', () => ({
     cert: jest.fn()
   },
   firestore: jest.fn(() => ({
-    collection: jest.fn(),
+    collection: jest.fn(() => ({
+      doc: jest.fn(() => ({
+        get: jest.fn(() => Promise.resolve({ exists: false, data: () => ({}) })),
+        set: jest.fn(() => Promise.resolve()),
+        update: jest.fn(() => Promise.resolve()),
+        delete: jest.fn(() => Promise.resolve())
+      })),
+      add: jest.fn(() => Promise.resolve({ id: 'test-id' })),
+      where: jest.fn(() => ({
+        get: jest.fn(() => Promise.resolve({ docs: [] }))
+      }))
+    })),
     doc: jest.fn(),
     batch: jest.fn(() => ({
       set: jest.fn(),
       update: jest.fn(),
       delete: jest.fn(),
-      commit: jest.fn()
+      commit: jest.fn(() => Promise.resolve())
     }))
   }))
 }));
@@ -35,92 +51,83 @@ jest.mock('firebase-admin', () => ({
 // Mock Redis
 jest.mock('redis', () => ({
   createClient: jest.fn(() => ({
-    connect: jest.fn(),
-    disconnect: jest.fn(),
-    get: jest.fn(),
-    set: jest.fn(),
-    del: jest.fn(),
-    exists: jest.fn(),
-    expire: jest.fn()
+    connect: jest.fn(() => Promise.resolve()),
+    disconnect: jest.fn(() => Promise.resolve()),
+    get: jest.fn(() => Promise.resolve(null)),
+    set: jest.fn(() => Promise.resolve()),
+    del: jest.fn(() => Promise.resolve()),
+    exists: jest.fn(() => Promise.resolve(0)),
+    expire: jest.fn(() => Promise.resolve()),
+    on: jest.fn(),
+    quit: jest.fn(() => Promise.resolve())
   }))
 }));
 
 // Mock Axios
 jest.mock('axios', () => ({
-  get: jest.fn(),
-  post: jest.fn(),
-  put: jest.fn(),
-  delete: jest.fn(),
-  create: jest.fn(() => ({
-    get: jest.fn(),
-    post: jest.fn(),
-    put: jest.fn(),
-    delete: jest.fn(),
-    interceptors: {
-      request: { use: jest.fn() },
-      response: { use: jest.fn() }
-    }
-  }))
-}));
-
-// Mock Winston logger
-jest.mock('winston', () => ({
-  createLogger: jest.fn(() => ({
-    info: jest.fn(),
-    error: jest.fn(),
-    warn: jest.fn(),
-    debug: jest.fn()
-  })),
-  format: {
-    combine: jest.fn(),
-    timestamp: jest.fn(),
-    errors: jest.fn(),
-    json: jest.fn(),
-    printf: jest.fn(),
-    colorize: jest.fn(),
-    simple: jest.fn()
+  default: {
+    create: jest.fn(() => ({
+      get: jest.fn(() => Promise.resolve({ data: {} })),
+      post: jest.fn(() => Promise.resolve({ data: {} })),
+      put: jest.fn(() => Promise.resolve({ data: {} })),
+      delete: jest.fn(() => Promise.resolve({ data: {} })),
+      interceptors: {
+        request: { use: jest.fn() },
+        response: { use: jest.fn() }
+      }
+    })),
+    get: jest.fn(() => Promise.resolve({ data: {} })),
+    post: jest.fn(() => Promise.resolve({ data: {} })),
+    put: jest.fn(() => Promise.resolve({ data: {} })),
+    delete: jest.fn(() => Promise.resolve({ data: {} }))
   },
-  transports: {
-    Console: jest.fn(),
-    File: jest.fn()
-  }
+  get: jest.fn(() => Promise.resolve({ data: {} })),
+  post: jest.fn(() => Promise.resolve({ data: {} })),
+  put: jest.fn(() => Promise.resolve({ data: {} })),
+  delete: jest.fn(() => Promise.resolve({ data: {} }))
 }));
 
 // Mock Express
 jest.mock('express', () => {
-  const express = jest.fn(() => ({
+  const mockExpress = jest.fn(() => ({
     use: jest.fn(),
     get: jest.fn(),
     post: jest.fn(),
     put: jest.fn(),
     delete: jest.fn(),
-    listen: jest.fn(),
-    set: jest.fn()
+    listen: jest.fn((port, callback) => {
+      if (callback) callback();
+      return { close: jest.fn() };
+    })
   }));
-  express.json = jest.fn();
-  express.urlencoded = jest.fn();
-  return express;
+  
+  mockExpress.json = jest.fn();
+  mockExpress.urlencoded = jest.fn();
+  mockExpress.static = jest.fn();
+  mockExpress.Router = jest.fn(() => ({
+    use: jest.fn(),
+    get: jest.fn(),
+    post: jest.fn(),
+    put: jest.fn(),
+    delete: jest.fn()
+  }));
+  
+  return mockExpress;
 });
 
-// Mock CORS
-jest.mock('cors', () => jest.fn());
-
-// Mock Helmet
-jest.mock('helmet', () => jest.fn());
-
-// Mock Morgan
+// Mock common middleware
+jest.mock('cors', () => jest.fn(() => (req, res, next) => next()));
+jest.mock('helmet', () => jest.fn(() => (req, res, next) => next()));
 jest.mock('morgan', () => jest.fn(() => (req, res, next) => next()));
-
-// Mock Rate Limiter
 jest.mock('express-rate-limit', () => jest.fn(() => (req, res, next) => next()));
 
 // Mock UUID
 jest.mock('uuid', () => ({
-  v4: jest.fn(() => 'test-uuid'),
+  v4: jest.fn(() => 'test-uuid-' + Math.random().toString(36).substr(2, 9)),
   validate: jest.fn(() => true)
 }));
 
-// Mock Crypto
+// Mock crypto
 jest.mock('crypto', () => ({
   randomBytes: jest.fn(() => ({ toString: jest.fn(() => 'test-random') })),
   createHash: jest.fn(() => ({
@@ -130,56 +137,23 @@ jest.mock('crypto', () => ({
   }))
 }));
 
-// Mock Node Cron
-jest.mock('node-cron', () => ({
-  schedule: jest.fn(() => ({
-    start: jest.fn(),
-    stop: jest.fn()
-  }))
+// Mock dotenv
+jest.mock('dotenv', () => ({
+  config: jest.fn()
 }));
 
-// Mock RSS Parser
-jest.mock('rss-parser', () => jest.fn().mockImplementation(() => ({
-  parseURL: jest.fn(),
-  parseString: jest.fn()
-})));
-
-// Mock Prometheus Client
-jest.mock('prom-client', () => ({
-  Registry: jest.fn(() => ({
-    registerMetric: jest.fn(),
-    metrics: jest.fn(() => 'test-metrics'),
-    contentType: 'text/plain'
-  })),
-  Counter: jest.fn(() => ({
-    inc: jest.fn(),
-    reset: jest.fn()
-  })),
-  Histogram: jest.fn(() => ({
-    observe: jest.fn(),
-    reset: jest.fn()
-  })),
-  Gauge: jest.fn(() => ({
-    set: jest.fn(),
-    inc: jest.fn(),
-    dec: jest.fn(),
-    reset: jest.fn()
-  }))
-}));
-
-// Suppress console output during tests
-const originalConsoleLog = console.log;
-const originalConsoleError = console.error;
-const originalConsoleWarn = console.warn;
-
+// Suppress console logs in tests unless explicitly needed
+const originalConsole = { ...console };
 beforeAll(() => {
   console.log = jest.fn();
-  console.error = jest.fn();
+  console.info = jest.fn();
   console.warn = jest.fn();
+  console.error = jest.fn();
 });
 
 afterAll(() => {
-  console.log = originalConsoleLog;
-  console.error = originalConsoleError;
-  console.warn = originalConsoleWarn;
+  Object.assign(console, originalConsole);
 });
+
+// Global test timeout
+jest.setTimeout(30000);

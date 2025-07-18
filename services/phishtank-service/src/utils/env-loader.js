@@ -9,7 +9,24 @@ const path = require('path');
 /**
  * Setup environment with validation
  */
-function setupEnvironment(serviceName, requiredVars = [], strict = false) {
+/**
+ * Setup environment with validation
+ * @param {string} serviceName - Name of the service
+ * @param {string[]} requiredVars - Required environment variables
+ * @param {boolean} strict - Whether to throw error on missing vars (default: true in production)
+ */
+/**
+ * Setup environment with validation
+ * @param {string} serviceName - Name of the service
+ * @param {string[]} requiredVars - Required environment variables
+ * @param {boolean} strict - Whether to throw error on missing vars (default: true in production)
+ */
+function setupEnvironment(serviceName, requiredVars = [], strict = null) {
+  // Auto-detect strict mode based on environment
+  if (strict === null) {
+    strict = process.env.NODE_ENV === 'production';
+  }
+
   // Load .env file from root directory
   const rootEnvPath = path.join(process.cwd(), '../../.env');
   const localEnvPath = path.join(process.cwd(), '.env');
@@ -23,6 +40,7 @@ function setupEnvironment(serviceName, requiredVars = [], strict = false) {
 
   const missing = [];
   const warnings = [];
+  const localhostFallbacks = [];
 
   // Check required variables
   for (const varName of requiredVars) {
@@ -31,52 +49,49 @@ function setupEnvironment(serviceName, requiredVars = [], strict = false) {
       missing.push(varName);
     } else if (value.includes('your_') || value.includes('YOUR_') || value.includes('xxxxx')) {
       warnings.push(varName);
+    } else if (value.includes('localhost') || value.includes('127.0.0.1')) {
+      localhostFallbacks.push(varName);
     }
   }
 
+  // Log environment status
+  console.log(`🔧 Environment setup for ${serviceName}:`);
+  console.log(`   Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`   Strict mode: ${strict ? 'enabled' : 'disabled'}`);
+
   if (missing.length > 0) {
-    console.warn(`⚠️ Missing required environment variables for ${serviceName}:`, missing);
+    console.error(`❌ Missing required environment variables for ${serviceName}:`, missing);
+    console.error(`💡 Add these to your .env file or set them as environment variables`);
     if (strict) {
       throw new Error(`Missing required environment variables: ${missing.join(', ')}`);
     }
   }
 
   if (warnings.length > 0) {
-    console.warn(`⚠️ Environment variables with placeholder values for ${serviceName}:`, warnings);
+    console.warn(`⚠️  Environment variables with placeholder values for ${serviceName}:`, warnings);
+    console.warn(`💡 Replace placeholder values with actual configuration`);
+  }
+
+  if (localhostFallbacks.length > 0) {
+    console.warn(`🏠 Environment variables using localhost for ${serviceName}:`, localhostFallbacks);
+    console.warn(`💡 In Docker/K8s, use service names instead of localhost`);
+    console.warn(`💡 Example: http://auth-service:3001 instead of http://localhost:3001`);
+  }
+
+  const success = missing.length === 0 && warnings.length === 0;
+  if (success) {
+    console.log(`✅ Environment validation passed for ${serviceName}`);
   }
 
   return {
-    success: missing.length === 0,
+    success,
     missing,
-    warnings
+    warnings,
+    localhostFallbacks,
+    strict
   };
 }
 
-/**
- * Get required variables for specific service types
- */
-function getRequiredVarsForService(serviceType) {
-  switch (serviceType) {
-    case 'api-gateway':
-      return ['JWT_SECRET'];
-    case 'auth':
-      return ['FIREBASE_PROJECT_ID', 'FIREBASE_CLIENT_EMAIL', 'FIREBASE_PRIVATE_KEY', 'JWT_SECRET'];
-    case 'link':
-      return ['FIREBASE_PROJECT_ID', 'FIREBASE_CLIENT_EMAIL', 'FIREBASE_PRIVATE_KEY', 'JWT_SECRET'];
-    case 'community':
-      return ['FIREBASE_PROJECT_ID', 'FIREBASE_CLIENT_EMAIL', 'FIREBASE_PRIVATE_KEY', 'JWT_SECRET'];
-    case 'chat':
-      return ['FIREBASE_PROJECT_ID', 'FIREBASE_CLIENT_EMAIL', 'FIREBASE_PRIVATE_KEY', 'JWT_SECRET', 'GEMINI_API_KEY'];
-    case 'news':
-      return ['FIREBASE_PROJECT_ID', 'FIREBASE_CLIENT_EMAIL', 'FIREBASE_PRIVATE_KEY', 'JWT_SECRET', 'NEWSAPI_API_KEY'];
-    case 'admin':
-      return ['FIREBASE_PROJECT_ID', 'FIREBASE_CLIENT_EMAIL', 'FIREBASE_PRIVATE_KEY', 'JWT_SECRET'];
-    default:
-      return ['JWT_SECRET'];
-  }
-}
-
 module.exports = {
-  setupEnvironment,
-  getRequiredVarsForService
+  setupEnvironment
 };

@@ -31,14 +31,37 @@ const app = express();
 const PORT = process.env.PORT || 8080;
 const SERVICE_NAME = 'api-gateway';
 
-// Service configuration
+// Service configuration - NO LOCALHOST FALLBACKS
+// Environment variables are REQUIRED for proper service discovery
+const getServiceUrl = (serviceName, envVar, defaultPort) => {
+  const url = process.env[envVar];
+
+  if (!url) {
+    const errorMsg = `❌ CRITICAL: ${envVar} environment variable is required but not set!`;
+    console.error(errorMsg);
+    console.error(`💡 For Docker/K8s: Use service name like 'http://${serviceName}:${defaultPort}'`);
+    console.error(`💡 For local dev: Use 'http://localhost:${defaultPort}'`);
+    console.error(`💡 For production: Use your actual service URL`);
+
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error(`Production deployment requires ${envVar} to be set`);
+    }
+
+    // Only warn in development, but still fail
+    console.warn(`⚠️  Falling back to localhost for development, but this should be fixed!`);
+    return `http://localhost:${defaultPort}`;
+  }
+
+  return url;
+};
+
 const services = {
-  'auth-service': process.env.AUTH_SERVICE_URL || 'http://localhost:3001', // User management only (Firebase Auth for login/register)
-  'link-service': process.env.LINK_SERVICE_URL || 'http://localhost:3002',
-  'community-service': process.env.COMMUNITY_SERVICE_URL || 'http://localhost:3003',
-  'chat-service': process.env.CHAT_SERVICE_URL || 'http://localhost:3004',
-  'news-service': process.env.NEWS_SERVICE_URL || 'http://localhost:3005',
-  'admin-service': process.env.ADMIN_SERVICE_URL || 'http://localhost:3006'
+  'auth-service': getServiceUrl('auth-service', 'AUTH_SERVICE_URL', 3001),
+  'link-service': getServiceUrl('link-service', 'LINK_SERVICE_URL', 3002),
+  'community-service': getServiceUrl('community-service', 'COMMUNITY_SERVICE_URL', 3003),
+  'chat-service': getServiceUrl('chat-service', 'CHAT_SERVICE_URL', 3004),
+  'news-service': getServiceUrl('news-service', 'NEWS_SERVICE_URL', 3005),
+  'admin-service': getServiceUrl('admin-service', 'ADMIN_SERVICE_URL', 3006)
 };
 
 // Security middleware

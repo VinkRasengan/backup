@@ -145,9 +145,9 @@ function validateRequiredVars(requiredVars, serviceName = 'criminalip-service') 
  * @param {boolean} exitOnError - Whether to exit process on validation error
  * @returns {object} Setup result
  */
-function setupEnvironment(serviceName, requiredVars = [], exitOnError = false) {
+function setupEnvironmentStandard(serviceName, requiredVars = [], exitOnError = false) {
   console.log(`🔧 ${serviceName}: Setting up environment...`);
-  
+
   // Load environment variables
   const loadResult = setupEnvironment(serviceName);
   
@@ -259,10 +259,9 @@ function getRequiredVarsForService(serviceType) {
   }
 }
 
-module.exports = { 
-  loadEnvironmentVariables,
+module.exports = {
+  setupEnvironment: setupEnvironmentStandard,
   validateRequiredVars,
-  setupEnvironment,
   getRequiredVarsForService,
   commonRequiredVars
 };

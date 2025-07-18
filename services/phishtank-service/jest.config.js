@@ -20,11 +20,21 @@ module.exports = {
       useESM: true,
     },
   },
-  moduleNameMapping: {
+  moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
   },
   transform: {
     '^.+\.js$': 'babel-jest',
   },
   setupFiles: ['<rootDir>/jest.setup.js'],
+  // Ignore node_modules except for ES modules that need transformation
+  transformIgnorePatterns: [
+    'node_modules/(?!(axios|@google-cloud|firebase-admin)/)'
+  ],
+  // Mock external dependencies
+  moduleNameMapper: {
+    '^axios$': '<rootDir>/__mocks__/axios.js',
+    '^firebase-admin$': '<rootDir>/__mocks__/firebase-admin.js',
+    '^redis$': '<rootDir>/__mocks__/redis.js'
+  }
 };

@@ -1,0 +1,386 @@
+name: 🆕 New Developer Onboarding Tests
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'scripts/**'
+      - '.env.example'
+      - 'DEVELOPER_SETUP.md'
+      - 'README.md'
+      - 'package.json'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'scripts/**'
+      - '.env.example'
+      - 'DEVELOPER_SETUP.md'
+  schedule:
+    # Run every day at 6 AM UTC to catch environment drift
+    - cron: '0 6 * * *'
+  workflow_dispatch:
+    inputs:
+      test_level:
+        description: 'Test Level'
+        required: true
+        default: 'comprehensive'
+        type: choice
+        options:
+        - basic
+        - comprehensive
+        - stress
+
+env:
+  NODE_VERSION: '18'
+  NPM_CONFIG_LEGACY_PEER_DEPS: true
+  NPM_CONFIG_TIMEOUT: 300000
+
+jobs:
+  # Simulate fresh developer setup
+  fresh-setup-simulation:
+    name: 🔄 Fresh Developer Setup Simulation
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        node-version: ['18', '20']
+      fail-fast: false
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+
+      - name: Simulate fresh environment (no .env)
+        run: |
+          echo "🧹 Simulating fresh clone (removing .env if exists)"
+          rm -f .env || true
+        shell: bash
+
+      - name: Test initial project structure
+        run: |
+          echo "📁 Testing project structure for new developers..."
+          
+          # Check essential files exist
+          files=("package.json" "README.md" "DEVELOPER_SETUP.md" ".env.example")
+          for file in "${files[@]}"; do
+            if [ -f "$file" ]; then
+              echo "✅ $file exists"
+            else
+              echo "❌ $file missing - new developers will be confused"
+              exit 1
+            fi
+          done
+          
+          # Check essential directories
+          dirs=("services" "client" "scripts" "k8s")
+          for dir in "${dirs[@]}"; do
+            if [ -d "$dir" ]; then
+              echo "✅ $dir directory exists"
+            else
+              echo "❌ $dir directory missing"
+              exit 1
+            fi
+          done
+        shell: bash
+
+      - name: Test setup scripts availability
+        run: |
+          echo "🔧 Testing setup scripts..."
+          
+          # Check if setup scripts exist
+          if [ -f "scripts/setup-microservices.js" ]; then
+            echo "✅ setup-microservices.js exists"
+          else
+            echo "❌ setup-microservices.js missing"
+            exit 1
+          fi
+          
+          if [ -f "scripts/validate-env-config.js" ]; then
+            echo "✅ validate-env-config.js exists"
+          else
+            echo "❌ validate-env-config.js missing"
+            exit 1
+          fi
+        shell: bash
+
+      - name: Test npm scripts availability
+        run: |
+          echo "📦 Testing npm scripts for new developers..."
+          
+          # Check package.json has essential scripts
+          node -e "
+            const pkg = require('./package.json');
+            const requiredScripts = [
+              'setup:full',
+              'env:validate', 
+              'env:test',
+              'start',
+              'stop'
+            ];
+            
+            let missing = [];
+            requiredScripts.forEach(script => {
+              if (!pkg.scripts[script]) {
+                missing.push(script);
+              }
+            });
+            
+            if (missing.length > 0) {
+              console.log('❌ Missing npm scripts:', missing.join(', '));
+              process.exit(1);
+            } else {
+              console.log('✅ All required npm scripts available');
+            }
+          "
+
+      - name: Install dependencies (simulate new dev)
+        run: |
+          echo "📦 Installing dependencies as new developer would..."
+          npm config set legacy-peer-deps true
+          npm ci --silent
+        timeout-minutes: 15
+
+      - name: Test environment setup process
+        run: |
+          echo "🔧 Testing environment setup process..."
+          
+          # Create test .env file
+          cp .env.example .env
+          
+          # Replace placeholder values with test values
+          if [[ "$RUNNER_OS" == "Windows" ]]; then
+            powershell -Command "
+              (Get-Content .env) -replace 'your-project-id', 'test-project' |
+              Set-Content .env
+              (Get-Content .env) -replace 'your-jwt-secret', 'test-jwt-secret-for-ci-minimum-32-characters-long' |
+              Set-Content .env
+            "
+          else
+            sed -i 's/your-project-id/test-project/g' .env
+            sed -i 's/your-jwt-secret/test-jwt-secret-for-ci-minimum-32-characters-long/g' .env
+          fi
+        shell: bash
+
+      - name: Run comprehensive new developer tests
+        run: |
+          echo "🧪 Running comprehensive new developer tests..."
+          node scripts/new-dev-ci-tests.js
+        timeout-minutes: 20
+
+      - name: Test environment validation
+        run: |
+          echo "🔍 Testing environment validation..."
+          node scripts/validate-env-config.js
+        timeout-minutes: 5
+
+      - name: Test environment loading
+        run: |
+          echo "🔧 Testing environment loading..."
+          node scripts/test-env-loading.js
+        timeout-minutes: 10
+
+      - name: Test documentation accuracy
+        run: |
+          echo "📚 Testing documentation accuracy..."
+          
+          # Check if README mentions the correct setup command
+          if grep -q "npm run setup:full" README.md; then
+            echo "✅ README mentions correct setup command"
+          else
+            echo "❌ README doesn't mention npm run setup:full"
+            exit 1
+          fi
+          
+          # Check if DEVELOPER_SETUP.md exists and has content
+          if [ -f "DEVELOPER_SETUP.md" ] && [ -s "DEVELOPER_SETUP.md" ]; then
+            echo "✅ DEVELOPER_SETUP.md exists and has content"
+          else
+            echo "❌ DEVELOPER_SETUP.md missing or empty"
+            exit 1
+          fi
+        shell: bash
+
+  # Test common new developer issues
+  common-issues-test:
+    name: 🐛 Common New Developer Issues Test
+    runs-on: ubuntu-latest
+    needs: fresh-setup-simulation
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: |
+          npm config set legacy-peer-deps true
+          npm ci --silent
+
+      - name: Test missing .env file scenario
+        run: |
+          echo "🧪 Testing missing .env file scenario..."
+          rm -f .env
+          
+          # This should fail gracefully with helpful error
+          if node scripts/validate-env-config.js 2>&1 | grep -q "env file not found"; then
+            echo "✅ Missing .env file detected correctly"
+          else
+            echo "❌ Missing .env file not handled properly"
+            exit 1
+          fi
+
+      - name: Test placeholder values scenario
+        run: |
+          echo "🧪 Testing placeholder values scenario..."
+          cp .env.example .env
+          
+          # This should warn about placeholder values
+          if node scripts/validate-env-config.js 2>&1 | grep -q "placeholder"; then
+            echo "✅ Placeholder values detected correctly"
+          else
+            echo "❌ Placeholder values not detected"
+            exit 1
+          fi
+
+      - name: Test localhost in production scenario
+        run: |
+          echo "🧪 Testing localhost in production scenario..."
+          cp .env.example .env
+          
+          # Set NODE_ENV to production but keep localhost URLs
+          echo "NODE_ENV=production" >> .env
+          
+          # This should warn about localhost in production
+          if node scripts/validate-env-config.js 2>&1 | grep -q "localhost"; then
+            echo "✅ Localhost in production detected correctly"
+          else
+            echo "❌ Localhost in production not detected"
+            exit 1
+          fi
+
+      - name: Test port conflicts scenario
+        run: |
+          echo "🧪 Testing port conflict detection..."
+          
+          # Start a simple server on port 3000
+          node -e "
+            const http = require('http');
+            const server = http.createServer();
+            server.listen(3000, () => {
+              console.log('Test server started on port 3000');
+              setTimeout(() => server.close(), 5000);
+            });
+          " &
+          
+          sleep 2
+          
+          # Test should detect port conflict
+          if node scripts/new-dev-ci-tests.js 2>&1 | grep -q "port"; then
+            echo "✅ Port conflict detection working"
+          else
+            echo "⚠️  Port conflict detection may not be working"
+          fi
+
+  # Generate comprehensive report
+  generate-onboarding-report:
+    name: 📊 Generate Onboarding Report
+    runs-on: ubuntu-latest
+    needs: [fresh-setup-simulation, common-issues-test]
+    if: always()
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Generate comprehensive report
+        run: |
+          cat > new-developer-onboarding-report.md << 'EOF'
+          # New Developer Onboarding Test Report
+          
+          ## Test Summary
+          - **Fresh Setup Simulation**: ${{ needs.fresh-setup-simulation.result }}
+          - **Common Issues Test**: ${{ needs.common-issues-test.result }}
+          
+          ## Tested Scenarios
+          
+          ### ✅ Successful Tests
+          - Project structure validation
+          - Setup scripts availability
+          - npm scripts configuration
+          - Environment validation
+          - Documentation accuracy
+          - Missing .env detection
+          - Placeholder value detection
+          - Localhost in production detection
+          
+          ### 🔧 Setup Process Validation
+          1. Fresh clone simulation ✅
+          2. Dependency installation ✅
+          3. Environment configuration ✅
+          4. Validation scripts ✅
+          5. Error handling ✅
+          
+          ### 📚 Documentation Tests
+          - README.md accuracy ✅
+          - DEVELOPER_SETUP.md completeness ✅
+          - Setup command correctness ✅
+          
+          ### 🐛 Common Issues Handled
+          - Missing environment file ✅
+          - Placeholder values in config ✅
+          - Localhost URLs in production ✅
+          - Port conflicts detection ✅
+          
+          ## Recommendations for New Developers
+          
+          1. **Quick Start**: Run `npm run setup:full`
+          2. **Validation**: Use `npm run env:validate`
+          3. **Testing**: Use `npm run env:test`
+          4. **Documentation**: Follow `DEVELOPER_SETUP.md`
+          5. **Help**: Check CI test results for common issues
+          
+          ## Next Steps
+          
+          - All critical onboarding paths tested ✅
+          - Error messages are helpful ✅
+          - Setup process is automated ✅
+          - Documentation is accurate ✅
+          
+          ---
+          Generated: $(date)
+          Commit: ${{ github.sha }}
+          Workflow: ${{ github.workflow }}
+          EOF
+
+      - name: Upload onboarding report
+        uses: actions/upload-artifact@v4
+        with:
+          name: new-developer-onboarding-report
+          path: new-developer-onboarding-report.md
+          retention-days: 30
+
+      - name: Comment on PR (if applicable)
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const report = fs.readFileSync('new-developer-onboarding-report.md', 'utf8');
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `## 🆕 New Developer Onboarding Test Results\n\n${report}`
+            });

@@ -1,4 +1,4 @@
-// Jest setup for link-service
+// Jest setup for criminalip-service
 // Polyfills for Node.js test environment
 const { TextEncoder, TextDecoder } = require('util');
 const { URL, URLSearchParams } = require('url');

@@ -4,14 +4,56 @@ metadata:
   name: app-config
   namespace: anti-fraud-platform
 data:
+  # Environment Configuration
   NODE_ENV: "production"
+
+  # Service Discovery - Using Kubernetes Service Names
+  # These URLs use the internal Kubernetes DNS for service-to-service communication
   AUTH_SERVICE_URL: "http://auth-service:3001"
   LINK_SERVICE_URL: "http://link-service:3002"
   COMMUNITY_SERVICE_URL: "http://community-service:3003"
   CHAT_SERVICE_URL: "http://chat-service:3004"
   NEWS_SERVICE_URL: "http://news-service:3005"
   ADMIN_SERVICE_URL: "http://admin-service:3006"
+  PHISHTANK_SERVICE_URL: "http://phishtank-service:3007"
+  CRIMINALIP_SERVICE_URL: "http://criminalip-service:3008"
+
+  # Redis Configuration
   REDIS_URL: "redis://redis:6379"
-  
+  REDIS_HOST: "redis"
+  REDIS_PORT: "6379"
+
+  # CORS Configuration - Update with your actual frontend URL
+  ALLOWED_ORIGINS: "https://your-frontend.onrender.com,https://your-domain.com"
+
+  # Rate Limiting
+  RATE_LIMIT_MAX_REQUESTS: "100"
+  RATE_LIMIT_WINDOW_MS: "900000"
+
+  # Logging
+  LOG_LEVEL: "info"
+
+  # API Timeouts
+  API_TIMEOUT: "30000"
+  SECURITY_ANALYSIS_TIMEOUT: "45000"
+
+  # Feature Flags
+  ENABLE_RATE_LIMITING: "true"
+  USE_MOCK_DATA_FALLBACK: "false"
+  CIRCUIT_BREAKER_ENABLED: "true"
+  EVENT_BUS_ENABLED: "true"
+
+---
 # Note: Secrets are created dynamically by the deploy script from .env file
 # This avoids storing sensitive data in version control
+#
+# Required secrets:
+# - FIREBASE_PROJECT_ID
+# - FIREBASE_PRIVATE_KEY
+# - FIREBASE_CLIENT_EMAIL
+# - JWT_SECRET
+# - GEMINI_API_KEY
+# - VIRUSTOTAL_API_KEY
+# - REACT_APP_FIREBASE_API_KEY
+# - REACT_APP_FIREBASE_AUTH_DOMAIN
+# - REACT_APP_FIREBASE_PROJECT_ID

@@ -38,7 +38,7 @@ RUN mkdir -p /app/logs && chown -R nodejs:nodejs /app
 USER nodejs
 
 # Expose port (configurable via build arg)
-EXPOSE ${DEFAULT_PORT}
+EXPOSE 8080
 
 # Health check with configurable port
 HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
