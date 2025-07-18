@@ -11,10 +11,19 @@ const fs = require('fs');
 require('dotenv').config({ path: path.join(__dirname, '../../.env') });
 
 // Load environment variables using local loader
-const { setupEnvironment, getRequiredVarsForService } = require('./src/utils/env-loader');
+const { setupEnvironment } = require('./src/utils/env-loader');
 
 // Setup environment with validation
-const envResult = setupEnvironment('api-gateway', getRequiredVarsForService('api-gateway'), true);
+const requiredVars = [
+  'NODE_ENV',
+  'AUTH_SERVICE_URL',
+  'LINK_SERVICE_URL',
+  'COMMUNITY_SERVICE_URL',
+  'CHAT_SERVICE_URL',
+  'NEWS_SERVICE_URL',
+  'ADMIN_SERVICE_URL'
+];
+const envResult = setupEnvironment('api-gateway', requiredVars, true);
 
 // Simple logger implementation
 const logger = {

@@ -8,10 +8,18 @@ const path = require('path');
 const fs = require('fs');
 
 // Load environment variables using standardized loader
-const { setupEnvironment, getRequiredVarsForService } = require('./utils/env-loader');
+const { setupEnvironment } = require('./utils/env-loader');
 
 // Setup environment with validation
-const envResult = setupEnvironment('news-service', getRequiredVarsForService('news'), true);
+const requiredVars = [
+  'NODE_ENV',
+  'FIREBASE_PROJECT_ID',
+  'FIREBASE_CLIENT_EMAIL',
+  'FIREBASE_PRIVATE_KEY',
+  'JWT_SECRET',
+  'NEWSAPI_API_KEY'
+];
+const envResult = setupEnvironment('news-service', requiredVars, true);
 
 // Import local utilities
 const logger = require('./utils/logger');

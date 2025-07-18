@@ -40,6 +40,7 @@
     "test:all": "npm run test:new-dev && npm run test:workflow && npm run test:render",
     "fix:jest": "node scripts/fix-jest-configs.js",
     "fix:dockerfiles": "node scripts/fix-dockerfiles-for-render.js",
+    "fix:render": "node scripts/fix-render-deployment-issues.js",
     "env:switch": "node scripts/switch-env.js",
     "env:local": "node scripts/switch-env.js local",
     "env:docker": "node scripts/switch-env.js docker",

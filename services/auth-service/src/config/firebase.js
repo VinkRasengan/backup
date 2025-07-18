@@ -3,8 +3,15 @@ const path = require('path');
 const fs = require('fs');
 
 // Load environment variables using standardized loader
-const { setupEnvironment, getRequiredVarsForService } = require('../utils/env-loader');
-setupEnvironment('auth-service', getRequiredVarsForService('auth'), false);
+const { setupEnvironment } = require('../utils/env-loader');
+const requiredVars = [
+  'NODE_ENV',
+  'FIREBASE_PROJECT_ID',
+  'FIREBASE_CLIENT_EMAIL',
+  'FIREBASE_PRIVATE_KEY',
+  'JWT_SECRET'
+];
+setupEnvironment('auth-service', requiredVars, false);
 
 let db, auth, collections;
 
