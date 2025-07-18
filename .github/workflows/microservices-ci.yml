@@ -38,7 +38,7 @@ jobs:
       phishtank-service: ${{ steps.changes.outputs.phishtank-service }}
       criminalip-service: ${{ steps.changes.outputs.criminalip-service }}
       frontend: ${{ steps.changes.outputs.frontend }}
-      any-service: ${{ steps.changes.outputs.api-gateway || steps.changes.outputs.auth-service || steps.changes.outputs.link-service || steps.changes.outputs.community-service || steps.changes.outputs.chat-service || steps.changes.outputs.news-service || steps.changes.outputs.admin-service || steps.changes.outputs.phishtank-service || steps.changes.outputs.criminalip-service }}
+      any-service: ${{ steps.changes.outputs.api-gateway == 'true' || steps.changes.outputs.auth-service == 'true' || steps.changes.outputs.link-service == 'true' || steps.changes.outputs.community-service == 'true' || steps.changes.outputs.chat-service == 'true' || steps.changes.outputs.news-service == 'true' || steps.changes.outputs.admin-service == 'true' || steps.changes.outputs.phishtank-service == 'true' || steps.changes.outputs.criminalip-service == 'true' }}
     steps:
       - uses: actions/checkout@v4
       - uses: dorny/paths-filter@v3
@@ -134,6 +134,30 @@ jobs:
           done
           
           echo "✅ Basic validation passed"
+
+  # Debug job to understand why jobs are skipped
+  debug-changes:
+    needs: [detect-changes]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Debug outputs
+        run: |
+          echo "🔍 Debugging detect-changes outputs:"
+          echo "api-gateway: ${{ needs.detect-changes.outputs.api-gateway }}"
+          echo "auth-service: ${{ needs.detect-changes.outputs.auth-service }}"
+          echo "link-service: ${{ needs.detect-changes.outputs.link-service }}"
+          echo "community-service: ${{ needs.detect-changes.outputs.community-service }}"
+          echo "chat-service: ${{ needs.detect-changes.outputs.chat-service }}"
+          echo "news-service: ${{ needs.detect-changes.outputs.news-service }}"
+          echo "admin-service: ${{ needs.detect-changes.outputs.admin-service }}"
+          echo "phishtank-service: ${{ needs.detect-changes.outputs.phishtank-service }}"
+          echo "criminalip-service: ${{ needs.detect-changes.outputs.criminalip-service }}"
+          echo "frontend: ${{ needs.detect-changes.outputs.frontend }}"
+          echo "any-service: ${{ needs.detect-changes.outputs.any-service }}"
+          echo "Event name: ${{ github.event_name }}"
+          echo "Ref: ${{ github.ref }}"
+          echo "Changed files:"
+          git diff --name-only ${{ github.event.before }} ${{ github.sha }} || echo "No changes detected"
 
   # Test and build services
   test-and-build:

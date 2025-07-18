@@ -91,7 +91,9 @@
     "// === WORKFLOW LINTER ===": "",
     "workflow:check": "node scripts/check-workflow-status.js",
     "workflow:fix": "node scripts/fix-workflow-linter-errors.js",
-    "workflow:validate": "node scripts/check-workflow-status.js && node scripts/fix-workflow-linter-errors.js"
+    "workflow:validate": "node scripts/check-workflow-status.js && node scripts/fix-workflow-linter-errors.js",
+    "workflow:debug": "node scripts/fix-cicd-skip-issues.js",
+    "workflow:test": "node scripts/test-workflow-logic.js"
   },
   "dependencies": {
     "axios": "^1.10.0",
