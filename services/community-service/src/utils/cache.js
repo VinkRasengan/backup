@@ -38,39 +38,50 @@ class CacheManager {
    * Initialize Redis connection with improved configuration
    */
   async connect() {
-    // Skip Redis connection if not available, use memory cache only
-    if (!process.env.REDIS_URL) {
-      logger.info('Redis URL not configured, using memory cache only');
+    // Skip Redis connection if not available or disabled, use memory cache only
+    if (!process.env.REDIS_URL || process.env.REDIS_DISABLED === 'true') {
+      logger.info('Redis URL not configured or disabled, using memory cache only');
+      this.isConnected = false;
+      return;
+    }
+
+    // For Render deployment, skip Redis if localhost is configured
+    if (process.env.REDIS_HOST === 'localhost' && process.env.NODE_ENV === 'production') {
+      logger.info('Redis localhost detected in production, using memory cache only');
+      this.isConnected = false;
       return;
     }
 
     try {
       const redisUrl = process.env.REDIS_URL;
+      logger.info('Attempting Redis connection', { url: redisUrl.replace(/:[^:@]*@/, ':***@') });
 
       this.client = redis.createClient({
         url: redisUrl,
         // Improved retry strategy for Redis v4+
         socket: {
           reconnectStrategy: (retries) => {
-            if (retries > 5) {
-              logger.error('Redis max reconnection attempts reached');
+            if (retries > 3) { // Reduced retries for faster fallback
+              logger.error('Redis max reconnection attempts reached, falling back to memory cache');
+              this.isConnected = false;
               return new Error('Max reconnection attempts reached');
             }
-            const delay = Math.min(retries * 100, 3000);
+            const delay = Math.min(retries * 500, 2000);
             logger.info(`Redis reconnecting in ${delay}ms (attempt ${retries})`);
             return delay;
           },
-          connectTimeout: 10000, // Increased timeout
+          connectTimeout: 5000, // Reduced timeout for faster fallback
           lazyConnect: true
         }
       });
 
       // Event handlers
       this.client.on('error', (err) => {
-        logger.error('Redis client error', { error: err.message });
+        logger.error('Redis client error, falling back to memory cache', { error: err.message });
         this.isConnected = false;
         this.stats.errors++;
-        // Don't schedule retry to avoid blocking
+        // Gracefully fallback to memory cache
+        this.client = null;
       });
 
       this.client.on('connect', () => {

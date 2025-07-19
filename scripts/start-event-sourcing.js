@@ -293,10 +293,10 @@ class EventSourcingStarter {
    */
   async checkRedis() {
     try {
-      const { stdout } = await execAsync('redis-cli -h localhost -p 6379 -a antifraud123 ping', {
+      const { stdout } = await execAsync('docker exec backup-redis-1 redis-cli -a antifraud123 ping', {
         timeout: 5000
       });
-      return stdout.trim() === 'PONG';
+      return stdout.includes('PONG');
     } catch (error) {
       return false;
     }

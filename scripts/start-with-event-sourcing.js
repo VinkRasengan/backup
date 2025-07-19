@@ -309,11 +309,10 @@ class EventSourcingPlatformStarter {
    */
   async checkRedis() {
     try {
-      const command = this.isWindows 
-        ? 'redis-cli -h localhost -p 6379 -a antifraud123 ping'
-        : 'redis-cli -h localhost -p 6379 -a antifraud123 ping';
+      // Use Docker exec to test Redis connection since redis-cli may not be available on Windows
+      const command = 'docker exec backup-redis-1 redis-cli -a antifraud123 ping';
       const { stdout } = await execAsync(command, { timeout: 5000 });
-      return stdout.trim() === 'PONG';
+      return stdout.includes('PONG');
     } catch (error) {
       return false;
     }

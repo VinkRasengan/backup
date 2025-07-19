@@ -195,8 +195,8 @@ class QuickEventSourcingSetup {
       
       // Check Redis
       try {
-        const { stdout } = await execAsync('redis-cli -h localhost -p 6379 -a antifraud123 ping', { timeout: 5000 });
-        redisReady = stdout.trim() === 'PONG';
+        const { stdout } = await execAsync('docker exec backup-redis-1 redis-cli -a antifraud123 ping', { timeout: 5000 });
+        redisReady = stdout.includes('PONG');
       } catch (error) {
         // Redis not ready
       }
