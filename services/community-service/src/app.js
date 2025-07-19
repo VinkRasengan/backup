@@ -35,6 +35,10 @@ const { authMiddleware } = require('./middleware/auth');
 const { cacheManager } = require('./utils/cache');
 const ResponseFormatter = require('./utils/response');
 
+// Import Event Sourcing components
+const CommunityEventHandler = require('./events/communityEventHandler');
+const CQRSBus = require('./cqrs/cqrsBus');
+
 const app = express();
 // Prometheus metrics setup
 const collectDefaultMetrics = promClient.collectDefaultMetrics;
@@ -63,8 +67,16 @@ const SERVICE_NAME = 'community-service';
 const healthCheck = new HealthCheck(SERVICE_NAME);
 
 // Add health checks
-healthCheck.addCheck('database', commonChecks.memory);
-healthCheck.addCheck('memory', commonChecks.memory(512));
+healthCheck.addCheck('database', async () => {
+  // Check Firebase connection
+  try {
+    await firebaseConfig.db.collection('_health').limit(1).get();
+    return 'Database connection healthy';
+  } catch (error) {
+    throw new Error(`Database connection failed: ${error.message}`);
+  }
+});
+healthCheck.addCheck('memory', commonChecks.memory);
 healthCheck.addCheck('auth-service', commonChecks.uptime); // eslint-disable-line no-process-env
 healthCheck.addCheck('cache', async () => {
   // Skip cache check in test environment
@@ -218,6 +230,84 @@ app.get('/api/v1/community', (req, res) => {
   });
 });
 
+// Event Sourcing health check endpoint
+app.get('/health/event-sourcing', async (req, res) => {
+  try {
+    const health = {
+      status: 'healthy',
+      timestamp: new Date().toISOString(),
+      components: {}
+    };
+
+    if (eventHandler) {
+      health.components.eventBus = await eventHandler.healthCheck();
+    } else {
+      health.components.eventBus = { status: 'not_initialized' };
+    }
+
+    if (cqrsBus) {
+      health.components.cqrs = await cqrsBus.healthCheck();
+    } else {
+      health.components.cqrs = { status: 'not_initialized' };
+    }
+
+    // Determine overall status based on component health
+    const componentStatuses = Object.values(health.components).map(c => c.status);
+
+    if (componentStatuses.includes('unhealthy')) {
+      health.status = 'unhealthy';
+    } else if (componentStatuses.includes('disabled') || componentStatuses.includes('not_initialized') || componentStatuses.includes('fallback')) {
+      health.status = 'degraded';
+    } else if (componentStatuses.every(status => status === 'healthy')) {
+      health.status = 'healthy';
+    } else {
+      health.status = 'degraded';
+    }
+
+    // Add summary information
+    health.summary = {
+      totalComponents: componentStatuses.length,
+      healthyComponents: componentStatuses.filter(s => s === 'healthy').length,
+      degradedComponents: componentStatuses.filter(s => ['degraded', 'disabled', 'fallback'].includes(s)).length,
+      unhealthyComponents: componentStatuses.filter(s => s === 'unhealthy').length
+    };
+
+    // Return appropriate HTTP status
+    const httpStatus = health.status === 'unhealthy' ? 503 : 200;
+    res.status(httpStatus).json(health);
+  } catch (error) {
+    res.status(503).json({
+      status: 'unhealthy',
+      error: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+// CQRS statistics endpoint
+app.get('/stats/cqrs', (req, res) => {
+  try {
+    if (!cqrsBus) {
+      return res.status(404).json({
+        error: 'CQRS Bus not initialized',
+        timestamp: new Date().toISOString()
+      });
+    }
+
+    const stats = cqrsBus.getStats();
+    res.json({
+      success: true,
+      data: stats,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    res.status(500).json({
+      error: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
 // API routes
 app.use('/links', linksRoutes);
 app.use('/comments', commentsRoutes);
@@ -256,21 +346,87 @@ app.use((error, req, res, next) => {
 });
 
 // Graceful shutdown
-process.on('SIGTERM', () => {
-  logger.info('SIGTERM received, shutting down gracefully');
-  process.exit(0);
-});
+async function gracefulShutdown(signal) {
+  logger.info(`${signal} received, shutting down gracefully`);
 
-process.on('SIGINT', () => {
-  logger.info('SIGINT received, shutting down gracefully');
-  process.exit(0);
-});
+  try {
+    // Cleanup Event Sourcing components
+    if (eventHandler) {
+      await eventHandler.disconnect();
+      logger.info('Event Handler disconnected');
+    }
+
+    // Cleanup cache manager
+    if (cacheManager) {
+      await cacheManager.disconnect();
+      logger.info('Cache Manager disconnected');
+    }
+
+    // Close server
+    if (server) {
+      server.close(() => {
+        logger.info('HTTP server closed');
+        process.exit(0);
+      });
+    } else {
+      process.exit(0);
+    }
+  } catch (error) {
+    logger.error('Error during graceful shutdown', { error: error.message });
+    process.exit(1);
+  }
+}
+
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+
+// Initialize Event Sourcing components
+let eventHandler;
+let cqrsBus;
+
+async function initializeEventSourcing() {
+  try {
+    logger.info('Initializing Event Sourcing components...');
+
+    // Initialize Event Handler
+    eventHandler = new CommunityEventHandler();
+
+    // Initialize CQRS Bus
+    cqrsBus = new CQRSBus(eventHandler.eventBus, firebaseConfig.db, cacheManager);
+
+    // Make CQRS Bus available globally for routes
+    app.locals.cqrsBus = cqrsBus;
+    app.locals.eventHandler = eventHandler;
+
+    logger.info('✅ Event Sourcing components initialized successfully');
+
+    // Health check for Event Sourcing
+    const eventBusHealth = await eventHandler.healthCheck();
+    const cqrsHealth = await cqrsBus.healthCheck();
+
+    logger.info('Event Sourcing health check', {
+      eventBus: eventBusHealth.status,
+      cqrs: cqrsHealth.status,
+      eventStore: eventBusHealth.eventStore?.status
+    });
+
+  } catch (error) {
+    logger.error('Failed to initialize Event Sourcing components', {
+      error: error.message,
+      stack: error.stack
+    });
+    logger.info('Service will continue without Event Sourcing features');
+  }
+}
 
 // Initialize cache manager (non-blocking)
 cacheManager.connect().catch(error => {
   logger.error('Failed to initialize cache manager', { error: error.message });
   logger.info('Service will continue with memory cache only');
 });
+
+// Initialize Event Sourcing (non-blocking)
+initializeEventSourcing();
 
 // Start server (skip in test environment)
 let server;

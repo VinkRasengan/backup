@@ -52,15 +52,15 @@ class CacheManager {
         // Improved retry strategy for Redis v4+
         socket: {
           reconnectStrategy: (retries) => {
-            if (retries > 3) {
+            if (retries > 5) {
               logger.error('Redis max reconnection attempts reached');
               return new Error('Max reconnection attempts reached');
             }
-            const delay = Math.min(retries * 100, 1000);
+            const delay = Math.min(retries * 100, 3000);
             logger.info(`Redis reconnecting in ${delay}ms (attempt ${retries})`);
             return delay;
           },
-          connectTimeout: 5000, // Reduced timeout
+          connectTimeout: 10000, // Increased timeout
           lazyConnect: true
         }
       });

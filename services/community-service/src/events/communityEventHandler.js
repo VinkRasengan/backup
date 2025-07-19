@@ -3,12 +3,12 @@
  * Handles event-driven communication for community service
  */
 
-const SimpleEventBus = require('../utils/eventBus');
-// Event types are now handled locally
+const EnhancedEventBus = require('../utils/eventBus');
+// Event types are now handled locally with Event Sourcing
 
 class CommunityEventHandler {
   constructor() {
-    this.eventBus = new SimpleEventBus('community-service');
+    this.eventBus = new EnhancedEventBus('community-service');
 
     this.setupEventListeners();
     this.initializeSubscriptions();

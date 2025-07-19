@@ -4,6 +4,33 @@ services:
     image: redis:7-alpine
     ports: ["6379:6379"]
     command: redis-server --requirepass antifraud123
+    networks:
+      - factcheck-network
+
+  # KurrentDB Event Store
+  kurrentdb:
+    image: eventstore/eventstore:23.10.0-jammy
+    container_name: factcheck-kurrentdb
+    ports:
+      - "2113:2113"  # HTTP API
+      - "1113:1113"  # TCP
+    environment:
+      - EVENTSTORE_CLUSTER_SIZE=1
+      - EVENTSTORE_RUN_PROJECTIONS=All
+      - EVENTSTORE_START_STANDARD_PROJECTIONS=true
+      - EVENTSTORE_EXT_TCP_PORT=1113
+      - EVENTSTORE_HTTP_PORT=2113
+      - EVENTSTORE_INSECURE=true
+      - EVENTSTORE_ENABLE_EXTERNAL_TCP=true
+      - EVENTSTORE_ENABLE_ATOM_PUB_OVER_HTTP=true
+      - EVENTSTORE_MEM_DB=true
+      - EVENTSTORE_LOG_LEVEL=Information
+    volumes:
+      - kurrentdb-data:/var/lib/eventstore
+      - kurrentdb-logs:/var/log/eventstore
+    networks:
+      - factcheck-network
+    restart: unless-stopped
 
   api-gateway:
     build: ./services/api-gateway
@@ -12,6 +39,9 @@ services:
       - NODE_ENV=production
       - REDIS_HOST=redis
       - REDIS_URL=redis://redis:6379
+      - KURRENTDB_URL=http://kurrentdb:2113
+      - EVENT_STORE_ENABLED=true
+      - CQRS_ENABLED=true
       - CIRCUIT_BREAKER_ENABLED=true
       - AUTH_SERVICE_URL=http://auth-service:3001
       - LINK_SERVICE_URL=http://link-service:3002
@@ -19,7 +49,9 @@ services:
       - CHAT_SERVICE_URL=http://chat-service:3004
       - NEWS_SERVICE_URL=http://news-service:3005
       - ADMIN_SERVICE_URL=http://admin-service:3006
-    depends_on: [redis, auth-service, link-service, community-service]
+    depends_on: [redis, kurrentdb, auth-service, link-service, community-service]
+    networks:
+      - factcheck-network
 
   auth-service:
     build: ./services/auth-service
@@ -27,9 +59,16 @@ services:
     environment:
       - NODE_ENV=production
       - REDIS_HOST=redis
-      - REDIS_URL=redis://redis:6379
+      - REDIS_URL=redis://:antifraud123@redis:6379
+      - KURRENTDB_URL=esdb://kurrentdb:2113?tls=false
       - EVENT_BUS_ENABLED=true
-    depends_on: [redis]
+      - EVENT_STORE_ENABLED=true
+      - CQRS_ENABLED=true
+      - EVENT_BUS_REDIS_ENABLED=true
+      - EVENT_BUS_KURRENT_ENABLED=true
+    depends_on: [redis, kurrentdb]
+    networks:
+      - factcheck-network
   
   prometheus:
     image: prom/prometheus
@@ -60,10 +99,18 @@ services:
     environment:
       - NODE_ENV=production
       - REDIS_HOST=redis
-      - REDIS_URL=redis://redis:6379
+      - REDIS_URL=redis://:antifraud123@redis:6379
+      - KURRENTDB_URL=esdb://kurrentdb:2113?tls=false
       - EVENT_BUS_ENABLED=true
+      - EVENT_STORE_ENABLED=true
+      - CQRS_ENABLED=true
+      - EVENT_BUS_REDIS_ENABLED=true
+      - EVENT_BUS_KURRENT_ENABLED=true
     depends_on:
       - redis
+      - kurrentdb
+    networks:
+      - factcheck-network
 
   chat-service:
     build: ./services/chat-service
@@ -97,3 +144,16 @@ services:
       - REDIS_URL=redis://redis:6379
     depends_on:
       - redis
+      - kurrentdb
+    networks:
+      - factcheck-network
+
+# Networks
+networks:
+  factcheck-network:
+    driver: bridge
+
+# Volumes
+volumes:
+  kurrentdb-data:
+  kurrentdb-logs:
