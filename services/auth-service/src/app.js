@@ -6,8 +6,9 @@ const rateLimit = require('express-rate-limit');
 const promClient = require('prom-client');
 const path = require('path');
 
-// Load environment variables
-require('dotenv').config();
+// Load environment variables using new standardized loader
+const { quickSetup } = require('../../../config/env-loader');
+const envResult = quickSetup('auth-service');
 
 // Import local utilities
 const logger = require('./utils/logger');

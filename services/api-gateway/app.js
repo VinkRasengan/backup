@@ -7,23 +7,11 @@ const { createProxyMiddleware } = require('http-proxy-middleware');
 const path = require('path');
 const fs = require('fs');
 
-// Load environment variables first
-require('dotenv').config({ path: path.join(__dirname, '../../.env') });
+// Load environment variables using new standardized loader
+const { quickSetup } = require('../../config/env-loader');
 
-// Load environment variables using local loader
-const { setupEnvironment } = require('./src/utils/env-loader');
-
-// Setup environment with validation
-const requiredVars = [
-  'NODE_ENV',
-  'AUTH_SERVICE_URL',
-  'LINK_SERVICE_URL',
-  'COMMUNITY_SERVICE_URL',
-  'CHAT_SERVICE_URL',
-  'NEWS_SERVICE_URL',
-  'ADMIN_SERVICE_URL'
-];
-const envResult = setupEnvironment('api-gateway', requiredVars, true);
+// Setup environment with automatic validation
+const envResult = quickSetup('api-gateway');
 
 // Simple logger implementation
 const logger = {

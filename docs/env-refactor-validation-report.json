@@ -1,0 +1,357 @@
+{
+  "services": {
+    "api-gateway": {
+      "serviceName": "api-gateway",
+      "exists": true,
+      "path": "C:\\Project\\backup\\services\\api-gateway\\.env",
+      "valid": true,
+      "envResult": {
+        "loaded": true,
+        "sources": [
+          {
+            "path": "C:\\Project\\backup\\services\\api-gateway\\.env",
+            "type": "local",
+            "loaded": true
+          },
+          {
+            "path": "C:\\Project\\backup\\config\\shared.env",
+            "type": "shared",
+            "loaded": true,
+            "varsLoaded": 0
+          }
+        ],
+        "validation": {
+          "success": true,
+          "missing": [],
+          "warnings": [],
+          "localhostFallbacks": [],
+          "strict": false
+        },
+        "success": true
+      },
+      "requiredVars": [
+        "JWT_SECRET"
+      ],
+      "missingVars": [],
+      "warnings": []
+    },
+    "auth-service": {
+      "serviceName": "auth-service",
+      "exists": true,
+      "path": "C:\\Project\\backup\\services\\auth-service\\.env",
+      "valid": true,
+      "envResult": {
+        "loaded": true,
+        "sources": [
+          {
+            "path": "C:\\Project\\backup\\services\\auth-service\\.env",
+            "type": "local",
+            "loaded": true
+          },
+          {
+            "path": "C:\\Project\\backup\\config\\shared.env",
+            "type": "shared",
+            "loaded": true,
+            "varsLoaded": 0
+          }
+        ],
+        "validation": {
+          "success": true,
+          "missing": [],
+          "warnings": [],
+          "localhostFallbacks": [],
+          "strict": false
+        },
+        "success": true
+      },
+      "requiredVars": [
+        "FIREBASE_PROJECT_ID",
+        "FIREBASE_CLIENT_EMAIL",
+        "FIREBASE_PRIVATE_KEY",
+        "JWT_SECRET"
+      ],
+      "missingVars": [],
+      "warnings": []
+    },
+    "chat-service": {
+      "serviceName": "chat-service",
+      "exists": true,
+      "path": "C:\\Project\\backup\\services\\chat-service\\.env",
+      "valid": true,
+      "envResult": {
+        "loaded": true,
+        "sources": [
+          {
+            "path": "C:\\Project\\backup\\services\\chat-service\\.env",
+            "type": "local",
+            "loaded": true
+          },
+          {
+            "path": "C:\\Project\\backup\\config\\shared.env",
+            "type": "shared",
+            "loaded": true,
+            "varsLoaded": 0
+          }
+        ],
+        "validation": {
+          "success": true,
+          "missing": [],
+          "warnings": [],
+          "localhostFallbacks": [],
+          "strict": false
+        },
+        "success": true
+      },
+      "requiredVars": [
+        "FIREBASE_PROJECT_ID",
+        "FIREBASE_CLIENT_EMAIL",
+        "FIREBASE_PRIVATE_KEY",
+        "JWT_SECRET",
+        "GEMINI_API_KEY"
+      ],
+      "missingVars": [],
+      "warnings": []
+    },
+    "link-service": {
+      "serviceName": "link-service",
+      "exists": true,
+      "path": "C:\\Project\\backup\\services\\link-service\\.env",
+      "valid": true,
+      "envResult": {
+        "loaded": true,
+        "sources": [
+          {
+            "path": "C:\\Project\\backup\\services\\link-service\\.env",
+            "type": "local",
+            "loaded": true
+          },
+          {
+            "path": "C:\\Project\\backup\\config\\shared.env",
+            "type": "shared",
+            "loaded": true,
+            "varsLoaded": 0
+          }
+        ],
+        "validation": {
+          "success": true,
+          "missing": [],
+          "warnings": [],
+          "localhostFallbacks": [],
+          "strict": false
+        },
+        "success": true
+      },
+      "requiredVars": [
+        "FIREBASE_PROJECT_ID",
+        "FIREBASE_CLIENT_EMAIL",
+        "FIREBASE_PRIVATE_KEY",
+        "JWT_SECRET",
+        "VIRUSTOTAL_API_KEY"
+      ],
+      "missingVars": [],
+      "warnings": []
+    },
+    "community-service": {
+      "serviceName": "community-service",
+      "exists": true,
+      "path": "C:\\Project\\backup\\services\\community-service\\.env",
+      "valid": true,
+      "envResult": {
+        "loaded": true,
+        "sources": [
+          {
+            "path": "C:\\Project\\backup\\services\\community-service\\.env",
+            "type": "local",
+            "loaded": true
+          },
+          {
+            "path": "C:\\Project\\backup\\config\\shared.env",
+            "type": "shared",
+            "loaded": true,
+            "varsLoaded": 0
+          }
+        ],
+        "validation": {
+          "success": true,
+          "missing": [],
+          "warnings": [],
+          "localhostFallbacks": [],
+          "strict": false
+        },
+        "success": true
+      },
+      "requiredVars": [
+        "FIREBASE_PROJECT_ID",
+        "FIREBASE_CLIENT_EMAIL",
+        "FIREBASE_PRIVATE_KEY",
+        "JWT_SECRET"
+      ],
+      "missingVars": [],
+      "warnings": []
+    },
+    "news-service": {
+      "serviceName": "news-service",
+      "exists": true,
+      "path": "C:\\Project\\backup\\services\\news-service\\.env",
+      "valid": true,
+      "envResult": {
+        "loaded": true,
+        "sources": [
+          {
+            "path": "C:\\Project\\backup\\services\\news-service\\.env",
+            "type": "local",
+            "loaded": true
+          },
+          {
+            "path": "C:\\Project\\backup\\config\\shared.env",
+            "type": "shared",
+            "loaded": true,
+            "varsLoaded": 0
+          }
+        ],
+        "validation": {
+          "success": true,
+          "missing": [],
+          "warnings": [],
+          "localhostFallbacks": [],
+          "strict": false
+        },
+        "success": true
+      },
+      "requiredVars": [
+        "FIREBASE_PROJECT_ID",
+        "FIREBASE_CLIENT_EMAIL",
+        "FIREBASE_PRIVATE_KEY",
+        "JWT_SECRET",
+        "NEWSAPI_API_KEY"
+      ],
+      "missingVars": [],
+      "warnings": []
+    },
+    "admin-service": {
+      "serviceName": "admin-service",
+      "exists": true,
+      "path": "C:\\Project\\backup\\services\\admin-service\\.env",
+      "valid": true,
+      "envResult": {
+        "loaded": true,
+        "sources": [
+          {
+            "path": "C:\\Project\\backup\\services\\admin-service\\.env",
+            "type": "local",
+            "loaded": true
+          },
+          {
+            "path": "C:\\Project\\backup\\config\\shared.env",
+            "type": "shared",
+            "loaded": true,
+            "varsLoaded": 0
+          }
+        ],
+        "validation": {
+          "success": true,
+          "missing": [],
+          "warnings": [],
+          "localhostFallbacks": [],
+          "strict": false
+        },
+        "success": true
+      },
+      "requiredVars": [
+        "FIREBASE_PROJECT_ID",
+        "FIREBASE_CLIENT_EMAIL",
+        "FIREBASE_PRIVATE_KEY",
+        "JWT_SECRET"
+      ],
+      "missingVars": [],
+      "warnings": []
+    },
+    "phishtank-service": {
+      "serviceName": "phishtank-service",
+      "exists": true,
+      "path": "C:\\Project\\backup\\services\\phishtank-service\\.env",
+      "valid": true,
+      "envResult": {
+        "loaded": true,
+        "sources": [
+          {
+            "path": "C:\\Project\\backup\\services\\phishtank-service\\.env",
+            "type": "local",
+            "loaded": true
+          },
+          {
+            "path": "C:\\Project\\backup\\config\\shared.env",
+            "type": "shared",
+            "loaded": true,
+            "varsLoaded": 0
+          }
+        ],
+        "validation": {
+          "success": true,
+          "missing": [],
+          "warnings": [],
+          "localhostFallbacks": [],
+          "strict": false
+        },
+        "success": true
+      },
+      "requiredVars": [
+        "JWT_SECRET"
+      ],
+      "missingVars": [],
+      "warnings": []
+    },
+    "criminalip-service": {
+      "serviceName": "criminalip-service",
+      "exists": true,
+      "path": "C:\\Project\\backup\\services\\criminalip-service\\.env",
+      "valid": true,
+      "envResult": {
+        "loaded": true,
+        "sources": [
+          {
+            "path": "C:\\Project\\backup\\services\\criminalip-service\\.env",
+            "type": "local",
+            "loaded": true
+          },
+          {
+            "path": "C:\\Project\\backup\\config\\shared.env",
+            "type": "shared",
+            "loaded": true,
+            "varsLoaded": 0
+          }
+        ],
+        "validation": {
+          "success": true,
+          "missing": [],
+          "warnings": [],
+          "localhostFallbacks": [],
+          "strict": false
+        },
+        "success": true
+      },
+      "requiredVars": [
+        "JWT_SECRET"
+      ],
+      "missingVars": [],
+      "warnings": []
+    }
+  },
+  "client": {
+    "exists": true,
+    "path": "C:\\Project\\backup\\client\\.env",
+    "valid": true,
+    "hasRequiredVars": true
+  },
+  "shared": {
+    "exists": true,
+    "path": "C:\\Project\\backup\\config\\shared.env",
+    "valid": true
+  },
+  "summary": {
+    "total": 9,
+    "passed": 9,
+    "failed": 0,
+    "warnings": 0
+  }
+}

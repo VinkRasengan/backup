@@ -7,10 +7,10 @@ const path = require('path');
 const cron = require('node-cron');
 
 // Use standardized environment loading
-const { setupEnvironment, getRequiredVarsForService } = require('./utils/env-loader');
+const { quickSetup } = require('../../config/env-loader');
 
 // Setup environment with validation
-const envResult = setupEnvironment('phishtank-service', [], true);
+const envResult = quickSetup('phishtank-service');
 
 const app = express();
 const PORT = process.env.PHISHTANK_SERVICE_PORT || 3008;

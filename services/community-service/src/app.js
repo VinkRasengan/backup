@@ -7,17 +7,10 @@ const rateLimit = require('express-rate-limit');
 const path = require('path');
 
 // Load environment variables using standardized loader
-const { setupEnvironment } = require('./utils/env-loader');
+const { quickSetup } = require('../../config/env-loader');
 
 // Setup environment with validation
-const requiredVars = [
-  'NODE_ENV',
-  'FIREBASE_PROJECT_ID',
-  'FIREBASE_CLIENT_EMAIL',
-  'FIREBASE_PRIVATE_KEY',
-  'JWT_SECRET'
-];
-const envResult = setupEnvironment('community-service', requiredVars, true);
+const envResult = quickSetup('community-service');
 
 // Import local utilities
 const logger = require('./utils/logger');

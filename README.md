@@ -1,6 +1,33 @@
-# FactCheck Platform
+# FactCheck Platform - Microservices Architecture
 
 A comprehensive microservices-based platform for link verification, community discussions, and AI-powered fact-checking.
+
+## 🔧 **NEW: Refactored Microservices Configuration**
+
+**✅ COMPLETED: Environment configuration has been refactored to follow proper microservices architecture!**
+
+### **What Changed:**
+- ✅ Each service now has **independent configuration** (.env files)
+- ✅ **Service autonomy**: No more shared configuration dependencies
+- ✅ **Better security**: Principle of least privilege applied
+- ✅ **Easier deployment**: Services can be deployed independently
+- ✅ **Improved maintainability**: Clear ownership of configuration
+
+### **New Configuration Structure:**
+```
+📁 Configuration Architecture:
+├── 📄 .env                          # Legacy fallback (minimal)
+├── 📁 config/
+│   ├── 📄 shared.env                # Shared configuration
+│   └── 📄 env-loader.js             # Standardized loader
+├── 📁 client/
+│   └── 📄 .env                      # Client-specific config
+└── 📁 services/
+    ├── 📁 auth-service/.env         # Auth service config only
+    ├── 📁 chat-service/.env         # Chat service config only
+    ├── 📁 link-service/.env         # Link service config only
+    └── ... (each service has its own .env)
+```
 
 ## 🚀 Quick Start for New Developers
 
@@ -36,16 +63,75 @@ npm run test:all         # Run all tests
 
 ### ⚠️ Important Configuration Notes
 
+- **NEW: Service-specific configs**: Each service now has its own .env file
 - **NO localhost in production**: Use actual service URLs or service names
 - **Docker/K8s**: Use service names (e.g., `http://auth-service:3001`)
 - **Always validate**: Run `npm run env:validate` before deployment
 - **CI/CD tested**: New developer workflow tested on Ubuntu, Windows, macOS
+- **Refactored**: Environment configuration follows microservices best practices
 
 ## 📋 Requirements
 
 - Node.js 18+, npm 9+
 - Firebase account (free)
 - Gemini AI API key (free)
+
+## 🔧 Configuration Management (NEW)
+
+### **Microservices Configuration Hierarchy**
+
+The platform now uses a **proper microservices configuration hierarchy**:
+
+1. **Local service .env** (highest priority) - Service-specific variables
+2. **Shared config/shared.env** (fallback) - Common variables (Redis, Event Store)
+3. **Root .env** (legacy fallback) - Minimal shared configuration
+4. **Production environment variables** (platform-provided)
+
+### **Service-Specific Configuration**
+
+Each service only contains the environment variables it actually needs:
+
+```bash
+# Auth Service (.env)
+SERVICE_NAME=auth-service
+AUTH_SERVICE_PORT=3001
+FIREBASE_PROJECT_ID=your-project-id
+FIREBASE_CLIENT_EMAIL=your-service-account-email
+FIREBASE_PRIVATE_KEY="your-private-key"
+JWT_SECRET=your-jwt-secret
+
+# Chat Service (.env)
+SERVICE_NAME=chat-service
+CHAT_SERVICE_PORT=3004
+FIREBASE_PROJECT_ID=your-project-id
+FIREBASE_CLIENT_EMAIL=your-service-account-email
+FIREBASE_PRIVATE_KEY="your-private-key"
+JWT_SECRET=your-jwt-secret
+GEMINI_API_KEY=your-gemini-key
+
+# Link Service (.env)
+SERVICE_NAME=link-service
+LINK_SERVICE_PORT=3002
+FIREBASE_PROJECT_ID=your-project-id
+FIREBASE_CLIENT_EMAIL=your-service-account-email
+FIREBASE_PRIVATE_KEY="your-private-key"
+JWT_SECRET=your-jwt-secret
+VIRUSTOTAL_API_KEY=your-virustotal-key
+SCAMADVISER_API_KEY=your-scamadviser-key
+```
+
+### **Validation Commands**
+
+```bash
+# Validate new configuration structure
+npm run validate:env-refactor
+
+# Test individual service configuration
+cd services/auth-service && npm test
+
+# Validate all services
+npm run test:services
+```
 
 ## 🎯 Full Development Setup
 

@@ -9,16 +9,10 @@ const rateLimit = require('express-rate-limit');
 const path = require('path');
 
 // Load environment variables using standardized loader
-const { setupEnvironment } = require('./utils/env-loader');
+const { quickSetup } = require('../../config/env-loader');
 
 // Setup environment with validation
-const requiredVars = [
-  'NODE_ENV',
-  'FIREBASE_PROJECT_ID',
-  'GEMINI_API_KEY',
-  'JWT_SECRET'
-];
-const envResult = setupEnvironment('chat-service', requiredVars, true);
+const envResult = quickSetup('chat-service');
 
 // Import shared utilities
 const logger = require('./utils/logger');
