@@ -1,13 +1,35 @@
 version: '3.8'
 services:
-  redis:
-    image: redis:7-alpine
-    ports: ["6379:6379"]
-    command: redis-server --requirepass antifraud123
+  # Message Queue - RabbitMQ
+  rabbitmq:
+    image: rabbitmq:3.12-management-alpine
+    container_name: factcheck-rabbitmq
+    ports:
+      - "5672:5672"   # AMQP port
+      - "15672:15672" # Management UI
+    environment:
+      - RABBITMQ_DEFAULT_USER=factcheck
+      - RABBITMQ_DEFAULT_PASS=antifraud123
+      - RABBITMQ_DEFAULT_VHOST=/
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
     networks:
       - factcheck-network
+    restart: unless-stopped
 
-  # KurrentDB Event Store
+  # Cache and Pub/Sub - Redis
+  redis:
+    image: redis:7-alpine
+    container_name: factcheck-redis
+    ports: ["6379:6379"]
+    command: redis-server --requirepass antifraud123
+    volumes:
+      - redis-data:/data
+    networks:
+      - factcheck-network
+    restart: unless-stopped
+
+  # Event Store - KurrentDB (EventStore DB)
   kurrentdb:
     image: eventstore/eventstore:23.10.0-jammy
     container_name: factcheck-kurrentdb
@@ -32,16 +54,33 @@ services:
       - factcheck-network
     restart: unless-stopped
 
+  # Dedicated Event Bus Service
+  event-bus-service:
+    build: ./services/event-bus-service
+    container_name: factcheck-event-bus
+    ports:
+      - "3007:3007"
+    environment:
+      - NODE_ENV=production
+      - PORT=3007
+      - RABBITMQ_URL=amqp://factcheck:antifraud123@rabbitmq:5672
+      - REDIS_URL=redis://:antifraud123@redis:6379
+      - KURRENTDB_URL=esdb://kurrentdb:2113?tls=false
+      - LOG_LEVEL=info
+    depends_on:
+      - rabbitmq
+      - redis
+      - kurrentdb
+    networks:
+      - factcheck-network
+    restart: unless-stopped
+
   api-gateway:
     build: ./services/api-gateway
     ports: ["8080:8080"]
     environment:
       - NODE_ENV=production
-      - REDIS_HOST=redis
-      - REDIS_URL=redis://redis:6379
-      - KURRENTDB_URL=http://kurrentdb:2113
-      - EVENT_STORE_ENABLED=true
-      - CQRS_ENABLED=true
+      - EVENT_BUS_SERVICE_URL=http://event-bus-service:3007
       - CIRCUIT_BREAKER_ENABLED=true
       - AUTH_SERVICE_URL=http://auth-service:3001
       - LINK_SERVICE_URL=http://link-service:3002
@@ -49,7 +88,11 @@ services:
       - CHAT_SERVICE_URL=http://chat-service:3004
       - NEWS_SERVICE_URL=http://news-service:3005
       - ADMIN_SERVICE_URL=http://admin-service:3006
-    depends_on: [redis, kurrentdb, auth-service, link-service, community-service]
+    depends_on:
+      - event-bus-service
+      - auth-service
+      - link-service
+      - community-service
     networks:
       - factcheck-network
 
@@ -58,15 +101,10 @@ services:
     ports: ["3001:3001"]
     environment:
       - NODE_ENV=production
-      - REDIS_HOST=redis
-      - REDIS_URL=redis://:antifraud123@redis:6379
-      - KURRENTDB_URL=esdb://kurrentdb:2113?tls=false
-      - EVENT_BUS_ENABLED=true
-      - EVENT_STORE_ENABLED=true
-      - CQRS_ENABLED=true
-      - EVENT_BUS_REDIS_ENABLED=true
-      - EVENT_BUS_KURRENT_ENABLED=true
-    depends_on: [redis, kurrentdb]
+      - EVENT_BUS_SERVICE_URL=http://event-bus-service:3007
+      - EVENT_BUS_TIMEOUT=5000
+    depends_on:
+      - event-bus-service
     networks:
       - factcheck-network
   
@@ -155,5 +193,7 @@ networks:
 
 # Volumes
 volumes:
+  rabbitmq-data:
+  redis-data:
   kurrentdb-data:
   kurrentdb-logs:
