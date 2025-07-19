@@ -1,160 +1,229 @@
-# FactCheck Platform - Microservices Architecture
+# FactCheck Platform
 
-A comprehensive microservices-based platform for link verification, community discussions, and AI-powered fact-checking.
+A production-ready microservices platform for real-time link verification, community-driven fact-checking, and AI-powered content analysis.
 
-## 🔧 **NEW: Refactored Microservices Configuration**
+## 🏗️ Architecture Overview
 
-**✅ COMPLETED: Environment configuration has been refactored to follow proper microservices architecture!**
+**Enterprise-grade microservices architecture** with complete service independence and scalability:
 
-### **What Changed:**
-- ✅ Each service now has **independent configuration** (.env files)
-- ✅ **Service autonomy**: No more shared configuration dependencies
-- ✅ **Better security**: Principle of least privilege applied
-- ✅ **Easier deployment**: Services can be deployed independently
-- ✅ **Improved maintainability**: Clear ownership of configuration
+- **API Gateway** (Port 8080) - Request routing, rate limiting, authentication
+- **Auth Service** (Port 3001) - JWT authentication, user management
+- **Link Service** (Port 3002) - URL analysis, threat detection, security scanning
+- **Community Service** (Port 3003) - User posts, discussions, content moderation
+- **Chat Service** (Port 3004) - AI-powered assistance with Gemini integration
+- **News Service** (Port 3005) - News aggregation, fact-checking workflows
+- **Admin Service** (Port 3006) - Administrative dashboard, user management
+- **Client Application** (Port 3000) - React frontend with modern UI/UX
 
-### **New Configuration Structure:**
-```
-📁 Configuration Architecture:
-├── 📄 .env                          # Legacy fallback (minimal)
-├── 📁 config/
-│   ├── 📄 shared.env                # Shared configuration
-│   └── 📄 env-loader.js             # Standardized loader
-├── 📁 client/
-│   └── 📄 .env                      # Client-specific config
-└── 📁 services/
-    ├── 📁 auth-service/.env         # Auth service config only
-    ├── 📁 chat-service/.env         # Chat service config only
-    ├── 📁 link-service/.env         # Link service config only
-    └── ... (each service has its own .env)
-```
+## 🛠️ Tech Stack
 
-## 🚀 Quick Start for New Developers
+### **Backend Services**
+- **Runtime**: Node.js 18+ with Express.js
+- **Authentication**: Firebase Auth + JWT tokens
+- **Database**: Firebase Firestore (NoSQL)
+- **Caching**: Redis for session management and caching
+- **Event Sourcing**: KurrentDB for event streaming
+- **API Security**: Helmet, CORS, rate limiting
+- **Monitoring**: Health checks, logging, metrics
 
-**🎯 CRITICAL: Only 3 steps needed!**
+### **Frontend**
+- **Framework**: React 18 with modern hooks
+- **Styling**: CSS3, responsive design
+- **State Management**: React Context + hooks
+- **HTTP Client**: Axios for API communication
+- **Authentication**: Firebase Auth SDK
 
+### **External Integrations**
+- **AI**: Google Gemini API for intelligent responses
+- **Security**: VirusTotal, ScamAdviser, IPQualityScore APIs
+- **News**: NewsAPI, NewsData for content aggregation
+- **Screenshots**: ScreenshotLayer for visual analysis
+
+### **DevOps & Infrastructure**
+- **Containerization**: Docker with multi-stage builds
+- **Orchestration**: Docker Compose for local development
+- **CI/CD**: GitHub Actions with automated testing
+- **Deployment**: Render.com for production hosting
+- **Monitoring**: Health checks, logging, error tracking
+
+## 🚀 Quick Start for Developers
+
+### **Prerequisites**
+- **Node.js** 18+ and npm 9+
+- **Docker** and Docker Compose (for local development)
+- **Firebase** project (free tier available)
+- **API Keys** for external services (optional for basic functionality)
+
+### **Local Development Setup**
+
+1. **Clone and Install**
 ```bash
-# 1. Clone repository
 git clone https://github.com/VinkRasengan/backup.git
 cd backup
+npm install
+```
 
-# 2. Create .env file
+2. **Environment Configuration**
+```bash
+# Copy environment template
 cp .env.example .env
-# Edit .env with your Firebase credentials
 
-# 3. Run complete setup and start
-npm run setup:full
-npm start
+# Configure required variables in .env:
+# - Firebase credentials (project ID, service account)
+# - JWT secret for authentication
+# - API keys for external services (optional)
 ```
 
-**✅ This exact workflow is tested in CI/CD on multiple platforms**
-
-Then open http://localhost:3000
-
-### 🔧 Validation Commands
-
+3. **Start Development Environment**
 ```bash
-npm run env:validate     # Validate environment configuration
-npm run test:new-dev     # Test new developer experience
-npm run test:workflow    # Test complete workflow
-npm run test:render      # Test Render deployment readiness
-npm run test:all         # Run all tests
+# Option 1: Full Docker setup (recommended)
+npm run start:docker
+
+# Option 2: Local services with Docker infrastructure
+npm run infrastructure:start  # Start Redis + KurrentDB
+npm run dev                   # Start all services locally
+
+# Option 3: Individual services
+npm run dev:auth             # Start auth service only
+npm run dev:link             # Start link service only
+# ... etc
 ```
 
-### ⚠️ Important Configuration Notes
+4. **Access Applications**
+- **Frontend**: http://localhost:3000
+- **API Gateway**: http://localhost:8080
+- **Individual Services**: Check respective ports (3001-3006)
 
-- **NEW: Service-specific configs**: Each service now has its own .env file
-- **NO localhost in production**: Use actual service URLs or service names
-- **Docker/K8s**: Use service names (e.g., `http://auth-service:3001`)
-- **Always validate**: Run `npm run env:validate` before deployment
-- **CI/CD tested**: New developer workflow tested on Ubuntu, Windows, macOS
-- **Refactored**: Environment configuration follows microservices best practices
-
-## 📋 Requirements
-
-- Node.js 18+, npm 9+
-- Firebase account (free)
-- Gemini AI API key (free)
-
-## 🔧 Configuration Management (NEW)
-
-### **Microservices Configuration Hierarchy**
-
-The platform now uses a **proper microservices configuration hierarchy**:
-
-1. **Local service .env** (highest priority) - Service-specific variables
-2. **Shared config/shared.env** (fallback) - Common variables (Redis, Event Store)
-3. **Root .env** (legacy fallback) - Minimal shared configuration
-4. **Production environment variables** (platform-provided)
-
-### **Service-Specific Configuration**
-
-Each service only contains the environment variables it actually needs:
+### **Development Commands**
 
 ```bash
-# Auth Service (.env)
-SERVICE_NAME=auth-service
-AUTH_SERVICE_PORT=3001
-FIREBASE_PROJECT_ID=your-project-id
-FIREBASE_CLIENT_EMAIL=your-service-account-email
-FIREBASE_PRIVATE_KEY="your-private-key"
-JWT_SECRET=your-jwt-secret
+# Environment & Health Checks
+npm run env:validate          # Validate environment configuration
+npm run health               # Check all services health
+npm run status               # Quick status check
 
-# Chat Service (.env)
-SERVICE_NAME=chat-service
-CHAT_SERVICE_PORT=3004
-FIREBASE_PROJECT_ID=your-project-id
-FIREBASE_CLIENT_EMAIL=your-service-account-email
-FIREBASE_PRIVATE_KEY="your-private-key"
-JWT_SECRET=your-jwt-secret
-GEMINI_API_KEY=your-gemini-key
+# Testing
+npm run test:all             # Run all tests
+npm run test:services        # Test individual services
+npm run test:integration     # Integration tests
 
-# Link Service (.env)
-SERVICE_NAME=link-service
-LINK_SERVICE_PORT=3002
+# Docker Management
+npm run docker:build         # Build all containers
+npm run docker:logs          # View container logs
+npm run docker:clean         # Clean up containers and volumes
+
+# Production Readiness
+npm run test:render          # Test deployment readiness
+npm run validate:production  # Production environment validation
+```
+
+## 🔧 Configuration Management
+
+### **Environment Setup**
+
+The platform uses a **microservices-first configuration approach** with service isolation:
+
+```bash
+# Root configuration (minimal shared config)
+.env                          # Basic shared variables
+
+# Service-specific configurations
+services/auth-service/.env    # Firebase + JWT configuration
+services/chat-service/.env    # AI + Firebase configuration
+services/link-service/.env    # Security APIs + Firebase
+services/community-service/.env # Community features + Firebase
+# ... each service has isolated configuration
+```
+
+### **Required Environment Variables**
+
+**Core Services (All require):**
+```bash
+# Firebase Configuration
 FIREBASE_PROJECT_ID=your-project-id
-FIREBASE_CLIENT_EMAIL=your-service-account-email
-FIREBASE_PRIVATE_KEY="your-private-key"
-JWT_SECRET=your-jwt-secret
+FIREBASE_CLIENT_EMAIL=your-service-account@project.iam.gserviceaccount.com
+FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n"
+
+# Authentication
+JWT_SECRET=your-secure-jwt-secret-key
+```
+
+**Service-Specific Variables:**
+```bash
+# Chat Service (AI functionality)
+GEMINI_API_KEY=your-gemini-api-key
+
+# Link Service (Security analysis)
 VIRUSTOTAL_API_KEY=your-virustotal-key
 SCAMADVISER_API_KEY=your-scamadviser-key
+IPQUALITYSCORE_API_KEY=your-ipqs-key
+
+# News Service (Content aggregation)
+NEWSAPI_API_KEY=your-newsapi-key
+NEWSDATA_API_KEY=your-newsdata-key
 ```
 
-### **Validation Commands**
+### **Getting API Keys**
 
-```bash
-# Validate new configuration structure
-npm run validate:env-refactor
+1. **Firebase**: [Console](https://console.firebase.google.com) → Project Settings → Service Accounts
+2. **Gemini AI**: [Google AI Studio](https://makersuite.google.com/app/apikey)
+3. **VirusTotal**: [VirusTotal API](https://www.virustotal.com/gui/join-us)
+4. **ScamAdviser**: [ScamAdviser API](https://www.scamadviser.com/api)
+5. **NewsAPI**: [NewsAPI.org](https://newsapi.org/register)
 
-# Test individual service configuration
-cd services/auth-service && npm test
+## 🏗️ Project Structure
 
-# Validate all services
-npm run test:services
+```
+factcheck-platform/
+├── 📁 client/                    # React frontend application
+│   ├── src/components/          # Reusable UI components
+│   ├── src/pages/              # Page components
+│   ├── src/services/           # API service layer
+│   └── public/                 # Static assets
+├── 📁 services/                # Backend microservices
+│   ├── api-gateway/            # Request routing & authentication
+│   ├── auth-service/           # User authentication & JWT
+│   ├── link-service/           # URL analysis & security
+│   ├── community-service/      # Posts & discussions
+│   ├── chat-service/           # AI-powered assistance
+│   ├── news-service/           # News aggregation
+│   └── admin-service/          # Administrative functions
+├── 📁 config/                  # Shared configuration
+├── 📁 scripts/                 # Development & deployment scripts
+├── 📁 docs/                    # Documentation
+└── docker-compose.dev.yml     # Local development setup
 ```
 
-## 🎯 Full Development Setup
+## 🔄 Development Workflow
 
-### Local Development
+### **Local Development**
 
-1. **Clone and Setup**
+1. **Initial Setup**
    ```bash
    git clone https://github.com/VinkRasengan/backup.git
    cd backup
-   npm run setup  # Handles everything automatically
+   npm install                  # Install dependencies
    ```
 
-2. **Configure Environment**
+2. **Environment Configuration**
    ```bash
-   # .env file is auto-created, just add your credentials:
-   # Firebase: Get from Firebase Console > Project Settings > Service Accounts
-   # Gemini: Get from https://makersuite.google.com/app/apikey
+   cp .env.example .env        # Copy environment template
+   # Edit .env with your API keys and Firebase credentials
    ```
 
-3. **Start Development**
+3. **Start Development Environment**
    ```bash
-   npm start     # Start all services
-   npm stop      # Stop all services
+   npm run infrastructure:start # Start Redis & KurrentDB
+   npm run dev                 # Start all services
+   ```
+
+4. **Development Commands**
+   ```bash
+   npm run dev:auth            # Start auth service only
+   npm run dev:link            # Start link service only
+   npm run dev:client          # Start frontend only
+   npm run logs                # View all service logs
+   ```
    npm restart   # Restart everything
    ```
 
@@ -292,13 +361,113 @@ npm run test:workflow    # Test complete workflow
 npm run test:all         # Run all CI/CD tests locally
 ```
 
-## 📚 Documentation
+## ✨ Key Features
 
-- [Security Guide](docs/SECURITY.md)
-- [Maintenance Guide](docs/MAINTENANCE.md)
-- [Performance Guide](docs/PERFORMANCE.md)
-- [Usage Guide](docs/USAGE-GUIDE.md)
-- [Deployment Checklist](docs/RENDER_DEPLOYMENT_CHECKLIST.md)
+### **Core Functionality**
+- **🔗 Link Analysis**: Real-time URL security scanning with multiple threat detection APIs
+- **🤖 AI Chat Assistant**: Intelligent fact-checking powered by Google Gemini
+- **👥 Community Platform**: User-driven discussions, posts, and content verification
+- **📰 News Aggregation**: Automated news collection with fact-checking workflows
+- **🛡️ Security Analysis**: Multi-layer threat detection (VirusTotal, ScamAdviser, etc.)
+- **📊 Admin Dashboard**: Comprehensive management and analytics tools
+
+### **Technical Features**
+- **🏗️ Microservices Architecture**: Independent, scalable service deployment
+- **🔐 Enterprise Security**: JWT authentication, rate limiting, CORS protection
+- **⚡ High Performance**: Redis caching, connection pooling, optimized queries
+- **📈 Event Sourcing**: KurrentDB for audit trails and event streaming
+- **🔄 Real-time Updates**: Live data synchronization across services
+- **🐳 Container Ready**: Docker support for consistent deployments
+
+## 🧪 Testing & Quality
+
+### **Automated Testing**
+```bash
+npm run test:all           # Complete test suite
+npm run test:integration   # Cross-service integration tests
+npm run test:e2e          # End-to-end user workflows
+npm run test:security     # Security vulnerability scans
+```
+
+### **Code Quality Tools**
+- **ESLint + Prettier**: Automated code formatting and linting
+- **Jest**: Unit and integration testing framework
+- **Supertest**: API endpoint testing
+- **Coverage Reports**: Minimum 80% test coverage maintained
+
+## 📚 Documentation & Resources
+
+### **Technical Documentation**
+- **[API Documentation](docs/api/)** - OpenAPI specifications for all services
+- **[Architecture Guide](docs/ARCHITECTURE.md)** - System design and patterns
+- **[Security Guide](docs/SECURITY.md)** - Security implementation details
+- **[Deployment Guide](docs/DEPLOYMENT.md)** - Production deployment instructions
+
+### **Developer Resources**
+- **[Contributing Guide](docs/CONTRIBUTING.md)** - Development guidelines
+- **[Performance Guide](docs/PERFORMANCE.md)** - Optimization strategies
+- **[Troubleshooting](docs/TROUBLESHOOTING.md)** - Common issues and solutions
+- **[Changelog](CHANGELOG.md)** - Version history and updates
+
+## 🤝 Contributing & Community
+
+We welcome contributions from developers of all skill levels!
+
+### **How to Contribute**
+1. **🍴 Fork** the repository
+2. **🌿 Create** a feature branch (`git checkout -b feature/amazing-feature`)
+3. **✅ Test** your changes thoroughly
+4. **📝 Document** your changes
+5. **🚀 Submit** a pull request
+
+### **Development Standards**
+- **Code Style**: ESLint + Prettier (automatically enforced)
+- **Testing**: Comprehensive test coverage required
+- **Documentation**: Update relevant docs with changes
+- **Commits**: Use conventional commit format
+
+### **Community Guidelines**
+- **Be Respectful**: Maintain a welcoming environment
+- **Be Constructive**: Provide helpful feedback and suggestions
+- **Be Patient**: Allow time for reviews and responses
+
+## 📄 License & Legal
+
+This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) file for details.
+
+### **Third-Party Services**
+- Firebase (Google Cloud Platform Terms)
+- Gemini AI (Google AI Terms of Service)
+- External APIs (respective terms apply)
+
+## 🆘 Support & Contact
+
+### **Getting Help**
+- **📖 Documentation**: Check `/docs` for comprehensive guides
+- **🐛 Bug Reports**: [GitHub Issues](https://github.com/VinkRasengan/backup/issues)
+- **💬 Discussions**: [GitHub Discussions](https://github.com/VinkRasengan/backup/discussions)
+- **📧 Direct Contact**: Reach out to maintainers for urgent issues
+
+### **Response Times**
+- **Bug Reports**: 24-48 hours
+- **Feature Requests**: 3-5 business days
+- **Security Issues**: Immediate attention
+
+---
+
+<div align="center">
+
+**🚀 Built with modern technologies for scalable, secure fact-checking**
+
+[![Node.js](https://img.shields.io/badge/Node.js-18+-green.svg)](https://nodejs.org/)
+[![React](https://img.shields.io/badge/React-18+-blue.svg)](https://reactjs.org/)
+[![Firebase](https://img.shields.io/badge/Firebase-Latest-orange.svg)](https://firebase.google.com/)
+[![Docker](https://img.shields.io/badge/Docker-Ready-blue.svg)](https://docker.com/)
+[![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
+**Made with ❤️ by the FactCheck Platform Team**
+
+</div>
 
 ## 🛠️ Development
 
