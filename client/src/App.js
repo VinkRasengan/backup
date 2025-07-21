@@ -32,14 +32,17 @@ import NotificationsPage from './pages/NotificationsPage';
 import FavoritesPage from './pages/FavoritesPage';
 import AchievementsPage from './pages/AchievementsPage';
 import HelpPage from './pages/HelpPage';
-import KnowledgeArticleDetailPage from './pages/KnowledgeArticlePage';
+import KnowledgeArticlePage from './pages/KnowledgeArticlePage';
 
 // Components - organized imports
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import EmailVerifiedRoute from './components/auth/EmailVerifiedRoute';
+import AdminRoute from './components/auth/AdminRoute';
 import { LoadingSpinner, ErrorBoundary } from './components/common';
 import NavigationLayout from './components/navigation/NavigationLayout';
 import GlobalAnimationProvider from './components/animations/GlobalAnimationProvider';
+import RoutingDebug from './components/debug/RoutingDebug';
+import RoutingTestPanel from './components/debug/RoutingTestPanel';
 
 function App() {
   const { user, loading } = useAuth();
@@ -56,7 +59,9 @@ function App() {
 
   if (loading) {
     return <LoadingSpinner />;
-  }  return (
+  }
+
+  return (
     <ErrorBoundary>
       <ThemeProvider>
         <GlobalAnimationProvider>
@@ -73,193 +78,207 @@ function App() {
             />
             <Route
               path="/register"
-                element={user ? <Navigate to="/dashboard" /> : <ModernRegisterPage />}
-              />              <Route path="/registration-success" element={<RegistrationSuccessPage />} />
-              <Route path="/email-verification-required" element={<EmailVerificationRequiredPage />} />
-              <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-              <Route path="/reset-password" element={<ResetPasswordPage />} />
+              element={user ? <Navigate to="/dashboard" /> : <ModernRegisterPage />}
+            />
+            <Route path="/registration-success" element={<RegistrationSuccessPage />} />
+            <Route path="/email-verification-required" element={<EmailVerificationRequiredPage />} />
+            <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+            <Route path="/reset-password" element={<ResetPasswordPage />} />
 
-          {/* Protected routes */}
-          <Route 
-            path="/dashboard" 
-            element={
-              <ProtectedRoute>
-                <DashboardPage />
-              </ProtectedRoute>
-            } 
-          />
-          <Route
-            path="/check"
-            element={
-              <EmailVerifiedRoute>
-                <CheckLinkPage />
-              </EmailVerifiedRoute>
-            }
-          />
-          <Route
-            path="/profile"
-            element={
-              <ProtectedRoute>
-                <ProfilePage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/chat"
-            element={
-              <ProtectedRoute>
+              {/* Protected routes */}
+            <Route
+              path="/dashboard"
+              element={
+                <ProtectedRoute>
+                  <DashboardPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/check"
+              element={
                 <EmailVerifiedRoute>
-                  <ChatPage />
+                  <CheckLinkPage />
                 </EmailVerifiedRoute>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/admin"
-            element={
-              <ProtectedRoute>
-                <AdminDashboard />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/admin/dashboard"
-            element={
-              <ProtectedRoute>
-                <AdminDashboard />
-              </ProtectedRoute>
-            }
-          />          <Route
-            path="/community"
-            element={<CommunityPage />}
-          />
-          <Route
-            path="/community/feed"
-            element={<Navigate to="/community?tab=news" replace />}
-          />
-          <Route
-            path="/submit"
-            element={
-              <ProtectedRoute>
-                <EmailVerifiedRoute>
-                  <SubmitArticlePage />
-                </EmailVerifiedRoute>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/my-submissions"
-            element={
-              <ProtectedRoute>
-                <EmailVerifiedRoute>
-                  <MySubmissionsPage />
-                </EmailVerifiedRoute>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/knowledge"
-            element={<KnowledgeBasePage />}
-          />
-          <Route path="/knowledge/:id" element={<KnowledgeArticleDetailPage />} />
-          <Route
-            path="/settings"
-            element={
-              <ProtectedRoute>
-                <SettingsPage />
-              </ProtectedRoute>
-            }
-          />
+              }
+            />
+            <Route
+              path="/profile"
+              element={
+                <ProtectedRoute>
+                  <ProfilePage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/chat"
+              element={
+                <ProtectedRoute>
+                  <EmailVerifiedRoute>
+                    <ChatPage />
+                  </EmailVerifiedRoute>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin"
+              element={<Navigate to="/admin/dashboard" replace />}
+            />
+            <Route
+              path="/admin/dashboard"
+              element={
+                <AdminRoute>
+                  <AdminDashboard />
+                </AdminRoute>
+              }
+            />
+            <Route
+              path="/admin/firestore-test"
+              element={
+                <AdminRoute>
+                  <AdminDashboard />
+                </AdminRoute>
+              }
+            />
+            <Route
+              path="/community"
+              element={<CommunityPage />}
+            />
+            <Route
+              path="/community/feed"
+              element={<Navigate to="/community?tab=news" replace />}
+            />
+            <Route
+              path="/submit"
+              element={
+                <ProtectedRoute>
+                  <EmailVerifiedRoute>
+                    <SubmitArticlePage />
+                  </EmailVerifiedRoute>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/my-submissions"
+              element={
+                <ProtectedRoute>
+                  <EmailVerifiedRoute>
+                    <MySubmissionsPage />
+                  </EmailVerifiedRoute>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/knowledge"
+              element={<KnowledgeBasePage />}
+            />
+            <Route path="/knowledge/:id" element={<KnowledgeArticlePage />} />
+            <Route
+              path="/settings"
+              element={
+                <ProtectedRoute>
+                  <SettingsPage />
+                </ProtectedRoute>
+              }
+            />
 
-          {/* New feature pages */}
-          <Route 
-            path="/security" 
-            element={
-              <ProtectedRoute>
-                <SecurityPage />
-              </ProtectedRoute>
-            } 
-          />
-          <Route 
-            path="/analytics" 
-            element={
-              <ProtectedRoute>
-                <AnalyticsPage />
-              </ProtectedRoute>
-            } 
-          />
-          <Route 
-            path="/premium" 
-            element={
-              <ProtectedRoute>
-                <PremiumPage />
-              </ProtectedRoute>
-            } 
-          />
-          <Route
-            path="/notifications"
-            element={
-              <ProtectedRoute>
-                <NotificationsPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/favorites"
-            element={
-              <ProtectedRoute>
-                <FavoritesPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/achievements"
-            element={
-              <ProtectedRoute>
-                <AchievementsPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route path="/help" element={<HelpPage />} />
+            {/* New feature pages */}
+            <Route
+              path="/security"
+              element={
+                <ProtectedRoute>
+                  <SecurityPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/analytics"
+              element={
+                <ProtectedRoute>
+                  <AnalyticsPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/premium"
+              element={
+                <ProtectedRoute>
+                  <PremiumPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/notifications"
+              element={
+                <ProtectedRoute>
+                  <NotificationsPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/favorites"
+              element={
+                <ProtectedRoute>
+                  <FavoritesPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/achievements"
+              element={
+                <ProtectedRoute>
+                  <AchievementsPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route path="/help" element={<HelpPage />} />
 
-          {/* Settings sub-routes */}
-          <Route
-            path="/settings/account"
-            element={
-              <ProtectedRoute>
-                <SettingsPage activeTab="account" />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/settings/security"
-            element={
-              <ProtectedRoute>
-                <SettingsPage activeTab="security" />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/settings/notifications"
-            element={
-              <ProtectedRoute>
-                <SettingsPage activeTab="notifications" />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/settings/appearance"
-            element={
-              <ProtectedRoute>
-                <SettingsPage activeTab="appearance" />
-              </ProtectedRoute>
-            }
-          />
+            {/* Settings sub-routes */}
+            <Route
+              path="/settings/account"
+              element={
+                <ProtectedRoute>
+                  <SettingsPage activeTab="account" />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/settings/security"
+              element={
+                <ProtectedRoute>
+                  <SettingsPage activeTab="security" />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/settings/notifications"
+              element={
+                <ProtectedRoute>
+                  <SettingsPage activeTab="notifications" />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/settings/appearance"
+              element={
+                <ProtectedRoute>
+                  <SettingsPage activeTab="appearance" />
+                </ProtectedRoute>
+              }
+            />
 
-          {/* Catch all route */}
-          <Route path="*" element={<Navigate to="/" />} />
-        </Routes>
+            {/* Catch all route */}
+            <Route path="*" element={<Navigate to="/" />} />
+          </Routes>
           </NavigationLayout>
+
+          {/* Development routing debug */}
+          {process.env.NODE_ENV === 'development' && (
+            <>
+              <RoutingDebug />
+              <RoutingTestPanel />
+            </>
+          )}
         </GlobalAnimationProvider>
       </ThemeProvider>
     </ErrorBoundary>

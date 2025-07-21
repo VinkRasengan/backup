@@ -18,11 +18,10 @@ const getApiBaseUrl = () => {
   }
 
   if (process.env.NODE_ENV === 'production') {
-    return '/api';
+    return '';
   }
 
-  const apiBaseUrl = process.env.REACT_APP_API_URL || "http://localhost:8080";
-    return `${apiBaseUrl}/api`;
+  return 'http://localhost:8080';
 };
 
 const CommunityPreview = () => {
@@ -45,7 +44,7 @@ const CommunityPreview = () => {
         const headers = { 'Content-Type': 'application/json' };
         if (token) headers['Authorization'] = `Bearer ${token}`;
 
-        const response = await fetch(`${getApiBaseUrl()}/community/links?limit=4&sort=trending`, { headers });
+        const response = await fetch(`${getApiBaseUrl()}/api/community/links?limit=4&sort=trending`, { headers });
 
         console.log('📡 Community API Response status:', response.status);
 

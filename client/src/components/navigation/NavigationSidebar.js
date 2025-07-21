@@ -61,7 +61,8 @@ const NavigationSidebar = ({ isOpen, onToggle }) => {
       color: 'purple',
       submenu: [
         { label: 'Bảng tin', path: '/community' },
-        { label: 'Đóng góp', path: '/submit' }
+        { label: 'Đóng góp', path: '/submit' },
+        { label: 'Bài viết của tôi', path: '/my-submissions' }
       ]
     },
     {
@@ -206,7 +207,12 @@ const NavigationSidebar = ({ isOpen, onToggle }) => {
     if (path === '/') {
       return location.pathname === '/';
     }
-    return location.pathname.startsWith(path);  };
+    // Exact match for specific paths to avoid conflicts
+    if (path === '/admin') {
+      return location.pathname === '/admin' || location.pathname.startsWith('/admin/');
+    }
+    return location.pathname === path || location.pathname.startsWith(path + '/');
+  };
 
   // Handle navigation
   const handleNavigation = useCallback((item) => {

@@ -88,10 +88,24 @@ export const useRealtimeNotifications = (enabled = true) => {
 
     const fetchNotifications = async () => {
       try {
+        // Get Firebase ID token from Firebase auth instead of user object
+        const { auth } = await import('../config/firebase');
+        const firebaseUser = auth.currentUser;
+
+        let token = null;
+        if (firebaseUser) {
+          token = await firebaseUser.getIdToken();
+        } else {
+          // Fallback to stored token
+          token = localStorage.getItem('firebaseToken') ||
+                  localStorage.getItem('authToken') ||
+                  localStorage.getItem('token');
+        }
+
         const response = await fetch('/api/users/notifications', {
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${await user.getIdToken()}`
+            'Authorization': `Bearer ${token}`
           }
         });
 

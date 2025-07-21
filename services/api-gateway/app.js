@@ -122,6 +122,192 @@ Object.keys(services).forEach(serviceName => {
     }));
 });
 
+// API routes - proxy to community service for API endpoints with manual handlers for better control
+app.all('/api/votes*', async (req, res) => {
+    try {
+        console.log(`🔄 Votes proxy: ${req.method} ${req.originalUrl} → ${services.community.target}/api/votes`);
+
+        const targetPath = req.originalUrl.replace('/api/votes', '/api/votes');
+        const targetUrl = `${services.community.target}${targetPath}`;
+        console.log(`🎯 Target URL: ${targetUrl}`);
+
+        const response = await fetch(targetUrl, {
+            method: req.method,
+            headers: {
+                ...req.headers,
+                host: undefined // Remove host header to avoid conflicts
+            },
+            body: req.method !== 'GET' && req.method !== 'HEAD' ? JSON.stringify(req.body) : undefined
+        });
+
+        const data = await response.text();
+        res.status(response.status);
+
+        // Copy response headers
+        response.headers.forEach((value, key) => {
+            res.set(key, value);
+        });
+
+        res.send(data);
+    } catch (error) {
+        console.error(`❌ Votes proxy error:`, error.message);
+        res.status(503).json({
+            error: 'Service unavailable',
+            service: 'community-votes',
+            message: 'Votes service is not responding',
+            timestamp: new Date().toISOString()
+        });
+    }
+});
+
+app.all('/api/comments*', async (req, res) => {
+    try {
+        console.log(`🔄 Comments proxy: ${req.method} ${req.originalUrl} → ${services.community.target}/api/comments`);
+
+        const targetPath = req.originalUrl.replace('/api/comments', '/api/comments');
+        const targetUrl = `${services.community.target}${targetPath}`;
+        console.log(`🎯 Target URL: ${targetUrl}`);
+
+        const response = await fetch(targetUrl, {
+            method: req.method,
+            headers: {
+                ...req.headers,
+                host: undefined // Remove host header to avoid conflicts
+            },
+            body: req.method !== 'GET' && req.method !== 'HEAD' ? JSON.stringify(req.body) : undefined
+        });
+
+        const data = await response.text();
+        res.status(response.status);
+
+        // Copy response headers
+        response.headers.forEach((value, key) => {
+            res.set(key, value);
+        });
+
+        res.send(data);
+    } catch (error) {
+        console.error(`❌ Comments proxy error:`, error.message);
+        res.status(503).json({
+            error: 'Service unavailable',
+            service: 'community-comments',
+            message: 'Comments service is not responding',
+            timestamp: new Date().toISOString()
+        });
+    }
+});
+
+app.use('/api/posts', createProxyMiddleware({
+    target: services.community.target,
+    changeOrigin: true,
+    pathRewrite: { '^/api/posts': '/api/posts' },
+    onError: (err, req, res) => {
+        console.error(`❌ Proxy error for posts API:`, err.message);
+        res.status(503).json({
+            error: 'Service unavailable',
+            service: 'community-posts',
+            message: 'Posts service is not responding',
+            timestamp: new Date().toISOString()
+        });
+    },
+    onProxyReq: (proxyReq, req, res) => {
+        console.log(`🔄 Proxying ${req.method} ${req.originalUrl} → ${services.community.target}${proxyReq.path}`);
+    }
+}));
+
+// Add /api/community/* routes for frontend compatibility (must be before /api/links)
+app.use('/api/community', createProxyMiddleware({
+    target: services.community.target,
+    changeOrigin: true,
+    pathRewrite: { '^/api/community': '' },
+    onError: (err, req, res) => {
+        console.error(`❌ Proxy error for community API:`, err.message);
+        res.status(503).json({
+            error: 'Service unavailable',
+            service: 'community-api',
+            message: 'Community service is not responding',
+            timestamp: new Date().toISOString()
+        });
+    },
+    onProxyReq: (proxyReq, req, res) => {
+        console.log(`🔄 Proxying ${req.method} ${req.originalUrl} → ${services.community.target}${proxyReq.path}`);
+    }
+}));
+
+// Add /api/links route for community links - using manual proxy
+app.all('/api/links*', async (req, res) => {
+    try {
+        console.log(`🔄 Manual proxy: ${req.method} ${req.originalUrl} → ${services.community.target}/api/links`);
+
+        const targetUrl = `${services.community.target}/api/links${req.url.replace('/api/links', '')}`;
+        console.log(`🎯 Target URL: ${targetUrl}`);
+
+        const response = await fetch(targetUrl, {
+            method: req.method,
+            headers: {
+                ...req.headers,
+                host: undefined // Remove host header to avoid conflicts
+            },
+            body: req.method !== 'GET' && req.method !== 'HEAD' ? JSON.stringify(req.body) : undefined
+        });
+
+        const data = await response.text();
+        res.status(response.status);
+
+        // Copy response headers
+        response.headers.forEach((value, key) => {
+            res.set(key, value);
+        });
+
+        res.send(data);
+    } catch (error) {
+        console.error(`❌ Manual proxy error for links API:`, error.message);
+        res.status(503).json({
+            error: 'Service unavailable',
+            service: 'community-links',
+            message: 'Links service is not responding',
+            timestamp: new Date().toISOString()
+        });
+    }
+});
+
+app.use('/api/stats', createProxyMiddleware({
+    target: services.community.target,
+    changeOrigin: true,
+    pathRewrite: { '^/api/stats': '/api/stats' },
+    onError: (err, req, res) => {
+        console.error(`❌ Proxy error for stats API:`, err.message);
+        res.status(503).json({
+            error: 'Service unavailable',
+            service: 'community-stats',
+            message: 'Stats service is not responding',
+            timestamp: new Date().toISOString()
+        });
+    },
+    onProxyReq: (proxyReq, req, res) => {
+        console.log(`🔄 Proxying ${req.method} ${req.originalUrl} → ${services.community.target}${proxyReq.path}`);
+    }
+}));
+
+// Auth API routes
+app.use('/api/auth', createProxyMiddleware({
+    target: services.auth.target,
+    changeOrigin: true,
+    pathRewrite: { '^/api/auth': '/api' },
+    onError: (err, req, res) => {
+        console.error(`❌ Proxy error for auth API:`, err.message);
+        res.status(503).json({
+            error: 'Service unavailable',
+            service: 'auth-api',
+            message: 'Auth service is not responding',
+            timestamp: new Date().toISOString()
+        });
+    },
+    onProxyReq: (proxyReq, req, res) => {
+        console.log(`🔄 Proxying ${req.method} ${req.originalUrl} → ${services.auth.target}${req.url}`);
+    }
+}));
+
 // API routes placeholder
 app.get('/api', (req, res) => {
     res.json({
@@ -132,6 +318,18 @@ app.get('/api', (req, res) => {
             'GET /',
             'GET /health',
             'GET /api',
+            'POST /api/votes - Vote on content',
+            'GET /api/votes/:linkId - Get vote stats',
+            'POST /api/comments - Create comment',
+            'GET /api/comments/:linkId - Get comments',
+            'GET /api/posts - Get posts',
+            'POST /api/posts - Create post',
+            'GET /api/links - Get community links',
+            'POST /api/links - Create community link',
+            'GET /api/community/* - Community service endpoints',
+            'GET /api/stats - Get statistics',
+            'POST /api/auth/login - Login',
+            'POST /api/auth/register - Register',
             ...Object.keys(services).map(service => `/${service}/* → ${services[service].target}`)
         ]
     });

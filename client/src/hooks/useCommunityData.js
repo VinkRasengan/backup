@@ -6,12 +6,10 @@ const getApiBaseUrl = () => {
     return process.env.REACT_APP_API_URL;
   }
   if (process.env.NODE_ENV === 'production') {
-    return process.env.REACT_APP_API_GATEWAY_URL || '/api';
+    return '';
   }
 
-  // Fixed: Use API Gateway port 8080
-  const apiBaseUrl = process.env.REACT_APP_API_URL || "http://localhost:8080";
-    return `${apiBaseUrl}/api`;
+  return 'http://localhost:8080';
 };
 
 // Smart Community Data Manager with Caching & Prefetching
@@ -191,7 +189,7 @@ class CommunityDataManager {
                  localStorage.getItem('backendToken') ||
                  localStorage.getItem('firebaseToken');
 
-    const response = await fetch(`${getApiBaseUrl()}/community/links?${urlParams}`, {
+    const response = await fetch(`${getApiBaseUrl()}/api/community/links?${urlParams}`, {
       headers: {
         'Authorization': `Bearer ${token}`,
         'Cache-Control': 'max-age=300', // 5 minutes cache

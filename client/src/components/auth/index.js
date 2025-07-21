@@ -3,3 +3,4 @@
 
 export { default as ProtectedRoute } from './ProtectedRoute';
 export { default as EmailVerifiedRoute } from './EmailVerifiedRoute';
+export { default as AdminRoute } from './AdminRoute';

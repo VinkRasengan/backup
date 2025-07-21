@@ -67,7 +67,7 @@ const MobileTabBar = () => {
     if (path === '/') {
       return location.pathname === '/';
     }
-    return location.pathname.startsWith(path);
+    return location.pathname === path || location.pathname.startsWith(path + '/');
   };
 
   const getColorClasses = (color, active = false) => {
