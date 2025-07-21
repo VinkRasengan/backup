@@ -2,16 +2,17 @@ const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
+const path = require('path');
 
-// Load environment variables
-require('dotenv').config();
+// Load environment variables from root .env
+require('dotenv').config({ path: require('path').join(__dirname, '../../.env') });
 
 // Import Event-Driven Architecture components
 const CommunityEventHandlers = require('./src/events/communityEventHandlers');
 const logger = require('./src/utils/logger');
 
 const app = express();
-const PORT = process.env.PORT || 3003;
+const PORT = process.env.COMMUNITY_SERVICE_PORT || 3003;
 // Service configuration
 const service = {
     name: 'Community Service',
@@ -300,7 +301,8 @@ async function gracefulShutdown(signal) {
             error: error.message,
             stack: error.stack
         });
-        process.exit(1);
+        // Force exit only if really necessary
+        setTimeout(() => process.exit(1), 1000);
     }
 }
 
@@ -313,7 +315,10 @@ process.on('uncaughtException', (err) => {
         error: err.message,
         stack: err.stack
     });
-    process.exit(1);
+    // Don't exit in development, just log the error
+    if (process.env.NODE_ENV === 'production') {
+        process.exit(1);
+    }
 });
 
 process.on('unhandledRejection', (reason, promise) => {
@@ -321,7 +326,10 @@ process.on('unhandledRejection', (reason, promise) => {
         reason: reason.toString(),
         promise: promise.toString()
     });
-    process.exit(1);
+    // Don't exit in development, just log the error
+    if (process.env.NODE_ENV === 'production') {
+        process.exit(1);
+    }
 });
 
 module.exports = app;
