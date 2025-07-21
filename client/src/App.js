@@ -41,8 +41,6 @@ import AdminRoute from './components/auth/AdminRoute';
 import { LoadingSpinner, ErrorBoundary } from './components/common';
 import NavigationLayout from './components/navigation/NavigationLayout';
 import GlobalAnimationProvider from './components/animations/GlobalAnimationProvider';
-import RoutingDebug from './components/debug/RoutingDebug';
-import RoutingTestPanel from './components/debug/RoutingTestPanel';
 
 function App() {
   const { user, loading } = useAuth();
@@ -277,12 +275,7 @@ function App() {
           </NavigationLayout>
 
           {/* Development routing debug */}
-          {process.env.NODE_ENV === 'development' && (
-            <>
-              <RoutingDebug />
-              <RoutingTestPanel />
-            </>
-          )}
+          {/* Đã xóa RoutingDebug và RoutingTestPanel */}
         </GlobalAnimationProvider>
       </ThemeProvider>
     </ErrorBoundary>
