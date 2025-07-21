@@ -130,6 +130,7 @@ app.get('/', (req, res) => {
 });
 
 // Import API routes
+const linksRoutes = require('./src/routes/links');
 const postsRoutes = require('./src/routes/posts');
 const commentsRoutes = require('./src/routes/comments');
 const reportsRoutes = require('./src/routes/reports');
@@ -145,6 +146,7 @@ app.use((req, res, next) => {
 });
 
 // API routes
+app.use('/links', linksRoutes);
 app.use('/api/posts', postsRoutes);
 app.use('/api/comments', commentsRoutes);
 app.use('/api/reports', reportsRoutes);

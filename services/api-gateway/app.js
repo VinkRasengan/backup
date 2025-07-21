@@ -2,12 +2,14 @@ const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
+const { createProxyMiddleware } = require('http-proxy-middleware');
+const path = require('path');
 
-// Load environment variables
-require('dotenv').config();
+// Load environment variables from root .env
+require('dotenv').config({ path: path.join(__dirname, '../../.env') });
 
 const app = express();
-const PORT = process.env.PORT || 8080;
+const PORT = process.env.API_GATEWAY_PORT || 8080;
 // Service configuration
 const service = {
     name: 'API Gateway',
@@ -70,15 +72,67 @@ app.get('/', (req, res) => {
     });
 });
 
+// Service proxy configurations
+const services = {
+    auth: {
+        target: `http://localhost:${process.env.AUTH_SERVICE_PORT || 3001}`,
+        pathRewrite: { '^/auth': '' }
+    },
+    link: {
+        target: `http://localhost:${process.env.LINK_SERVICE_PORT || 3002}`,
+        pathRewrite: { '^/link': '' }
+    },
+    community: {
+        target: `http://localhost:${process.env.COMMUNITY_SERVICE_PORT || 3003}`,
+        pathRewrite: { '^/community': '' }
+    },
+    chat: {
+        target: `http://localhost:${process.env.CHAT_SERVICE_PORT || 3004}`,
+        pathRewrite: { '^/chat': '' }
+    },
+    news: {
+        target: `http://localhost:${process.env.NEWS_SERVICE_PORT || 3005}`,
+        pathRewrite: { '^/news': '' }
+    },
+    admin: {
+        target: `http://localhost:${process.env.ADMIN_SERVICE_PORT || 3006}`,
+        pathRewrite: { '^/admin': '' }
+    }
+};
+
+// Create proxy middleware for each service
+Object.keys(services).forEach(serviceName => {
+    const config = services[serviceName];
+    app.use(`/${serviceName}`, createProxyMiddleware({
+        target: config.target,
+        changeOrigin: true,
+        pathRewrite: config.pathRewrite,
+        onError: (err, req, res) => {
+            console.error(`❌ Proxy error for ${serviceName}:`, err.message);
+            res.status(503).json({
+                error: 'Service unavailable',
+                service: serviceName,
+                message: `${serviceName} service is not responding`,
+                timestamp: new Date().toISOString()
+            });
+        },
+        onProxyReq: (proxyReq, req, res) => {
+            console.log(`🔄 Proxying ${req.method} ${req.originalUrl} → ${config.target}${req.url}`);
+        }
+    }));
+});
+
 // API routes placeholder
 app.get('/api', (req, res) => {
     res.json({
         service: 'api-gateway',
         message: 'API endpoint ready',
+        services: Object.keys(services),
         endpoints: [
             'GET /',
             'GET /health',
-            'GET /api'
+            'GET /api',
+            ...Object.keys(services).map(service => `/${service}/* → ${services[service].target}`)
         ]
     });
 });
