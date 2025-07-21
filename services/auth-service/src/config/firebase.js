@@ -142,6 +142,16 @@ if (process.env.NODE_ENV === 'test') {
     console.log('✅ Auth Service: Firebase config loaded successfully');
   } catch (error) {
     console.error('❌ Auth Service: Firebase config failed to load:', error.message);
+
+    // Check if Firebase is disabled for development
+    if (process.env.DISABLE_FIREBASE === 'true') {
+      console.log('⚠️  Auth Service: Firebase disabled for development mode');
+      // Create mock objects for development
+      db = { collection: () => ({ doc: () => ({ get: () => Promise.resolve({ exists: false }) }) }) };
+      auth = { verifyIdToken: () => Promise.resolve({ uid: 'dev-user' }) };
+      return;
+    }
+
     throw new Error(`Firebase configuration failed: ${error.message}`);
   }
 }

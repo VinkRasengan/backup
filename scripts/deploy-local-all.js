@@ -190,30 +190,14 @@ class LocalDeployment {
         return;
       }
 
-      // Start Redis
-      console.log('  🚀 Starting Redis...');
+      // Start infrastructure using fallback script
+      console.log('  🚀 Starting infrastructure services (Redis, RabbitMQ)...');
       try {
-        await execAsync('docker run -d --name factcheck-redis -p 6379:6379 redis:7-alpine redis-server --appendonly yes');
-        console.log('  ✅ Redis started successfully');
+        await execAsync('node scripts/start-infrastructure-fallback.js start');
+        console.log('  ✅ Infrastructure services started successfully');
       } catch (error) {
-        if (error.message.includes('already in use')) {
-          console.log('  ✅ Redis already running');
-        } else {
-          console.log('  ⚠️  Redis start failed, continuing without Redis');
-        }
-      }
-
-      // Start RabbitMQ
-      console.log('  🚀 Starting RabbitMQ...');
-      try {
-        await execAsync('docker run -d --name factcheck-rabbitmq -p 5672:5672 -p 15672:15672 -e RABBITMQ_DEFAULT_USER=factcheck -e RABBITMQ_DEFAULT_PASS=secure_password rabbitmq:3-management-alpine');
-        console.log('  ✅ RabbitMQ started successfully');
-      } catch (error) {
-        if (error.message.includes('already in use')) {
-          console.log('  ✅ RabbitMQ already running');
-        } else {
-          console.log('  ⚠️  RabbitMQ start failed, continuing without RabbitMQ');
-        }
+        console.log('  ⚠️  Infrastructure start failed, continuing in standalone mode');
+        console.log('     Error:', error.message);
       }
 
       // Wait for services to be ready
@@ -443,6 +427,29 @@ class LocalDeployment {
         reject(new Error('Timeout'));
       });
     });
+  }
+
+  async waitForService(serviceUrl, timeout = 30000) {
+    const startTime = Date.now();
+
+    while (Date.now() - startTime < timeout) {
+      try {
+        if (serviceUrl.startsWith('redis://')) {
+          // Test Redis connection
+          await this.execAsync('docker exec factcheck-redis redis-cli --no-auth-warning -a antifraud123 ping');
+          return true;
+        } else if (serviceUrl.startsWith('amqp://')) {
+          // Test RabbitMQ connection
+          await this.execAsync('docker exec factcheck-rabbitmq rabbitmq-diagnostics ping');
+          return true;
+        }
+      } catch (error) {
+        // Service not ready yet, wait and retry
+        await this.sleep(2000);
+      }
+    }
+
+    throw new Error(`Service ${serviceUrl} not ready after ${timeout}ms`);
   }
 }
 

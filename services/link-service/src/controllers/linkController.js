@@ -1,4 +1,4 @@
-const { db, collections } = require('../config/firebase');
+const { db, collections } = require('../config/firebase-wrapper');
 const logger = require('../utils/logger');
 const securityAggregatorService = require('../services/securityAggregatorService');
 const securityAPIService = require('../services/securityAPIService');

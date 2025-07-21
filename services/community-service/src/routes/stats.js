@@ -1,5 +1,5 @@
 const express = require('express');
-const { db, collections } = require('../config/firebase');
+const { db, collections } = require('../config/firebase-wrapper');
 const logger = require('../utils/logger');
 const ResponseFormatter = require('../utils/response');
 

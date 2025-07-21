@@ -96,14 +96,14 @@ class EventBusService {
     // Publish event
     this.app.post('/events', async (req, res) => {
       try {
-        const { eventType, data, metadata = {} } = req.body;
+        const { type: eventType, data, metadata = {} } = req.body;
         
         // Add correlation ID from request
         metadata.correlationId = metadata.correlationId || req.correlationId;
         metadata.source = metadata.source || req.headers['x-service-name'] || 'unknown';
         
         // Validate event
-        const validation = await this.eventValidator.validate(eventType, data);
+        const validation = await this.eventValidator.validate(eventType, data, metadata);
         if (!validation.valid) {
           return res.status(400).json({
             error: 'Invalid event',

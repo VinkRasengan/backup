@@ -1,4 +1,4 @@
-const { db, collections } = require('../config/firebase');
+const { db, collections } = require('../config/firebase-wrapper');
 const logger = require('./logger');
 
 // Logger already initialized

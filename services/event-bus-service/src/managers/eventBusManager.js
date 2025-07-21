@@ -47,7 +47,8 @@ class EventBusManager {
     logger.info('Initializing Event Bus Manager...');
 
     // Check if we should run in standalone mode
-    const standaloneMode = process.env.STANDALONE_MODE === 'true' || true; // Force standalone for now
+    const standaloneMode = process.env.STANDALONE_MODE === 'true' ||
+                          (!process.env.REDIS_URL && !process.env.RABBITMQ_URL && !process.env.KURRENTDB_URL);
 
     if (standaloneMode) {
       logger.info('Running in standalone mode - external services disabled');
@@ -55,8 +56,13 @@ class EventBusManager {
     }
 
     try {
-      // Initialize EventStore
-      await this.initializeEventStore();
+      // Initialize EventStore (skip if disabled)
+      if (process.env.DISABLE_EVENTSTORE !== 'true') {
+        await this.initializeEventStore();
+      } else {
+        logger.info('EventStore disabled, skipping initialization');
+        this.connections.eventStore.connected = false;
+      }
       
       // Initialize RabbitMQ
       await this.initializeRabbitMQ();

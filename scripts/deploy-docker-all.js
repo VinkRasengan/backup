@@ -12,11 +12,14 @@ const fs = require('fs');
 class DockerDeployment {
   constructor() {
     this.rootDir = process.cwd();
-    this.composeFile = 'docker-compose.local.yml';
+    this.composeFile = 'docker-compose.development.yml';
+    this.composeCommand = 'docker compose'; // Will be set during prerequisites check
     this.services = [
       'redis',
+      'rabbitmq',
+      'event-bus-service',
       'auth-service',
-      'link-service', 
+      'link-service',
       'community-service',
       'chat-service',
       'news-service',
@@ -30,8 +33,8 @@ class DockerDeployment {
    * Main deployment function
    */
   async deploy() {
-    console.log('🐳 Starting Docker Deployment - All Services & Client');
-    console.log('=' .repeat(60));
+    console.log('🐳 Starting Docker Deployment - Event-Driven Architecture with Full Infrastructure');
+    console.log('=' .repeat(80));
 
     try {
       await this.checkPrerequisites();
@@ -57,8 +60,15 @@ class DockerDeployment {
       const dockerVersion = await this.execAsync('docker --version');
       console.log(`  ✅ Docker: ${dockerVersion.trim()}`);
       
-      // Check Docker Compose
-      const composeVersion = await this.execAsync('docker-compose --version');
+      // Check Docker Compose (try new syntax first, then old)
+      let composeVersion;
+      try {
+        composeVersion = await this.execAsync('docker compose version');
+        this.composeCommand = 'docker compose';
+      } catch (error) {
+        composeVersion = await this.execAsync('docker-compose --version');
+        this.composeCommand = 'docker-compose';
+      }
       console.log(`  ✅ Docker Compose: ${composeVersion.trim()}`);
       
       // Check if Docker daemon is running
@@ -361,15 +371,16 @@ services:
     try {
       // Stop any existing containers
       console.log('  🛑 Stopping existing containers...');
-      await this.execAsync(`docker-compose -f ${this.composeFile} down --remove-orphans`, {
+      await this.execAsync(`${this.composeCommand} -f ${this.composeFile} down --remove-orphans`, {
         cwd: this.rootDir
       });
-      
+
       // Start services
       console.log('  🚀 Starting all services...');
-      const startCommand = `docker-compose -f ${this.composeFile} up -d`;
-      
-      const child = spawn('docker-compose', ['-f', this.composeFile, 'up', '-d'], {
+      const startCommand = `${this.composeCommand} -f ${this.composeFile} up -d`;
+
+      const composeArgs = this.composeCommand.split(' ').concat(['-f', this.composeFile, 'up', '-d']);
+      const child = spawn(composeArgs[0], composeArgs.slice(1), {
         cwd: this.rootDir,
         stdio: 'inherit'
       });

@@ -1,0 +1,335 @@
+# Docker Compose for Development - Event-Driven Architecture
+# Optimized for fast development with hot reload and better error handling
+
+services:
+  # =============================================================================
+  # INFRASTRUCTURE SERVICES
+  # =============================================================================
+  
+  # Redis - Event Pub/Sub and Caching
+  redis:
+    image: redis:7-alpine
+    container_name: factcheck-redis-dev
+    ports:
+      - "6379:6379"
+    command: >
+      redis-server 
+      --requirepass antifraud123 
+      --appendonly yes
+      --maxmemory 256mb
+      --maxmemory-policy allkeys-lru
+    volumes:
+      - redis-data:/data
+    restart: on-failure:3
+    healthcheck:
+      test: ["CMD", "redis-cli", "--no-auth-warning", "-a", "antifraud123", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 10s
+    networks:
+      - factcheck-network
+
+  # RabbitMQ - Message Queue
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: factcheck-rabbitmq-dev
+    ports:
+      - "5672:5672"    # AMQP port
+      - "15672:15672"  # Management UI
+    environment:
+      RABBITMQ_DEFAULT_USER: factcheck
+      RABBITMQ_DEFAULT_PASS: secure_password
+      RABBITMQ_DEFAULT_VHOST: /
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+    restart: on-failure:3
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 60s
+      timeout: 30s
+      retries: 5
+      start_period: 60s
+    networks:
+      - factcheck-network
+
+  # =============================================================================
+  # EVENT BUS SERVICE
+  # =============================================================================
+  event-bus-service:
+    build:
+      context: ./services/event-bus-service
+      dockerfile: Dockerfile
+    container_name: factcheck-event-bus-dev
+    ports:
+      - "3009:3009"
+      - "9090:9090"  # Metrics port
+    environment:
+      NODE_ENV: development
+      PORT: 3009
+      EVENT_BUS_SERVICE_PORT: 3009
+      REDIS_URL: redis://:antifraud123@redis:6379
+      RABBITMQ_URL: amqp://factcheck:secure_password@rabbitmq:5672
+      ENABLE_EVENT_DRIVEN: true
+      STANDALONE_MODE: false
+      DISABLE_EVENTSTORE: true
+      DEBUG: event-bus:*
+    volumes:
+      - ./services/event-bus-service:/app
+      - /app/node_modules
+    depends_on:
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    restart: on-failure:3
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3009/health"]
+      interval: 60s
+      timeout: 15s
+      retries: 5
+      start_period: 60s
+    networks:
+      - factcheck-network
+
+  # =============================================================================
+  # MICROSERVICES
+  # =============================================================================
+  
+  # Auth Service
+  auth-service:
+    build:
+      context: ./services/auth-service
+      dockerfile: Dockerfile
+    container_name: factcheck-auth-dev
+    ports:
+      - "3001:3001"
+    environment:
+      NODE_ENV: development
+      PORT: 3001
+      AUTH_SERVICE_PORT: 3001
+      EVENT_BUS_SERVICE_URL: http://event-bus-service:3009
+      REDIS_URL: redis://:antifraud123@redis:6379
+      ENABLE_EVENT_DRIVEN: true
+      DISABLE_FIREBASE: true
+      DEBUG: auth:*
+    volumes:
+      - ./services/auth-service:/app
+      - /app/node_modules
+    depends_on:
+      event-bus-service:
+        condition: service_healthy
+    restart: on-failure:3
+    networks:
+      - factcheck-network
+
+  # Link Service
+  link-service:
+    build:
+      context: ./services/link-service
+      dockerfile: Dockerfile
+    container_name: factcheck-link-dev
+    ports:
+      - "3002:3002"
+    environment:
+      NODE_ENV: development
+      PORT: 3002
+      LINK_SERVICE_PORT: 3002
+      EVENT_BUS_SERVICE_URL: http://event-bus-service:3009
+      REDIS_URL: redis://:antifraud123@redis:6379
+      ENABLE_EVENT_DRIVEN: true
+      DEBUG: link:*
+    volumes:
+      - ./services/link-service:/app
+      - /app/node_modules
+    depends_on:
+      event-bus-service:
+        condition: service_healthy
+    restart: on-failure:3
+    networks:
+      - factcheck-network
+
+  # Community Service
+  community-service:
+    build:
+      context: ./services/community-service
+      dockerfile: Dockerfile
+    container_name: factcheck-community-dev
+    ports:
+      - "3003:3003"
+    environment:
+      NODE_ENV: development
+      PORT: 3003
+      COMMUNITY_SERVICE_PORT: 3003
+      EVENT_BUS_SERVICE_URL: http://event-bus-service:3009
+      REDIS_URL: redis://:antifraud123@redis:6379
+      ENABLE_EVENT_DRIVEN: true
+      DISABLE_FIREBASE: true
+      DEBUG: community:*
+    volumes:
+      - ./services/community-service:/app
+      - /app/node_modules
+    depends_on:
+      event-bus-service:
+        condition: service_healthy
+    restart: on-failure:3
+    networks:
+      - factcheck-network
+
+  # Chat Service
+  chat-service:
+    build:
+      context: ./services/chat-service
+      dockerfile: Dockerfile
+    container_name: factcheck-chat-dev
+    ports:
+      - "3004:3004"
+    environment:
+      NODE_ENV: development
+      PORT: 3004
+      CHAT_SERVICE_PORT: 3004
+      EVENT_BUS_SERVICE_URL: http://event-bus-service:3009
+      REDIS_URL: redis://:antifraud123@redis:6379
+      ENABLE_EVENT_DRIVEN: true
+      DISABLE_FIREBASE: true
+      DEBUG: chat:*
+    volumes:
+      - ./services/chat-service:/app
+      - /app/node_modules
+    depends_on:
+      event-bus-service:
+        condition: service_healthy
+    restart: on-failure:3
+    networks:
+      - factcheck-network
+
+  # News Service
+  news-service:
+    build:
+      context: ./services/news-service
+      dockerfile: Dockerfile
+    container_name: factcheck-news-dev
+    ports:
+      - "3005:3005"
+    environment:
+      NODE_ENV: development
+      PORT: 3005
+      NEWS_SERVICE_PORT: 3005
+      EVENT_BUS_SERVICE_URL: http://event-bus-service:3009
+      REDIS_URL: redis://:antifraud123@redis:6379
+      ENABLE_EVENT_DRIVEN: true
+      DISABLE_FIREBASE: true
+      DEBUG: news:*
+    volumes:
+      - ./services/news-service:/app
+      - /app/node_modules
+    depends_on:
+      event-bus-service:
+        condition: service_healthy
+    restart: on-failure:3
+    networks:
+      - factcheck-network
+
+  # Admin Service
+  admin-service:
+    build:
+      context: ./services/admin-service
+      dockerfile: Dockerfile
+    container_name: factcheck-admin-dev
+    ports:
+      - "3006:3006"
+    environment:
+      NODE_ENV: development
+      PORT: 3006
+      ADMIN_SERVICE_PORT: 3006
+      EVENT_BUS_SERVICE_URL: http://event-bus-service:3009
+      REDIS_URL: redis://:antifraud123@redis:6379
+      ENABLE_EVENT_DRIVEN: true
+      DISABLE_FIREBASE: true
+      DEBUG: admin:*
+    volumes:
+      - ./services/admin-service:/app
+      - /app/node_modules
+    depends_on:
+      event-bus-service:
+        condition: service_healthy
+    restart: on-failure:3
+    networks:
+      - factcheck-network
+
+  # API Gateway
+  api-gateway:
+    build:
+      context: ./services/api-gateway
+      dockerfile: Dockerfile
+    container_name: factcheck-gateway-dev
+    ports:
+      - "8080:8080"
+    environment:
+      NODE_ENV: development
+      PORT: 8080
+      API_GATEWAY_PORT: 8080
+      EVENT_BUS_SERVICE_URL: http://event-bus-service:3009
+      AUTH_SERVICE_URL: http://auth-service:3001
+      LINK_SERVICE_URL: http://link-service:3002
+      COMMUNITY_SERVICE_URL: http://community-service:3003
+      CHAT_SERVICE_URL: http://chat-service:3004
+      NEWS_SERVICE_URL: http://news-service:3005
+      ADMIN_SERVICE_URL: http://admin-service:3006
+      ENABLE_EVENT_DRIVEN: true
+      DEBUG: gateway:*
+    volumes:
+      - ./services/api-gateway:/app
+      - /app/node_modules
+    depends_on:
+      - auth-service
+      - link-service
+      - community-service
+      - chat-service
+      - news-service
+      - admin-service
+    restart: on-failure:3
+    networks:
+      - factcheck-network
+
+  # Frontend Client
+  client:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+      target: dev
+    container_name: factcheck-client-dev
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: development
+      REACT_APP_API_URL: http://localhost:8080
+      REACT_APP_WS_URL: ws://localhost:8080
+      CHOKIDAR_USEPOLLING: true
+    volumes:
+      - ./client:/app
+      - /app/node_modules
+    depends_on:
+      - api-gateway
+    restart: on-failure:3
+    networks:
+      - factcheck-network
+
+# =============================================================================
+# VOLUMES
+# =============================================================================
+volumes:
+  redis-data:
+    driver: local
+  rabbitmq-data:
+    driver: local
+
+# =============================================================================
+# NETWORKS
+# =============================================================================
+networks:
+  factcheck-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16

@@ -1,0 +1,232 @@
+# Docker Compose for Local Development with Event-Driven Architecture
+
+networks:
+  factcheck-network:
+    driver: bridge
+
+volumes:
+  redis-data:
+    driver: local
+  node_modules_auth:
+  node_modules_link:
+  node_modules_community:
+  node_modules_chat:
+  node_modules_news:
+  node_modules_admin:
+  node_modules_gateway:
+  node_modules_client:
+
+services:
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: factcheck-redis-local
+    ports:
+      - "6379:6379"
+    command: redis-server --requirepass antifraud123 --appendonly yes
+    volumes:
+      - redis-data:/data
+    networks:
+      - factcheck-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  # Auth Service
+  auth-service:
+    build:
+      context: ./services/auth-service
+      dockerfile: Dockerfile
+    container_name: factcheck-auth-local
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=development
+      - PORT=3001
+      - REDIS_HOST=redis
+      - REDIS_PASSWORD=antifraud123
+    volumes:
+      - ./services/auth-service:/app
+      - node_modules_auth:/app/node_modules
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - factcheck-network
+    restart: unless-stopped
+
+  # Link Service
+  link-service:
+    build:
+      context: ./services/link-service
+      dockerfile: Dockerfile
+    container_name: factcheck-link-local
+    ports:
+      - "3002:3002"
+    environment:
+      - NODE_ENV=development
+      - PORT=3002
+      - REDIS_HOST=redis
+      - REDIS_PASSWORD=antifraud123
+    volumes:
+      - ./services/link-service:/app
+      - node_modules_link:/app/node_modules
+    depends_on:
+      - redis
+    networks:
+      - factcheck-network
+    restart: unless-stopped
+
+  # Community Service
+  community-service:
+    build:
+      context: ./services/community-service
+      dockerfile: Dockerfile
+    container_name: factcheck-community-local
+    ports:
+      - "3003:3003"
+    environment:
+      - NODE_ENV=development
+      - PORT=3003
+      - REDIS_HOST=redis
+      - REDIS_PASSWORD=antifraud123
+      - AUTH_SERVICE_URL=http://auth-service:3001
+    volumes:
+      - ./services/community-service:/app
+      - node_modules_community:/app/node_modules
+    depends_on:
+      - redis
+      - auth-service
+    networks:
+      - factcheck-network
+    restart: unless-stopped
+
+  # Chat Service
+  chat-service:
+    build:
+      context: ./services/chat-service
+      dockerfile: Dockerfile
+    container_name: factcheck-chat-local
+    ports:
+      - "3004:3004"
+    environment:
+      - NODE_ENV=development
+      - PORT=3004
+      - REDIS_HOST=redis
+      - REDIS_PASSWORD=antifraud123
+      - AUTH_SERVICE_URL=http://auth-service:3001
+    volumes:
+      - ./services/chat-service:/app
+      - node_modules_chat:/app/node_modules
+    depends_on:
+      - redis
+      - auth-service
+    networks:
+      - factcheck-network
+    restart: unless-stopped
+
+  # News Service
+  news-service:
+    build:
+      context: ./services/news-service
+      dockerfile: Dockerfile
+    container_name: factcheck-news-local
+    ports:
+      - "3005:3005"
+    environment:
+      - NODE_ENV=development
+      - PORT=3005
+      - REDIS_HOST=redis
+      - REDIS_PASSWORD=antifraud123
+      - AUTH_SERVICE_URL=http://auth-service:3001
+    volumes:
+      - ./services/news-service:/app
+      - node_modules_news:/app/node_modules
+    depends_on:
+      - redis
+      - auth-service
+    networks:
+      - factcheck-network
+    restart: unless-stopped
+
+  # Admin Service
+  admin-service:
+    build:
+      context: ./services/admin-service
+      dockerfile: Dockerfile
+    container_name: factcheck-admin-local
+    ports:
+      - "3006:3006"
+    environment:
+      - NODE_ENV=development
+      - PORT=3006
+      - REDIS_HOST=redis
+      - REDIS_PASSWORD=antifraud123
+      - AUTH_SERVICE_URL=http://auth-service:3001
+    volumes:
+      - ./services/admin-service:/app
+      - node_modules_admin:/app/node_modules
+    depends_on:
+      - redis
+      - auth-service
+    networks:
+      - factcheck-network
+    restart: unless-stopped
+
+  # API Gateway
+  api-gateway:
+    build:
+      context: ./services/api-gateway
+      dockerfile: Dockerfile
+    container_name: factcheck-gateway-local
+    ports:
+      - "8080:8080"
+    environment:
+      - NODE_ENV=development
+      - PORT=8080
+      - REDIS_HOST=redis
+      - REDIS_PASSWORD=antifraud123
+      - AUTH_SERVICE_URL=http://auth-service:3001
+      - LINK_SERVICE_URL=http://link-service:3002
+      - COMMUNITY_SERVICE_URL=http://community-service:3003
+      - CHAT_SERVICE_URL=http://chat-service:3004
+      - NEWS_SERVICE_URL=http://news-service:3005
+      - ADMIN_SERVICE_URL=http://admin-service:3006
+    volumes:
+      - ./services/api-gateway:/app
+      - node_modules_gateway:/app/node_modules
+    depends_on:
+      - redis
+      - auth-service
+      - link-service
+      - community-service
+      - chat-service
+      - news-service
+      - admin-service
+    networks:
+      - factcheck-network
+    restart: unless-stopped
+
+  # Client (Frontend)
+  client:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+    container_name: factcheck-client-local
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+      - PORT=3000
+      - REACT_APP_API_URL=http://localhost:8080
+    volumes:
+      - ./client:/app
+      - node_modules_client:/app/node_modules
+    depends_on:
+      - api-gateway
+    networks:
+      - factcheck-network
+    restart: unless-stopped

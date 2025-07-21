@@ -1,37 +1,33 @@
-# Event Bus Service Dockerfile
+# Event Bus Service Dockerfile - Development Mode
 FROM node:18-alpine
 
 # Set working directory
 WORKDIR /app
 
-# Create logs directory
-RUN mkdir -p logs
+# Install system dependencies for development
+RUN apk add --no-cache \
+    curl \
+    git \
+    && rm -rf /var/cache/apk/*
 
-# Copy package files
+# Copy package files first (for better caching)
 COPY package*.json ./
 
-# Install dependencies
-RUN npm ci --only=production && npm cache clean --force
+# Install ALL dependencies (including dev dependencies for development)
+RUN npm install && npm cache clean --force
 
 # Copy source code
-COPY src/ ./src/
+COPY . .
 
-# Create non-root user
-RUN addgroup -g 1001 -S nodejs && \
-    adduser -S eventbus -u 1001 -G nodejs
+# Create logs directory with proper permissions
+RUN mkdir -p logs && chmod 755 logs
 
-# Change ownership of the app directory
-RUN chown -R eventbus:nodejs /app
+# Expose correct port
+EXPOSE 3009
 
-# Switch to non-root user
-USER eventbus
+# Health check with longer timeout for development
+HEALTHCHECK --interval=60s --timeout=10s --start-period=30s --retries=5 \
+    CMD curl -f http://localhost:3009/health || exit 1
 
-# Expose port
-EXPOSE 3007
-
-# Health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD node -e "require('http').get('http://localhost:3007/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) }).on('error', () => process.exit(1))"
-
-# Start the service
-CMD ["node", "src/app.js"]
+# Start the service in development mode
+CMD ["npm", "start"]

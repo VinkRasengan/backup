@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { db, collections } = require('../config/firebase');
+const { db, collections } = require('../config/firebase-wrapper');
 const logger = require('../utils/logger');
 const { getUserId, getUserEmail } = require('../middleware/auth');
 const { cacheManager, SimpleCache } = require('../utils/cache');

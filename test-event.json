@@ -1,0 +1,11 @@
+{
+  "type": "user.test",
+  "data": {
+    "message": "Hello Event-Driven Architecture!",
+    "timestamp": "2025-07-21T13:35:00.000Z"
+  },
+  "metadata": {
+    "source": "test-client",
+    "version": "1.0.0"
+  }
+}
