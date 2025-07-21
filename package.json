@@ -1,7 +1,7 @@
 {
   "name": "factcheck-platform",
   "version": "2.0.0",
-  "description": "FactCheck Anti-Fraud Platform - Enhanced Microservices Architecture with Advanced Tech Stack",
+  "description": "FactCheck Anti-Fraud Platform - Event-Driven Microservices Architecture with Advanced Tech Stack",
   "private": true,
   "scripts": {
     "// === CORE DEVELOPMENT ===": "",
@@ -196,10 +196,11 @@
   },
   "keywords": [
     "microservices",
+    "event-driven-architecture",
     "anti-fraud",
     "security",
+    "event-sourcing",
     "circuit-breaker",
-    "event-driven",
     "saga-pattern",
     "service-mesh",
     "contract-testing"

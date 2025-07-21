@@ -23,7 +23,7 @@ class EventBusService {
     this.server = http.createServer(this.app);
     this.wss = new WebSocket.Server({ server: this.server });
     
-    this.port = process.env.PORT || 3007;
+    this.port = process.env.EVENT_BUS_SERVICE_PORT || process.env.PORT || 3009;
     this.serviceName = 'event-bus-service';
     
     // Initialize components
@@ -72,7 +72,7 @@ class EventBusService {
     // Health check
     this.app.get('/health', async (req, res) => {
       try {
-        const health = await this.healthChecker.checkHealth();
+        const health = await this.healthChecker.getHealthResponse();
         res.status(health.status === 'healthy' ? 200 : 503).json(health);
       } catch (error) {
         res.status(500).json({
@@ -397,11 +397,12 @@ class EventBusService {
 
       // Start server
       this.server.listen(this.port, () => {
-        logger.info(`Event Bus Service started`, {
+        logger.info(`Event Bus Service started on port ${this.port}`, {
           port: this.port,
           environment: process.env.NODE_ENV || 'development',
           service: this.serviceName
         });
+        console.log(`🚀 Event Bus Service running on http://localhost:${this.port}`);
       });
 
       // Graceful shutdown

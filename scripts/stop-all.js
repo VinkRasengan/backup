@@ -18,7 +18,7 @@ class UniversalStop {
       '.node-deploy-pids',
       '.service-pids'
     ];
-    this.ports = [3000, 3001, 3002, 3003, 3004, 3005, 3006, 8080, 6379];
+    this.ports = [3000, 3001, 3002, 3003, 3004, 3005, 3006, 3007, 3008, 3009, 8080, 6379, 5672, 15672];
   }
 
   /**
@@ -200,7 +200,7 @@ class UniversalStop {
         'antifraud-*',
         '*-local'
       ];
-      
+
       for (const pattern of containerPatterns) {
         try {
           const containers = await this.execAsync(`docker ps -q --filter "name=${pattern}"`);
@@ -210,6 +210,23 @@ class UniversalStop {
           }
         } catch (error) {
           // No containers found
+        }
+      }
+
+      // Stop infrastructure containers specifically
+      const infrastructureContainers = [
+        'factcheck-redis',
+        'factcheck-rabbitmq',
+        'factcheck-event-bus'
+      ];
+
+      for (const containerName of infrastructureContainers) {
+        try {
+          await this.execAsync(`docker stop ${containerName}`);
+          await this.execAsync(`docker rm ${containerName}`);
+          console.log(`  ✅ Stopped and removed ${containerName}`);
+        } catch (error) {
+          // Container not found or already stopped
         }
       }
       
