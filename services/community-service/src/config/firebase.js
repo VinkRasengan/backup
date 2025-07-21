@@ -2,8 +2,8 @@ const admin = require('firebase-admin');
 const path = require('path');
 
 // Load environment variables using standardized loader
-const { setupEnvironment } = require(path.join(__dirname, '../../../../config/env-loader'));
-setupEnvironment('community-service-firebase');
+const { quickSetup } = require('../../../../config/env-loader.js');
+quickSetup('community-service-firebase');
 
 let db, collections;
 

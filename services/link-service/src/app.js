@@ -7,7 +7,7 @@ const rateLimit = require('express-rate-limit');
 const path = require('path');
 
 // Load environment variables using standardized loader
-const { quickSetup } = require('./utils/env-loader');
+const { quickSetup } = require('../../../config/env-loader.js');
 
 // Setup environment with validation
 const envResult = quickSetup('link-service');

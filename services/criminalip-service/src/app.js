@@ -6,7 +6,7 @@ const rateLimit = require('express-rate-limit');
 const path = require('path');
 
 // Load environment variables using new standardized loader
-const { quickSetup } = require('../../../config/env-loader');
+const { quickSetup } = require('../../../config/env-loader.js');
 const envResult = quickSetup('criminalip-service');
 
 const app = express();

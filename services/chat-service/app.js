@@ -8,6 +8,12 @@ require('dotenv').config();
 
 const app = express();
 const PORT = process.env.PORT || 3004;
+// Service configuration
+const service = {
+    name: 'Chat Service',
+    version: '1.0.0',
+    port: PORT
+};
 
 // Middleware
 app.use(helmet());

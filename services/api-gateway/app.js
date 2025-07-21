@@ -8,6 +8,12 @@ require('dotenv').config();
 
 const app = express();
 const PORT = process.env.PORT || 8080;
+// Service configuration
+const service = {
+    name: 'API Gateway',
+    version: '1.0.0',
+    port: PORT
+};
 
 // Middleware
 app.use(helmet());

@@ -3,7 +3,7 @@ const path = require('path');
 const fs = require('fs');
 
 // Load environment variables using standardized loader
-const { setupEnvironment } = require('../utils/env-loader');
+const { quickSetup } = require('../../../../config/env-loader.js');
 const requiredVars = [
   'NODE_ENV',
   'FIREBASE_PROJECT_ID',
@@ -11,7 +11,7 @@ const requiredVars = [
   'FIREBASE_PRIVATE_KEY',
   'JWT_SECRET'
 ];
-setupEnvironment('auth-service', requiredVars, false);
+quickSetup('auth-service', requiredVars, false);
 
 let db, auth, collections;
 

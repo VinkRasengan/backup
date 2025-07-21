@@ -7,7 +7,7 @@ const promClient = require('prom-client');
 const path = require('path');
 
 // Load environment variables using new standardized loader
-const { quickSetup } = require('../../../config/env-loader');
+const { quickSetup } = require('../../../config/env-loader.js');
 const envResult = quickSetup('auth-service');
 
 // Import local utilities

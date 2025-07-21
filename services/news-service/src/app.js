@@ -8,7 +8,7 @@ const path = require('path');
 const fs = require('fs');
 
 // Load environment variables using local loader
-const { quickSetup } = require('./utils/env-loader');
+const { quickSetup } = require('../../../config/env-loader.js');
 
 // Setup environment with validation
 const envResult = quickSetup('news-service');

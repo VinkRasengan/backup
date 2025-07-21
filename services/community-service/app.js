@@ -12,6 +12,12 @@ const logger = require('./src/utils/logger');
 
 const app = express();
 const PORT = process.env.PORT || 3003;
+// Service configuration
+const service = {
+    name: 'Community Service',
+    version: '1.0.0',
+    port: PORT
+};
 
 // Initialize Event Handlers
 let eventHandlers = null;

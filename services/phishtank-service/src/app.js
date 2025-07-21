@@ -7,7 +7,7 @@ const path = require('path');
 const cron = require('node-cron');
 
 // Use standardized environment loading
-const { quickSetup } = require('../../../config/env-loader');
+const { quickSetup } = require('../../../config/env-loader.js');
 
 // Setup environment with validation
 const envResult = quickSetup('phishtank-service');
