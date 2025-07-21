@@ -4,7 +4,7 @@ const logger = require('../utils/logger');
 const AuthEventHandler = require('../events/authEventHandler');
 
 // Load environment variables from root .env
-require('dotenv').config({ path: require('path').join(__dirname, '../../../.env') });
+require('dotenv').config({ path: require('path').join(__dirname, '../../../../.env') });
 
 // Logger already initialized
 

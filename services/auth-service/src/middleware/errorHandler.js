@@ -5,7 +5,7 @@
 const logger = require('../utils/logger');
 
 // Load environment variables from root .env
-require('dotenv').config({ path: require('path').join(__dirname, '../../../.env') });
+require('dotenv').config({ path: require('path').join(__dirname, '../../../../.env') });
 // Logger already initialized
 
 const errorHandler = (error, req, res, next) => {

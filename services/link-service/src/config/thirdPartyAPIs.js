@@ -1,6 +1,6 @@
 
 // Load environment variables from root .env
-require('dotenv').config({ path: require('path').join(__dirname, '../../../.env') });
+require('dotenv').config({ path: require('path').join(__dirname, '../../../../.env') });
 /**
  * Third-party API Configuration
  * Centralized configuration for all external security and screenshot APIs

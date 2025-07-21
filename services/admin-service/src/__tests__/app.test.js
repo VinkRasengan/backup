@@ -23,7 +23,7 @@ describe('Admin Service', () => {
     app = require('../app');
 
 // Load environment variables from root .env
-require('dotenv').config({ path: require('path').join(__dirname, '../../../.env') });
+require('dotenv').config({ path: require('path').join(__dirname, '../../../../.env') });
   });
 
   describe('Health Check', () => {

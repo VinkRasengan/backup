@@ -4,7 +4,7 @@ const fs = require('fs');
 
 
 // Load environment variables from root .env
-require('dotenv').config({ path: require('path').join(__dirname, '../../../.env') });
+require('dotenv').config({ path: require('path').join(__dirname, '../../../../.env') });
 // Load environment variables using standardized loader
 const requiredVars = [
   'NODE_ENV',
@@ -31,22 +31,48 @@ if (process.env.NODE_ENV === 'test') {
   };
 } else {
   try {
-    // Initialize Firebase Admin SDK
-    if (!admin.apps.length) {
-      // Use production Firebase with service account credentials
-      const serviceAccount = {
-        type: "service_account",
-        project_id: process.env.FIREBASE_PROJECT_ID,
-        client_email: process.env.FIREBASE_CLIENT_EMAIL,
-        private_key: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n')
-      };
+    // Check if Firebase credentials are real (not placeholder)
+    const hasRealCredentials = process.env.FIREBASE_PROJECT_ID &&
+                              process.env.FIREBASE_CLIENT_EMAIL &&
+                              process.env.FIREBASE_PRIVATE_KEY &&
+                              !process.env.FIREBASE_PROJECT_ID.includes('your-') &&
+                              !process.env.FIREBASE_CLIENT_EMAIL.includes('your-') &&
+                              !process.env.FIREBASE_PRIVATE_KEY.includes('Your-');
 
-      admin.initializeApp({
-        credential: admin.credential.cert(serviceAccount),
-        projectId: process.env.FIREBASE_PROJECT_ID
-      });
+    if (hasRealCredentials) {
+      // Initialize Firebase Admin SDK with real credentials
+      if (!admin.apps.length) {
+        try {
+          const serviceAccount = {
+            type: "service_account",
+            project_id: process.env.FIREBASE_PROJECT_ID,
+            client_email: process.env.FIREBASE_CLIENT_EMAIL,
+            private_key: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n')
+          };
 
-      console.log('🔥 Firebase Admin initialized for production');
+          admin.initializeApp({
+            credential: admin.credential.cert(serviceAccount),
+            projectId: process.env.FIREBASE_PROJECT_ID
+          });
+
+          db = admin.firestore();
+          auth = admin.auth();
+          console.log('🔥 Firebase Admin initialized with real credentials');
+        } catch (firebaseError) {
+          console.warn('⚠️  Firebase initialization failed, using mock mode:', firebaseError.message);
+          // Fall back to mock mode
+          db = createMockFirestore();
+          auth = createMockAuth();
+        }
+      } else {
+        db = admin.firestore();
+        auth = admin.auth();
+      }
+    } else {
+      console.log('⚠️  Auth Service: Using mock Firebase (placeholder credentials detected)');
+      // Use mock Firebase for development
+      db = createMockFirestore();
+      auth = createMockAuth();
     }
 
     db = admin.firestore();

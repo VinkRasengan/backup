@@ -9,7 +9,7 @@ const logger = require('./logger');
 const CommunityEventStore = require('../eventStore/eventStore');
 
 // Load environment variables from root .env
-require('dotenv').config({ path: require('path').join(__dirname, '../../../.env') });
+require('dotenv').config({ path: require('path').join(__dirname, '../../../../.env') });
 
 class EnhancedEventBus extends EventEmitter {
   constructor(serviceName = 'community-service') {

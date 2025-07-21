@@ -9,7 +9,7 @@ const CommunityCommandHandlers = require('./commandHandlers');
 const CommunityQueryHandlers = require('./queryHandlers');
 
 // Load environment variables from root .env
-require('dotenv').config({ path: require('path').join(__dirname, '../../../.env') });
+require('dotenv').config({ path: require('path').join(__dirname, '../../../../.env') });
 
 class CQRSBus {
   constructor(eventBus, firebaseDb, cacheManager) {
