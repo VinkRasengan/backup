@@ -21,6 +21,9 @@ describe('Community Service', () => {
     
     // Require app after setting env vars
     app = require('../app');
+
+// Load environment variables from root .env
+require('dotenv').config({ path: require('path').join(__dirname, '../../../.env') });
   });
 
   afterAll(async () => {

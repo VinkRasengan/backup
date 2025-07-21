@@ -2,6 +2,9 @@ const express = require('express');
 const router = express.Router();
 const geminiService = require('../services/geminiService');
 
+// Load environment variables from root .env
+require('dotenv').config({ path: require('path').join(__dirname, '../../../.env') });
+
 // Mock chat endpoints
 router.post('/message', (req, res) => {
   const { message } = req.body;

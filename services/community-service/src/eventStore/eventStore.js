@@ -7,6 +7,9 @@ const { EventStoreDBClient, jsonEvent } = require('@eventstore/db-client');
 const { v4: uuidv4 } = require('uuid');
 const logger = require('../utils/logger');
 
+// Load environment variables from root .env
+require('dotenv').config({ path: require('path').join(__dirname, '../../../.env') });
+
 class CommunityEventStore {
   constructor() {
     this.config = {

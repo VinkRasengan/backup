@@ -21,6 +21,9 @@ describe('Chat Service', () => {
 
     // Require app after setting env vars
     const chatService = require('../app');
+
+// Load environment variables from root .env
+require('dotenv').config({ path: require('path').join(__dirname, '../../../.env') });
     app = chatService.app;
   });
 

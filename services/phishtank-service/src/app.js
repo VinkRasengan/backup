@@ -6,13 +6,11 @@ const rateLimit = require('express-rate-limit');
 const path = require('path');
 const cron = require('node-cron');
 
+
+// Load environment variables from root .env
+require('dotenv').config({ path: require('path').join(__dirname, '../../../.env') });
 // Use standardized environment loading
-const { quickSetup } = require('../../../config/env-loader.js');
-
 // Setup environment with validation
-const envResult = quickSetup('phishtank-service');
-
-const app = express();
 const PORT = process.env.PHISHTANK_SERVICE_PORT || 3008;
 const SERVICE_NAME = 'phishtank-service';
 

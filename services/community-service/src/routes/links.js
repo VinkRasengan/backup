@@ -6,6 +6,9 @@ const { getUserId, getUserEmail, getUserDisplayName } = require('../middleware/a
 const { createSampleData, clearSampleData } = require('../utils/sampleData');
 const CommunityEventHandler = require('../events/communityEventHandler');
 
+// Load environment variables from root .env
+require('dotenv').config({ path: require('path').join(__dirname, '../../../.env') });
+
 // Initialize event handler
 const eventHandler = new CommunityEventHandler();
 

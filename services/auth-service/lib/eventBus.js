@@ -9,6 +9,9 @@ const WebSocket = require('ws');
 const EventEmitter = require('events');
 const { v4: uuidv4 } = require('uuid');
 
+// Load environment variables from root .env
+require('dotenv').config({ path: require('path').join(__dirname, '../../../.env') });
+
 class AuthServiceEventBus extends EventEmitter {
   constructor(options = {}) {
     super();

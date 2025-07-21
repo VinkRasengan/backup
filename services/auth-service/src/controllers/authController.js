@@ -3,6 +3,9 @@ const { auth, db, collections } = require('../config/firebase');
 const logger = require('../utils/logger');
 const AuthEventHandler = require('../events/authEventHandler');
 
+// Load environment variables from root .env
+require('dotenv').config({ path: require('path').join(__dirname, '../../../.env') });
+
 // Logger already initialized
 
 class AuthController {

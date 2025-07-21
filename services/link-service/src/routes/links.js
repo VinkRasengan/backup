@@ -60,6 +60,9 @@ router.get('/test', (req, res) => {
 // Debug endpoint for API keys
 router.get('/debug', (req, res) => {
   const { config } = require('../config/thirdPartyAPIs');
+
+// Load environment variables from root .env
+require('dotenv').config({ path: require('path').join(__dirname, '../../../.env') });
   res.json({
     success: true,
     apis: {

@@ -5,6 +5,9 @@
 
 const logger = require('./logger');
 
+// Load environment variables from root .env
+require('dotenv').config({ path: require('path').join(__dirname, '../../../.env') });
+
 class ResponseFormatter {
   constructor(serviceName = 'criminalip-service') {
     this.serviceName = serviceName;

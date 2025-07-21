@@ -10,6 +10,9 @@ const WebSocket = require('ws');
 const logger = require('../src/utils/logger');
 const { v4: uuidv4 } = require('uuid');
 
+// Load environment variables from root .env
+require('dotenv').config({ path: require('path').join(__dirname, '../../../.env') });
+
 class LinkServiceEventBus {
   constructor() {
     this.serviceName = 'link-service';

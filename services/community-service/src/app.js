@@ -6,14 +6,13 @@ const morgan = require('morgan');
 const rateLimit = require('express-rate-limit');
 const path = require('path');
 
+
+// Load environment variables from root .env
+require('dotenv').config({ path: require('path').join(__dirname, '../../../.env') });
 // Load environment variables using standardized loader
 const { quickSetup } = require(path.join(__dirname, '../../../config/env-loader'));
 
 // Setup environment with validation
-const envResult = quickSetup('community-service');
-
-// Import local utilities
-const logger = require('./utils/logger');
 const { HealthCheck, commonChecks } = require('./utils/health-check');
 
 // Import local modules

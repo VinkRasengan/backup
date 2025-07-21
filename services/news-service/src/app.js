@@ -7,14 +7,11 @@ const rateLimit = require('express-rate-limit');
 const path = require('path');
 const fs = require('fs');
 
+
+// Load environment variables from root .env
+require('dotenv').config({ path: require('path').join(__dirname, '../../../.env') });
 // Load environment variables using local loader
-const { quickSetup } = require('../../../config/env-loader.js');
-
 // Setup environment with validation
-const envResult = quickSetup('news-service');
-
-// Import local utilities
-const logger = require('./utils/logger');
 const { HealthCheck, commonChecks } = require('./utils/health-check');
 
 const app = express();

@@ -9,6 +9,9 @@ const { EventStoreDBClient, jsonEvent, FORWARDS, START } = require('@eventstore/
 const { v4: uuidv4 } = require('uuid');
 const logger = require('../utils/logger');
 
+// Load environment variables from root .env
+require('dotenv').config({ path: require('path').join(__dirname, '../../../.env') });
+
 class EventBusManager {
   constructor() {
     this.connections = {

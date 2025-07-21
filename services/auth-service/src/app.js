@@ -6,12 +6,9 @@ const rateLimit = require('express-rate-limit');
 const promClient = require('prom-client');
 const path = require('path');
 
-// Load environment variables using new standardized loader
-const { quickSetup } = require('../../../config/env-loader.js');
-const envResult = quickSetup('auth-service');
 
-// Import local utilities
-const logger = require('./utils/logger');
+// Load environment variables from root .env
+require('dotenv').config({ path: require('path').join(__dirname, '../../../.env') });
 const { HealthCheck, commonChecks } = require('./utils/health-check');
 const ResponseFormatter = require('./utils/response');
 

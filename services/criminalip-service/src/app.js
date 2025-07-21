@@ -5,11 +5,9 @@ const morgan = require('morgan');
 const rateLimit = require('express-rate-limit');
 const path = require('path');
 
+// Load environment variables from root .env
+require('dotenv').config({ path: require('path').join(__dirname, '../../../.env') });
 // Load environment variables using new standardized loader
-const { quickSetup } = require('../../../config/env-loader.js');
-const envResult = quickSetup('criminalip-service');
-
-const app = express();
 const PORT = process.env.CRIMINALIP_SERVICE_PORT || process.env.PORT || 3008;
 const SERVICE_NAME = 'criminalip-service';
 

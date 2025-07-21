@@ -7,6 +7,9 @@ const { Pact } = require('@pact-foundation/pact');
 const axios = require('axios');
 const path = require('path');
 
+// Load environment variables from root .env
+require('dotenv').config({ path: require('path').join(__dirname, '../../../.env') });
+
 describe('API Gateway -> Auth Service Contract', () => {
   // Skip contract tests in CI environment
   if (process.env.CI || process.env.NODE_ENV === 'test') {

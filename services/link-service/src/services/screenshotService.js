@@ -3,6 +3,9 @@ const crypto = require('crypto');
 const logger = require('../utils/logger');
 const { config } = require('../config/thirdPartyAPIs');
 
+// Load environment variables from root .env
+require('dotenv').config({ path: require('path').join(__dirname, '../../../.env') });
+
 // Logger already initialized
 
 class ScreenshotService {

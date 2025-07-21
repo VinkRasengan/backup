@@ -2,8 +2,10 @@ const admin = require('firebase-admin');
 const path = require('path');
 const fs = require('fs');
 
+
+// Load environment variables from root .env
+require('dotenv').config({ path: require('path').join(__dirname, '../../../.env') });
 // Load environment variables using standardized loader
-const { quickSetup } = require('../../../../config/env-loader.js');
 const requiredVars = [
   'NODE_ENV',
   'FIREBASE_PROJECT_ID',
@@ -11,8 +13,6 @@ const requiredVars = [
   'FIREBASE_PRIVATE_KEY',
   'JWT_SECRET'
 ];
-quickSetup('auth-service', requiredVars, false);
-
 let db, auth, collections;
 
 // Skip Firebase initialization in test environment

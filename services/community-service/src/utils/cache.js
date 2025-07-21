@@ -1,6 +1,9 @@
 const redis = require('redis');
 const logger = require('../utils/logger');
 
+// Load environment variables from root .env
+require('dotenv').config({ path: require('path').join(__dirname, '../../../.env') });
+
 /**
  * Unified Cache Manager with Redis + In-Memory Fallback
  * Features:

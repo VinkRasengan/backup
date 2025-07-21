@@ -3,6 +3,9 @@ const router = express.Router();
 const fs = require('fs-extra');
 const path = require('path');
 
+// Load environment variables from root .env
+require('dotenv').config({ path: require('path').join(__dirname, '../../../.env') });
+
 // Test endpoint
 router.get('/test', (req, res) => {
   res.json({
