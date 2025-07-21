@@ -1,0 +1,582 @@
+{
+  "domain": "community",
+  "version": "1.0",
+  "description": "Community domain events for posts, comments, votes, and social interactions",
+  "events": {
+    "community.post.created": {
+      "description": "A new post was created in the community",
+      "version": "1.0",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "postId": {
+            "type": "string",
+            "description": "Unique post identifier"
+          },
+          "authorId": {
+            "type": "string",
+            "description": "ID of the user who created the post"
+          },
+          "title": {
+            "type": "string",
+            "description": "Post title"
+          },
+          "content": {
+            "type": "string",
+            "description": "Post content/body"
+          },
+          "category": {
+            "type": "string",
+            "description": "Post category"
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Post tags"
+          },
+          "links": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uri"
+            },
+            "description": "URLs mentioned in the post"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Post creation timestamp"
+          },
+          "author": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "displayName": {
+                "type": "string"
+              },
+              "reputation": {
+                "type": "integer"
+              }
+            },
+            "required": ["id", "displayName"]
+          }
+        },
+        "required": ["postId", "authorId", "title", "content", "createdAt", "author"]
+      },
+      "producers": ["community-service"],
+      "consumers": ["admin-service", "news-service", "link-service"],
+      "examples": [
+        {
+          "postId": "post_abc123",
+          "authorId": "user_123456",
+          "title": "Suspicious phishing email going around",
+          "content": "I received this email claiming to be from my bank. The link looks suspicious: https://fake-bank.com/login",
+          "category": "phishing-alert",
+          "tags": ["phishing", "email", "banking"],
+          "links": ["https://fake-bank.com/login"],
+          "createdAt": "2024-01-15T10:30:00.000Z",
+          "author": {
+            "id": "user_123456",
+            "displayName": "SecurityAware",
+            "reputation": 150
+          }
+        }
+      ]
+    },
+    "community.post.updated": {
+      "description": "An existing post was updated",
+      "version": "1.0",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "postId": {
+            "type": "string",
+            "description": "Unique post identifier"
+          },
+          "changes": {
+            "type": "object",
+            "description": "Fields that were changed"
+          },
+          "updatedBy": {
+            "type": "string",
+            "description": "ID of user who made the update"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Update timestamp"
+          }
+        },
+        "required": ["postId", "changes", "updatedBy", "updatedAt"]
+      },
+      "producers": ["community-service"],
+      "consumers": ["admin-service", "news-service"],
+      "examples": [
+        {
+          "postId": "post_abc123",
+          "changes": {
+            "title": "Updated: Suspicious phishing email going around",
+            "content": "Updated content with more details..."
+          },
+          "updatedBy": "user_123456",
+          "updatedAt": "2024-01-15T10:45:00.000Z"
+        }
+      ]
+    },
+    "community.comment.created": {
+      "description": "A new comment was created on a post",
+      "version": "1.0",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "commentId": {
+            "type": "string",
+            "description": "Unique comment identifier"
+          },
+          "postId": {
+            "type": "string",
+            "description": "ID of the post being commented on"
+          },
+          "authorId": {
+            "type": "string",
+            "description": "ID of the comment author"
+          },
+          "content": {
+            "type": "string",
+            "description": "Comment content"
+          },
+          "parentCommentId": {
+            "type": "string",
+            "description": "ID of parent comment if this is a reply"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Comment creation timestamp"
+          },
+          "author": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "displayName": {
+                "type": "string"
+              },
+              "reputation": {
+                "type": "integer"
+              }
+            },
+            "required": ["id", "displayName"]
+          },
+          "post": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "title": {
+                "type": "string"
+              },
+              "authorId": {
+                "type": "string"
+              }
+            },
+            "required": ["id", "title", "authorId"]
+          }
+        },
+        "required": ["commentId", "postId", "authorId", "content", "createdAt", "author", "post"]
+      },
+      "producers": ["community-service"],
+      "consumers": ["admin-service", "news-service"],
+      "examples": [
+        {
+          "commentId": "comment_def456",
+          "postId": "post_abc123",
+          "authorId": "user_789012",
+          "content": "I got the same email! Thanks for the warning.",
+          "parentCommentId": null,
+          "createdAt": "2024-01-15T10:35:00.000Z",
+          "author": {
+            "id": "user_789012",
+            "displayName": "CyberVigilant",
+            "reputation": 75
+          },
+          "post": {
+            "id": "post_abc123",
+            "title": "Suspicious phishing email going around",
+            "authorId": "user_123456"
+          }
+        }
+      ]
+    },
+    "community.vote.cast": {
+      "description": "A vote was cast on a post or comment",
+      "version": "1.0",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "voteId": {
+            "type": "string",
+            "description": "Unique vote identifier"
+          },
+          "userId": {
+            "type": "string",
+            "description": "ID of the user who cast the vote"
+          },
+          "entityId": {
+            "type": "string",
+            "description": "ID of the post or comment being voted on"
+          },
+          "entityType": {
+            "type": "string",
+            "enum": ["post", "comment"],
+            "description": "Type of entity being voted on"
+          },
+          "voteType": {
+            "type": "string",
+            "enum": ["upvote", "downvote"],
+            "description": "Type of vote cast"
+          },
+          "previousVote": {
+            "type": "string",
+            "enum": ["upvote", "downvote", null],
+            "description": "Previous vote if this is a vote change"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Vote timestamp"
+          }
+        },
+        "required": ["voteId", "userId", "entityId", "entityType", "voteType", "createdAt"]
+      },
+      "producers": ["community-service"],
+      "consumers": ["admin-service"],
+      "examples": [
+        {
+          "voteId": "vote_ghi789",
+          "userId": "user_789012",
+          "entityId": "post_abc123",
+          "entityType": "post",
+          "voteType": "upvote",
+          "previousVote": null,
+          "createdAt": "2024-01-15T10:40:00.000Z"
+        }
+      ]
+    },
+    "community.report.submitted": {
+      "description": "A content report was submitted by a user",
+      "version": "1.0",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "reportId": {
+            "type": "string",
+            "description": "Unique report identifier"
+          },
+          "reportedBy": {
+            "type": "string",
+            "description": "ID of user who submitted the report"
+          },
+          "entityId": {
+            "type": "string",
+            "description": "ID of the reported content"
+          },
+          "entityType": {
+            "type": "string",
+            "enum": ["post", "comment", "user"],
+            "description": "Type of entity being reported"
+          },
+          "reportType": {
+            "type": "string",
+            "enum": ["spam", "inappropriate", "misinformation", "harassment", "other"],
+            "description": "Type of report"
+          },
+          "reason": {
+            "type": "string",
+            "description": "Brief reason for the report"
+          },
+          "description": {
+            "type": "string",
+            "description": "Detailed description of the issue"
+          },
+          "evidence": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "enum": ["screenshot", "text", "url"]
+                },
+                "content": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "Evidence provided by the reporter"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Report submission timestamp"
+          }
+        },
+        "required": ["reportId", "reportedBy", "entityId", "entityType", "reportType", "reason", "createdAt"]
+      },
+      "producers": ["community-service"],
+      "consumers": ["admin-service"],
+      "examples": [
+        {
+          "reportId": "report_jkl012",
+          "reportedBy": "user_345678",
+          "entityId": "post_abc123",
+          "entityType": "post",
+          "reportType": "misinformation",
+          "reason": "Contains false information about security threats",
+          "description": "This post spreads false information that could mislead users about actual security threats.",
+          "evidence": [
+            {
+              "type": "url",
+              "content": "https://security-authority.com/debunked-claims"
+            }
+          ],
+          "createdAt": "2024-01-15T11:00:00.000Z"
+        }
+      ]
+    },
+    "community.content.moderated": {
+      "description": "Content was moderated by an admin or moderator",
+      "version": "1.0",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "moderationId": {
+            "type": "string",
+            "description": "Unique moderation action identifier"
+          },
+          "moderatorId": {
+            "type": "string",
+            "description": "ID of the moderator who took action"
+          },
+          "entityId": {
+            "type": "string",
+            "description": "ID of the moderated content"
+          },
+          "entityType": {
+            "type": "string",
+            "enum": ["post", "comment", "user"],
+            "description": "Type of entity being moderated"
+          },
+          "action": {
+            "type": "string",
+            "enum": ["approved", "removed", "flagged", "warning", "suspended"],
+            "description": "Moderation action taken"
+          },
+          "reason": {
+            "type": "string",
+            "description": "Reason for the moderation action"
+          },
+          "notes": {
+            "type": "string",
+            "description": "Additional notes from the moderator"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Moderation timestamp"
+          }
+        },
+        "required": ["moderationId", "moderatorId", "entityId", "entityType", "action", "reason", "createdAt"]
+      },
+      "producers": ["admin-service", "community-service"],
+      "consumers": ["community-service", "news-service"],
+      "examples": [
+        {
+          "moderationId": "mod_mno345",
+          "moderatorId": "admin_123",
+          "entityId": "post_abc123",
+          "entityType": "post",
+          "action": "flagged",
+          "reason": "Requires fact-checking",
+          "notes": "Post contains claims that need verification before approval",
+          "createdAt": "2024-01-15T11:15:00.000Z"
+        }
+      ]
+    },
+    "community.reputation.changed": {
+      "description": "A user's reputation score was changed",
+      "version": "1.0",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string",
+            "description": "ID of the user whose reputation changed"
+          },
+          "change": {
+            "type": "integer",
+            "description": "Reputation change amount (positive or negative)"
+          },
+          "reason": {
+            "type": "string",
+            "enum": ["post_upvoted", "post_downvoted", "comment_upvoted", "comment_downvoted", "badge_earned", "penalty", "bonus"],
+            "description": "Reason for reputation change"
+          },
+          "entityId": {
+            "type": "string",
+            "description": "ID of related entity (post, comment, etc.)"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the reputation change occurred"
+          }
+        },
+        "required": ["userId", "change", "reason", "timestamp"]
+      },
+      "producers": ["community-service"],
+      "consumers": ["admin-service"],
+      "examples": [
+        {
+          "userId": "user_123456",
+          "change": 5,
+          "reason": "post_upvoted",
+          "entityId": "post_abc123",
+          "timestamp": "2024-01-15T10:40:00.000Z"
+        }
+      ]
+    },
+    "community.notification.created": {
+      "description": "A notification was created for a user",
+      "version": "1.0",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "notificationId": {
+            "type": "string",
+            "description": "Unique notification identifier"
+          },
+          "type": {
+            "type": "string",
+            "enum": ["comment_on_post", "reply_to_comment", "post_voted", "comment_voted", "content_reported", "content_moderated", "reputation_changed"],
+            "description": "Type of notification"
+          },
+          "recipientId": {
+            "type": "string",
+            "description": "ID of the user receiving the notification"
+          },
+          "recipientRole": {
+            "type": "string",
+            "description": "Role-based notification (for moderators, admins, etc.)"
+          },
+          "actorId": {
+            "type": "string",
+            "description": "ID of the user who triggered the notification"
+          },
+          "entityId": {
+            "type": "string",
+            "description": "ID of the related entity"
+          },
+          "entityType": {
+            "type": "string",
+            "enum": ["post", "comment", "vote", "report", "moderation"],
+            "description": "Type of related entity"
+          },
+          "message": {
+            "type": "string",
+            "description": "Notification message"
+          },
+          "data": {
+            "type": "object",
+            "description": "Additional notification data"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Notification creation timestamp"
+          },
+          "read": {
+            "type": "boolean",
+            "default": false,
+            "description": "Whether the notification has been read"
+          }
+        },
+        "required": ["notificationId", "type", "message", "createdAt", "read"]
+      },
+      "producers": ["community-service"],
+      "consumers": ["news-service", "chat-service"],
+      "examples": [
+        {
+          "notificationId": "notif_pqr678",
+          "type": "comment_on_post",
+          "recipientId": "user_123456",
+          "actorId": "user_789012",
+          "entityId": "comment_def456",
+          "entityType": "comment",
+          "message": "CyberVigilant commented on your post \"Suspicious phishing email going around\"",
+          "data": {
+            "postTitle": "Suspicious phishing email going around",
+            "commentPreview": "I got the same email! Thanks for the warning."
+          },
+          "createdAt": "2024-01-15T10:35:00.000Z",
+          "read": false
+        }
+      ]
+    },
+    "community.profile.created": {
+      "description": "A community profile was created for a new user",
+      "version": "1.0",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string",
+            "description": "User ID"
+          },
+          "profileId": {
+            "type": "string",
+            "description": "Community profile ID"
+          },
+          "displayName": {
+            "type": "string",
+            "description": "User display name"
+          },
+          "reputation": {
+            "type": "integer",
+            "default": 0,
+            "description": "Initial reputation score"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Profile creation timestamp"
+          }
+        },
+        "required": ["userId", "profileId", "displayName", "reputation", "createdAt"]
+      },
+      "producers": ["community-service"],
+      "consumers": ["admin-service"],
+      "examples": [
+        {
+          "userId": "user_123456",
+          "profileId": "profile_abc123",
+          "displayName": "SecurityAware",
+          "reputation": 0,
+          "createdAt": "2024-01-15T10:00:00.000Z"
+        }
+      ]
+    }
+  },
+  "metadata": {
+    "created": "2024-01-15T00:00:00.000Z",
+    "lastModified": "2024-01-15T00:00:00.000Z",
+    "maintainer": "community-service-team",
+    "documentation": "https://docs.factcheck.platform/events/community"
+  }
+}

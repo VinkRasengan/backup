@@ -85,26 +85,27 @@ class DockerStarter {
   }
 
   /**
-   * Copy environment file to all services and client
+   * Setup service-specific environment files (NEW MICROSERVICES APPROACH)
    */
   async copyEnvironmentToServices() {
-    console.log('3. 📋 Copying environment to services...');
+    console.log('3. 📋 Setting up service-specific environment files...');
 
     const fs = require('fs');
     const envPath = path.join(this.rootDir, '.env');
 
     if (!fs.existsSync(envPath)) {
-      console.log('  ⚠️  .env file not found, skipping copy');
+      console.log('  ⚠️  .env file not found, skipping setup');
       return;
     }
 
-    // Get all service directories
+    // Load root environment variables
+    require('dotenv').config({ path: envPath });
+
     const servicesDir = path.join(this.rootDir, 'services');
     const clientDir = path.join(this.rootDir, 'client');
+    let setupCount = 0;
 
-    let copiedCount = 0;
-
-    // Copy to services
+    // Setup service-specific .env files (don't overwrite existing ones)
     if (fs.existsSync(servicesDir)) {
       const services = fs.readdirSync(servicesDir).filter(item => {
         const servicePath = path.join(servicesDir, item);
@@ -114,27 +115,43 @@ class DockerStarter {
 
       for (const service of services) {
         const serviceEnvPath = path.join(servicesDir, service, '.env');
-        try {
-          fs.copyFileSync(envPath, serviceEnvPath);
-          copiedCount++;
-        } catch (error) {
-          // Ignore copy errors during start
+
+        // Only create if doesn't exist or is empty
+        if (!fs.existsSync(serviceEnvPath) || fs.readFileSync(serviceEnvPath, 'utf8').trim().length === 0) {
+          try {
+            await this.createServiceEnvFile(service, serviceEnvPath);
+            console.log(`  ✅ Created service-specific .env for ${service}`);
+            setupCount++;
+          } catch (error) {
+            console.log(`  ⚠️  Failed to create .env for ${service}: ${error.message}`);
+          }
+        } else {
+          console.log(`  ✅ Service .env already exists for ${service}`);
+          setupCount++;
         }
       }
     }
 
-    // Copy to client
+    // Setup client .env (only React-specific variables)
     if (fs.existsSync(clientDir)) {
       const clientEnvPath = path.join(clientDir, '.env');
-      try {
-        fs.copyFileSync(envPath, clientEnvPath);
-        copiedCount++;
-      } catch (error) {
-        // Ignore copy errors during start
+
+      if (!fs.existsSync(clientEnvPath) || fs.readFileSync(clientEnvPath, 'utf8').trim().length === 0) {
+        try {
+          await this.createClientEnvFile(clientEnvPath);
+          console.log('  ✅ Created client-specific .env');
+          setupCount++;
+        } catch (error) {
+          console.log(`  ⚠️  Failed to create client .env: ${error.message}`);
+        }
+      } else {
+        console.log('  ✅ Client .env already exists');
+        setupCount++;
       }
     }
 
-    console.log(`  ✅ Environment copied to ${copiedCount} locations`);
+    console.log(`  📊 Environment setup completed for ${setupCount} locations`);
+    console.log('  💡 Each service now has its own isolated configuration');
   }
 
   /**
@@ -288,6 +305,99 @@ class DockerStarter {
     
     process.on('SIGINT', shutdown);
     process.on('SIGTERM', shutdown);
+  }
+
+  /**
+   * Create service-specific .env file with intelligent variable extraction
+   */
+  async createServiceEnvFile(serviceName, envPath) {
+    const fs = require('fs');
+
+    // Service configuration mapping (simplified for docker-start)
+    const serviceConfigs = {
+      'api-gateway': {
+        port: 8080,
+        vars: ['SERVICE_NAME', 'API_GATEWAY_PORT', 'JWT_SECRET', 'AUTH_SERVICE_URL', 'LINK_SERVICE_URL', 'COMMUNITY_SERVICE_URL', 'CHAT_SERVICE_URL', 'NEWS_SERVICE_URL', 'ADMIN_SERVICE_URL']
+      },
+      'auth-service': {
+        port: 3001,
+        vars: ['SERVICE_NAME', 'AUTH_SERVICE_PORT', 'FIREBASE_PROJECT_ID', 'FIREBASE_CLIENT_EMAIL', 'FIREBASE_PRIVATE_KEY', 'JWT_SECRET']
+      },
+      'chat-service': {
+        port: 3004,
+        vars: ['SERVICE_NAME', 'CHAT_SERVICE_PORT', 'FIREBASE_PROJECT_ID', 'FIREBASE_CLIENT_EMAIL', 'FIREBASE_PRIVATE_KEY', 'JWT_SECRET', 'GEMINI_API_KEY']
+      },
+      'link-service': {
+        port: 3002,
+        vars: ['SERVICE_NAME', 'LINK_SERVICE_PORT', 'FIREBASE_PROJECT_ID', 'FIREBASE_CLIENT_EMAIL', 'FIREBASE_PRIVATE_KEY', 'JWT_SECRET', 'VIRUSTOTAL_API_KEY', 'GOOGLE_SAFE_BROWSING_API_KEY', 'SCAMADVISER_API_KEY', 'IPQUALITYSCORE_API_KEY']
+      },
+      'community-service': {
+        port: 3003,
+        vars: ['SERVICE_NAME', 'COMMUNITY_SERVICE_PORT', 'FIREBASE_PROJECT_ID', 'FIREBASE_CLIENT_EMAIL', 'FIREBASE_PRIVATE_KEY', 'JWT_SECRET']
+      },
+      'news-service': {
+        port: 3005,
+        vars: ['SERVICE_NAME', 'NEWS_SERVICE_PORT', 'FIREBASE_PROJECT_ID', 'FIREBASE_CLIENT_EMAIL', 'FIREBASE_PRIVATE_KEY', 'JWT_SECRET', 'NEWSAPI_API_KEY', 'NEWSDATA_API_KEY']
+      },
+      'admin-service': {
+        port: 3006,
+        vars: ['SERVICE_NAME', 'ADMIN_SERVICE_PORT', 'FIREBASE_PROJECT_ID', 'FIREBASE_CLIENT_EMAIL', 'FIREBASE_PRIVATE_KEY', 'JWT_SECRET']
+      },
+      'phishtank-service': {
+        port: 3007,
+        vars: ['SERVICE_NAME', 'PHISHTANK_SERVICE_PORT', 'JWT_SECRET', 'PHISHTANK_API_KEY']
+      },
+      'criminalip-service': {
+        port: 3008,
+        vars: ['SERVICE_NAME', 'CRIMINALIP_SERVICE_PORT', 'JWT_SECRET', 'CRIMINALIP_API_KEY']
+      }
+    };
+
+    const config = serviceConfigs[serviceName];
+    if (!config) {
+      // Default config for unknown services
+      const content = `SERVICE_NAME=${serviceName}\nJWT_SECRET=${process.env.JWT_SECRET || ''}\n`;
+      fs.writeFileSync(envPath, content);
+      return;
+    }
+
+    let content = `# ${serviceName.toUpperCase().replace('-', ' ')} - ENVIRONMENT CONFIGURATION\n`;
+    content += `SERVICE_NAME=${serviceName}\n`;
+
+    config.vars.forEach(varName => {
+      let value = process.env[varName];
+
+      // Handle service-specific port mapping
+      if (varName.endsWith('_PORT')) {
+        const servicePortName = varName.replace('_PORT', '').toLowerCase().replace('_', '-');
+        if (servicePortName === serviceName) {
+          value = config.port;
+        }
+      }
+
+      // Add variable if it exists
+      if (value !== undefined && varName !== 'SERVICE_NAME') {
+        content += `${varName}=${value}\n`;
+      }
+    });
+
+    fs.writeFileSync(envPath, content);
+  }
+
+  /**
+   * Create client-specific .env file
+   */
+  async createClientEnvFile(envPath) {
+    const fs = require('fs');
+
+    const content = `# CLIENT (REACT APP) - ENVIRONMENT CONFIGURATION
+REACT_APP_API_URL=${process.env.REACT_APP_API_URL || 'http://localhost:8080'}
+REACT_APP_FIREBASE_API_KEY=${process.env.REACT_APP_FIREBASE_API_KEY || 'AIzaSyDszcx_S3Wm65ACIprlmJLDu5FPmDfX1nE'}
+REACT_APP_FIREBASE_AUTH_DOMAIN=${process.env.REACT_APP_FIREBASE_AUTH_DOMAIN || 'factcheck-1d6e8.firebaseapp.com'}
+REACT_APP_FIREBASE_PROJECT_ID=${process.env.REACT_APP_FIREBASE_PROJECT_ID || process.env.FIREBASE_PROJECT_ID || 'factcheck-1d6e8'}
+`;
+
+    fs.writeFileSync(envPath, content);
   }
 
   /**

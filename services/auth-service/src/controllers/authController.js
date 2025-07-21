@@ -9,6 +9,12 @@ class AuthController {
   constructor() {
     // Enable EventBus with Redis Cloud
     this.authEventHandler = new AuthEventHandler();
+    this.eventHandlers = null; // Will be set by middleware
+  }
+
+  // Set event handlers from middleware
+  setEventHandlers(eventHandlers) {
+    this.eventHandlers = eventHandlers;
   }
 
   /**
@@ -82,6 +88,26 @@ class AuthController {
         process.env.JWT_SECRET,
         { expiresIn: '24h' }
       );
+
+      // Publish user registered event if Event-Driven Architecture is enabled
+      const eventHandlers = req.app.get('eventHandlers');
+      if (eventHandlers) {
+        try {
+          await eventHandlers.publishUserRegistered({
+            id: decodedToken.uid,
+            email: decodedToken.email,
+            name: userData.displayName,
+            roles: userData.roles,
+            provider: 'firebase',
+            emailVerified: userData.isVerified
+          });
+        } catch (eventError) {
+          logger.withCorrelationId(req.correlationId).warn('Failed to publish user registered event', {
+            userId: decodedToken.uid,
+            error: eventError.message
+          });
+        }
+      }
 
       // Log successful registration
       logger.withCorrelationId(req.correlationId).info('User registered successfully', {

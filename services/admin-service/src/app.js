@@ -7,7 +7,7 @@ const rateLimit = require('express-rate-limit');
 const path = require('path');
 
 // Load environment variables using standardized loader
-const { quickSetup } = require('../../config/env-loader');
+const { quickSetup } = require('../../../config/env-loader');
 
 // Setup environment with validation
 const envResult = quickSetup('admin-service');
@@ -47,7 +47,9 @@ const SERVICE_NAME = 'admin-service';
 const healthCheck = new HealthCheck(SERVICE_NAME);
 
 // Add health checks
-healthCheck.addCheck('memory', commonChecks.memory(512));
+healthCheck.addCheck('memory', commonChecks.memory);
+healthCheck.addCheck('uptime', commonChecks.uptime);
+healthCheck.addCheck('environment', commonChecks.environment);
 
 // Security middleware
 app.use(helmet());

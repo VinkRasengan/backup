@@ -15,7 +15,7 @@ class EventSourcingStarter {
     this.infrastructure = [
       {
         name: 'Redis',
-        container: 'backup-redis-1',
+        container: 'factcheck-redis',
         port: 6379,
         healthCheck: () => this.checkRedis()
       },
@@ -293,7 +293,7 @@ class EventSourcingStarter {
    */
   async checkRedis() {
     try {
-      const { stdout } = await execAsync('docker exec backup-redis-1 redis-cli -a antifraud123 ping', {
+      const { stdout } = await execAsync('docker exec factcheck-redis redis-cli -a antifraud123 ping', {
         timeout: 5000
       });
       return stdout.includes('PONG');

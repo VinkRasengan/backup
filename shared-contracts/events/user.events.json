@@ -1,0 +1,319 @@
+{
+  "domain": "user",
+  "version": "1.0",
+  "description": "User domain events for authentication and user management",
+  "events": {
+    "auth.user.registered": {
+      "description": "User successfully registered in the system",
+      "version": "1.0",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string",
+            "description": "Unique user identifier"
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "description": "User email address"
+          },
+          "name": {
+            "type": "string",
+            "description": "User display name"
+          },
+          "roles": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "default": ["user"],
+            "description": "User roles in the system"
+          },
+          "provider": {
+            "type": "string",
+            "enum": ["email", "google", "facebook", "github"],
+            "default": "email",
+            "description": "Authentication provider"
+          },
+          "emailVerified": {
+            "type": "boolean",
+            "default": false,
+            "description": "Whether email is verified"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Registration timestamp"
+          }
+        },
+        "required": ["userId", "email", "name", "timestamp"]
+      },
+      "producers": ["auth-service"],
+      "consumers": ["community-service", "admin-service", "news-service", "chat-service"],
+      "examples": [
+        {
+          "userId": "user_123456",
+          "email": "john.doe@example.com",
+          "name": "John Doe",
+          "roles": ["user"],
+          "provider": "email",
+          "emailVerified": false,
+          "timestamp": "2024-01-15T10:30:00.000Z"
+        }
+      ]
+    },
+    "auth.user.login": {
+      "description": "User successfully logged into the system",
+      "version": "1.0",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string",
+            "description": "Unique user identifier"
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "description": "User email address"
+          },
+          "sessionId": {
+            "type": "string",
+            "description": "Session identifier"
+          },
+          "ipAddress": {
+            "type": "string",
+            "description": "User IP address"
+          },
+          "userAgent": {
+            "type": "string",
+            "description": "User browser/client information"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Login timestamp"
+          }
+        },
+        "required": ["userId", "email", "sessionId", "timestamp"]
+      },
+      "producers": ["auth-service"],
+      "consumers": ["admin-service", "community-service", "chat-service"],
+      "examples": [
+        {
+          "userId": "user_123456",
+          "email": "john.doe@example.com",
+          "sessionId": "sess_789012",
+          "ipAddress": "192.168.1.100",
+          "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+          "timestamp": "2024-01-15T10:35:00.000Z"
+        }
+      ]
+    },
+    "auth.user.logout": {
+      "description": "User logged out of the system",
+      "version": "1.0",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string",
+            "description": "Unique user identifier"
+          },
+          "sessionId": {
+            "type": "string",
+            "description": "Session identifier"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Logout timestamp"
+          }
+        },
+        "required": ["userId", "sessionId", "timestamp"]
+      },
+      "producers": ["auth-service"],
+      "consumers": ["admin-service", "community-service", "chat-service"],
+      "examples": [
+        {
+          "userId": "user_123456",
+          "sessionId": "sess_789012",
+          "timestamp": "2024-01-15T11:00:00.000Z"
+        }
+      ]
+    },
+    "auth.user.profile.updated": {
+      "description": "User profile information was updated",
+      "version": "1.0",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string",
+            "description": "Unique user identifier"
+          },
+          "changes": {
+            "type": "object",
+            "description": "Fields that were changed",
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "New display name"
+              },
+              "email": {
+                "type": "string",
+                "format": "email",
+                "description": "New email address"
+              },
+              "avatar": {
+                "type": "string",
+                "format": "uri",
+                "description": "New avatar URL"
+              }
+            }
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Update timestamp"
+          }
+        },
+        "required": ["userId", "changes", "timestamp"]
+      },
+      "producers": ["auth-service"],
+      "consumers": ["community-service", "chat-service", "admin-service"],
+      "examples": [
+        {
+          "userId": "user_123456",
+          "changes": {
+            "name": "John Smith",
+            "avatar": "https://example.com/avatars/user_123456.jpg"
+          },
+          "timestamp": "2024-01-15T10:45:00.000Z"
+        }
+      ]
+    },
+    "auth.user.password.changed": {
+      "description": "User password was changed",
+      "version": "1.0",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string",
+            "description": "Unique user identifier"
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "description": "User email address"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Password change timestamp"
+          }
+        },
+        "required": ["userId", "email", "timestamp"]
+      },
+      "producers": ["auth-service"],
+      "consumers": ["admin-service"],
+      "examples": [
+        {
+          "userId": "user_123456",
+          "email": "john.doe@example.com",
+          "timestamp": "2024-01-15T10:50:00.000Z"
+        }
+      ]
+    },
+    "auth.user.email.verified": {
+      "description": "User email address was verified",
+      "version": "1.0",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string",
+            "description": "Unique user identifier"
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "description": "Verified email address"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Verification timestamp"
+          }
+        },
+        "required": ["userId", "email", "timestamp"]
+      },
+      "producers": ["auth-service"],
+      "consumers": ["community-service", "admin-service"],
+      "examples": [
+        {
+          "userId": "user_123456",
+          "email": "john.doe@example.com",
+          "timestamp": "2024-01-15T10:32:00.000Z"
+        }
+      ]
+    },
+    "auth.user.account.suspended": {
+      "description": "User account was suspended",
+      "version": "1.0",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string",
+            "description": "Unique user identifier"
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "description": "User email address"
+          },
+          "reason": {
+            "type": "string",
+            "description": "Reason for suspension"
+          },
+          "suspendedBy": {
+            "type": "string",
+            "description": "Admin user who suspended the account"
+          },
+          "suspendedUntil": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Suspension end date (null for permanent)"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Suspension timestamp"
+          }
+        },
+        "required": ["userId", "email", "reason", "suspendedBy", "timestamp"]
+      },
+      "producers": ["auth-service", "admin-service"],
+      "consumers": ["community-service", "chat-service", "news-service"],
+      "examples": [
+        {
+          "userId": "user_123456",
+          "email": "john.doe@example.com",
+          "reason": "Violation of community guidelines",
+          "suspendedBy": "admin_789",
+          "suspendedUntil": "2024-01-22T10:00:00.000Z",
+          "timestamp": "2024-01-15T11:00:00.000Z"
+        }
+      ]
+    }
+  },
+  "metadata": {
+    "created": "2024-01-15T00:00:00.000Z",
+    "lastModified": "2024-01-15T00:00:00.000Z",
+    "maintainer": "auth-service-team",
+    "documentation": "https://docs.factcheck.platform/events/user"
+  }
+}

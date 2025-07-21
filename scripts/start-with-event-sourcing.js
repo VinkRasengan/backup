@@ -17,7 +17,7 @@ class EventSourcingPlatformStarter {
     this.processes = new Map();
     
     this.infrastructure = [
-      { name: 'Redis', container: 'backup-redis-1', port: 6379 },
+      { name: 'Redis', container: 'factcheck-redis', port: 6379 },
       { name: 'KurrentDB', container: 'factcheck-kurrentdb', port: 2113 }
     ];
     
@@ -310,7 +310,7 @@ class EventSourcingPlatformStarter {
   async checkRedis() {
     try {
       // Use Docker exec to test Redis connection since redis-cli may not be available on Windows
-      const command = 'docker exec backup-redis-1 redis-cli -a antifraud123 ping';
+      const command = 'docker exec factcheck-redis redis-cli -a antifraud123 ping';
       const { stdout } = await execAsync(command, { timeout: 5000 });
       return stdout.includes('PONG');
     } catch (error) {

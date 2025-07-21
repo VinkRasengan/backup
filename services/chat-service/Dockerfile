@@ -1,39 +1,35 @@
-# syntax=docker/dockerfile:1
-
+# chat-service Dockerfile
 FROM node:18-alpine
 
-# Cài đặt các package cần thiết
-RUN apk add --no-cache dumb-init curl
-
-# Tạo thư mục app và user không phải root
+# Set working directory
 WORKDIR /app
-RUN addgroup -g 1001 -S nodejs && adduser -S nodejs -u 1001
 
-# Copy package.json và package-lock.json vào trước để cache layer dependencies
+# Install system dependencies
+RUN apk add --no-cache curl
+
+# Copy package files
 COPY package*.json ./
 
-# Cài đặt dependencies production
-RUN npm config set fetch-timeout 600000 && \
-    npm config set fetch-retry-mintimeout 20000 && \
-    npm config set fetch-retry-maxtimeout 120000 && \
-    npm install --only=production --no-audit --no-fund --prefer-offline && \
-    npm cache clean --force
+# Install dependencies
+RUN npm ci && npm cache clean --force
 
-# Copy toàn bộ mã nguồn vào image
+# Copy source code
 COPY . .
 
-# Tạo thư mục logs và phân quyền
-RUN mkdir -p /app/logs && chown -R nodejs:nodejs /app
+# Create non-root user
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S nodejs -u 1001
 
-# Chạy bằng user không phải root
+# Change ownership of the app directory
+RUN chown -R nodejs:nodejs /app
 USER nodejs
 
-# Expose port (nên để đúng với PORT app sử dụng, ví dụ 3004)
+# Expose port
 EXPOSE 3004
 
-# Healthcheck (có thể chỉnh lại port nếu cần)
-HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
-  CMD curl -f http://localhost:3004/health || exit 1
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:3004/health || exit 1
 
-# Lệnh khởi động app
-CMD ["dumb-init", "node", "src/app.js"]
+# Start the application
+CMD ["npm", "start"]

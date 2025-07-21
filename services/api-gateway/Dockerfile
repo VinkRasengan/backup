@@ -1,52 +1,35 @@
-# Multi-stage Dockerfile for API Gateway
-# Supports development, production, and Render deployment
+# api-gateway Dockerfile
 FROM node:18-alpine
 
-# Build arguments for different environments
-ARG NODE_ENV=production
-ARG BUILD_CONTEXT=local
-ARG DEFAULT_PORT=8080
+# Set working directory
+WORKDIR /app
 
 # Install system dependencies
-RUN apk add --no-cache dumb-init curl
+RUN apk add --no-cache curl
 
-# Create app directory and non-root user
-WORKDIR /app
-RUN addgroup -g 1001 -S nodejs && adduser -S nodejs -u 1001
-
-# Copy package files for better layer caching
+# Copy package files
 COPY package*.json ./
 
-# Install dependencies based on environment
-RUN npm config set fetch-timeout 600000 && \
-    npm config set fetch-retry-mintimeout 20000 && \
-    npm config set fetch-retry-maxtimeout 120000 && \
-    if [ "$NODE_ENV" = "development" ]; then \
-        npm ci; \
-    else \
-        npm install --only=production --no-audit --no-fund --prefer-offline; \
-    fi && \
-    npm cache clean --force
+# Install dependencies
+RUN npm ci && npm cache clean --force
 
-# Copy application code
+# Copy source code
 COPY . .
 
-# Create logs directory and set permissions
-RUN mkdir -p /app/logs && chown -R nodejs:nodejs /app
+# Create non-root user
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S nodejs -u 1001
 
-# Switch to non-root user
+# Change ownership of the app directory
+RUN chown -R nodejs:nodejs /app
 USER nodejs
 
-# Expose port (configurable via build arg)
+# Expose port
 EXPOSE 8080
 
-# Health check with configurable port
-HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
-  CMD curl -f http://localhost:${PORT:-${DEFAULT_PORT}}/health || exit 1
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:8080/health || exit 1
 
-# Start command based on environment
-CMD if [ "$NODE_ENV" = "development" ]; then \
-        dumb-init npm run dev; \
-    else \
-        dumb-init node app.js; \
-    fi
+# Start the application
+CMD ["npm", "start"]

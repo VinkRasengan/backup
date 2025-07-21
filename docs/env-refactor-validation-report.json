@@ -77,7 +77,7 @@
       "serviceName": "chat-service",
       "exists": true,
       "path": "C:\\Project\\backup\\services\\chat-service\\.env",
-      "valid": true,
+      "valid": false,
       "envResult": {
         "loaded": true,
         "sources": [
@@ -94,13 +94,15 @@
           }
         ],
         "validation": {
-          "success": true,
-          "missing": [],
+          "success": false,
+          "missing": [
+            "GEMINI_API_KEY"
+          ],
           "warnings": [],
           "localhostFallbacks": [],
           "strict": false
         },
-        "success": true
+        "success": false
       },
       "requiredVars": [
         "FIREBASE_PROJECT_ID",
@@ -109,14 +111,16 @@
         "JWT_SECRET",
         "GEMINI_API_KEY"
       ],
-      "missingVars": [],
+      "missingVars": [
+        "GEMINI_API_KEY"
+      ],
       "warnings": []
     },
     "link-service": {
       "serviceName": "link-service",
       "exists": true,
       "path": "C:\\Project\\backup\\services\\link-service\\.env",
-      "valid": true,
+      "valid": false,
       "envResult": {
         "loaded": true,
         "sources": [
@@ -133,13 +137,15 @@
           }
         ],
         "validation": {
-          "success": true,
-          "missing": [],
+          "success": false,
+          "missing": [
+            "VIRUSTOTAL_API_KEY"
+          ],
           "warnings": [],
           "localhostFallbacks": [],
           "strict": false
         },
-        "success": true
+        "success": false
       },
       "requiredVars": [
         "FIREBASE_PROJECT_ID",
@@ -148,7 +154,9 @@
         "JWT_SECRET",
         "VIRUSTOTAL_API_KEY"
       ],
-      "missingVars": [],
+      "missingVars": [
+        "VIRUSTOTAL_API_KEY"
+      ],
       "warnings": []
     },
     "community-service": {
@@ -193,7 +201,7 @@
       "serviceName": "news-service",
       "exists": true,
       "path": "C:\\Project\\backup\\services\\news-service\\.env",
-      "valid": true,
+      "valid": false,
       "envResult": {
         "loaded": true,
         "sources": [
@@ -210,13 +218,15 @@
           }
         ],
         "validation": {
-          "success": true,
-          "missing": [],
+          "success": false,
+          "missing": [
+            "NEWSAPI_API_KEY"
+          ],
           "warnings": [],
           "localhostFallbacks": [],
           "strict": false
         },
-        "success": true
+        "success": false
       },
       "requiredVars": [
         "FIREBASE_PROJECT_ID",
@@ -225,7 +235,9 @@
         "JWT_SECRET",
         "NEWSAPI_API_KEY"
       ],
-      "missingVars": [],
+      "missingVars": [
+        "NEWSAPI_API_KEY"
+      ],
       "warnings": []
     },
     "admin-service": {
@@ -340,8 +352,8 @@
   "client": {
     "exists": true,
     "path": "C:\\Project\\backup\\client\\.env",
-    "valid": true,
-    "hasRequiredVars": true
+    "valid": false,
+    "hasRequiredVars": false
   },
   "shared": {
     "exists": true,
@@ -350,8 +362,8 @@
   },
   "summary": {
     "total": 9,
-    "passed": 9,
-    "failed": 0,
+    "passed": 6,
+    "failed": 3,
     "warnings": 0
   }
 }

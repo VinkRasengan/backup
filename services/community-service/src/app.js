@@ -7,7 +7,7 @@ const rateLimit = require('express-rate-limit');
 const path = require('path');
 
 // Load environment variables using standardized loader
-const { quickSetup } = require('../../config/env-loader');
+const { quickSetup } = require(path.join(__dirname, '../../../config/env-loader'));
 
 // Setup environment with validation
 const envResult = quickSetup('community-service');
@@ -379,6 +379,14 @@ let cqrsBus;
 
 async function initializeEventSourcing() {
   try {
+    // Check if EventStore is enabled
+    const eventStoreEnabled = process.env.EVENT_STORE_ENABLED === 'true' || process.env.KURRENTDB_ENABLED === 'true';
+
+    if (!eventStoreEnabled) {
+      logger.info('EventStore disabled - skipping Event Sourcing initialization');
+      return;
+    }
+
     logger.info('Initializing Event Sourcing components...');
 
     // Initialize Event Handler

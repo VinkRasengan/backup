@@ -32,6 +32,8 @@ class CommunityEventStore {
       this.connect().catch(error => {
         logger.error('Failed to initialize EventStore, using fallback', { error: error.message });
       });
+    } else {
+      logger.info('EventStore disabled, using in-memory fallback mode');
     }
   }
 

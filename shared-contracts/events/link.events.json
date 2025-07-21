@@ -1,0 +1,478 @@
+{
+  "domain": "link",
+  "version": "1.0",
+  "description": "Link analysis and security scanning events",
+  "events": {
+    "link.analysis.requested": {
+      "description": "Link analysis was requested by a user",
+      "version": "1.0",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "linkId": {
+            "type": "string",
+            "description": "Unique link identifier"
+          },
+          "url": {
+            "type": "string",
+            "format": "uri",
+            "description": "URL to be analyzed"
+          },
+          "requestedBy": {
+            "type": "string",
+            "description": "User ID who requested the analysis"
+          },
+          "priority": {
+            "type": "string",
+            "enum": ["low", "normal", "high", "urgent"],
+            "default": "normal",
+            "description": "Analysis priority level"
+          },
+          "analysisType": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": ["security", "phishing", "malware", "reputation", "screenshot"]
+            },
+            "description": "Types of analysis to perform"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Request timestamp"
+          }
+        },
+        "required": ["linkId", "url", "requestedBy", "timestamp"]
+      },
+      "producers": ["api-gateway", "community-service"],
+      "consumers": ["link-service"],
+      "examples": [
+        {
+          "linkId": "link_abc123",
+          "url": "https://suspicious-site.com/login",
+          "requestedBy": "user_123456",
+          "priority": "high",
+          "analysisType": ["security", "phishing", "reputation"],
+          "timestamp": "2024-01-15T10:30:00.000Z"
+        }
+      ]
+    },
+    "link.analysis.started": {
+      "description": "Link analysis has started",
+      "version": "1.0",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "linkId": {
+            "type": "string",
+            "description": "Unique link identifier"
+          },
+          "url": {
+            "type": "string",
+            "format": "uri",
+            "description": "URL being analyzed"
+          },
+          "analysisId": {
+            "type": "string",
+            "description": "Unique analysis session identifier"
+          },
+          "estimatedDuration": {
+            "type": "integer",
+            "description": "Estimated analysis duration in seconds"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Analysis start timestamp"
+          }
+        },
+        "required": ["linkId", "url", "analysisId", "timestamp"]
+      },
+      "producers": ["link-service"],
+      "consumers": ["api-gateway", "community-service", "admin-service"],
+      "examples": [
+        {
+          "linkId": "link_abc123",
+          "url": "https://suspicious-site.com/login",
+          "analysisId": "analysis_xyz789",
+          "estimatedDuration": 30,
+          "timestamp": "2024-01-15T10:30:15.000Z"
+        }
+      ]
+    },
+    "link.analysis.completed": {
+      "description": "Link analysis has been completed with results",
+      "version": "1.0",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "linkId": {
+            "type": "string",
+            "description": "Unique link identifier"
+          },
+          "url": {
+            "type": "string",
+            "format": "uri",
+            "description": "Analyzed URL"
+          },
+          "analysisId": {
+            "type": "string",
+            "description": "Analysis session identifier"
+          },
+          "result": {
+            "type": "object",
+            "properties": {
+              "safe": {
+                "type": "boolean",
+                "description": "Whether the link is considered safe"
+              },
+              "riskScore": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 100,
+                "description": "Risk score (0 = safe, 100 = very dangerous)"
+              },
+              "threats": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "List of detected threats"
+              },
+              "categories": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "Content categories"
+              },
+              "reputation": {
+                "type": "object",
+                "properties": {
+                  "score": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 100
+                  },
+                  "sources": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            },
+            "required": ["safe", "riskScore"]
+          },
+          "analysisDetails": {
+            "type": "object",
+            "properties": {
+              "duration": {
+                "type": "integer",
+                "description": "Analysis duration in seconds"
+              },
+              "sources": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "Analysis sources used (VirusTotal, PhishTank, etc.)"
+              },
+              "screenshot": {
+                "type": "string",
+                "format": "uri",
+                "description": "Screenshot URL if available"
+              }
+            }
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Analysis completion timestamp"
+          }
+        },
+        "required": ["linkId", "url", "analysisId", "result", "timestamp"]
+      },
+      "producers": ["link-service"],
+      "consumers": ["api-gateway", "community-service", "admin-service"],
+      "examples": [
+        {
+          "linkId": "link_abc123",
+          "url": "https://suspicious-site.com/login",
+          "analysisId": "analysis_xyz789",
+          "result": {
+            "safe": false,
+            "riskScore": 85,
+            "threats": ["phishing", "credential_theft"],
+            "categories": ["banking", "fake_login"],
+            "reputation": {
+              "score": 15,
+              "sources": ["VirusTotal", "PhishTank", "ScamAdviser"]
+            }
+          },
+          "analysisDetails": {
+            "duration": 28,
+            "sources": ["VirusTotal", "PhishTank", "ScamAdviser", "CriminalIP"],
+            "screenshot": "https://screenshots.factcheck.com/link_abc123.png"
+          },
+          "timestamp": "2024-01-15T10:30:43.000Z"
+        }
+      ]
+    },
+    "link.threat.detected": {
+      "description": "High-risk threat detected in analyzed link",
+      "version": "1.0",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "linkId": {
+            "type": "string",
+            "description": "Unique link identifier"
+          },
+          "url": {
+            "type": "string",
+            "format": "uri",
+            "description": "Malicious URL"
+          },
+          "threatType": {
+            "type": "string",
+            "enum": ["phishing", "malware", "scam", "fraud", "adult", "illegal"],
+            "description": "Type of threat detected"
+          },
+          "severity": {
+            "type": "string",
+            "enum": ["low", "medium", "high", "critical"],
+            "description": "Threat severity level"
+          },
+          "confidence": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100,
+            "description": "Confidence level of threat detection"
+          },
+          "sources": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Sources that detected the threat"
+          },
+          "details": {
+            "type": "object",
+            "properties": {
+              "description": {
+                "type": "string",
+                "description": "Detailed threat description"
+              },
+              "indicators": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "Threat indicators"
+              }
+            }
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Threat detection timestamp"
+          }
+        },
+        "required": ["linkId", "url", "threatType", "severity", "confidence", "timestamp"]
+      },
+      "producers": ["link-service"],
+      "consumers": ["admin-service", "community-service"],
+      "examples": [
+        {
+          "linkId": "link_abc123",
+          "url": "https://suspicious-site.com/login",
+          "threatType": "phishing",
+          "severity": "high",
+          "confidence": 95,
+          "sources": ["PhishTank", "VirusTotal"],
+          "details": {
+            "description": "Fake banking login page attempting to steal credentials",
+            "indicators": ["fake_ssl_cert", "suspicious_domain", "credential_harvesting"]
+          },
+          "timestamp": "2024-01-15T10:30:43.000Z"
+        }
+      ]
+    },
+    "link.report.submitted": {
+      "description": "User submitted a report about a link",
+      "version": "1.0",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "reportId": {
+            "type": "string",
+            "description": "Unique report identifier"
+          },
+          "linkId": {
+            "type": "string",
+            "description": "Link being reported"
+          },
+          "url": {
+            "type": "string",
+            "format": "uri",
+            "description": "Reported URL"
+          },
+          "reportedBy": {
+            "type": "string",
+            "description": "User ID who submitted the report"
+          },
+          "reportType": {
+            "type": "string",
+            "enum": ["phishing", "malware", "scam", "spam", "inappropriate", "other"],
+            "description": "Type of report"
+          },
+          "description": {
+            "type": "string",
+            "description": "User's description of the issue"
+          },
+          "evidence": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "enum": ["screenshot", "text", "url"]
+                },
+                "content": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "Evidence provided by the user"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Report submission timestamp"
+          }
+        },
+        "required": ["reportId", "linkId", "url", "reportedBy", "reportType", "timestamp"]
+      },
+      "producers": ["community-service", "api-gateway"],
+      "consumers": ["link-service", "admin-service"],
+      "examples": [
+        {
+          "reportId": "report_def456",
+          "linkId": "link_abc123",
+          "url": "https://suspicious-site.com/login",
+          "reportedBy": "user_789012",
+          "reportType": "phishing",
+          "description": "This site is trying to steal my bank login credentials",
+          "evidence": [
+            {
+              "type": "screenshot",
+              "content": "https://uploads.factcheck.com/evidence/screenshot_123.png"
+            }
+          ],
+          "timestamp": "2024-01-15T10:45:00.000Z"
+        }
+      ]
+    },
+    "link.whitelist.added": {
+      "description": "Link was added to whitelist (marked as safe)",
+      "version": "1.0",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "linkId": {
+            "type": "string",
+            "description": "Unique link identifier"
+          },
+          "url": {
+            "type": "string",
+            "format": "uri",
+            "description": "Whitelisted URL"
+          },
+          "addedBy": {
+            "type": "string",
+            "description": "Admin user who added to whitelist"
+          },
+          "reason": {
+            "type": "string",
+            "description": "Reason for whitelisting"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Whitelist addition timestamp"
+          }
+        },
+        "required": ["linkId", "url", "addedBy", "timestamp"]
+      },
+      "producers": ["admin-service", "link-service"],
+      "consumers": ["community-service", "api-gateway"],
+      "examples": [
+        {
+          "linkId": "link_ghi789",
+          "url": "https://legitimate-bank.com/login",
+          "addedBy": "admin_456",
+          "reason": "Verified legitimate banking website",
+          "timestamp": "2024-01-15T11:00:00.000Z"
+        }
+      ]
+    },
+    "link.blacklist.added": {
+      "description": "Link was added to blacklist (marked as dangerous)",
+      "version": "1.0",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "linkId": {
+            "type": "string",
+            "description": "Unique link identifier"
+          },
+          "url": {
+            "type": "string",
+            "format": "uri",
+            "description": "Blacklisted URL"
+          },
+          "addedBy": {
+            "type": "string",
+            "description": "Admin user who added to blacklist"
+          },
+          "reason": {
+            "type": "string",
+            "description": "Reason for blacklisting"
+          },
+          "threatType": {
+            "type": "string",
+            "enum": ["phishing", "malware", "scam", "fraud", "adult", "illegal"],
+            "description": "Type of threat"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Blacklist addition timestamp"
+          }
+        },
+        "required": ["linkId", "url", "addedBy", "threatType", "timestamp"]
+      },
+      "producers": ["admin-service", "link-service"],
+      "consumers": ["community-service", "api-gateway"],
+      "examples": [
+        {
+          "linkId": "link_abc123",
+          "url": "https://suspicious-site.com/login",
+          "addedBy": "admin_456",
+          "reason": "Confirmed phishing site targeting bank customers",
+          "threatType": "phishing",
+          "timestamp": "2024-01-15T11:05:00.000Z"
+        }
+      ]
+    }
+  },
+  "metadata": {
+    "created": "2024-01-15T00:00:00.000Z",
+    "lastModified": "2024-01-15T00:00:00.000Z",
+    "maintainer": "link-service-team",
+    "documentation": "https://docs.factcheck.platform/events/link"
+  }
+}

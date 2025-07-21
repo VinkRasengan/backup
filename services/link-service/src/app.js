@@ -7,7 +7,7 @@ const rateLimit = require('express-rate-limit');
 const path = require('path');
 
 // Load environment variables using standardized loader
-const { quickSetup } = require('../../config/env-loader');
+const { quickSetup } = require('./utils/env-loader');
 
 // Setup environment with validation
 const envResult = quickSetup('link-service');
@@ -50,9 +50,9 @@ const SERVICE_NAME = 'link-service';
 const healthCheck = new HealthCheck(SERVICE_NAME);
 
 // Add health checks
-healthCheck.addCheck('database', commonChecks.memory);
-healthCheck.addCheck('memory', commonChecks.memory(512)); // 512MB limit
-healthCheck.addCheck('auth-service', commonChecks.uptime);
+healthCheck.addCheck('memory', commonChecks.memory);
+healthCheck.addCheck('uptime', commonChecks.uptime);
+healthCheck.addCheck('environment', commonChecks.environment);
 
 // Security middleware
 app.use(helmet({

@@ -9,7 +9,7 @@ const rateLimit = require('express-rate-limit');
 const path = require('path');
 
 // Load environment variables using standardized loader
-const { quickSetup } = require('../../config/env-loader');
+const { quickSetup } = require('../../../config/env-loader');
 
 // Setup environment with validation
 const envResult = quickSetup('chat-service');

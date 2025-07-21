@@ -1,0 +1,361 @@
+version: '3.8'
+
+services:
+  # ==================== INFRASTRUCTURE ====================
+  
+  redis:
+    image: redis:7-alpine
+    container_name: factcheck-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    command: redis-server --appendonly yes --maxmemory 512mb --maxmemory-policy allkeys-lru
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    networks:
+      - factcheck-network
+
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: factcheck-rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: factcheck
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-secure_password}
+      RABBITMQ_DEFAULT_VHOST: /
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - factcheck-network
+
+  # ==================== EVENT BUS SERVICE ====================
+  
+  event-bus-service:
+    build: 
+      context: ./services/event-bus-service
+      dockerfile: Dockerfile
+    container_name: factcheck-event-bus
+    ports:
+      - "3007:3007"
+      - "9090:9090"  # Metrics port
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      PORT: 3007
+      REDIS_URL: redis://redis:6379
+      RABBITMQ_URL: amqp://factcheck:${RABBITMQ_PASSWORD:-secure_password}@rabbitmq:5672
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      ENABLE_METRICS: true
+      METRICS_PORT: 9090
+    depends_on:
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3007/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - factcheck-network
+
+  # ==================== MICROSERVICES ====================
+  
+  auth-service:
+    build:
+      context: ./services/auth-service
+      dockerfile: Dockerfile
+    container_name: factcheck-auth
+    ports:
+      - "3001:3001"
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      PORT: 3001
+      EVENT_BUS_SERVICE_URL: http://event-bus-service:3007
+      ENABLE_EVENT_DRIVEN: true
+      JWT_SECRET: ${JWT_SECRET}
+      GOOGLE_APPLICATION_CREDENTIALS: /app/config/serviceAccountKey.json
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:3000}
+    volumes:
+      - ./config/serviceAccountKey.json:/app/config/serviceAccountKey.json:ro
+    depends_on:
+      event-bus-service:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - factcheck-network
+
+  link-service:
+    build:
+      context: ./services/link-service
+      dockerfile: Dockerfile
+    container_name: factcheck-link
+    ports:
+      - "3002:3002"
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      PORT: 3002
+      EVENT_BUS_SERVICE_URL: http://event-bus-service:3007
+      ENABLE_EVENT_DRIVEN: true
+      VIRUSTOTAL_API_KEY: ${VIRUSTOTAL_API_KEY}
+      PHISHTANK_API_KEY: ${PHISHTANK_API_KEY}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      ANALYSIS_TIMEOUT: 30000
+    depends_on:
+      event-bus-service:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3002/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - factcheck-network
+
+  community-service:
+    build:
+      context: ./services/community-service
+      dockerfile: Dockerfile
+    container_name: factcheck-community
+    ports:
+      - "3003:3003"
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      PORT: 3003
+      EVENT_BUS_SERVICE_URL: http://event-bus-service:3007
+      ENABLE_EVENT_DRIVEN: true
+      GOOGLE_APPLICATION_CREDENTIALS: /app/config/serviceAccountKey.json
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      MAX_POST_LENGTH: 10000
+      MAX_COMMENT_LENGTH: 2000
+      ENABLE_AUTO_MODERATION: true
+    volumes:
+      - ./config/serviceAccountKey.json:/app/config/serviceAccountKey.json:ro
+    depends_on:
+      event-bus-service:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3003/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - factcheck-network
+
+  admin-service:
+    build:
+      context: ./services/admin-service
+      dockerfile: Dockerfile
+    container_name: factcheck-admin
+    ports:
+      - "3005:3005"
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      PORT: 3005
+      EVENT_BUS_SERVICE_URL: http://event-bus-service:3007
+      ENABLE_EVENT_DRIVEN: true
+      GOOGLE_APPLICATION_CREDENTIALS: /app/config/serviceAccountKey.json
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      ADMIN_JWT_SECRET: ${ADMIN_JWT_SECRET:-${JWT_SECRET}}
+      ENABLE_AUTO_MODERATION: true
+    volumes:
+      - ./config/serviceAccountKey.json:/app/config/serviceAccountKey.json:ro
+    depends_on:
+      event-bus-service:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3005/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - factcheck-network
+
+  chat-service:
+    build:
+      context: ./services/chat-service
+      dockerfile: Dockerfile
+    container_name: factcheck-chat
+    ports:
+      - "3004:3004"
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      PORT: 3004
+      EVENT_BUS_SERVICE_URL: http://event-bus-service:3007
+      ENABLE_EVENT_DRIVEN: true
+      GOOGLE_APPLICATION_CREDENTIALS: /app/config/serviceAccountKey.json
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      WEBSOCKET_PORT: 3004
+    volumes:
+      - ./config/serviceAccountKey.json:/app/config/serviceAccountKey.json:ro
+    depends_on:
+      event-bus-service:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3004/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - factcheck-network
+
+  news-service:
+    build:
+      context: ./services/news-service
+      dockerfile: Dockerfile
+    container_name: factcheck-news
+    ports:
+      - "3006:3006"
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      PORT: 3006
+      EVENT_BUS_SERVICE_URL: http://event-bus-service:3007
+      ENABLE_EVENT_DRIVEN: true
+      GOOGLE_APPLICATION_CREDENTIALS: /app/config/serviceAccountKey.json
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      NEWS_API_KEY: ${NEWS_API_KEY}
+    volumes:
+      - ./config/serviceAccountKey.json:/app/config/serviceAccountKey.json:ro
+    depends_on:
+      event-bus-service:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3006/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - factcheck-network
+
+  api-gateway:
+    build:
+      context: ./services/api-gateway
+      dockerfile: Dockerfile
+    container_name: factcheck-gateway
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      PORT: 3000
+      EVENT_BUS_SERVICE_URL: http://event-bus-service:3007
+      AUTH_SERVICE_URL: http://auth-service:3001
+      LINK_SERVICE_URL: http://link-service:3002
+      COMMUNITY_SERVICE_URL: http://community-service:3003
+      CHAT_SERVICE_URL: http://chat-service:3004
+      ADMIN_SERVICE_URL: http://admin-service:3005
+      NEWS_SERVICE_URL: http://news-service:3006
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      RATE_LIMIT_MAX: ${API_RATE_LIMIT:-1000}
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:3000}
+    depends_on:
+      auth-service:
+        condition: service_healthy
+      link-service:
+        condition: service_healthy
+      community-service:
+        condition: service_healthy
+      admin-service:
+        condition: service_healthy
+      event-bus-service:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    networks:
+      - factcheck-network
+
+  # ==================== MONITORING (Optional) ====================
+  
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: factcheck-prometheus
+    ports:
+      - "9091:9090"
+    volumes:
+      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=200h'
+      - '--web.enable-lifecycle'
+    restart: unless-stopped
+    networks:
+      - factcheck-network
+    profiles:
+      - monitoring
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: factcheck-grafana
+    ports:
+      - "3001:3000"
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:-admin}
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+    restart: unless-stopped
+    networks:
+      - factcheck-network
+    profiles:
+      - monitoring
+
+# ==================== VOLUMES ====================
+
+volumes:
+  redis-data:
+    driver: local
+  rabbitmq-data:
+    driver: local
+  prometheus-data:
+    driver: local
+  grafana-data:
+    driver: local
+
+# ==================== NETWORKS ====================
+
+networks:
+  factcheck-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
