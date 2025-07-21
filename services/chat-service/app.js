@@ -2,12 +2,13 @@ const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
+const path = require('path');
 
-// Load environment variables
-require('dotenv').config();
+// Load environment variables from root .env
+require('dotenv').config({ path: require('path').join(__dirname, '../../.env') });
 
 const app = express();
-const PORT = process.env.PORT || 3004;
+const PORT = process.env.CHAT_SERVICE_PORT || 3004;
 // Service configuration
 const service = {
     name: 'Chat Service',
@@ -70,6 +71,13 @@ app.get('/', (req, res) => {
     });
 });
 
+// Import routes
+const chatRoutes = require('./src/routes/chat');
+
+// API routes
+app.use('/chat', chatRoutes);
+app.use('/api/chat', chatRoutes);
+
 // API routes placeholder
 app.get('/api', (req, res) => {
     res.json({
@@ -78,7 +86,10 @@ app.get('/api', (req, res) => {
         endpoints: [
             'GET /',
             'GET /health',
-            'GET /api'
+            'GET /api',
+            'POST /chat/message',
+            'POST /chat/gemini',
+            'POST /api/chat/gemini'
         ]
     });
 });

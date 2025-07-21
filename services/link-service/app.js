@@ -2,12 +2,13 @@ const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
+const path = require('path');
 
-// Load environment variables
-require('dotenv').config();
+// Load environment variables from root .env
+require('dotenv').config({ path: require('path').join(__dirname, '../../.env') });
 
 const app = express();
-const PORT = process.env.PORT || 3002;
+const PORT = process.env.LINK_SERVICE_PORT || 3002;
 
 // Service configuration
 const service = {
@@ -71,6 +72,12 @@ app.get('/', (req, res) => {
     });
 });
 
+// Import routes
+const linkRoutes = require('./src/routes/links');
+
+// API routes
+app.use('/links', linkRoutes);
+
 // API routes placeholder
 app.get('/api', (req, res) => {
     res.json({
@@ -79,7 +86,11 @@ app.get('/api', (req, res) => {
         endpoints: [
             'GET /',
             'GET /health',
-            'GET /api'
+            'GET /api',
+            'POST /links/check',
+            'GET /links/history',
+            'GET /links/:linkId',
+            'DELETE /links/:linkId'
         ]
     });
 });

@@ -11,12 +11,39 @@ let db, collections;
 try {
   // Initialize Firebase Admin SDK
   if (!admin.apps.length) {
-    // Use production Firebase with service account credentials
+    // Parse private key properly - handle different formats
+    let privateKey = process.env.FIREBASE_PRIVATE_KEY;
+
+    if (!privateKey) {
+      throw new Error('FIREBASE_PRIVATE_KEY environment variable is missing');
+    }
+
+    // Clean up the private key
+    privateKey = privateKey.trim();
+
+    // Remove outer quotes if present
+    if ((privateKey.startsWith('"') && privateKey.endsWith('"')) ||
+        (privateKey.startsWith("'") && privateKey.endsWith("'"))) {
+      privateKey = privateKey.slice(1, -1);
+    }
+
+    // Replace escaped newlines with actual newlines
+    privateKey = privateKey.replace(/\\n/g, '\n');
+
+    // Ensure proper PEM format
+    if (!privateKey.includes('-----BEGIN PRIVATE KEY-----')) {
+      throw new Error('Invalid private key format - missing BEGIN marker');
+    }
+
+    if (!privateKey.includes('-----END PRIVATE KEY-----')) {
+      throw new Error('Invalid private key format - missing END marker');
+    }
+
     const serviceAccount = {
       type: 'service_account',
       project_id: process.env.FIREBASE_PROJECT_ID,
       client_email: process.env.FIREBASE_CLIENT_EMAIL,
-      private_key: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n')
+      private_key: privateKey
     };
 
     admin.initializeApp({

@@ -145,12 +145,15 @@ app.use((req, res, next) => {
     next();
 });
 
-// API routes
+// API routes - Both with and without /api prefix for compatibility
 app.use('/links', linksRoutes);
+app.use('/api/links', linksRoutes);
 app.use('/api/posts', postsRoutes);
 app.use('/api/comments', commentsRoutes);
+app.use('/comments', commentsRoutes);
 app.use('/api/reports', reportsRoutes);
 app.use('/api/votes', votesRoutes);
+app.use('/votes', votesRoutes);
 app.use('/api/stats', statsRoutes);
 
 // API info endpoint
