@@ -34,12 +34,48 @@ const authLimiter = rateLimit({
   }
 });
 
+// CORS configuration for credentials support
+const corsOptions = {
+    origin: function (origin, callback) {
+        // Allow requests with no origin (like mobile apps or curl requests)
+        if (!origin) return callback(null, true);
+
+        // Get allowed origins from environment or use defaults
+        const allowedOrigins = process.env.ALLOWED_ORIGINS
+            ? process.env.ALLOWED_ORIGINS.split(',').map(origin => origin.trim())
+            : [
+                'http://localhost:3000',
+                'http://localhost:3001',
+                'http://localhost:8080',
+                'https://factcheck-vn.netlify.app',
+                'https://factcheck.vn'
+            ];
+
+        if (allowedOrigins.indexOf(origin) !== -1) {
+            callback(null, true);
+        } else {
+            console.warn(`⚠️ CORS blocked origin: ${origin}`);
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: [
+        'Origin',
+        'X-Requested-With',
+        'Content-Type',
+        'Accept',
+        'Authorization',
+        'X-Correlation-ID',
+        'X-Request-ID',
+        'Cache-Control'
+    ],
+    exposedHeaders: ['X-Correlation-ID']
+};
+
 // Middleware
 app.use(helmet());
-app.use(cors({
-  origin: process.env.CORS_ORIGIN || 'http://localhost:3000',
-  credentials: true
-}));
+app.use(cors(corsOptions));
 app.use(morgan('combined', { stream: logger.stream }));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));

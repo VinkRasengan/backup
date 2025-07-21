@@ -17,9 +17,47 @@ const service = {
     port: PORT
 };
 
+// CORS configuration for credentials support
+const corsOptions = {
+    origin: function (origin, callback) {
+        // Allow requests with no origin (like mobile apps or curl requests)
+        if (!origin) return callback(null, true);
+
+        // Get allowed origins from environment or use defaults
+        const allowedOrigins = process.env.ALLOWED_ORIGINS
+            ? process.env.ALLOWED_ORIGINS.split(',').map(origin => origin.trim())
+            : [
+                'http://localhost:3000',
+                'http://localhost:3001',
+                'https://factcheck-vn.netlify.app',
+                'https://factcheck.vn'
+            ];
+
+        if (allowedOrigins.indexOf(origin) !== -1) {
+            callback(null, true);
+        } else {
+            console.warn(`⚠️ CORS blocked origin: ${origin}`);
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: [
+        'Origin',
+        'X-Requested-With',
+        'Content-Type',
+        'Accept',
+        'Authorization',
+        'X-Correlation-ID',
+        'X-Request-ID',
+        'Cache-Control'
+    ],
+    exposedHeaders: ['X-Correlation-ID']
+};
+
 // Middleware
 app.use(helmet());
-app.use(cors());
+app.use(cors(corsOptions));
 app.use(morgan('combined'));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
@@ -289,6 +327,46 @@ app.use('/api/stats', createProxyMiddleware({
     }
 }));
 
+// Chat API routes - manual proxy
+app.all('/api/chat*', async (req, res) => {
+    try {
+        console.log(`🔄 Manual Chat proxy: ${req.method} ${req.originalUrl} → ${services.chat.target}/chat`);
+
+        const targetPath = req.originalUrl.replace('/api/chat', '/chat');
+        const targetUrl = `${services.chat.target}${targetPath}`;
+        console.log(`🎯 Target URL: ${targetUrl}`);
+
+        const headers = {
+            'Content-Type': req.headers['content-type'] || 'application/json',
+            'User-Agent': req.headers['user-agent'] || 'API-Gateway'
+        };
+
+        const response = await fetch(targetUrl, {
+            method: req.method,
+            headers: headers,
+            body: req.method !== 'GET' && req.method !== 'HEAD' ? JSON.stringify(req.body) : undefined
+        });
+
+        const data = await response.text();
+        res.status(response.status);
+
+        // Copy response headers
+        response.headers.forEach((value, key) => {
+            res.set(key, value);
+        });
+
+        res.send(data);
+    } catch (error) {
+        console.error(`❌ Chat proxy error:`, error.message);
+        res.status(503).json({
+            error: 'Service unavailable',
+            service: 'chat-api',
+            message: 'Chat service is not responding',
+            timestamp: new Date().toISOString()
+        });
+    }
+});
+
 // Auth API routes
 app.use('/api/auth', createProxyMiddleware({
     target: services.auth.target,
@@ -305,6 +383,25 @@ app.use('/api/auth', createProxyMiddleware({
     },
     onProxyReq: (proxyReq, req, res) => {
         console.log(`🔄 Proxying ${req.method} ${req.originalUrl} → ${services.auth.target}${req.url}`);
+    }
+}));
+
+// Community API routes
+app.use('/api/community', createProxyMiddleware({
+    target: services.community.target,
+    changeOrigin: true,
+    pathRewrite: { '^/api/community': '/api' },
+    onError: (err, req, res) => {
+        console.error(`❌ Proxy error for community API:`, err.message);
+        res.status(503).json({
+            error: 'Service unavailable',
+            service: 'community-api',
+            message: 'Community service is not responding',
+            timestamp: new Date().toISOString()
+        });
+    },
+    onProxyReq: (proxyReq, req, res) => {
+        console.log(`🔄 Proxying ${req.method} ${req.originalUrl} → ${services.community.target}${req.url}`);
     }
 }));
 
@@ -327,6 +424,9 @@ app.get('/api', (req, res) => {
             'GET /api/links - Get community links',
             'POST /api/links - Create community link',
             'GET /api/community/* - Community service endpoints',
+            'POST /api/chat/gemini - Gemini AI chat',
+            'GET /api/chat/test-gemini - Test Gemini config',
+            'GET /api/chat/starters - Get conversation starters',
             'GET /api/stats - Get statistics',
             'POST /api/auth/login - Login',
             'POST /api/auth/register - Register',
