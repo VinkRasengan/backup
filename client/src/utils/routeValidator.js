@@ -90,8 +90,8 @@ export const validateRoutes = () => {
 
 // Route protection levels
 export const getRouteProtection = (path) => {
-  const publicRoutes = ['/', '/login', '/register', '/registration-success', '/community', '/knowledge', '/help'];
-  const protectedRoutes = ['/dashboard', '/profile', '/settings', '/security', '/analytics', '/premium', '/notifications', '/favorites', '/achievements'];
+  const publicRoutes = ['/', '/login', '/register', '/registration-success', '/knowledge', '/help'];
+  const protectedRoutes = ['/dashboard', '/profile', '/settings', '/security', '/analytics', '/premium', '/notifications', '/favorites', '/achievements', '/community'];
   const emailVerifiedRoutes = ['/check', '/chat', '/submit', '/my-submissions'];
   const adminRoutes = ['/admin', '/admin/dashboard', '/admin/firestore-test'];
 

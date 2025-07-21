@@ -43,7 +43,8 @@ const TabNavigation = ({ className = '' }) => {
       label: 'Cộng đồng',
       icon: Users,
       path: '/community',
-      color: 'purple'
+      color: 'purple',
+      requireAuth: true
     },
     {
       id: 'chat',

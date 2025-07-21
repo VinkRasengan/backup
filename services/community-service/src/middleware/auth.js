@@ -14,21 +14,23 @@ const authMiddleware = async (req, res, next) => {
 
     const authHeader = req.headers.authorization;
 
-    // Allow auth processing for votes endpoints (but don't require it)
+    // Check for endpoints that require authentication
     const isVotesEndpoint = req.path.includes('/votes');
     const isBatchUserVotes = req.path.includes('/votes/batch/user');
+    const isUserVoteEndpoint = req.path.includes('/votes/') && req.path.includes('/user');
+    const isCommentsEndpoint = req.path.includes('/comments');
 
-    // For batch user votes, we need authentication
-    if (isBatchUserVotes && (!authHeader || !authHeader.startsWith('Bearer '))) {
+    // For user-specific endpoints, require authentication
+    if ((isBatchUserVotes || isUserVoteEndpoint) && (!authHeader || !authHeader.startsWith('Bearer '))) {
       return res.status(401).json({
         success: false,
-        error: 'Authentication required for batch user votes',
+        error: 'Authentication required for user-specific endpoints',
         code: 'AUTH_REQUIRED'
       });
     }
 
-    // For other votes endpoints, auth is optional
-    if (isVotesEndpoint && !isBatchUserVotes && (!authHeader || !authHeader.startsWith('Bearer '))) {
+    // For other endpoints, auth is optional but we still try to process it
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return next();
     }
     
@@ -70,12 +72,21 @@ const authMiddleware = async (req, res, next) => {
       });
 
     } catch (tokenError) {
-      logger.warn('Invalid auth token', { 
+      logger.warn('Invalid auth token', {
         error: tokenError.message,
         path: req.path,
         method: req.method
       });
-      
+
+      // For user-specific endpoints, return error
+      if (isUserVoteEndpoint || isBatchUserVotes) {
+        return res.status(401).json({
+          success: false,
+          error: 'Invalid or expired authentication token',
+          code: 'INVALID_TOKEN'
+        });
+      }
+
       // For endpoints that require auth, return error
       if (req.method === 'POST' || req.method === 'PUT' || req.method === 'DELETE') {
         return res.status(401).json({
@@ -84,7 +95,7 @@ const authMiddleware = async (req, res, next) => {
           code: 'INVALID_TOKEN'
         });
       }
-      
+
       // For GET requests, continue without user info
     }
 

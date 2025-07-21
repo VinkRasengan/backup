@@ -142,7 +142,11 @@ function App() {
             />
             <Route
               path="/community"
-              element={<CommunityPage />}
+              element={
+                <ProtectedRoute>
+                  <CommunityPage />
+                </ProtectedRoute>
+              }
             />
             <Route
               path="/community/feed"

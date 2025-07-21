@@ -389,10 +389,12 @@ router.get('/:linkId/user', async (req, res) => {
     });
 
     if (!userId) {
-      console.log('❌ [GET /votes/:linkId/user] No user ID found');
-      return res.status(400).json({
+      console.log('❌ [GET /votes/:linkId/user] No user ID found - auth middleware should have caught this');
+      // This should not happen if auth middleware is working correctly
+      return res.status(401).json({
         success: false,
-        error: 'User ID required'
+        error: 'Authentication required',
+        code: 'AUTH_REQUIRED'
       });
     }
 

@@ -230,14 +230,40 @@ class CommunityAPI {
   // Get user's vote for a specific link
   async getUserVote(linkId) {
     try {
+      // Check if user is authenticated first
+      const userId = await this.getCurrentUserId();
+      if (!userId) {
+        console.log('🔍 No user ID found - user not authenticated');
+        return {
+          success: true,
+          data: null,
+          message: 'User not authenticated'
+        };
+      }
+
       const headers = await this.getAuthHeaders();
-      const response = await fetch(`${this.baseURL}/api/votes/${linkId}/user`, {
+
+      // Add userId as query parameter for better reliability
+      const url = `${this.baseURL}/api/votes/${linkId}/user?userId=${encodeURIComponent(userId)}`;
+
+      const response = await fetch(url, {
         method: 'GET',
         headers: headers
       });
       return await this.handleResponse(response);
     } catch (error) {
       console.error('Get user vote error:', error);
+
+      // If error is "User ID required", return null vote instead of throwing
+      if (error.message === 'User ID required') {
+        console.log('🔍 User ID required error - returning null vote');
+        return {
+          success: true,
+          data: null,
+          message: 'User not authenticated'
+        };
+      }
+
       throw error;
     }
   }
