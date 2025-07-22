@@ -136,12 +136,22 @@ class EventBusManager {
     try {
       // Publisher client
       this.connections.redis.client = redis.createClient({
-        url: this.options.redis.url
+        socket: {
+          host: process.env.REDIS_HOST || 'redis-15249.c258.us-east-1-4.ec2.redns.redis-cloud.com',
+          port: process.env.REDIS_PORT ? parseInt(process.env.REDIS_PORT) : 15249
+        },
+        username: process.env.REDIS_USERNAME || 'default',
+        password: process.env.REDIS_PASSWORD || '9Z17Dg85uSFhNDv0RnTDSxH2iwc6ZNN6',
       });
 
       // Subscriber client
       this.connections.redis.subscriber = redis.createClient({
-        url: this.options.redis.url
+        socket: {
+          host: process.env.REDIS_HOST || 'redis-15249.c258.us-east-1-4.ec2.redns.redis-cloud.com',
+          port: process.env.REDIS_PORT ? parseInt(process.env.REDIS_PORT) : 15249
+        },
+        username: process.env.REDIS_USERNAME || 'default',
+        password: process.env.REDIS_PASSWORD || '9Z17Dg85uSFhNDv0RnTDSxH2iwc6ZNN6',
       });
 
       await Promise.all([
@@ -150,7 +160,7 @@ class EventBusManager {
       ]);
 
       this.connections.redis.connected = true;
-      logger.info('✅ Redis connections established');
+      logger.info('✅ Redis connections established (Cloud)');
     } catch (error) {
       logger.warn('Redis connection failed, continuing without Redis pub/sub', {
         error: error.message
