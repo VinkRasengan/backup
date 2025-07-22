@@ -1,11 +1,19 @@
 /**
  * Community Posts API Routes
- * Event-driven implementation for post management
+ * Event-driven implementation for post management with Redis caching
  */
 
 const express = require('express');
 const { v4: uuidv4 } = require('uuid');
 const logger = require('../utils/logger');
+const { communityCache } = require('../utils/communityCache');
+const {
+  postsListCache,
+  postCache,
+  invalidatePostCache,
+  invalidateCommentCache,
+  invalidateVoteCache
+} = require('../middleware/cacheMiddleware');
 
 const router = express.Router();
 
@@ -14,9 +22,9 @@ const posts = new Map();
 const comments = new Map();
 
 /**
- * Get all posts
+ * Get all posts with Redis caching
  */
-router.get('/', async (req, res) => {
+router.get('/', postsListCache, async (req, res) => {
   try {
     const { page = 1, limit = 20, category, sortBy = 'createdAt' } = req.query;
     
@@ -77,9 +85,9 @@ router.get('/', async (req, res) => {
 });
 
 /**
- * Get single post by ID
+ * Get single post by ID with Redis caching
  */
-router.get('/:postId', async (req, res) => {
+router.get('/:postId', postCache, async (req, res) => {
   try {
     const { postId } = req.params;
     
@@ -122,9 +130,9 @@ router.get('/:postId', async (req, res) => {
 });
 
 /**
- * Create new post
+ * Create new post with cache invalidation
  */
-router.post('/', async (req, res) => {
+router.post('/', invalidatePostCache, async (req, res) => {
   try {
     const { title, content, category, tags = [], authorId } = req.body;
 
@@ -219,9 +227,9 @@ router.post('/', async (req, res) => {
 });
 
 /**
- * Update post
+ * Update post with cache invalidation
  */
-router.put('/:postId', async (req, res) => {
+router.put('/:postId', invalidatePostCache, async (req, res) => {
   try {
     const { postId } = req.params;
     const { title, content, category, tags, updatedBy } = req.body;
@@ -298,9 +306,9 @@ router.put('/:postId', async (req, res) => {
 });
 
 /**
- * Delete post
+ * Delete post with cache invalidation
  */
-router.delete('/:postId', async (req, res) => {
+router.delete('/:postId', invalidatePostCache, async (req, res) => {
   try {
     const { postId } = req.params;
     const { deletedBy, reason = 'User requested deletion' } = req.body;
@@ -357,9 +365,9 @@ router.delete('/:postId', async (req, res) => {
 });
 
 /**
- * Vote on post
+ * Vote on post with cache invalidation
  */
-router.post('/:postId/vote', async (req, res) => {
+router.post('/:postId/vote', invalidateVoteCache, async (req, res) => {
   try {
     const { postId } = req.params;
     const { userId, voteType } = req.body; // 'upvote' or 'downvote'
@@ -444,9 +452,9 @@ router.post('/:postId/vote', async (req, res) => {
 });
 
 /**
- * Add comment to post
+ * Add comment to post with cache invalidation
  */
-router.post('/:postId/comments', async (req, res) => {
+router.post('/:postId/comments', invalidateCommentCache, async (req, res) => {
   try {
     const { postId } = req.params;
     const { content, authorId, parentCommentId = null } = req.body;

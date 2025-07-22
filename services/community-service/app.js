@@ -175,6 +175,10 @@ const commentsRoutes = require('./src/routes/comments');
 const reportsRoutes = require('./src/routes/reports');
 const votesRoutes = require('./src/routes/votes');
 const statsRoutes = require('./src/routes/stats');
+const cacheRoutes = require('./src/routes/cache');
+
+// Import cache manager
+const { communityCache } = require('./src/utils/communityCache');
 
 // Middleware to pass event handlers to routes
 app.use((req, res, next) => {
@@ -194,6 +198,7 @@ app.use('/api/reports', reportsRoutes);
 app.use('/api/votes', votesRoutes);
 app.use('/votes', votesRoutes);
 app.use('/api/stats', statsRoutes);
+app.use('/api/cache', cacheRoutes); // Cache management routes
 
 // API info endpoint
 app.get('/api', (req, res) => {
@@ -297,12 +302,24 @@ async function startServer() {
         // Initialize Event-Driven Architecture first
         await initializeEventDrivenArchitecture();
 
+        // Initialize Redis cache
+        logger.info('Initializing Redis cache...');
+        await communityCache.initialize();
+
+        const cacheHealth = await communityCache.getCacheMetrics();
+        logger.info('Cache initialization completed', {
+            status: cacheHealth?.health?.overall || 'unknown',
+            redisConnected: cacheHealth?.health?.redis?.connected || false
+        });
+
         const server = app.listen(PORT, '0.0.0.0', () => {
             logger.info('Community Service started successfully', {
                 port: PORT,
                 environment: process.env.NODE_ENV || 'development',
                 eventDriven: !!eventHandlers,
-                healthCheck: `http://localhost:${PORT}/health`
+                cacheEnabled: cacheHealth?.health?.overall === 'healthy',
+                healthCheck: `http://localhost:${PORT}/health`,
+                cacheManagement: `http://localhost:${PORT}/api/cache/health`
             });
         });
 

@@ -6,7 +6,10 @@
   "scripts": {
     "start": "node app.js",
     "dev": "nodemon app.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "cache:test": "node test-redis-connection.js",
+    "cache:demo": "node demo-redis-cache.js",
+    "cache:performance": "node test-cache-performance.js"
   },
   "dependencies": {
     "@eventstore/db-client": "^6.2.1",
