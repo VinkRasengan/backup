@@ -76,23 +76,23 @@ cp .env.example .env
 
 3. **Start Development Environment**
 ```bash
-# Option 1: Full Docker setup (recommended)
-npm run start:docker
+# Option 1: Full Docker stack (recommended for production-like testing)
+npm run docker:start
 
 # Option 2: Local services with Docker infrastructure
-npm run infrastructure:start  # Start Redis + KurrentDB
+npm run infrastructure:start  # Start Redis + RabbitMQ + KurrentDB
 npm run dev                   # Start all services locally
 
-# Option 3: Individual services
-npm run dev:auth             # Start auth service only
-npm run dev:link             # Start link service only
-# ... etc
+# Option 3: Local development (fastest for development)
+npm start                    # Start all services in separate terminals
 ```
 
 4. **Access Applications**
 - **Frontend**: http://localhost:3000
 - **API Gateway**: http://localhost:8080
-- **Individual Services**: Check respective ports (3001-3006)
+- **Individual Services**: Check respective ports (3001-3007)
+- **RabbitMQ Management**: http://localhost:15672 (factcheck/antifraud123)
+- **KurrentDB**: http://localhost:2113
 
 ### **Development Commands**
 

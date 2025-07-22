@@ -4,23 +4,26 @@ FROM node:18-alpine AS base
 # Set working directory
 WORKDIR /app
 
+# Install system dependencies
+RUN apk add --no-cache curl
+
 # Copy package files
 COPY package*.json ./
 
 # Install dependencies
 FROM base AS deps
-RUN npm ci --only=production && npm cache clean --force
+RUN npm install --only=production && npm cache clean --force
 
 # Development stage
 FROM base AS dev
-RUN npm ci
+RUN npm install
 COPY . .
 EXPOSE 3000
 CMD ["npm", "start"]
 
 # Build stage
 FROM base AS build
-RUN npm ci
+RUN npm install
 COPY . .
 RUN npm run build
 

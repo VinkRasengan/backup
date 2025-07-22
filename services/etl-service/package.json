@@ -25,10 +25,8 @@
     "express-validator": "^7.0.1",
     "firebase-admin": "^11.10.1",
     "csv-parser": "^3.0.0",
-    "json2csv": "^6.1.0",
-    "fs-extra": "^11.1.1",
-    "stream": "^0.0.2",
-    "transform-stream": "^2.1.0"
+    "json2csv": "^5.0.7",
+    "fs-extra": "^11.1.1"
   },
   "devDependencies": {
     "nodemon": "^3.0.1",

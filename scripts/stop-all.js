@@ -332,9 +332,7 @@ class UniversalStop {
       await this.execAsync('docker --version');
       
       const composeFiles = [
-        'docker-compose.yml',
-        'docker-compose.dev.yml',
-        'docker-compose.local.yml'
+        'docker-compose.yml'
       ];
       
       for (const composeFile of composeFiles) {

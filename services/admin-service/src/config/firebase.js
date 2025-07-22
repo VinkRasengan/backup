@@ -48,10 +48,12 @@ try {
 
 } catch (error) {
   console.error('Firebase Admin initialization error (admin service):', error);
-  
-  // Fallback for development without proper credentials
+
+  // Enhanced fallback for development/Docker environment
   if (process.env.NODE_ENV === 'development') {
-    console.warn('Using fallback Firebase configuration for development');
+    console.warn('🐳 Using fallback Firebase configuration for development/Docker');
+    console.warn('💡 This is normal in Docker development environment');
+
     try {
       admin.initializeApp({
         projectId: 'factcheck-1d6e8'
@@ -64,9 +66,16 @@ try {
         VOTES: 'votes',
         COMMENTS: 'comments'
       };
+      console.log('✅ Fallback Firebase configuration loaded');
     } catch (fallbackError) {
-      console.error('Fallback Firebase initialization failed:', fallbackError);
+      console.error('❌ Fallback Firebase initialization failed:', fallbackError);
+      console.warn('⚠️ Admin service will continue without Firebase');
+      db = null;
+      collections = null;
     }
+  } else {
+    // In production, Firebase is required
+    throw error;
   }
 }
 

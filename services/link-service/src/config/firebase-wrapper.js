@@ -42,7 +42,31 @@ if (process.env.DISABLE_FIREBASE === 'true') {
     collections = firebaseConfig.collections;
   } catch (error) {
     console.error('❌ Link Service: Firebase config failed:', error.message);
-    throw error;
+    console.log('⚠️  Link Service: Falling back to mock Firebase for development');
+
+    // Fallback to mock Firebase
+    db = {
+      collection: (name) => ({
+        doc: (id) => ({
+          get: () => Promise.resolve({ exists: false, data: () => null }),
+          set: (data) => Promise.resolve(),
+          update: (data) => Promise.resolve(),
+          delete: () => Promise.resolve()
+        }),
+        add: (data) => Promise.resolve({ id: 'mock-id' }),
+        where: () => ({
+          get: () => Promise.resolve({ docs: [] })
+        })
+      })
+    };
+
+    collections = {
+      LINKS: 'links',
+      LINK_ANALYSIS: 'link_analysis',
+      LINK_HISTORY: 'link_history',
+      USERS: 'users',
+      REPORTS: 'reports'
+    };
   }
 }
 

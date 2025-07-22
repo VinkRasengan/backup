@@ -1,9 +1,10 @@
 module.exports = {
   testEnvironment: 'node',
-  setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
+  // setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
   testMatch: [
     '<rootDir>/src/**/__tests__/**/*.test.js',
-    '<rootDir>/src/**/*.test.js'
+    '<rootDir>/src/**/*.test.js',
+    '<rootDir>/tests/**/*.test.js'
   ],
   collectCoverageFrom: [
     'src/**/*.js',
@@ -26,7 +27,7 @@ module.exports = {
   transform: {
     '^.+\.js$': 'babel-jest',
   },
-  setupFiles: ['<rootDir>/jest.setup.js'],
+  // setupFiles: ['<rootDir>/jest.setup.js'],
   // Ignore node_modules except for ES modules that need transformation
   transformIgnorePatterns: [
     'node_modules/(?!(axios|@google-cloud|firebase-admin)/)'

@@ -13,16 +13,18 @@ import { Card, CardHeader, CardTitle, CardContent } from '../ui/Card';
 import { gsap } from '../../utils/gsap';
 // Get API base URL (same logic as api.js)
 const getApiBaseUrl = () => {
+  // Use environment variable if set (production should have this)
   if (process.env.REACT_APP_API_URL) {
     return process.env.REACT_APP_API_URL;
   }
 
+  // Fallback based on environment
   if (process.env.NODE_ENV === 'production') {
-    return '/api';
+    // For production, use relative URLs that will be handled by _redirects
+    return '';
   }
 
-  const apiBaseUrl = process.env.REACT_APP_API_URL || "http://localhost:8080";
-    return `${apiBaseUrl}/api`;
+  return 'http://localhost:8080'; // Development fallback (API Gateway port)
 };
 
 const TrendingArticles = () => {

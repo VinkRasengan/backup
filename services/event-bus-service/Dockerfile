@@ -23,11 +23,11 @@ COPY . .
 RUN mkdir -p logs && chmod 755 logs
 
 # Expose correct port
-EXPOSE 3009
+EXPOSE 3007
 
 # Health check with longer timeout for development
 HEALTHCHECK --interval=60s --timeout=10s --start-period=30s --retries=5 \
-    CMD curl -f http://localhost:3009/health || exit 1
+    CMD curl -f http://localhost:3007/health || exit 1
 
 # Start the service in development mode
 CMD ["npm", "start"]

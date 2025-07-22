@@ -2,6 +2,32 @@
 
 This directory contains deployment scripts for the Anti-Fraud Platform that work across Windows, macOS, and Linux.
 
+## 🐳 **NEW: Simplified Docker Deployment**
+
+The platform now uses a **single docker-compose.yml** for all Docker deployments:
+
+```bash
+# Start full Docker stack (recommended)
+npm run docker:start
+
+# Stop Docker stack
+npm run docker:stop
+
+# View logs
+npm run docker:logs
+
+# Infrastructure only (for development)
+npm run infrastructure:start
+```
+
+**Key Benefits:**
+- ✅ Single source of truth
+- ✅ Production-ready with KurrentDB
+- ✅ Complete monitoring stack
+- ✅ No more confusion about which compose file to use
+
+📖 **See:** [Docker Deployment Guide](../docs/DOCKER_DEPLOYMENT_GUIDE.md)
+
 ## 📋 Available Scripts
 
 ### 🎯 Universal Deployment Script

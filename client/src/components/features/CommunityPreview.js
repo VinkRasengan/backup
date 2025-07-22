@@ -44,7 +44,7 @@ const CommunityPreview = () => {
         const headers = { 'Content-Type': 'application/json' };
         if (token) headers['Authorization'] = `Bearer ${token}`;
 
-        const response = await fetch(`${getApiBaseUrl()}/api/community/links?limit=4&sort=trending`, { headers });
+        const response = await fetch(`${getApiBaseUrl()}/community/posts?limit=4&sort=trending`, { headers });
 
         console.log('📡 Community API Response status:', response.status);
 

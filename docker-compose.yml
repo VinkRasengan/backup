@@ -29,9 +29,9 @@ services:
       - factcheck-network
     restart: unless-stopped
 
-  # Event Store - KurrentDB (EventStore DB)
+  # EventStore DB (KurrentDB Compatible)
   kurrentdb:
-    image: eventstore/eventstore:23.10.0-jammy
+    image: eventstore/eventstore:24.2.0-jammy
     container_name: factcheck-kurrentdb
     ports:
       - "2113:2113"  # HTTP API
@@ -40,19 +40,23 @@ services:
       - EVENTSTORE_CLUSTER_SIZE=1
       - EVENTSTORE_RUN_PROJECTIONS=All
       - EVENTSTORE_START_STANDARD_PROJECTIONS=true
-      - EVENTSTORE_EXT_TCP_PORT=1113
       - EVENTSTORE_HTTP_PORT=2113
       - EVENTSTORE_INSECURE=true
-      - EVENTSTORE_ENABLE_EXTERNAL_TCP=true
       - EVENTSTORE_ENABLE_ATOM_PUB_OVER_HTTP=true
-      - EVENTSTORE_MEM_DB=true
+      - EVENTSTORE_MEM_DB=false
       - EVENTSTORE_LOG_LEVEL=Information
+      - EVENTSTORE_ALLOW_UNKNOWN_OPTIONS=true
     volumes:
       - kurrentdb-data:/var/lib/eventstore
       - kurrentdb-logs:/var/log/eventstore
     networks:
       - factcheck-network
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:2113/health/live || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   # Dedicated Event Bus Service
   event-bus-service:
@@ -60,6 +64,7 @@ services:
     container_name: factcheck-event-bus
     ports:
       - "3007:3007"
+    env_file: .env
     environment:
       - NODE_ENV=production
       - PORT=3007
@@ -75,46 +80,40 @@ services:
       - factcheck-network
     restart: unless-stopped
 
-  api-gateway:
-    build: ./services/api-gateway
-    ports: ["8080:8080"]
-    environment:
-      - NODE_ENV=production
-      - EVENT_BUS_SERVICE_URL=http://event-bus-service:3007
-      - CIRCUIT_BREAKER_ENABLED=true
-      - AUTH_SERVICE_URL=http://auth-service:3001
-      - LINK_SERVICE_URL=http://link-service:3002
-      - COMMUNITY_SERVICE_URL=http://community-service:3003
-      - CHAT_SERVICE_URL=http://chat-service:3004
-      - NEWS_SERVICE_URL=http://news-service:3005
-      - ADMIN_SERVICE_URL=http://admin-service:3006
-    depends_on:
-      - event-bus-service
-      - auth-service
-      - link-service
-      - community-service
-    networks:
-      - factcheck-network
+
 
   auth-service:
     build: ./services/auth-service
     ports: ["3001:3001"]
+    container_name: factcheck-auth-service
+    env_file: .env
     environment:
-      - NODE_ENV=production
+      - NODE_ENV=development
+      - PORT=3001
+      - REDIS_HOST=redis
+      - REDIS_URL=redis://:antifraud123@redis:6379
       - EVENT_BUS_SERVICE_URL=http://event-bus-service:3007
       - EVENT_BUS_TIMEOUT=5000
+      - FIREBASE_PROJECT_ID=${FIREBASE_PROJECT_ID}
+      - FIREBASE_CLIENT_EMAIL=${FIREBASE_CLIENT_EMAIL}
+      - FIREBASE_PRIVATE_KEY=${FIREBASE_PRIVATE_KEY}
+      - JWT_SECRET=${JWT_SECRET}
     depends_on:
+      - redis
       - event-bus-service
     networks:
       - factcheck-network
+    restart: unless-stopped
   
   prometheus:
     image: prom/prometheus
     ports: ["9090:9090"]
-  
+    container_name: factcheck-prometheus
+
   grafana:
     image: grafana/grafana
     ports: ["3010:3000"]
+    container_name: factcheck-grafana
     environment:
       - GF_SECURITY_ADMIN_PASSWORD=admin
 
@@ -122,20 +121,35 @@ services:
     build: ./services/link-service
     ports:
       - "3002:3002"
+    container_name: factcheck-link-service
+    env_file: .env
     environment:
-      - NODE_ENV=production
+      - NODE_ENV=development
+      - PORT=3002
       - REDIS_HOST=redis
-      - REDIS_URL=redis://redis:6379
+      - REDIS_URL=redis://:antifraud123@redis:6379
       - EVENT_BUS_ENABLED=true
+      - EVENT_BUS_SERVICE_URL=http://event-bus-service:3007
+      - FIREBASE_PROJECT_ID=${FIREBASE_PROJECT_ID}
+      - FIREBASE_CLIENT_EMAIL=${FIREBASE_CLIENT_EMAIL}
+      - FIREBASE_PRIVATE_KEY=${FIREBASE_PRIVATE_KEY}
+      - JWT_SECRET=${JWT_SECRET}
     depends_on:
       - redis
+      - event-bus-service
+    networks:
+      - factcheck-network
+    restart: unless-stopped
 
   community-service:
     build: ./services/community-service
     ports:
       - "3003:3003"
+    container_name: factcheck-community-service
+    env_file: .env
     environment:
-      - NODE_ENV=production
+      - NODE_ENV=development
+      - PORT=3003
       - REDIS_HOST=redis
       - REDIS_URL=redis://:antifraud123@redis:6379
       - KURRENTDB_URL=esdb://kurrentdb:2113?tls=false
@@ -144,47 +158,169 @@ services:
       - CQRS_ENABLED=true
       - EVENT_BUS_REDIS_ENABLED=true
       - EVENT_BUS_KURRENT_ENABLED=true
+      - EVENT_BUS_SERVICE_URL=http://event-bus-service:3007
+      - FIREBASE_PROJECT_ID=${FIREBASE_PROJECT_ID}
+      - FIREBASE_CLIENT_EMAIL=${FIREBASE_CLIENT_EMAIL}
+      - FIREBASE_PRIVATE_KEY=${FIREBASE_PRIVATE_KEY}
+      - JWT_SECRET=${JWT_SECRET}
     depends_on:
       - redis
       - kurrentdb
+      - event-bus-service
     networks:
       - factcheck-network
+    restart: unless-stopped
 
   chat-service:
     build: ./services/chat-service
     ports:
       - "3004:3004"
+    container_name: factcheck-chat-service
+    env_file: .env
     environment:
-      - NODE_ENV=production
+      - NODE_ENV=development
+      - PORT=3004
       - REDIS_HOST=redis
-      - REDIS_URL=redis://redis:6379
+      - REDIS_URL=redis://:antifraud123@redis:6379
+      - EVENT_BUS_SERVICE_URL=http://event-bus-service:3007
+      - FIREBASE_PROJECT_ID=${FIREBASE_PROJECT_ID}
+      - FIREBASE_CLIENT_EMAIL=${FIREBASE_CLIENT_EMAIL}
+      - FIREBASE_PRIVATE_KEY=${FIREBASE_PRIVATE_KEY}
+      - JWT_SECRET=${JWT_SECRET}
     depends_on:
       - redis
+      - event-bus-service
+    networks:
+      - factcheck-network
+    restart: unless-stopped
 
   news-service:
     build: ./services/news-service
     ports:
       - "3005:3005"
+    container_name: factcheck-news-service
+    env_file: .env
     environment:
-      - NODE_ENV=production
+      - NODE_ENV=development
+      - PORT=3005
       - REDIS_HOST=redis
-      - REDIS_URL=redis://redis:6379
+      - REDIS_URL=redis://:antifraud123@redis:6379
+      - EVENT_BUS_SERVICE_URL=http://event-bus-service:3007
+      - FIREBASE_PROJECT_ID=${FIREBASE_PROJECT_ID}
+      - FIREBASE_CLIENT_EMAIL=${FIREBASE_CLIENT_EMAIL}
+      - FIREBASE_PRIVATE_KEY=${FIREBASE_PRIVATE_KEY}
+      - JWT_SECRET=${JWT_SECRET}
     depends_on:
       - redis
+      - event-bus-service
+    networks:
+      - factcheck-network
+    restart: unless-stopped
 
   admin-service:
     build: ./services/admin-service
     ports:
       - "3006:3006"
+    container_name: factcheck-admin-service
+    env_file: .env
     environment:
-      - NODE_ENV=production
+      - NODE_ENV=development
+      - PORT=3006
       - REDIS_HOST=redis
-      - REDIS_URL=redis://redis:6379
+      - REDIS_URL=redis://:antifraud123@redis:6379
+      - EVENT_BUS_SERVICE_URL=http://event-bus-service:3007
+      - FIREBASE_PROJECT_ID=${FIREBASE_PROJECT_ID}
+      - FIREBASE_CLIENT_EMAIL=${FIREBASE_CLIENT_EMAIL}
+      - FIREBASE_PRIVATE_KEY=${FIREBASE_PRIVATE_KEY}
+      - JWT_SECRET=${JWT_SECRET}
     depends_on:
       - redis
       - kurrentdb
+      - event-bus-service
     networks:
       - factcheck-network
+    restart: unless-stopped
+
+  # ETL Service (Event Sourcing)
+  etl-service:
+    build: ./services/etl-service
+    ports:
+      - "3008:3008"
+    container_name: factcheck-etl-service
+    env_file: .env
+    environment:
+      - NODE_ENV=development
+      - PORT=3008
+      - REDIS_HOST=redis
+      - REDIS_URL=redis://:antifraud123@redis:6379
+      - EVENT_BUS_SERVICE_URL=http://event-bus-service:3007
+      - EVENT_STORE_ENABLED=true
+    depends_on:
+      - redis
+      - event-bus-service
+    networks:
+      - factcheck-network
+    restart: unless-stopped
+
+  # API Gateway
+  api-gateway:
+    build: ./services/api-gateway
+    ports:
+      - "8080:8080"
+    container_name: factcheck-api-gateway
+    env_file: .env
+    environment:
+      - NODE_ENV=development
+      - PORT=8080
+      - DOCKER_ENV=true
+      - REDIS_HOST=redis
+      - REDIS_URL=redis://:antifraud123@redis:6379
+      - AUTH_SERVICE_URL=http://auth-service:3001
+      - LINK_SERVICE_URL=http://link-service:3002
+      - COMMUNITY_SERVICE_URL=http://community-service:3003
+      - CHAT_SERVICE_URL=http://chat-service:3004
+      - NEWS_SERVICE_URL=http://news-service:3005
+      - ADMIN_SERVICE_URL=http://admin-service:3006
+      - EVENT_BUS_SERVICE_URL=http://event-bus-service:3007
+      - ETL_SERVICE_URL=http://etl-service:3008
+    depends_on:
+      - redis
+      - auth-service
+      - link-service
+      - community-service
+      - chat-service
+      - news-service
+      - admin-service
+      - event-bus-service
+      - etl-service
+    networks:
+      - factcheck-network
+    restart: unless-stopped
+
+  # Frontend (React)
+  frontend:
+    build:
+      context: ./client
+      target: dev
+    ports:
+      - "3000:3000"
+    container_name: factcheck-frontend
+    env_file: .env
+    environment:
+      - NODE_ENV=development
+      - REACT_APP_API_URL=http://localhost:8080
+      - REACT_APP_WS_URL=ws://localhost:8080
+      - REACT_APP_EVENT_BUS_URL=http://localhost:3007
+      - REACT_APP_FIREBASE_API_KEY=${REACT_APP_FIREBASE_API_KEY}
+      - REACT_APP_FIREBASE_AUTH_DOMAIN=${REACT_APP_FIREBASE_AUTH_DOMAIN}
+      - REACT_APP_FIREBASE_PROJECT_ID=${REACT_APP_FIREBASE_PROJECT_ID}
+      - REACT_APP_ENVIRONMENT=development
+      - REACT_APP_USE_LOCAL_API=true
+    depends_on:
+      - api-gateway
+    networks:
+      - factcheck-network
+    restart: unless-stopped
 
 # Networks
 networks:

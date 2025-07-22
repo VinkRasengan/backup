@@ -6,7 +6,10 @@
   "scripts": {
     "start": "node app.js",
     "dev": "nodemon app.js",
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "test:unit": "jest --testPathPattern=tests --testPathIgnorePatterns=integration",
     "cache:test": "node test-redis-connection.js",
     "cache:demo": "node demo-redis-cache.js",
     "cache:performance": "node test-cache-performance.js"

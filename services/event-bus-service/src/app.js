@@ -16,6 +16,8 @@ const EventBusManager = require('./managers/eventBusManager');
 const EventValidator = require('./validators/eventValidator');
 const MetricsCollector = require('./utils/metricsCollector');
 const HealthChecker = require('./utils/healthChecker');
+const KurrentEventStore = require('./eventStore/kurrentEventStore');
+const createEventStoreRoutes = require('./routes/eventStore');
 
 class EventBusService {
   constructor() {
@@ -27,6 +29,7 @@ class EventBusService {
     this.serviceName = 'event-bus-service';
     
     // Initialize components
+    this.eventStore = new KurrentEventStore({ serviceName: this.serviceName });
     this.eventBusManager = new EventBusManager();
     this.eventValidator = new EventValidator();
     this.metricsCollector = new MetricsCollector();
@@ -102,11 +105,24 @@ class EventBusService {
   }
 
   setupRoutes() {
+    // Event Store API routes
+    this.app.use('/api/eventstore', createEventStoreRoutes(this.eventStore));
+
     // Health check
     this.app.get('/health', async (req, res) => {
       try {
         const health = await this.healthChecker.getHealthResponse();
-        res.status(health.status === 'healthy' ? 200 : 503).json(health);
+        const eventStoreHealth = await this.eventStore.healthCheck();
+
+        const combinedHealth = {
+          ...health,
+          eventStore: eventStoreHealth
+        };
+
+        const isHealthy = health.status === 'healthy' &&
+                         (eventStoreHealth.status === 'healthy' || eventStoreHealth.status === 'degraded');
+
+        res.status(isHealthy ? 200 : 503).json(combinedHealth);
       } catch (error) {
         res.status(500).json({
           status: 'error',
@@ -425,6 +441,10 @@ class EventBusService {
 
   async start() {
     try {
+      // Initialize Event Store first
+      const eventStoreResult = await this.eventStore.initialize();
+      logger.info('Event Store initialization result', eventStoreResult);
+
       // Initialize Event Bus Manager
       await this.eventBusManager.initialize();
 
@@ -433,9 +453,12 @@ class EventBusService {
         logger.info(`Event Bus Service started on port ${this.port}`, {
           port: this.port,
           environment: process.env.NODE_ENV || 'development',
-          service: this.serviceName
+          service: this.serviceName,
+          eventStoreMode: eventStoreResult.mode
         });
         console.log(`🚀 Event Bus Service running on http://localhost:${this.port}`);
+        console.log(`📊 Event Store API: http://localhost:${this.port}/api/eventstore`);
+        console.log(`🔍 Event Store Mode: ${eventStoreResult.mode}`);
       });
 
       // Graceful shutdown

@@ -1,0 +1,142 @@
+# =============================================================================
+# Render Deployment Configuration - Event Bus Service
+# Event Sourcing with KurrentDB
+# =============================================================================
+
+services:
+  - type: web
+    name: factcheck-event-bus
+    env: node
+    plan: free
+    region: singapore
+    rootDir: services/event-bus-service
+    buildCommand: npm install
+    startCommand: npm start
+    
+    # Health check configuration
+    healthCheckPath: /health
+    
+    # Environment variables
+    envVars:
+      - key: NODE_ENV
+        value: production
+      
+      - key: PORT
+        value: "10000"
+      
+      # Event Sourcing Configuration
+      - key: EVENT_STORE_ENABLED
+        value: "true"
+
+      - key: KURRENTDB_ENABLED
+        value: "false"
+
+      - key: CQRS_ENABLED
+        value: "true"
+
+      # EventStore Cloud Configuration (Free Trial)
+      - key: EVENTSTORE_CLOUD_URL
+        sync: false  # Set this in Render dashboard as secret
+
+      - key: EVENTSTORE_CLOUD_USERNAME
+        value: "admin"
+
+      - key: EVENTSTORE_CLOUD_PASSWORD
+        sync: false  # Set this in Render dashboard as secret
+      
+      # Performance Settings
+      - key: KURRENTDB_BATCH_SIZE
+        value: "500"
+      
+      - key: KURRENTDB_RETRY_ATTEMPTS
+        value: "5"
+      
+      - key: KURRENTDB_TIMEOUT
+        value: "15000"
+      
+      - key: KURRENTDB_SNAPSHOT_FREQUENCY
+        value: "100"
+      
+      # Redis Configuration
+      - key: REDIS_URL
+        value: "redis://default:9Z17Dg85uSFhNDv0RnTDSxH2iwc6ZNN6@redis-15249.c258.us-east-1-4.ec2.redns.redis-cloud.com:15249"
+      
+      - key: REDIS_HOST
+        value: "redis-15249.c258.us-east-1-4.ec2.redns.redis-cloud.com"
+      
+      - key: REDIS_PORT
+        value: "15249"
+      
+      - key: REDIS_PASSWORD
+        sync: false  # Set this in Render dashboard as secret
+      
+      - key: REDIS_USERNAME
+        value: "default"
+      
+      # Event Bus Configuration
+      - key: ENABLE_EVENT_DRIVEN
+        value: "true"
+      
+      - key: EVENT_BUS_REDIS_ENABLED
+        value: "true"
+      
+      - key: EVENT_BUS_RABBITMQ_ENABLED
+        value: "false"
+      
+      - key: STANDALONE_MODE
+        value: "false"
+      
+      # CORS Configuration
+      - key: ALLOWED_ORIGINS
+        value: "https://factcheck-frontend.onrender.com,https://factcheck-api.onrender.com"
+      
+      # Logging
+      - key: LOG_LEVEL
+        value: "info"
+      
+      # Security
+      - key: ENABLE_RATE_LIMITING
+        value: "true"
+      
+      - key: RATE_LIMIT_MAX_REQUESTS
+        value: "1000"
+      
+      - key: RATE_LIMIT_WINDOW_MS
+        value: "900000"
+      
+      # Monitoring
+      - key: HEALTH_CHECK_ENABLED
+        value: "true"
+      
+      - key: METRICS_ENABLED
+        value: "true"
+      
+      - key: PERFORMANCE_MONITORING
+        value: "true"
+
+# =============================================================================
+# Deployment Notes
+# =============================================================================
+# 
+# 1. Before deploying, set these secret environment variables in Render dashboard:
+#    - KURRENTDB_API_KEY: Your KurrentDB Cloud API key
+#    - REDIS_PASSWORD: Your Redis Cloud password
+# 
+# 2. KurrentDB Cloud Setup:
+#    - Sign up at https://kurrent.io
+#    - Create a new database: factcheck-events-prod
+#    - Get your API key and URL
+#    - Update KURRENTDB_URL and KURRENTDB_API_KEY
+# 
+# 3. Redis Cloud is already configured with existing credentials
+# 
+# 4. Health check endpoint: https://factcheck-event-bus.onrender.com/health
+# 
+# 5. Event Store API: https://factcheck-event-bus.onrender.com/api/eventstore
+# 
+# 6. Monitoring endpoints:
+#    - Health: /health
+#    - Stats: /api/eventstore/stats
+#    - Metrics: /metrics (if enabled)
+# 
+# =============================================================================

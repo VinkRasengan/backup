@@ -110,30 +110,38 @@ app.get('/', (req, res) => {
     });
 });
 
-// Service proxy configurations
+// Service proxy configurations - support both localhost and Docker container names
+const isDocker = process.env.DOCKER_ENV === 'true';
+const getServiceHost = (serviceName, port) => {
+    if (isDocker) {
+        return `http://factcheck-${serviceName}-service:${port}`;
+    }
+    return `http://localhost:${port}`;
+};
+
 const services = {
     auth: {
-        target: `http://localhost:${process.env.AUTH_SERVICE_PORT || 3001}`,
+        target: getServiceHost('auth', process.env.AUTH_SERVICE_PORT || 3001),
         pathRewrite: { '^/auth': '' }
     },
     link: {
-        target: `http://localhost:${process.env.LINK_SERVICE_PORT || 3002}`,
+        target: getServiceHost('link', process.env.LINK_SERVICE_PORT || 3002),
         pathRewrite: { '^/link': '' }
     },
     community: {
-        target: `http://localhost:${process.env.COMMUNITY_SERVICE_PORT || 3003}`,
+        target: getServiceHost('community', process.env.COMMUNITY_SERVICE_PORT || 3003),
         pathRewrite: { '^/community': '' }
     },
     chat: {
-        target: `http://localhost:${process.env.CHAT_SERVICE_PORT || 3004}`,
+        target: getServiceHost('chat', process.env.CHAT_SERVICE_PORT || 3004),
         pathRewrite: { '^/chat': '' }
     },
     news: {
-        target: `http://localhost:${process.env.NEWS_SERVICE_PORT || 3005}`,
+        target: getServiceHost('news', process.env.NEWS_SERVICE_PORT || 3005),
         pathRewrite: { '^/news': '' }
     },
     admin: {
-        target: `http://localhost:${process.env.ADMIN_SERVICE_PORT || 3006}`,
+        target: getServiceHost('admin', process.env.ADMIN_SERVICE_PORT || 3006),
         pathRewrite: { '^/admin': '' }
     }
 };

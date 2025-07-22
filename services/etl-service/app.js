@@ -12,9 +12,23 @@ const healthCheck = require('./src/utils/health-check');
 const etlManager = require('./src/services/etlManager');
 const pipelineRoutes = require('./src/routes/pipelines');
 const dataRoutes = require('./src/routes/data');
+// Event Sourcing integration
+let eventStoreClient = null;
+if (process.env.EVENT_STORE_ENABLED === 'true') {
+  try {
+    const EventStoreClient = require('./src/utils/eventStoreClient');
+    eventStoreClient = new EventStoreClient({
+      serviceUrl: process.env.EVENT_BUS_SERVICE_URL || 'http://localhost:3007',
+      serviceName: 'etl-service'
+    });
+    logger.info('Event Store client initialized for ETL service');
+  } catch (error) {
+    logger.warn('Event Store client not available, continuing without event sourcing', { error: error.message });
+  }
+}
 
 const app = express();
-const PORT = process.env.ETL_SERVICE_PORT || 3011;
+const PORT = process.env.PORT || process.env.ETL_SERVICE_PORT || 3008;
 
 // Security middleware
 app.use(helmet());
