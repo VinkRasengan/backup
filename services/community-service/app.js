@@ -177,6 +177,9 @@ const votesRoutes = require('./src/routes/votes');
 const statsRoutes = require('./src/routes/stats');
 const cacheRoutes = require('./src/routes/cache');
 
+// Import authentication middleware
+const { authMiddleware } = require('./src/middleware/auth');
+
 // Import cache manager
 const { communityCache } = require('./src/utils/communityCache');
 
@@ -195,8 +198,9 @@ app.use('/api/posts', postsRoutes);
 app.use('/api/comments', commentsRoutes);
 app.use('/comments', commentsRoutes);
 app.use('/api/reports', reportsRoutes);
-app.use('/api/votes', votesRoutes);
-app.use('/votes', votesRoutes);
+// Apply authentication middleware to votes routes
+app.use('/api/votes', authMiddleware, votesRoutes);
+app.use('/votes', authMiddleware, votesRoutes);
 app.use('/api/stats', statsRoutes);
 app.use('/api/cache', cacheRoutes); // Cache management routes
 
