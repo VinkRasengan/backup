@@ -94,7 +94,7 @@
     "dev:gateway": "cd services/api-gateway && npm run dev",
     "// === SETUP & INSTALLATION ===": "",
     "setup": "npm install && npm run install:all && npm run env:setup",
-    "setup:full": "node scripts/setup-full-docker.js",
+    "setup:full": "npm install && npm run install:all",
     "setup:test": "node scripts/test-docker-setup.js",
     "setup:microservices": "node scripts/setup-microservices.js",
     "setup:validate": "node scripts/validate-new-dev-setup.js",
