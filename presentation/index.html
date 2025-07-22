@@ -277,9 +277,9 @@
                     <div>
                         <h4 style="color: #87ceeb;">Event Publisher</h4>
                         <ul style="font-size: 1.1rem;">
-                            <li>RabbitMQ</li>
-                            <li>Redis Pub/Sub</li>
-                            <li>Local Storage</li>
+                            <li>RabbitMQ (Local)</li>
+                            <li>Redis Cloud (Prod)</li>
+                            <li>EventStore Persistence</li>
                         </ul>
                     </div>
                     <div>
@@ -294,7 +294,48 @@
             </div>
         </div>
 
-        <!-- Slide 6: Demo Time -->
+        <!-- Slide 6: Deployment Architecture -->
+        <div class="slide">
+            <h2>🏗️ Deployment Architecture</h2>
+            <div class="demo-section">
+                <h3>Development vs Production</h3>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 3rem; margin-top: 2rem;">
+                    <div>
+                        <h4 style="color: #87ceeb;">🔧 Development</h4>
+                        <ul style="font-size: 1.1rem;">
+                            <li>Docker Compose</li>
+                            <li>Local RabbitMQ</li>
+                            <li>Local Redis</li>
+                            <li>EventStore Container</li>
+                            <li>npm run deploy:local</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h4 style="color: #87ceeb;">🚀 Production</h4>
+                        <ul style="font-size: 1.1rem;">
+                            <li>Render Platform</li>
+                            <li>Redis Cloud</li>
+                            <li>EventStore Cloud</li>
+                            <li>Auto-scaling</li>
+                            <li>Health Monitoring</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="code-block">
+# Development Setup
+docker-compose up -d
+npm run setup:full
+npm start
+
+# Production Deployment
+render.yaml configurations
+Environment variables
+Health check endpoints
+            </div>
+        </div>
+
+        <!-- Slide 7: Demo Time -->
         <div class="slide">
             <h2>🎬 DEMO TIME!</h2>
             <div class="demo-section">
@@ -419,30 +460,133 @@ curl http://localhost:3009/metrics
             </div>
         </div>
 
-        <!-- Slide 10: Thank You -->
+        <!-- Slide 10: Deployment Strategy -->
+        <div class="slide">
+            <h1>🚀 Deployment Strategy</h1>
+            <div class="demo-section">
+                <h3>Production Deployment on Render</h3>
+                <ul style="font-size: 1.2rem; text-align: left;">
+                    <li><span class="emoji">🌐</span> <strong>Event Bus Service:</strong> factcheck-event-bus.onrender.com</li>
+                    <li><span class="emoji">☁️</span> <strong>Redis Cloud:</strong> Managed Redis instance for pub/sub</li>
+                    <li><span class="emoji">📊</span> <strong>EventStore Cloud:</strong> Event persistence layer</li>
+                    <li><span class="emoji">🔄</span> <strong>Auto-scaling:</strong> Based on event load</li>
+                </ul>
+            </div>
+            <div class="code-block">
+# Production Environment Variables
+EVENT_STORE_ENABLED=true
+REDIS_URL=redis://redis-cloud-instance
+EVENTSTORE_CLOUD_URL=esdb://cloud-instance
+CQRS_ENABLED=true
+            </div>
+            <div class="architecture-diagram">
+                <h3>Infrastructure Components</h3>
+                <p><span class="highlight">Redis Cloud:</span> Pub/Sub + Caching</p>
+                <p><span class="highlight">EventStore:</span> Event Persistence</p>
+                <p><span class="highlight">Render:</span> Container Orchestration</p>
+                <p><span class="highlight">Health Checks:</span> /health endpoints</p>
+            </div>
+        </div>
+
+        <!-- Slide 11: Production Considerations -->
+        <div class="slide">
+            <h1>⚙️ Production Considerations</h1>
+            <div class="demo-section">
+                <h3>Monitoring & Observability</h3>
+                <ul style="font-size: 1.2rem; text-align: left;">
+                    <li><span class="emoji">📊</span> <strong>Health Checks:</strong> /health endpoint for all services</li>
+                    <li><span class="emoji">📈</span> <strong>Metrics:</strong> Event throughput, latency, error rates</li>
+                    <li><span class="emoji">🔍</span> <strong>Correlation IDs:</strong> End-to-end request tracing</li>
+                    <li><span class="emoji">🚨</span> <strong>Alerting:</strong> Dead letter queues, service failures</li>
+                </ul>
+            </div>
+            <div class="architecture-diagram">
+                <h3>Reliability Features</h3>
+                <p><span class="highlight">Retry Logic:</span> 5 attempts with backoff</p>
+                <p><span class="highlight">Dead Letter Queue:</span> Failed event handling</p>
+                <p><span class="highlight">Circuit Breaker:</span> Fault tolerance</p>
+                <p><span class="highlight">Snapshots:</span> Every 100 events for performance</p>
+            </div>
+        </div>
+
+        <!-- Slide 12: Event Flow in Production -->
+        <div class="slide">
+            <h1>🔄 Event Flow in Production</h1>
+            <div class="demo-section">
+                <h3>Multi-Channel Event Distribution</h3>
+                <div class="service-grid">
+                    <div class="service-card">
+                        <h3><span class="emoji">📚</span> EventStore</h3>
+                        <ul>
+                            <li>Persistent event storage</li>
+                            <li>Event sourcing support</li>
+                            <li>Time-travel queries</li>
+                        </ul>
+                    </div>
+                    <div class="service-card">
+                        <h3><span class="emoji">🐰</span> RabbitMQ</h3>
+                        <ul>
+                            <li>Reliable message delivery</li>
+                            <li>Dead letter queues</li>
+                            <li>Message persistence</li>
+                        </ul>
+                    </div>
+                    <div class="service-card">
+                        <h3><span class="emoji">🔴</span> Redis</h3>
+                        <ul>
+                            <li>Fast pub/sub messaging</li>
+                            <li>Real-time notifications</li>
+                            <li>Session caching</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="code-block">
+# Event publishing to all channels
+1. Store in EventStore (persistent)
+2. Publish to RabbitMQ (reliable)
+3. Publish to Redis (fast)
+4. Notify local subscribers
+            </div>
+        </div>
+
+        <!-- Slide 13: Thank You -->
         <div class="slide">
             <h1>🙏 Thank You!</h1>
             <div class="demo-section">
-                <h3>Resources & Links</h3>
-                <ul style="font-size: 1.2rem;">
+                <h3>Development Environment</h3>
+                <ul style="font-size: 1.1rem;">
                     <li><span class="emoji">🌐</span> Live System: <span class="highlight">http://localhost:3000</span></li>
                     <li><span class="emoji">🔧</span> Event Bus: <span class="highlight">http://localhost:3009</span></li>
                     <li><span class="emoji">🐰</span> RabbitMQ UI: <span class="highlight">http://localhost:15672</span></li>
                     <li><span class="emoji">📊</span> API Gateway: <span class="highlight">http://localhost:8080</span></li>
                 </ul>
             </div>
+            <div class="demo-section">
+                <h3>Production Environment</h3>
+                <ul style="font-size: 1.1rem;">
+                    <li><span class="emoji">🚀</span> Event Bus: <span class="highlight">factcheck-event-bus.onrender.com</span></li>
+                    <li><span class="emoji">🔐</span> Auth Service: <span class="highlight">factcheck-auth.onrender.com</span></li>
+                    <li><span class="emoji">🔗</span> Link Service: <span class="highlight">factcheck-link.onrender.com</span></li>
+                    <li><span class="emoji">👥</span> Community: <span class="highlight">factcheck-community.onrender.com</span></li>
+                </ul>
+            </div>
             <div class="code-block">
-# Quick test commands
+# Development Commands
 npm run deploy:local
 node presentation/demo-events.js
 curl http://localhost:3009/health
+
+# Production Health Checks
+curl https://factcheck-event-bus.onrender.com/health
+curl https://factcheck-auth.onrender.com/health
             </div>
             <h2 style="margin-top: 2rem;">Questions? 🤔</h2>
         </div>
     </div>
 
     <div class="slide-counter">
-        <span id="current-slide">1</span> / <span id="total-slides">10</span>
+        <span id="current-slide">1</span> / <span id="total-slides">14</span>
     </div>
 
     <div class="navigation">

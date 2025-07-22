@@ -1,0 +1,28 @@
+{
+  "timestamp": "2025-07-22T14:01:55.915Z",
+  "summary": {
+    "total": 2,
+    "healthy": 2,
+    "unhealthy": 0,
+    "successRate": "100.0"
+  },
+  "services": [
+    {
+      "service": "api-gateway",
+      "url": "https://backup-zhhs.onrender.com/health",
+      "status": "healthy",
+      "httpStatus": 404,
+      "responseTime": "510ms",
+      "timestamp": "2025-07-22T14:01:54.988Z",
+      "serviceInfo": {}
+    },
+    {
+      "service": "frontend",
+      "url": "https://frontend-eklp.onrender.com",
+      "status": "healthy",
+      "httpStatus": 404,
+      "responseTime": "668ms",
+      "timestamp": "2025-07-22T14:01:55.195Z"
+    }
+  ]
+}

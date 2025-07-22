@@ -1,0 +1,212 @@
+{
+  "timestamp": "2025-07-22T14:23:28.217Z",
+  "dockerInfrastructure": {
+    "kurrentdb": {
+      "status": "healthy",
+      "response": 204
+    },
+    "rabbitmq": {
+      "status": "healthy",
+      "response": 200
+    },
+    "prometheus": {
+      "status": "healthy",
+      "response": 200
+    },
+    "grafana": {
+      "status": "healthy",
+      "response": 200
+    }
+  },
+  "eventBusKurrentDB": {
+    "status": "fallback",
+    "connected": false,
+    "mode": "fallback",
+    "reason": "KurrentDB connection failed"
+  },
+  "eventFlow": {
+    "status": "success",
+    "eventPublished": true,
+    "eventAppended": true,
+    "eventRead": true,
+    "streamName": "docker-test-1753194208267"
+  },
+  "serviceIntegration": {
+    "event-bus": {
+      "status": "healthy",
+      "eventDriven": false,
+      "eventBusConnected": false,
+      "dockerized": true
+    },
+    "auth": {
+      "status": "healthy",
+      "eventDriven": true,
+      "eventBusConnected": {
+        "status": "healthy",
+        "eventBusService": true,
+        "stats": {
+          "published": 0,
+          "consumed": 0,
+          "failed": 0,
+          "retries": 0,
+          "isConnected": true,
+          "pendingEvents": 0,
+          "subscriptions": 6,
+          "wsConnected": true
+        }
+      },
+      "dockerized": true
+    },
+    "community": {
+      "status": "healthy",
+      "eventDriven": true,
+      "eventBusConnected": true,
+      "dockerized": true
+    },
+    "link": {
+      "status": "healthy",
+      "eventDriven": false,
+      "eventBusConnected": false,
+      "dockerized": true
+    },
+    "chat": {
+      "status": "healthy",
+      "eventDriven": false,
+      "eventBusConnected": false,
+      "dockerized": true
+    },
+    "news": {
+      "status": "healthy",
+      "eventDriven": false,
+      "eventBusConnected": false,
+      "dockerized": true
+    },
+    "admin": {
+      "status": "healthy",
+      "eventDriven": false,
+      "eventBusConnected": false,
+      "dockerized": true
+    },
+    "gateway": {
+      "status": "healthy",
+      "eventDriven": false,
+      "eventBusConnected": false,
+      "dockerized": true
+    },
+    "frontend": {
+      "status": "unhealthy",
+      "error": "Request failed with status code 404",
+      "dockerized": true
+    }
+  },
+  "containerStatus": {
+    "status": "success",
+    "containers": {
+      "admin-service": {
+        "status": "running",
+        "health": "healthy",
+        "name": "factcheck-admin-service",
+        "image": "backup-admin-service"
+      },
+      "api-gateway": {
+        "status": "running",
+        "health": "healthy",
+        "name": "factcheck-api-gateway",
+        "image": "backup-api-gateway"
+      },
+      "auth-service": {
+        "status": "running",
+        "health": "healthy",
+        "name": "factcheck-auth-service",
+        "image": "backup-auth-service"
+      },
+      "chat-service": {
+        "status": "running",
+        "health": "healthy",
+        "name": "factcheck-chat-service",
+        "image": "backup-chat-service"
+      },
+      "community-service": {
+        "status": "running",
+        "health": "healthy",
+        "name": "factcheck-community-service",
+        "image": "backup-community-service"
+      },
+      "etl-service": {
+        "status": "running",
+        "health": "unhealthy",
+        "name": "factcheck-etl-service",
+        "image": "backup-etl-service"
+      },
+      "event-bus-service": {
+        "status": "running",
+        "health": "healthy",
+        "name": "factcheck-event-bus",
+        "image": "backup-event-bus-service"
+      },
+      "frontend": {
+        "status": "running",
+        "health": "unknown",
+        "name": "factcheck-frontend",
+        "image": "backup-frontend"
+      },
+      "grafana": {
+        "status": "running",
+        "health": "unknown",
+        "name": "factcheck-grafana",
+        "image": "grafana/grafana"
+      },
+      "kurrentdb": {
+        "status": "running",
+        "health": "healthy",
+        "name": "factcheck-kurrentdb",
+        "image": "eventstore/eventstore:24.2.0-jammy"
+      },
+      "link-service": {
+        "status": "running",
+        "health": "healthy",
+        "name": "factcheck-link-service",
+        "image": "backup-link-service"
+      },
+      "news-service": {
+        "status": "running",
+        "health": "healthy",
+        "name": "factcheck-news-service",
+        "image": "backup-news-service"
+      },
+      "prometheus": {
+        "status": "running",
+        "health": "unknown",
+        "name": "factcheck-prometheus",
+        "image": "prom/prometheus"
+      },
+      "rabbitmq": {
+        "status": "running",
+        "health": "unknown",
+        "name": "factcheck-rabbitmq",
+        "image": "rabbitmq:3.12-management-alpine"
+      },
+      "redis": {
+        "status": "running",
+        "health": "unknown",
+        "name": "factcheck-redis",
+        "image": "redis:7-alpine"
+      }
+    },
+    "summary": {
+      "total": 15,
+      "running": 15,
+      "healthy": 9
+    }
+  },
+  "summary": {
+    "infrastructureHealth": "100%",
+    "eventBusStatus": "Fallback Mode",
+    "eventFlowStatus": "Working",
+    "serviceIntegration": "89%",
+    "containerHealth": "60%",
+    "overallSuccessRate": 80
+  },
+  "deployment": "docker",
+  "kurrentdbEnabled": true
+}
