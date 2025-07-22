@@ -10,6 +10,8 @@
     "start:together": "node scripts/start-fast-together.js",
     "start:legacy": "node scripts/deploy-local-all.js",
     "stop": "node scripts/stop-all.js",
+    "stop:force": "node scripts/stop-windows-force.js",
+    "stop:windows": "node scripts/stop-windows-force.js",
     "restart": "npm run stop && npm run start",
     "// Note: 'start' now uses fast separate mode by default": "",
     "infrastructure:start": "docker-compose -f docker-compose.infrastructure.yml up -d",
