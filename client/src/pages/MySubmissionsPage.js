@@ -19,7 +19,7 @@ import {
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
-const MySubmissionsPage = () => {
+const MySubmissionsPage = ({ className }) => {
   const { isDarkMode } = useTheme();
   const { user } = useAuth();
   const [submissions, setSubmissions] = useState([]);
@@ -123,7 +123,7 @@ const MySubmissionsPage = () => {
   }
 
   return (
-    <div className={`min-h-screen ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
+    <div className={`min-h-screen ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'} ${className}`}>
       <div className="max-w-6xl mx-auto px-4 py-8">
         {/* Header */}
         <motion.div

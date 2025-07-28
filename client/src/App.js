@@ -12,7 +12,7 @@ import LoginPage from './pages/LoginPage';
 import ModernRegisterPage from './pages/ModernRegisterPage';
 import RegistrationSuccessPage from './pages/RegistrationSuccessPage';
 import DashboardPage from './pages/DashboardPage';
-import ProfilePage from './pages/ProfilePage';
+import ProfilePage from './pages/ProfileWithVotedPage';
 import CheckLinkPage from './pages/CheckLinkPage';
 import ChatPage from './pages/ChatPage';
 import AdminDashboard from './pages/AdminDashboard';

@@ -20,7 +20,9 @@ import PageLayout from '../components/layout/PageLayout';
 import { communityAPI } from '../services/api';
 import toast from 'react-hot-toast';
 
-const CommunityPage = () => {
+const CommunityPage = ({
+  className
+}) => {
   const { isDarkMode } = useTheme();
   const { data: communityData, loading, fetchData, dataManager } = useCommunityData();
   const [sortBy, setSortBy] = useState('trending');
@@ -269,6 +271,7 @@ const CommunityPage = () => {
       subtitle="Tin tức và thảo luận từ cộng đồng kiểm chứng thông tin"
       maxWidth="6xl"
       padding="lg"
+      className={className}
     >
       {/* Community Stats */}
       <div ref={headerRef} className="mb-6">

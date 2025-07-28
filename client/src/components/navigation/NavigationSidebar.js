@@ -53,18 +53,18 @@ const NavigationSidebar = ({ isOpen, onToggle }) => {
       path: '/check',
       color: 'green'
     },
-    {
-      id: 'community',
-      label: 'Cộng đồng',
-      icon: Users,
-      path: '/community',
-      color: 'purple',
-      submenu: [
-        { label: 'Bảng tin', path: '/community' },
-        { label: 'Đóng góp', path: '/submit' },
-        { label: 'Bài viết của tôi', path: '/my-submissions' }
-      ]
-    },
+    // {
+    //   id: 'community',
+    //   label: 'Cộng đồng',
+    //   icon: Users,
+    //   path: '/community',
+    //   color: 'purple',
+    //   submenu: [
+    //     { label: 'Bảng tin', path: '/community' },
+    //     { label: 'Đóng góp', path: '/submit' },
+    //     { label: 'Bài viết của tôi', path: '/my-submissions' }
+    //   ]
+    // },
     {
       id: 'chat',
       label: 'Trợ lý AI',
