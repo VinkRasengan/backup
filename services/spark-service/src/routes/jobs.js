@@ -1,189 +1,114 @@
 const express = require('express');
-const { body, param, query, validationResult } = require('express-validator');
+const router = express.Router();
 const sparkManager = require('../services/sparkManager');
 const logger = require('../utils/logger');
 
-const router = express.Router();
-
-// Validation middleware
-const handleValidationErrors = (req, res, next) => {
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    return res.status(400).json({
-      error: 'Validation failed',
-      details: errors.array(),
+// GET /api/v1/jobs - Get all jobs
+router.get('/', async (req, res) => {
+  try {
+    const runningJobs = sparkManager.getRunningJobs();
+    const jobHistory = sparkManager.getJobHistory();
+    
+    res.json({
+      success: true,
+      data: {
+        running: runningJobs,
+        history: jobHistory,
+        stats: sparkManager.getStats()
+      },
       timestamp: new Date().toISOString()
     });
+  } catch (error) {
+    logger.error('Error retrieving jobs:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to retrieve jobs',
+      message: error.message
+    });
   }
-  next();
-};
+});
 
-// Submit a new Spark job
-router.post('/submit', [
-  body('type')
-    .isIn(['fake-news-detection', 'link-analysis', 'community-analytics', 'batch-processing'])
-    .withMessage('Invalid job type'),
-  body('params')
-    .isObject()
-    .withMessage('Params must be an object'),
-  body('priority')
-    .optional()
-    .isIn(['low', 'normal', 'high'])
-    .withMessage('Priority must be low, normal, or high')
-], handleValidationErrors, async (req, res) => {
+// POST /api/v1/jobs - Submit new job
+router.post('/', async (req, res) => {
   try {
-    const { type, params, priority = 'normal' } = req.body;
+    const { type, params = {} } = req.body;
     
-    logger.info('Job submission request', { type, params, priority });
+    if (!type) {
+      return res.status(400).json({
+        success: false,
+        error: 'Job type is required',
+        message: 'Please provide a job type'
+      });
+    }
     
-    const jobConfig = {
-      type,
-      params,
-      priority,
-      submittedBy: req.headers['x-user-id'] || 'anonymous',
-      submittedAt: new Date().toISOString()
-    };
+    logger.info(`Submitting new job of type: ${type}`);
     
-    const result = await sparkManager.submitJob(jobConfig);
+    const result = await sparkManager.submitJob({ type, params });
     
     res.status(201).json({
       success: true,
-      message: 'Job submitted successfully',
       data: result,
+      message: 'Job submitted successfully',
       timestamp: new Date().toISOString()
     });
-    
   } catch (error) {
-    logger.error('Job submission failed', { error: error.message });
-    
+    logger.error('Error submitting job:', error);
     res.status(500).json({
       success: false,
-      error: 'Job submission failed',
-      message: error.message,
-      timestamp: new Date().toISOString()
+      error: 'Failed to submit job',
+      message: error.message
     });
   }
 });
 
-// Get job status
-router.get('/:jobId/status', [
-  param('jobId')
-    .isUUID()
-    .withMessage('Invalid job ID format')
-], handleValidationErrors, async (req, res) => {
+// GET /api/v1/jobs/:id - Get specific job
+router.get('/:id', async (req, res) => {
   try {
-    const { jobId } = req.params;
+    const { id } = req.params;
+    logger.info(`Job status requested for ID: ${id}`);
     
-    const jobStatus = await sparkManager.getJobStatus(jobId);
+    const job = await sparkManager.getJobStatus(id);
     
     res.json({
       success: true,
-      data: jobStatus,
+      data: job,
       timestamp: new Date().toISOString()
     });
-    
   } catch (error) {
-    const statusCode = error.message.includes('not found') ? 404 : 500;
-    
-    res.status(statusCode).json({
+    logger.error('Error retrieving job status:', error);
+    res.status(404).json({
       success: false,
-      error: 'Failed to get job status',
-      message: error.message,
-      timestamp: new Date().toISOString()
+      error: 'Job not found',
+      message: error.message
     });
   }
 });
 
-// Cancel a running job
-router.post('/:jobId/cancel', [
-  param('jobId')
-    .isUUID()
-    .withMessage('Invalid job ID format')
-], handleValidationErrors, async (req, res) => {
+// DELETE /api/v1/jobs/:id - Cancel job
+router.delete('/:id', async (req, res) => {
   try {
-    const { jobId } = req.params;
+    const { id } = req.params;
+    logger.info(`Cancelling job with ID: ${id}`);
     
-    const result = await sparkManager.cancelJob(jobId);
+    const result = await sparkManager.cancelJob(id);
     
     res.json({
       success: true,
-      message: 'Job cancelled successfully',
       data: result,
+      message: 'Job cancelled successfully',
       timestamp: new Date().toISOString()
     });
-    
   } catch (error) {
-    const statusCode = error.message.includes('not found') ? 404 : 500;
-    
-    res.status(statusCode).json({
+    logger.error('Error cancelling job:', error);
+    res.status(404).json({
       success: false,
       error: 'Failed to cancel job',
-      message: error.message,
-      timestamp: new Date().toISOString()
+      message: error.message
     });
   }
 });
 
-// Get running jobs
-router.get('/running', async (req, res) => {
-  try {
-    const runningJobs = sparkManager.getRunningJobs();
-    
-    res.json({
-      success: true,
-      data: {
-        count: runningJobs.length,
-        jobs: runningJobs
-      },
-      timestamp: new Date().toISOString()
-    });
-    
-  } catch (error) {
-    logger.error('Failed to get running jobs', { error: error.message });
-    
-    res.status(500).json({
-      success: false,
-      error: 'Failed to get running jobs',
-      message: error.message,
-      timestamp: new Date().toISOString()
-    });
-  }
-});
-
-// Get job history
-router.get('/history', [
-  query('limit')
-    .optional()
-    .isInt({ min: 1, max: 100 })
-    .withMessage('Limit must be between 1 and 100')
-], handleValidationErrors, async (req, res) => {
-  try {
-    const limit = parseInt(req.query.limit) || 50;
-    
-    const jobHistory = sparkManager.getJobHistory(limit);
-    
-    res.json({
-      success: true,
-      data: {
-        count: jobHistory.length,
-        jobs: jobHistory
-      },
-      timestamp: new Date().toISOString()
-    });
-    
-  } catch (error) {
-    logger.error('Failed to get job history', { error: error.message });
-    
-    res.status(500).json({
-      success: false,
-      error: 'Failed to get job history',
-      message: error.message,
-      timestamp: new Date().toISOString()
-    });
-  }
-});
-
-// Get job statistics
+// GET /api/v1/jobs/stats - Get job statistics
 router.get('/stats', async (req, res) => {
   try {
     const stats = sparkManager.getStats();
@@ -193,87 +118,12 @@ router.get('/stats', async (req, res) => {
       data: stats,
       timestamp: new Date().toISOString()
     });
-    
   } catch (error) {
-    logger.error('Failed to get job stats', { error: error.message });
-    
+    logger.error('Error retrieving job stats:', error);
     res.status(500).json({
       success: false,
-      error: 'Failed to get job statistics',
-      message: error.message,
-      timestamp: new Date().toISOString()
-    });
-  }
-});
-
-// Batch job submission for multiple jobs
-router.post('/batch', [
-  body('jobs')
-    .isArray({ min: 1, max: 10 })
-    .withMessage('Jobs must be an array with 1-10 items'),
-  body('jobs.*.type')
-    .isIn(['fake-news-detection', 'link-analysis', 'community-analytics', 'batch-processing'])
-    .withMessage('Invalid job type'),
-  body('jobs.*.params')
-    .isObject()
-    .withMessage('Params must be an object')
-], handleValidationErrors, async (req, res) => {
-  try {
-    const { jobs } = req.body;
-    
-    logger.info('Batch job submission request', { jobCount: jobs.length });
-    
-    const results = [];
-    const errors = [];
-    
-    for (let i = 0; i < jobs.length; i++) {
-      try {
-        const jobConfig = {
-          ...jobs[i],
-          priority: jobs[i].priority || 'normal',
-          submittedBy: req.headers['x-user-id'] || 'anonymous',
-          submittedAt: new Date().toISOString(),
-          batchIndex: i
-        };
-        
-        const result = await sparkManager.submitJob(jobConfig);
-        results.push(result);
-        
-      } catch (error) {
-        errors.push({
-          index: i,
-          job: jobs[i],
-          error: error.message
-        });
-      }
-    }
-    
-    const response = {
-      success: errors.length === 0,
-      message: `Batch submission completed: ${results.length} successful, ${errors.length} failed`,
-      data: {
-        successful: results,
-        failed: errors,
-        summary: {
-          total: jobs.length,
-          successful: results.length,
-          failed: errors.length
-        }
-      },
-      timestamp: new Date().toISOString()
-    };
-    
-    const statusCode = errors.length === 0 ? 201 : 207; // 207 = Multi-Status
-    res.status(statusCode).json(response);
-    
-  } catch (error) {
-    logger.error('Batch job submission failed', { error: error.message });
-    
-    res.status(500).json({
-      success: false,
-      error: 'Batch job submission failed',
-      message: error.message,
-      timestamp: new Date().toISOString()
+      error: 'Failed to retrieve job stats',
+      message: error.message
     });
   }
 });

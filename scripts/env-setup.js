@@ -92,6 +92,9 @@ COMMUNITY_SERVICE_URL=http://localhost:3003
 CHAT_SERVICE_URL=http://localhost:3004
 NEWS_SERVICE_URL=http://localhost:3005
 ADMIN_SERVICE_URL=http://localhost:3006
+SPARK_SERVICE_URL=http://localhost:3010
+ETL_SERVICE_URL=http://localhost:3011
+ANALYTICS_SERVICE_URL=http://localhost:3012
 
 # =================================
 # DEVELOPMENT - CORS Configuration
@@ -166,6 +169,13 @@ DEBUG=false
       'GEMINI_API_KEY'
     ];
 
+    // Big Data service URLs (optional but recommended)
+    const bigDataVars = [
+      'SPARK_SERVICE_URL',
+      'ETL_SERVICE_URL',
+      'ANALYTICS_SERVICE_URL'
+    ];
+
     // React app environment variables
     const reactVars = [
       'REACT_APP_API_URL',
@@ -206,6 +216,20 @@ DEBUG=false
         warnings.push(`${varName} is missing (frontend may not work properly)`);
       } else if (value.includes('your_') || value.includes('YOUR_') || value.includes('xxxxx')) {
         warnings.push(`${varName} still has placeholder value`);
+      } else {
+        console.log(`  ✅ ${varName} is set`);
+      }
+    }
+
+    // Validate Big Data service URLs (optional)
+    console.log('\n  🔍 Validating Big Data service URLs...');
+    for (const varName of bigDataVars) {
+      const value = process.env[varName];
+      
+      if (!value) {
+        console.log(`  ℹ️ ${varName} not set (Big Data services optional)`);
+      } else if (value.includes('your_') || value.includes('YOUR_') || value.includes('xxxxx')) {
+        console.log(`  ℹ️ ${varName} has placeholder value (Big Data services optional)`);
       } else {
         console.log(`  ✅ ${varName} is set`);
       }
@@ -285,7 +309,7 @@ DEBUG=false
     const versions = {};
     const conflicts = [];
     
-    const servicesDirs = ['auth-service', 'community-service', 'link-service', 'chat-service', 'news-service', 'admin-service'];
+    const servicesDirs = ['auth-service', 'community-service', 'link-service', 'chat-service', 'news-service', 'admin-service', 'spark-service', 'etl-service', 'analytics-service'];
     
     for (const service of servicesDirs) {
       const packagePath = path.join(this.projectRoot, 'services', service, 'package.json');

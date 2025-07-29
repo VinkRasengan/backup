@@ -13,6 +13,9 @@ A production-ready microservices platform for real-time link verification, commu
 - **Chat Service** (Port 3004) - AI-powered assistance with Gemini integration
 - **News Service** (Port 3005) - News aggregation, fact-checking workflows
 - **Admin Service** (Port 3006) - Administrative dashboard, user management
+- **Spark Service** (Port 3010) - Big Data processing, ML pipelines, batch analytics
+- **ETL Service** (Port 3011) - Data pipeline management, Firestore to HDFS export
+- **Analytics Service** (Port 3012) - Data insights, reporting, dashboard APIs
 - **Client Application** (Port 3000) - React frontend with modern UI/UX
 
 ## 🛠️ Tech Stack
@@ -38,6 +41,7 @@ A production-ready microservices platform for real-time link verification, commu
 - **Security**: VirusTotal, ScamAdviser, IPQualityScore APIs
 - **News**: NewsAPI, NewsData for content aggregation
 - **Screenshots**: ScreenshotLayer for visual analysis
+- **Big Data**: Apache Spark, Hadoop HDFS for large-scale processing
 
 ### **DevOps & Infrastructure**
 - **Containerization**: Docker with multi-stage builds
@@ -90,9 +94,12 @@ npm start                    # Start all services in separate terminals
 4. **Access Applications**
 - **Frontend**: http://localhost:3000
 - **API Gateway**: http://localhost:8080
-- **Individual Services**: Check respective ports (3001-3007)
+- **Individual Services**: Check respective ports (3001-3012)
 - **RabbitMQ Management**: http://localhost:15672 (factcheck/antifraud123)
 - **KurrentDB**: http://localhost:2113
+- **Hadoop NameNode**: http://localhost:9870
+- **Spark Master**: http://localhost:8080
+- **Jupyter Notebook**: http://localhost:8888
 
 ### **Development Commands**
 
@@ -111,6 +118,11 @@ npm run test:integration     # Integration tests
 npm run docker:build         # Build all containers
 npm run docker:logs          # View container logs
 npm run docker:clean         # Clean up containers and volumes
+
+# Big Data Management
+npm run bigdata:start        # Start Hadoop/Spark infrastructure
+npm run bigdata:stop         # Stop Big Data containers
+npm run bigdata:logs         # View Big Data logs
 
 # Production Readiness
 npm run test:render          # Test deployment readiness

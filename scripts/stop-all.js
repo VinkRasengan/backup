@@ -20,7 +20,7 @@ class UniversalStop {
       '.service-pids',
       '.fast-start-pids'
     ];
-    this.ports = [3000, 3001, 3002, 3003, 3004, 3005, 3006, 3007, 3008, 3009, 8080, 6379, 5672, 15672];
+    this.ports = [3000, 3001, 3002, 3003, 3004, 3005, 3006, 3007, 3008, 3009, 3010, 3011, 3012, 8080, 6379, 5672, 15672];
     this.isWindows = os.platform() === 'win32';
 
     // Service-related process patterns to kill
@@ -33,6 +33,9 @@ class UniversalStop {
       'node.*admin-service',
       'node.*api-gateway',
       'node.*event-bus-service',
+      'node.*spark-service',
+      'node.*etl-service',
+      'node.*analytics-service',
       'node.*client',
       'npm.*start',
       'npm.*dev',
@@ -50,6 +53,9 @@ class UniversalStop {
       'Admin Service',
       'API Gateway',
       'Event Bus',
+      'Spark Service',
+      'ETL Service',
+      'Analytics Service',
       'Frontend'
     ];
   }
