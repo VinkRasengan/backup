@@ -1,12 +1,14 @@
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
-const { HadoopSparkDemo } = require('./demo-scripts');
+
+// Import HadoopSparkDemo class correctly
+const HadoopSparkDemo = require('./demo-scripts').HadoopSparkDemo || require('./demo-scripts');
 
 class DemoServer {
     constructor() {
         this.app = express();
-        this.port = process.env.DEMO_PORT || 3000;
+        this.port = process.env.DEMO_PORT || 3020;
         this.demo = new HadoopSparkDemo();
         this.setupMiddleware();
         this.setupRoutes();
@@ -125,9 +127,10 @@ class DemoServer {
                 demo: this.demo.isRunning ? 'active' : 'inactive',
                 services: {
                     spark: 'http://localhost:3010',
-                    etl: 'http://localhost:3011',
+                    etl: 'http://localhost:3008',
                     analytics: 'http://localhost:3012',
-                    sparkUI: 'http://localhost:8088',
+                    sparkUI: 'http://localhost:8080',
+                    sparkHistory: 'http://localhost:8088',
                     hdfsUI: 'http://localhost:9870',
                     jupyter: 'http://localhost:8888'
                 }

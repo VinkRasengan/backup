@@ -34,9 +34,9 @@ npm start
 ```
 
 ### 3. Mở Presentation
-- **Presentation**: http://localhost:3000/demo
-- **API Base**: http://localhost:3000/api
-- **Health Check**: http://localhost:3000/health
+- **Presentation**: http://localhost:3020/demo
+- **API Base**: http://localhost:3020/api
+- **Health Check**: http://localhost:3020/health
 
 ## 📊 Slide Structure
 
@@ -84,43 +84,46 @@ npm start
 ### Spark Jobs
 ```bash
 # Fake News Detection
-curl -X POST http://localhost:3000/api/demo/spark-job
+curl -X POST http://localhost:3020/api/demo/spark-job
 
-# Link Analysis
-curl -X POST http://localhost:3000/api/demo/link-analysis
+# ETL Pipeline
+curl -X POST http://localhost:3020/api/demo/etl-pipeline
 
-# Community Analytics
-curl -X POST http://localhost:3000/api/demo/community-analytics
+# ML Pipeline
+curl -X POST http://localhost:3020/api/demo/ml-pipeline
 ```
 
 ### Data Pipeline
 ```bash
 # ETL Pipeline
-curl -X POST http://localhost:3000/api/demo/etl-pipeline
+curl -X POST http://localhost:3020/api/demo/etl-pipeline
 
 # HDFS Operations
-curl -X POST http://localhost:3000/api/demo/hdfs-operations
+curl -X POST http://localhost:3020/api/demo/hdfs-operations
+
+# Real-time Processing
+curl -X POST http://localhost:3020/api/demo/real-time-processing
 ```
 
 ### Analytics & Monitoring
 ```bash
 # Analytics Dashboard
-curl -X POST http://localhost:3000/api/demo/analytics-dashboard
+curl -X POST http://localhost:3020/api/demo/analytics-dashboard
 
 # Performance Monitoring
-curl -X POST http://localhost:3000/api/demo/performance-monitoring
+curl -X POST http://localhost:3020/api/demo/performance-monitoring
 ```
 
 ### Complete Workflow
 ```bash
 # End-to-end workflow
-curl -X POST http://localhost:3000/api/demo/complete-workflow
+curl -X POST http://localhost:3020/api/demo/complete-workflow
 ```
 
 ### Real-time Updates
 ```bash
 # Server-Sent Events stream
-curl -N http://localhost:3000/api/stream
+curl -N http://localhost:3020/api/stream
 ```
 
 ## 🎯 Demo Scenarios
@@ -185,9 +188,9 @@ presentation/
 
 ### Environment Variables
 ```bash
-DEMO_PORT=3000              # Demo server port
+DEMO_PORT=3020              # Demo server port
 SPARK_SERVICE_URL=3010      # Spark service port
-ETL_SERVICE_URL=3011        # ETL service port
+ETL_SERVICE_URL=3008        # ETL service port
 ANALYTICS_SERVICE_URL=3012  # Analytics service port
 ```
 
@@ -244,12 +247,14 @@ tail -f logs/demo-server.log
 - [FactCheck Platform Docs](../docs/)
 
 ### Related Services
-- **Spark Service**: http://localhost:3010
-- **ETL Service**: http://localhost:3011
+- **Frontend**: http://localhost:3000
+- **Spark Service**: http://localhost:3010  
+- **ETL Service**: http://localhost:3008
 - **Analytics Service**: http://localhost:3012
-- **Spark UI**: http://localhost:8088
-- **HDFS UI**: http://localhost:9870
-- **Jupyter**: http://localhost:8888
+- **Demo Server**: http://localhost:3020
+- **Spark Master UI**: http://localhost:8080
+- **Spark History Server**: http://localhost:8088
+- **HDFS NameNode UI**: http://localhost:9870
 
 ## 🤝 Contributing
 

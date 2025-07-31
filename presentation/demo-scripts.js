@@ -4,7 +4,7 @@
 class HadoopSparkDemo {
     constructor() {
         this.sparkServiceUrl = 'http://localhost:3010';
-        this.etlServiceUrl = 'http://localhost:3011';
+        this.etlServiceUrl = 'http://localhost:3008';
         this.analyticsServiceUrl = 'http://localhost:3012';
         this.isRunning = false;
     }
@@ -363,8 +363,9 @@ class HadoopSparkDemo {
         
         // Simulate server startup
         setTimeout(() => {
-            console.log('✅ Demo server is running on http://localhost:3000/demo');
-            console.log('📊 Spark UI: http://localhost:8088');
+            console.log('✅ Demo server is running on http://localhost:3020/demo');
+            console.log('📊 Spark UI: http://localhost:8080');
+            console.log('📊 Spark History: http://localhost:8088');
             console.log('🐘 HDFS UI: http://localhost:9870');
             console.log('📓 Jupyter: http://localhost:8888');
         }, 2000);

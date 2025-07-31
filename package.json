@@ -49,6 +49,14 @@
     "start:gateway": "cd services/api-gateway && npm start",
     "start:client": "cd client && npm start",
 
+    "// === DEMO & BIG DATA ===": "",
+    "demo:all": "node scripts/run-all-demos.js",
+    "demo:spark": "node scripts/demo-spark-apis.js", 
+    "demo:analytics": "node scripts/demo-analytics-apis.js",
+    "demo:start": "cd presentation && npm start",
+    "bigdata:test": "node scripts/test-bigdata-services.js",
+    "bigdata:health": "node scripts/health-bigdata.js",
+
     "// === CONFIGURATION MANAGEMENT (NEW) ===": "",
     "validate:env-refactor": "node scripts/validate-env-refactor.js",
     "cleanup:refactor": "node scripts/cleanup-refactor.js",

@@ -28,7 +28,7 @@ if (process.env.EVENT_STORE_ENABLED === 'true') {
 }
 
 const app = express();
-const PORT = process.env.PORT || process.env.ETL_SERVICE_PORT || 3008;
+const PORT = process.env.ETL_SERVICE_PORT || 3008;
 
 // Security middleware
 app.use(helmet());
@@ -155,10 +155,17 @@ async function initializeService() {
 function setupScheduledPipelines() {
   const interval = process.env.BATCH_PROCESSING_INTERVAL || '0 */1 * * *'; // Every hour
   
+  // Validate cron expression
+  if (!interval || typeof interval !== 'string') {
+    logger.warn('Invalid cron interval, skipping scheduled pipelines');
+    return;
+  }
+  
   logger.info(`Setting up scheduled pipelines with interval: ${interval}`);
   
-  // Schedule Firestore to HDFS sync
-  cron.schedule(interval, async () => {
+  try {
+    // Schedule Firestore to HDFS sync
+    cron.schedule(interval, async () => {
     try {
       logger.info('Starting scheduled ETL pipeline...');
       
@@ -174,10 +181,10 @@ function setupScheduledPipelines() {
     } catch (error) {
       logger.error('Scheduled ETL pipeline failed:', error);
     }
-  });
-  
-  // Schedule analytics data preparation
-  cron.schedule('0 2 * * *', async () => { // Daily at 2 AM
+    });
+    
+    // Schedule analytics data preparation
+    cron.schedule('0 2 * * *', async () => { // Daily at 2 AM
     try {
       logger.info('Starting daily analytics preparation...');
       
@@ -193,7 +200,11 @@ function setupScheduledPipelines() {
     } catch (error) {
       logger.error('Daily analytics preparation failed:', error);
     }
-  });
+    });
+    
+  } catch (error) {
+    logger.error('Failed to setup scheduled pipelines:', error);
+  }
 }
 
 // Start server
