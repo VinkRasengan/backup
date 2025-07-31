@@ -56,6 +56,7 @@
     "demo:start": "cd presentation && npm start",
     "bigdata:test": "node scripts/test-bigdata-services.js",
     "bigdata:health": "node scripts/health-bigdata.js",
+    "bigdata:demo": "node scripts/start-bigdata-demo.js",
 
     "// === CONFIGURATION MANAGEMENT (NEW) ===": "",
     "validate:env-refactor": "node scripts/validate-env-refactor.js",
