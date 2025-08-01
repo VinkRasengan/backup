@@ -1,7 +1,7 @@
 {
-  "name": "spark-service",
+  "name": "analytics-service",
   "version": "1.0.0",
-  "description": "Spark Service for FactCheck Platform - Big Data Processing & ML",
+  "description": "Analytics Service for FactCheck Platform - Data Analytics & Insights",
   "main": "app.js",
   "scripts": {
     "start": "node app.js",
@@ -20,15 +20,15 @@
     "uuid": "^9.0.0",
     "winston": "^3.10.0",
     "node-cron": "^3.0.2",
-    "multer": "^1.4.5-lts.1",
     "compression": "^1.7.4",
     "express-rate-limit": "^6.10.0",
     "express-validator": "^7.0.1",
     "firebase-admin": "^11.10.1",
-    "child_process": "^1.0.2",
-    "fs-extra": "^11.1.1",
     "csv-parser": "^3.0.0",
-    "json2csv": "^5.0.7"
+    "json2csv": "^5.0.7",
+    "fs-extra": "^11.1.1",
+    "moment": "^2.29.4",
+    "lodash": "^4.17.21"
   },
   "devDependencies": {
     "nodemon": "^3.0.1",
@@ -40,13 +40,12 @@
     "node": ">=18.0.0"
   },
   "keywords": [
-    "spark",
-    "hadoop",
-    "big-data",
-    "machine-learning",
+    "analytics",
+    "data-insights",
     "fact-check",
-    "analytics"
+    "big-data",
+    "dashboard"
   ],
   "author": "FactCheck Platform Team",
   "license": "MIT"
-}
+} 

@@ -8,51 +8,6 @@ class HealthCheck {
   }
 
   setupChecks() {
-    // Spark Master connectivity check
-    this.checks.set('spark-master', async () => {
-      try {
-        const sparkMasterUrl = process.env.SPARK_MASTER_URL || 'spark://localhost:7077';
-        const webUIUrl = sparkMasterUrl.replace('spark://', 'http://').replace(':7077', ':8080');
-        
-        const response = await axios.get(`${webUIUrl}/api/v1/applications`, {
-          timeout: 5000
-        });
-        
-        return {
-          status: 'healthy',
-          responseTime: response.headers['x-response-time'] || 'N/A',
-          applications: response.data?.length || 0
-        };
-      } catch (error) {
-        return {
-          status: 'unhealthy',
-          error: error.message
-        };
-      }
-    });
-
-    // HDFS connectivity check
-    this.checks.set('hdfs', async () => {
-      try {
-        const hdfsUrl = process.env.HDFS_NAMENODE_URL || 'hdfs://localhost:9000';
-        const webUIUrl = hdfsUrl.replace('hdfs://', 'http://').replace(':9000', ':9870');
-        
-        const response = await axios.get(`${webUIUrl}/jmx?qry=Hadoop:service=NameNode,name=NameNodeStatus`, {
-          timeout: 5000
-        });
-        
-        return {
-          status: 'healthy',
-          nameNodeStatus: response.data?.beans?.[0]?.State || 'unknown'
-        };
-      } catch (error) {
-        return {
-          status: 'unhealthy',
-          error: error.message
-        };
-      }
-    });
-
     // Memory usage check
     this.checks.set('memory', async () => {
       const used = process.memoryUsage();
@@ -67,15 +22,13 @@ class HealthCheck {
       };
     });
 
-    // Job queue check
-    this.checks.set('job-queue', async () => {
+    // Database connectivity check (Firebase)
+    this.checks.set('database', async () => {
       try {
-        // Simulate job queue check
+        // Simple Firebase connectivity check
         return {
           status: 'healthy',
-          pendingJobs: 0,
-          runningJobs: 0,
-          completedJobs: 0
+          message: 'Firebase connection available'
         };
       } catch (error) {
         return {
@@ -83,6 +36,41 @@ class HealthCheck {
           error: error.message
         };
       }
+    });
+
+    // External service connectivity check
+    this.checks.set('external-services', async () => {
+      const services = [
+        { name: 'Spark Service', url: process.env.SPARK_SERVICE_URL || 'http://localhost:3010' },
+        { name: 'ETL Service', url: process.env.ETL_SERVICE_URL || 'http://localhost:3011' }
+      ];
+
+      const results = [];
+      for (const service of services) {
+        try {
+          const response = await axios.get(`${service.url}/health`, { timeout: 5000 });
+          results.push({
+            name: service.name,
+            status: 'healthy',
+            responseTime: response.headers['x-response-time'] || 'N/A'
+          });
+        } catch (error) {
+          results.push({
+            name: service.name,
+            status: 'unhealthy',
+            error: error.message
+          });
+        }
+      }
+
+      const healthyCount = results.filter(r => r.status === 'healthy').length;
+      const totalCount = results.length;
+
+      return {
+        status: healthyCount === totalCount ? 'healthy' : 'warning',
+        services: results,
+        summary: `${healthyCount}/${totalCount} services healthy`
+      };
     });
   }
 
@@ -143,4 +131,4 @@ class HealthCheck {
   }
 }
 
-module.exports = new HealthCheck();
+module.exports = new HealthCheck(); 

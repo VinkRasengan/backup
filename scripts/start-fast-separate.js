@@ -36,6 +36,11 @@ class FastSeparateStart {
       { name: 'News Service', dir: 'services/news-service', port: 3005, color: '\x1b[31m', priority: 4, critical: false },
       { name: 'Admin Service', dir: 'services/admin-service', port: 3006, color: '\x1b[36m', priority: 4, critical: false },
       
+      // Big Data services (optional - can start in parallel)
+      { name: 'Spark Service', dir: 'services/spark-service', port: 3010, color: '\x1b[93m', priority: 4, critical: false },
+      { name: 'ETL Service', dir: 'services/etl-service', port: 3011, color: '\x1b[94m', priority: 4, critical: false },
+      { name: 'Analytics Service', dir: 'services/analytics-service', port: 3012, color: '\x1b[96m', priority: 4, critical: false },
+      
       // Frontend last
       { name: 'Frontend', dir: 'client', port: 3000, color: '\x1b[95m', priority: 5, critical: true }
     ];

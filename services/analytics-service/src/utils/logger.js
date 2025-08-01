@@ -16,7 +16,7 @@ const logger = winston.createLogger({
     winston.format.errors({ stack: true }),
     winston.format.json()
   ),
-  defaultMeta: { service: 'spark-service' },
+  defaultMeta: { service: 'analytics-service' },
   transports: [
     // Write all logs with importance level of `error` or less to `error.log`
     new winston.transports.File({ 
@@ -41,17 +41,4 @@ if (process.env.NODE_ENV !== 'production') {
   }));
 }
 
-// Add custom methods for job logging
-logger.logJobStart = (jobId, jobType, params) => {
-  logger.info('Job started', { jobId, jobType, params });
-};
-
-logger.logJobComplete = (jobId, jobType, duration, result) => {
-  logger.info('Job completed', { jobId, jobType, duration, result });
-};
-
-logger.logJobError = (jobId, jobType, error, params) => {
-  logger.error('Job failed', { jobId, jobType, error: error.message, params });
-};
-
-module.exports = logger;
+module.exports = logger; 
