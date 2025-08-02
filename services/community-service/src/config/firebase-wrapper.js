@@ -3,7 +3,7 @@
  * Handles DISABLE_FIREBASE environment variable
  */
 
-let db, collections;
+let db, collections, admin, FieldPath;
 
 if (process.env.DISABLE_FIREBASE === 'true') {
   console.log('⚠️  Community Service: Firebase disabled for development mode');
@@ -39,7 +39,9 @@ if (process.env.DISABLE_FIREBASE === 'true') {
   try {
     const firebaseConfig = require('./firebase');
     db = firebaseConfig.db;
+    admin = firebaseConfig.admin;
     collections = firebaseConfig.collections;
+    FieldPath = firebaseConfig.FieldPath || require('firebase-admin/firestore').FieldPath;
   } catch (error) {
     console.error('❌ Community Service: Firebase config failed:', error.message);
     throw error;
@@ -48,5 +50,7 @@ if (process.env.DISABLE_FIREBASE === 'true') {
 
 module.exports = {
   db,
-  collections
+  collections,
+  admin,
+  FieldPath
 };

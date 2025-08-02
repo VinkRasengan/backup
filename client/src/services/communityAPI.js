@@ -486,7 +486,7 @@ class CommunityAPI {
       
       const headers = await this.getAuthHeaders();
 
-      const response = await fetch(`${this.baseURL}/api/admin/reports?${params}`, {
+      const response = await fetch(`${this.baseURL}/api/community/api/reports/admin/reports?${params}`, {
         method: 'GET',
         headers: headers
       });
@@ -502,7 +502,7 @@ class CommunityAPI {
     try {
       const headers = await this.getAuthHeaders();
 
-      const response = await fetch(`${this.baseURL}/api/admin/reports/${reportId}/status`, {
+      const response = await fetch(`${this.baseURL}/api/community/reports/admin/reports/statistics/${reportId}/status`, {
         method: 'PUT',
         headers: headers,
         body: JSON.stringify({ status, adminNotes })
@@ -519,7 +519,7 @@ class CommunityAPI {
     try {
       const headers = await this.getAuthHeaders();
 
-      const response = await fetch(`${this.baseURL}/api/admin/reports/statistics`, {
+      const response = await fetch(`${this.baseURL}/api/community/api/reports/admin/reports/statistics`, {
         method: 'GET',
         headers: headers
       });

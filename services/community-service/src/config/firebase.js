@@ -1,4 +1,5 @@
 const admin = require('firebase-admin');
+const { FieldPath } = require('firebase-admin/firestore');
 const path = require('path');
 
 
@@ -91,5 +92,6 @@ module.exports = {
   db,
   collections,
   testConnection,
-  healthCheck
+  healthCheck,
+  FieldPath 
 };

@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { db, collections } = require('../config/firebase-wrapper');
+const { db, collections, admin, FieldPath } = require('../config/firebase-wrapper');
 const logger = require('../utils/logger');
 const { getUserId, getUserEmail, getUserDisplayName, requireAuth } = require('../middleware/auth');
 const { validateReport, validateQueryParams } = require('../middleware/validation');
@@ -9,11 +9,11 @@ const { validateReport, validateQueryParams } = require('../middleware/validatio
 const isAdmin = (req) => {
   // Check by roles/permissions (Firebase custom claims)
   const hasAdminRole = req.user?.roles?.includes('admin') || req.user?.permissions?.includes('admin-operations');
-  
+
   // Check by email (fallback for admin accounts)
   const adminEmails = ['admin@factcheck.com', 'admin@example.com'];
   const hasAdminEmail = adminEmails.includes(req.user?.email);
-  
+
   return hasAdminRole || hasAdminEmail;
 };
 
@@ -21,11 +21,11 @@ const isAdmin = (req) => {
 const isModerator = (req) => {
   // Check by roles/permissions (Firebase custom claims)
   const hasModeratorRole = req.user?.roles?.includes('moderator') || req.user?.permissions?.includes('moderate_content');
-  
+
   // Check by email (fallback for admin accounts - admins are also moderators)
   const adminEmails = ['admin@factcheck.com', 'admin@example.com'];
   const hasAdminEmail = adminEmails.includes(req.user?.email);
-  
+
   return hasModeratorRole || hasAdminEmail;
 };
 
@@ -47,16 +47,16 @@ router.post('/:linkId', requireAuth, validateReport, async (req, res) => {
   try {
     const { linkId } = req.params;
     const { reason, description } = req.body;
-    
+
     const userId = getUserId(req);
     const userEmail = getUserEmail(req);
     const displayName = getUserDisplayName(req);
 
-    logger.info('Submit report request', { 
-      linkId, 
-      reason, 
-      userId, 
-      userEmail 
+    logger.info('Submit report request', {
+      linkId,
+      reason,
+      userId,
+      userEmail
     });
 
     // Validate linkId
@@ -73,7 +73,7 @@ router.post('/:linkId', requireAuth, validateReport, async (req, res) => {
     if (!linkDoc.exists) {
       // Create a placeholder link entry for reporting
       const reportedUrl = req.body.url;
-      
+
       // If no URL provided in request, try to extract from linkId or use a placeholder
       let placeholderUrl;
       if (reportedUrl) {
@@ -85,7 +85,7 @@ router.post('/:linkId', requireAuth, validateReport, async (req, res) => {
         // Last resort fallback
         placeholderUrl = `https://reported-link-${Date.now()}`;
       }
-      
+
       const placeholderLinkData = {
         title: `Reported Link ${linkId}`,
         content: 'This link was reported without being posted first.',
@@ -158,10 +158,10 @@ router.post('/:linkId', requireAuth, validateReport, async (req, res) => {
       updatedAt: new Date()
     });
 
-    logger.info('Report submitted successfully', { 
-      reportId: reportRef.id, 
-      linkId, 
-      userId 
+    logger.info('Report submitted successfully', {
+      reportId: reportRef.id,
+      linkId,
+      userId
     });
 
     // Return created report
@@ -179,8 +179,8 @@ router.post('/:linkId', requireAuth, validateReport, async (req, res) => {
     });
 
   } catch (error) {
-    logger.error('Submit report error', { 
-      error: error.message, 
+    logger.error('Submit report error', {
+      error: error.message,
       linkId: req.params.linkId,
       userId: getUserId(req)
     });
@@ -198,10 +198,10 @@ router.get('/user/my-reports', requireAuth, validateQueryParams, async (req, res
     const { page = 1, limit = 10 } = req.query;
     const userId = getUserId(req);
 
-    logger.info('Get user reports request', { 
-      userId, 
-      page, 
-      limit 
+    logger.info('Get user reports request', {
+      userId,
+      page,
+      limit
     });
 
     // Calculate pagination
@@ -256,8 +256,8 @@ router.get('/user/my-reports', requireAuth, validateQueryParams, async (req, res
     });
 
   } catch (error) {
-    logger.error('Get user reports error', { 
-      error: error.message, 
+    logger.error('Get user reports error', {
+      error: error.message,
       userId: getUserId(req)
     });
     res.status(500).json({
@@ -271,18 +271,18 @@ router.get('/user/my-reports', requireAuth, validateQueryParams, async (req, res
 // GET /admin/reports
 router.get('/admin/reports', requireAuth, requireAdminOrModerator, validateQueryParams, async (req, res) => {
   try {
-    const { 
-      page = 1, 
-      limit = 20, 
-      status = null, 
+    const {
+      page = 1,
+      limit = 20,
+      status = null,
       reason = null,
       sort = 'newest'
     } = req.query;
 
-    logger.info('Get all reports request (admin)', { 
-      page, 
-      limit, 
-      status, 
+    logger.info('Get all reports request (admin)', {
+      page,
+      limit,
+      status,
       reason,
       sort,
       adminId: getUserId(req)
@@ -321,21 +321,21 @@ router.get('/admin/reports', requireAuth, requireAdminOrModerator, validateQuery
 
     // Apply sorting
     switch (sort) {
-    case 'newest':
-      reports.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-      break;
-    case 'oldest':
-      reports.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
-      break;
-    case 'status':
-      reports.sort((a, b) => {
-        const statusOrder = { 'pending': 0, 'reviewed': 1, 'resolved': 2, 'dismissed': 3 };
-        return (statusOrder[a.status] || 0) - (statusOrder[b.status] || 0);
-      });
-      break;
-    case 'reason':
-      reports.sort((a, b) => a.reason.localeCompare(b.reason));
-      break;
+      case 'newest':
+        reports.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+        break;
+      case 'oldest':
+        reports.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+        break;
+      case 'status':
+        reports.sort((a, b) => {
+          const statusOrder = { 'pending': 0, 'reviewed': 1, 'resolved': 2, 'dismissed': 3 };
+          return (statusOrder[a.status] || 0) - (statusOrder[b.status] || 0);
+        });
+        break;
+      case 'reason':
+        reports.sort((a, b) => a.reason.localeCompare(b.reason));
+        break;
     }
 
     // Apply pagination
@@ -343,10 +343,27 @@ router.get('/admin/reports', requireAuth, requireAdminOrModerator, validateQuery
     const paginatedReports = reports.slice(offset, offset + limit);
 
     // Get link information for each report
+    // const linkIds = [...new Set(paginatedReports.map(r => r.linkId))];
+    // const linksSnapshot = await db.collection(collections.POSTS)
+    //   .where(firebaseConfig.admin.firestore.FieldPath.documentId(), 'in', linkIds)
+    //   .get();
+    // Get link information for each report
     const linkIds = [...new Set(paginatedReports.map(r => r.linkId))];
-    const linksSnapshot = await db.collection(collections.POSTS)
-      .where(db.FieldPath.documentId(), 'in', linkIds)
-      .get();
+    let linksSnapshot;
+    // Filter out any undefined or null values from the linkIds array
+    const filteredLinkIds = linkIds.filter(id => id);
+
+    // Check if the filtered array is not empty before making the query
+    if (filteredLinkIds.length > 0) {
+      linksSnapshot = await db.collection(collections.POSTS)
+        .where(FieldPath.documentId(), 'in', filteredLinkIds)
+        .get();
+
+      // ... rest of your code
+    } else {
+      // Handle the case where there are no valid linkIds, e.g., set linksSnapshot to an empty array or handle accordingly.
+      linksSnapshot = { docs: [] };
+    }
 
     const linksMap = {};
     linksSnapshot.docs.forEach(doc => {
@@ -384,7 +401,7 @@ router.get('/admin/reports', requireAuth, requireAdminOrModerator, validateQuery
     });
 
   } catch (error) {
-    logger.error('Get all reports error (admin)', { 
+    logger.error('Get all reports error (admin)', {
       error: error.message,
       adminId: getUserId(req)
     });
@@ -401,15 +418,15 @@ router.put('/admin/reports/:reportId/status', requireAuth, requireAdminOrModerat
   try {
     const { reportId } = req.params;
     const { status, adminNotes } = req.body;
-    
+
     const adminId = getUserId(req);
     const adminEmail = getUserEmail(req);
     const adminDisplayName = getUserDisplayName(req);
 
-    logger.info('Update report status request', { 
-      reportId, 
-      status, 
-      adminId 
+    logger.info('Update report status request', {
+      reportId,
+      status,
+      adminId
     });
 
     // Validate status
@@ -456,10 +473,10 @@ router.put('/admin/reports/:reportId/status', requireAuth, requireAdminOrModerat
 
     await db.collection(collections.REPORTS).doc(reportId).update(updateData);
 
-    logger.info('Report status updated', { 
-      reportId, 
-      status, 
-      adminId 
+    logger.info('Report status updated', {
+      reportId,
+      status,
+      adminId
     });
 
     // Get updated report
@@ -479,8 +496,8 @@ router.put('/admin/reports/:reportId/status', requireAuth, requireAdminOrModerat
     });
 
   } catch (error) {
-    logger.error('Update report status error', { 
-      error: error.message, 
+    logger.error('Update report status error', {
+      error: error.message,
       reportId: req.params.reportId,
       adminId: getUserId(req)
     });
@@ -535,17 +552,17 @@ router.get('/admin/reports/statistics', requireAuth, requireAdminOrModerator, as
 
     reports.forEach(report => {
       const createdAt = report.createdAt?.toDate?.() || new Date(report.createdAt);
-      
+
       // Status counts
       stats.byStatus[report.status] = (stats.byStatus[report.status] || 0) + 1;
-      
+
       // Reason counts
       stats.byReason[report.reason] = (stats.byReason[report.reason] || 0) + 1;
-      
+
       // Monthly counts
       const monthKey = createdAt.toISOString().substring(0, 7); // YYYY-MM
       stats.byMonth[monthKey] = (stats.byMonth[monthKey] || 0) + 1;
-      
+
       // Recent activity
       if (createdAt >= oneDayAgo) {
         stats.recentActivity.last24h++;
@@ -572,7 +589,7 @@ router.get('/admin/reports/statistics', requireAuth, requireAdminOrModerator, as
     });
 
   } catch (error) {
-    logger.error('Get report statistics error', { 
+    logger.error('Get report statistics error', {
       error: error.message,
       adminId: getUserId(req)
     });
@@ -593,7 +610,7 @@ router.get('/admin/reports/:reportId', requireAuth, requireAdminOrModerator, asy
     logger.info('Get specific report request', { reportId, adminId });
 
     const reportDoc = await db.collection(collections.REPORTS).doc(reportId).get();
-    
+
     if (!reportDoc.exists) {
       return res.status(404).json({
         success: false,
@@ -630,8 +647,8 @@ router.get('/admin/reports/:reportId', requireAuth, requireAdminOrModerator, asy
     });
 
   } catch (error) {
-    logger.error('Get specific report error', { 
-      error: error.message, 
+    logger.error('Get specific report error', {
+      error: error.message,
       reportId: req.params.reportId,
       adminId: getUserId(req)
     });
