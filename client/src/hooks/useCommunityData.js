@@ -109,6 +109,7 @@ class CommunityDataManager {
 
         try {
           const data = await requestPromise;
+          
           this.setToCache(params, data);
           this.activeRequests.delete(key);
 
@@ -282,7 +283,7 @@ export const useCommunityData = () => {
       console.log('✅ dataManager.fetchData result:', result);
       console.log('✅ Result posts count:', result?.posts?.length || 0);
       console.log('✅ Result pagination:', result?.pagination);
-
+      console.log(result);
       setData(result);
       console.log('✅ Data set successfully');
     } catch (err) {

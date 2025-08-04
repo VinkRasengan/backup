@@ -45,10 +45,12 @@ const AdminDashboard = () => {
         selectedStatus === 'all' ? null : selectedStatus,
         selectedReason === 'all' ? null : selectedReason
       );
+
       
       // Handle response safely
-      if (reportsResponse && reportsResponse.reports) {
-        setReports(reportsResponse.reports);
+      if (reportsResponse && reportsResponse.data.reports) {
+        setReports(reportsResponse.data.reports);
+        console.log('Reports response:', reportsResponse);
         setPagination(reportsResponse.pagination || {
           currentPage: 1,
           totalPages: 1,
@@ -75,7 +77,8 @@ const AdminDashboard = () => {
       // Load statistics with error handling
       try {
         const statsResponse = await communityAPI.getReportStatistics();
-        setStatistics(statsResponse?.byStatus || {
+        console.log('Statistics response:', statsResponse);
+        setStatistics(statsResponse?.data?.byStatus || {
           pending: 0,
           reviewed: 0,
           resolved: 0,
@@ -92,13 +95,13 @@ const AdminDashboard = () => {
       }
 
       // Load notifications with error handling
-      try {
-        const notificationsResponse = await communityAPI.getAdminNotifications();
-        setNotifications(notificationsResponse?.notifications || []);
-      } catch (notifError) {
-        console.error('Failed to load notifications:', notifError);
-        setNotifications([]);
-      }
+      // try {
+      //   const notificationsResponse = await communityAPI.getAdminNotifications();
+      //   setNotifications(notificationsResponse?.notifications || []);
+      // } catch (notifError) {
+      //   console.error('Failed to load notifications:', notifError);
+      //   setNotifications([]);
+      // }
 
     } catch (error) {
       console.error('Load admin data error:', error);

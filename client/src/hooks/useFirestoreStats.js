@@ -102,7 +102,7 @@ export const useRealtimeNotifications = (enabled = true) => {
                   localStorage.getItem('token');
         }
 
-        const response = await fetch('/api/users/notifications', {
+        const response = await fetch('/api/auth/users/notifications', {
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${token}`

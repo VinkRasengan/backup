@@ -213,7 +213,8 @@ app.get('/api', (req, res) => {
                 'PUT /api/users/profile - Update user profile',
                 'POST /api/users/change-password - Change password',
                 'GET /api/users/sessions - Get user sessions',
-                'DELETE /api/users/sessions/:id - Revoke session'
+                'DELETE /api/users/sessions/:id - Revoke session',
+                'GET /api/users/notifications - Get user notifications'
             ]
         },
         features: {
