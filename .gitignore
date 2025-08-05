@@ -272,3 +272,32 @@ backup-monolith-manual/
 
 client/src/components/temp
 SCORING.MD
+
+# Cleanup and maintenance files
+cleanup-report.json
+cleanup-report-*.json
+*.cleanup
+*.maintenance
+
+# Temporary development files
+*.dev
+*.development
+*.local-dev
+*.test-local
+
+# Performance and monitoring files
+*.perf
+*.profile
+*.heapdump
+*.core
+
+# Security scan results
+*.security
+*.vulnerability
+*.audit
+
+# Database dumps and backups
+*.sql
+*.dump
+*.backup
+*.bak

@@ -1,246 +1,200 @@
-# 🛡️ Anti-Fraud Platform
+# 📚 Documentation
 
-A comprehensive microservices-based platform for detecting and preventing online fraud, fake news, and malicious links.
+This directory contains all documentation for the FactCheck Anti-Fraud Platform.
 
-## 🚀 Quick Start
+## 📋 Files
 
+### User Documentation
+- **`USAGE-GUIDE.md`** - Comprehensive user guide in Markdown format
+- **`User_Guide.docx`** - User guide converted to Microsoft Word format
+- **`User_Guide.md`** - Original user guide (legacy)
+
+### Technical Documentation
+- **`README.md`** - This file
+- **`SCRIPTS_REFERENCE.md`** - Reference for all available scripts
+- **`Deployment_Guide.docx.md`** - Deployment guide in Markdown
+- **`User_Guide_Simple.docx`** - Simplified user guide
+
+## 🚀 Quick Commands
+
+### Generate User Guide DOCX
 ```bash
-# First time setup
-npm run setup
+# Generate and validate DOCX file
+npm run docs:generate
 
-# Start all services
-npm start
+# Convert only (without validation)
+npm run docs:convert
 
-# Check status
-npm run status
-
-# Stop all services
-npm stop
+# Validate existing DOCX file
+npm run docs:validate
 ```
 
-## 📋 Available Commands
-
-| Command | Description |
-|---------|-------------|
-| `npm run setup` | Complete setup and installation |
-| `npm start` | Start all services locally |
-| `npm run dev` | Start in development mode |
-| `npm stop` | Stop all services |
-| `npm restart` | Restart all services |
-| `npm run status` | Check service status |
-| `npm run health` | Health check all services |
-| `npm test` | Run all tests |
-| `npm run docker` | Deploy with Docker |
-| `npm run deploy:k8s` | Deploy to Kubernetes |
-| `npm run help` | Show help information |
-
-## 🏗️ Architecture
-
-### Core Services
-- **Frontend** (3000) - React web interface
-- **API Gateway** (8080) - Single entry point for all requests
-- **Auth Service** (3001) - User authentication and authorization
-- **Link Service** (3002) - URL verification and security analysis
-- **Community Service** (3003) - Posts, comments, and community features
-- **Chat Service** (3004) - Real-time messaging and AI chat
-- **News Service** (3005) - News aggregation and fact-checking
-- **Admin Service** (3006) - Administrative dashboard
-
-### Infrastructure
-- **Redis** (6379) - Caching and session storage
-- **Prometheus** (9090) - Metrics collection
-- **Grafana** (3010) - Monitoring dashboards
-
-## 🔧 Configuration
-
-### Environment Variables
-Copy `.env.example` to `.env` and configure:
-
+### Manual Generation
 ```bash
-# Core Configuration
-NODE_ENV=development
-REACT_APP_API_URL=http://localhost:8080
-
-# Firebase Configuration
-FIREBASE_PROJECT_ID=your-project-id
-FIREBASE_CLIENT_EMAIL=your-client-email
-FIREBASE_PRIVATE_KEY="your-private-key"
-
-# API Keys (Optional)
-GEMINI_API_KEY=your-gemini-api-key
-VIRUSTOTAL_API_KEY=your-virustotal-api-key
-NEWSAPI_API_KEY=your-newsapi-api-key
+# Direct script execution
+node scripts/generate-user-guide.js
+node scripts/convert-usage-guide-to-docx.js
+node scripts/validate-docx.js
 ```
 
-### Service URLs
+## 📝 Content Overview
+
+### User Guide Features
+- **Complete Installation Guide** - Step-by-step setup instructions
+- **System Requirements** - Hardware and software requirements
+- **Usage Instructions** - How to use all platform features
+- **Troubleshooting** - Common issues and solutions
+- **Video Tutorial Link** - YouTube video for visual guidance
+- **Community Guidelines** - Rules and best practices
+- **Security Information** - Privacy and security details
+
+### Technical Features
+- **Multi-format Support** - Markdown and DOCX formats
+- **Professional Layout** - Proper formatting and structure
+- **Validation** - Automatic file integrity checks
+- **Version Control** - Tracked changes and updates
+
+## 🔧 Script Details
+
+### `generate-user-guide.js`
+Main script that:
+1. Converts `USAGE-GUIDE.md` to DOCX format
+2. Validates the generated file
+3. Provides detailed output and status
+
+### `convert-usage-guide-to-docx.js`
+Converts markdown to DOCX with:
+- Professional formatting
+- Title page
+- Table of contents
+- Proper styling and colors
+- Page breaks and sections
+
+### `validate-docx.js`
+Validates DOCX file integrity:
+- File existence and size
+- DOCX signature verification
+- Internal structure validation
+- Content verification
+
+## 📊 File Specifications
+
+### DOCX Output
+- **Format**: Microsoft Word (.docx)
+- **Size**: ~17 KB
+- **Pages**: Multiple pages with proper formatting
+- **Features**: 
+  - Title page
+  - Table of contents
+  - Professional styling
+  - Hyperlinks
+  - Code blocks
+  - Lists and numbering
+
+### Markdown Source
+- **Format**: GitHub-flavored Markdown
+- **Encoding**: UTF-8
+- **Features**:
+  - Emojis and icons
+  - Code blocks
+  - Tables
+  - Links
+  - Lists
+
+## 🎯 Usage Scenarios
+
+### For End Users
+1. Download `User_Guide.docx`
+2. Open in Microsoft Word
+3. Follow the step-by-step instructions
+4. Watch the included video tutorial
+
+### For Developers
+1. Edit `USAGE-GUIDE.md` for content changes
+2. Run `npm run docs:generate` to update DOCX
+3. Commit both files to version control
+4. Share updated documentation
+
+### For Documentation Team
+1. Maintain `USAGE-GUIDE.md` as the source of truth
+2. Use scripts for consistent formatting
+3. Validate all generated files
+4. Update video links and references
+
+## 🔄 Update Process
+
+### When to Update
+- New features added to platform
+- UI/UX changes
+- Bug fixes that affect user workflow
+- System requirement changes
+- Video tutorial updates
+
+### Update Steps
+1. **Edit Source**: Modify `USAGE-GUIDE.md`
+2. **Generate**: Run `npm run docs:generate`
+3. **Validate**: Check output and file integrity
+4. **Test**: Open DOCX in Word to verify formatting
+5. **Commit**: Save both files to repository
+
+## 🛠️ Troubleshooting
+
+### Common Issues
+
+#### DOCX Won't Open
 ```bash
-AUTH_SERVICE_URL=http://localhost:3001
-LINK_SERVICE_URL=http://localhost:3002
-COMMUNITY_SERVICE_URL=http://localhost:3003
-CHAT_SERVICE_URL=http://localhost:3004
-NEWS_SERVICE_URL=http://localhost:3005
-ADMIN_SERVICE_URL=http://localhost:3006
+# Validate file integrity
+npm run docs:validate
+
+# Regenerate if needed
+npm run docs:generate
 ```
 
-## 🌐 Access URLs
+#### Formatting Issues
+- Check markdown syntax in source file
+- Ensure proper heading structure
+- Verify emoji compatibility
 
-- **Frontend**: http://localhost:3000
-- **API Gateway**: http://localhost:8080
-- **Prometheus**: http://localhost:9090
-- **Grafana**: http://localhost:3010
+#### Large File Size
+- Check for embedded images
+- Verify no unnecessary content
+- Regenerate with clean source
 
-## 🔍 Features
+### Error Messages
 
-### Link Verification
-- Real-time URL security analysis
-- Multiple security API integrations
-- Threat detection and scoring
-- Historical scan results
+#### "DOCX file not found"
+- Run `npm run docs:generate` first
+- Check file permissions
+- Verify output directory
 
-### Community Platform
-- User-generated content sharing
-- Voting and commenting system
-- Fact-checking collaboration
-- Community moderation
+#### "Invalid DOCX signature"
+- File may be corrupted
+- Regenerate the file
+- Check disk space
 
-### AI-Powered Chat
-- Google Gemini AI integration
-- Real-time assistance
-- Security recommendations
-- Educational content
+#### "Conversion failed"
+- Check markdown syntax
+- Verify all dependencies installed
+- Review error logs
 
-### News Monitoring
-- Automated news aggregation
-- Fact-checking alerts
-- Trending topic analysis
-- Source credibility scoring
+## 📞 Support
 
-## 🛠️ Development
+For documentation issues:
+1. Check this README first
+2. Review error messages carefully
+3. Try regenerating the file
+4. Contact development team if needed
 
-### Prerequisites
-- Node.js 18+
-- npm or yarn
-- Docker (optional)
-- Git
+## 📈 Future Improvements
 
-### Local Development
-```bash
-# Clone repository
-git clone <repository-url>
-cd anti-fraud-platform
-
-# Install dependencies
-npm run setup
-
-# Start development environment
-npm run dev
-
-# Run tests
-npm test
-```
-
-### Docker Deployment
-```bash
-# Build and start with Docker
-npm run docker
-
-# Stop Docker services
-npm run docker:stop
-```
-
-### Kubernetes Deployment
-```bash
-# Deploy to Kubernetes
-npm run deploy:k8s
-
-# Check deployment status
-kubectl get pods -n anti-fraud-platform
-```
-
-## 📊 Monitoring
-
-### Health Checks
-- Service health endpoints: `/health/live` and `/health/ready`
-- Prometheus metrics: `/metrics`
-- Status dashboard: `npm run status`
-
-### Logging
-- Centralized logging with correlation IDs
-- Error tracking and alerting
-- Performance monitoring
-
-## 🔒 Security
-
-### Authentication
-- Firebase Authentication integration
-- JWT token management
-- Role-based access control
-
-### API Security
-- Rate limiting
-- CORS configuration
-- Input validation
-- Security headers
-
-### Data Protection
-- Encrypted data transmission
-- Secure API key management
-- Privacy compliance
-
-## 🧪 Testing
-
-```bash
-# Run all tests
-npm test
-
-# Run specific service tests
-npm run test:auth
-npm run test:link
-npm run test:community
-
-# Run integration tests
-npm run test:integration
-
-# Run end-to-end tests
-npm run test:e2e
-```
-
-## 📚 API Documentation
-
-### Authentication Endpoints
-- `POST /api/auth/login` - User login
-- `POST /api/auth/register` - User registration
-- `GET /api/auth/profile` - Get user profile
-
-### Link Verification Endpoints
-- `POST /api/links/check` - Verify URL security
-- `GET /api/links/history` - Get scan history
-- `POST /api/links/report` - Report malicious link
-
-### Community Endpoints
-- `GET /api/community/posts` - Get community posts
-- `POST /api/community/posts` - Create new post
-- `POST /api/community/vote` - Vote on post
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests
-5. Submit a pull request
-
-## 📄 License
-
-This project is licensed under the MIT License.
-
-## 🆘 Support
-
-For support and questions:
-- Check the documentation
-- Run `npm run help`
-- Create an issue on GitHub
+- [ ] Add PDF generation
+- [ ] Include screenshots
+- [ ] Multi-language support
+- [ ] Interactive elements
+- [ ] Version comparison tools
+- [ ] Automated testing
 
 ---
 
-**Built with ❤️ for a safer internet**
+*Last updated: August 2024*
+*Version: 2.0*
