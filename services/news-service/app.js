@@ -3,8 +3,8 @@ const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
 
-// Load environment variables
-require('dotenv').config();
+// Load environment variables from root .env
+require('dotenv').config({ path: require('path').join(__dirname, '../../.env') });
 
 const app = express();
 const PORT = process.env.PORT || 3005;

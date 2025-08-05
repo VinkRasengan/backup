@@ -9,7 +9,8 @@ const helmet = require('helmet');
 const compression = require('compression');
 const WebSocket = require('ws');
 const http = require('http');
-require('dotenv').config();
+// Load environment variables from root .env
+require('dotenv').config({ path: require('path').join(__dirname, '../../../../.env') });
 
 const logger = require('./utils/logger');
 const EventBusManager = require('./managers/eventBusManager');
