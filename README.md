@@ -58,13 +58,29 @@ A production-ready microservices platform for real-time link verification, commu
 - **Firebase** project (free tier available)
 - **API Keys** for external services (optional for basic functionality)
 
+### **🚀 One-Command Setup**
+
+For the fastest setup experience:
+
+```bash
+git clone https://github.com/VinkRasengan/backup.git
+cd backup
+npm run install:all          # Install all dependencies
+cp .env.example .env         # Setup environment
+npm start                    # Start everything
+```
+
+**That's it!** Your FactCheck platform will be running at:
+- **Frontend**: http://localhost:3000
+- **API Gateway**: http://localhost:8080
+
 ### **Local Development Setup**
 
 1. **Clone and Install**
 ```bash
 git clone https://github.com/VinkRasengan/backup.git
 cd backup
-npm install
+npm run install:all          # Install all dependencies for all services
 ```
 
 2. **Environment Configuration**
@@ -80,6 +96,10 @@ cp .env.example .env
 
 3. **Start Development Environment**
 ```bash
+# Quick Start (Recommended)
+npm start                    # Start all services and infrastructure
+
+# Alternative Options:
 # Option 1: Full Docker stack (recommended for production-like testing)
 npm run docker:start
 
@@ -87,8 +107,15 @@ npm run docker:start
 npm run infrastructure:start  # Start Redis + RabbitMQ + KurrentDB
 npm run dev                   # Start all services locally
 
-# Option 3: Local development (fastest for development)
-npm start                    # Start all services in separate terminals
+# Option 3: Individual service development
+npm run dev:auth             # Start auth service only
+npm run dev:link             # Start link service only
+npm run dev:client           # Start frontend only
+```
+
+4. **Stop All Services**
+```bash
+npm stop                     # Kill all running processes and stop services
 ```
 
 4. **Access Applications**
@@ -104,29 +131,40 @@ npm start                    # Start all services in separate terminals
 ### **Development Commands**
 
 ```bash
-# Environment & Health Checks
+# 🚀 Core Development Scripts
+npm run install:all          # Install all dependencies for all services
+npm start                    # Start all services and infrastructure
+npm stop                     # Kill all running processes and stop services
+npm restart                  # Restart all services
+npm run status               # Check service status
+
+# 🔧 Environment & Health Checks
 npm run env:validate          # Validate environment configuration
 npm run health               # Check all services health
-npm run status               # Quick status check
+npm run env:setup            # Setup environment variables
 
-# Testing
+# 🧪 Testing
 npm run test:all             # Run all tests
 npm run test:services        # Test individual services
 npm run test:integration     # Integration tests
+npm run test:unit            # Run unit tests
 
-# Docker Management
+# 🐳 Docker Management
 npm run docker:build         # Build all containers
 npm run docker:logs          # View container logs
 npm run docker:clean         # Clean up containers and volumes
+npm run docker:start         # Start full Docker stack
 
-# Big Data Management
+# 📊 Big Data Management
 npm run bigdata:start        # Start Hadoop/Spark infrastructure
 npm run bigdata:stop         # Stop Big Data containers
 npm run bigdata:logs         # View Big Data logs
 
-# Production Readiness
+# 🚀 Production Readiness
 npm run test:render          # Test deployment readiness
 npm run validate:production  # Production environment validation
+npm run deploy               # Deploy with Docker
+npm run deploy:render        # Deploy to Render
 ```
 
 ## 🔧 Configuration Management
@@ -483,16 +521,54 @@ This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) 
 
 ## 🛠️ Development
 
+### 🚀 Build Scripts
+
+The project provides comprehensive build scripts for easy local deployment:
+
+```bash
+# 📦 Install all dependencies
+npm run install:all          # Install dependencies for all services and client
+
+# 🚀 Start all services
+npm start                    # Start all microservices, infrastructure, and client
+
+# 🛑 Stop all processes
+npm stop                     # Kill all running processes and stop services
+
+# 🔄 Restart everything
+npm restart                  # Restart all services and infrastructure
+```
+
+**What these scripts do:**
+
+- **`npm run install:all`**: Installs all dependencies for:
+  - All microservices (auth, link, community, chat, news, admin, etc.)
+  - Client React application
+  - Development tools and scripts
+
+- **`npm start`**: Starts the complete platform:
+  - Infrastructure services (Redis, RabbitMQ, KurrentDB)
+  - All microservices on their respective ports
+  - React client application
+  - Cross-platform compatibility (Windows, macOS, Linux)
+
+- **`npm stop`**: Safely stops everything:
+  - Kills all Node.js processes
+  - Stops Docker containers
+  - Cleans up temporary files
+  - Cross-platform process management
+
 ### Available Scripts
 
-#### Core Development
-- `npm start` - Start all services (cross-platform)
-- `npm run dev` - Start all services in development mode
-- `npm stop` - Stop all services
+#### 🚀 Core Development Scripts
+- `npm run install:all` - Install all dependencies for all services
+- `npm start` - Start all services and infrastructure (cross-platform)
+- `npm stop` - Kill all running processes and stop services
 - `npm restart` - Restart all services
 - `npm run status` - Check service status
+- `npm run dev` - Start all services in development mode
 
-#### Setup & Installation
+#### 🔧 Setup & Installation
 - `npm run setup` - Install dependencies and setup environment
 - `npm run setup:full` - Complete setup with validation
 - `npm run env:setup` - Setup environment variables
