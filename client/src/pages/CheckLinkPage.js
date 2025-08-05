@@ -17,7 +17,7 @@ import { useFadeIn, useCounterAnimation, useLoadingAnimation } from '../hooks/us
 import firestoreService from '../services/firestoreService';
 import { useAuth } from '../context/AuthContext';
 
-import { normalizeUrl } from '../utils/urlUtils';
+import { normalizeUrl, isValidUrl } from '../utils/urlUtils';
 
 const schema = yup.object({
   url: yup
@@ -99,9 +99,7 @@ const CheckLinkPage = () => {
       const normalizedUrl = normalizeUrl(data.url);
 
       // Validate normalized URL
-      try {
-        new URL(normalizedUrl);
-      } catch (error) {
+      if (!isValidUrl(normalizedUrl)) {
         toast.error('URL không hợp lệ. Vui lòng kiểm tra lại.');
         setIsLoading(false);
         return;

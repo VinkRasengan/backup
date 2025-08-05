@@ -40,7 +40,13 @@ export const isValidUrl = (url) => {
   
   try {
     const normalizedUrl = normalizeUrl(url);
-    new URL(normalizedUrl);
+    const parsedUrl = new URL(normalizedUrl);
+
+    // Check if the hostname contains a valid TLD
+    const validTldRegex = /\.(com|net|org|io|gov|edu|co|us|info|biz|me|dev)$/i;
+    if (!validTldRegex.test(parsedUrl.hostname)) {
+      return false;
+    }
     return true;
   } catch {
     return false;
