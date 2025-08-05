@@ -28,7 +28,7 @@ if (process.env.EVENT_STORE_ENABLED === 'true') {
 }
 
 const app = express();
-const PORT = process.env.ETL_SERVICE_PORT || 3008;
+const PORT = process.env.ETL_SERVICE_PORT || 3011;
 
 // Security middleware
 app.use(helmet());

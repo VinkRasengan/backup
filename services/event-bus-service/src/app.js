@@ -26,7 +26,7 @@ class EventBusService {
     this.server = http.createServer(this.app);
     this.wss = new WebSocket.Server({ server: this.server });
     
-    this.port = process.env.EVENT_BUS_SERVICE_PORT || process.env.PORT || 3009;
+    this.port = process.env.EVENT_BUS_SERVICE_PORT || 3007;
     this.serviceName = 'event-bus-service';
     
     // Initialize components

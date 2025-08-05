@@ -7,7 +7,7 @@ const morgan = require('morgan');
 require('dotenv').config({ path: require('path').join(__dirname, '../../.env') });
 
 const app = express();
-const PORT = process.env.PORT || 3006;
+const PORT = process.env.ADMIN_SERVICE_PORT || 3006;
 // Service configuration
 const service = {
     name: 'Admin Service',

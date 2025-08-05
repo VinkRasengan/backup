@@ -7,7 +7,7 @@ const morgan = require('morgan');
 require('dotenv').config({ path: require('path').join(__dirname, '../../.env') });
 
 const app = express();
-const PORT = process.env.PORT || 3005;
+const PORT = process.env.NEWS_SERVICE_PORT || 3005;
 // Service configuration
 const service = {
     name: 'News Service',
