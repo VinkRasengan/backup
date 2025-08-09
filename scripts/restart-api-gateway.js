@@ -5,9 +5,9 @@
  * Restarts the API Gateway service with new routing configuration
  */
 
-const { spawn, exec } = require('child_process');
-const path = require('path');
-const os = require('os');
+import { spawn, exec  } from 'child_process';
+import path from 'path';
+import os from 'os';
 
 class ApiGatewayRestart {
   constructor() {
@@ -171,9 +171,9 @@ class ApiGatewayRestart {
 }
 
 // Run restart
-if (require.main === module) {
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const restarter = new ApiGatewayRestart();
   restarter.restart().catch(console.error);
 }
 
-module.exports = ApiGatewayRestart;
+export default ApiGatewayRestart;

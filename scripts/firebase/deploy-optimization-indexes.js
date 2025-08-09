@@ -1,7 +1,7 @@
 // Deploy Database Optimization Indexes
-const { execSync } = require('child_process');
-const fs = require('fs');
-const path = require('path');
+import { execSync  } from 'child_process';
+import fs from 'fs';
+import path from 'path';
 
 console.log('🚀 Deploying Database Optimization Indexes...');
 
@@ -178,11 +178,11 @@ async function main() {
 }
 
 // Run deployment if this file is executed directly
-if (require.main === module) {
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
     main().catch(console.error);
 }
 
-module.exports = {
+export default {
     checkFirebaseConfig,
     validateIndexes,
     deployIndexes,

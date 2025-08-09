@@ -1,12 +1,16 @@
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 #!/usr/bin/env node
 /**
  * Simple Docker Stop Script
  * Stops all Docker services and cleans up containers
  */
 
-const { exec } = require('child_process');
+import { exec  } from 'child_process';
 const util = require('util');
-const path = require('path');
+import path from 'path';
 
 const execAsync = util.promisify(exec);
 
@@ -242,7 +246,7 @@ const args = process.argv.slice(2);
 const forceMode = args.includes('--force') || args.includes('-f');
 
 // Stop if called directly
-if (require.main === module) {
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const stopper = new DockerStopper();
   
   if (forceMode) {
@@ -254,4 +258,4 @@ if (require.main === module) {
   }
 }
 
-module.exports = DockerStopper;
+export default DockerStopper;

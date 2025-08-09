@@ -5,8 +5,8 @@
  * Deploys all services using the main docker-compose.yml file
  */
 
-const { exec, spawn } = require('child_process');
-const path = require('path');
+import { exec, spawn  } from 'child_process';
+import path from 'path';
 
 class DockerFullstackDeployment {
   constructor() {
@@ -251,9 +251,9 @@ class DockerFullstackDeployment {
 }
 
 // Run deployment
-if (require.main === module) {
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const deployment = new DockerFullstackDeployment();
   deployment.deploy().catch(console.error);
 }
 
-module.exports = DockerFullstackDeployment;
+export default DockerFullstackDeployment;

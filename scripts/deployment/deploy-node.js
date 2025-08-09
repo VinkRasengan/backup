@@ -5,10 +5,10 @@
  * Deploys all services and client using direct node execution
  */
 
-const { spawn, exec, fork } = require('child_process');
-const path = require('path');
-const fs = require('fs');
-const os = require('os');
+import { spawn, exec, fork  } from 'child_process';
+import path from 'path';
+import fs from 'fs';
+import os from 'os';
 
 class NodeDeployment {
   constructor() {
@@ -453,9 +453,9 @@ process.on('SIGINT', () => {
 });
 
 // Run deployment
-if (require.main === module) {
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const deployment = new NodeDeployment();
   deployment.deploy().catch(console.error);
 }
 
-module.exports = NodeDeployment;
+export default NodeDeployment;

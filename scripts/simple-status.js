@@ -4,9 +4,9 @@
  * Simple Status Script - Check what's running
  */
 
-const { spawn } = require('child_process');
+import { spawn  } from 'child_process';
 const http = require('http');
-const os = require('os');
+import os from 'os';
 
 class SimpleStatus {
   constructor() {
@@ -117,9 +117,9 @@ class SimpleStatus {
 }
 
 // Run if called directly
-if (require.main === module) {
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const status = new SimpleStatus();
   status.checkStatus().catch(console.error);
 }
 
-module.exports = SimpleStatus;
+export default SimpleStatus;

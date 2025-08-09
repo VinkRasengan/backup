@@ -6,10 +6,14 @@
  * Enhanced for Windows with better process and terminal management
  */
 
-const { exec, spawn } = require('child_process');
-const path = require('path');
-const fs = require('fs');
-const os = require('os');
+import { exec, spawn } from 'child_process';
+import path from 'path';
+import fs from 'fs';
+import os from 'os';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 class UniversalStop {
   constructor() {
@@ -561,7 +565,8 @@ process.on('SIGINT', () => {
 });
 
 // Run enhanced stop
-if (require.main === module) {
+const scriptPath = fileURLToPath(import.meta.url);
+if (process.argv[1] === scriptPath) {
   console.log('🚀 Starting Enhanced Universal Stop...');
   const stop = new UniversalStop();
   stop.stop()
@@ -579,4 +584,4 @@ if (require.main === module) {
     });
 }
 
-module.exports = UniversalStop;
+export default UniversalStop;

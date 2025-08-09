@@ -1,3 +1,7 @@
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 #!/usr/bin/env node
 
 /**
@@ -5,9 +9,9 @@
  * Khởi động tất cả services cần thiết cho demo Hadoop & Spark
  */
 
-const { spawn } = require('child_process');
+import { spawn  } from 'child_process';
 const axios = require('axios');
-const path = require('path');
+import path from 'path';
 
 class DemoStarter {
     constructor() {
@@ -200,10 +204,10 @@ class DemoStarter {
 }
 
 // Run if called directly
-if (require.main === module) {
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
     const starter = new DemoStarter();
     starter.setupGracefulShutdown();
     starter.startAll().catch(console.error);
 }
 
-module.exports = DemoStarter;
+export default DemoStarter;

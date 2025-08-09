@@ -1,3 +1,7 @@
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 #!/usr/bin/env node
 
 /**
@@ -5,8 +9,8 @@
  * Updates all services to use the correct path to config/env-loader.js
  */
 
-const fs = require('fs');
-const path = require('path');
+import fs from 'fs';
+import path from 'path';
 
 class EnvLoaderPathFixer {
   constructor() {
@@ -208,9 +212,9 @@ class EnvLoaderPathFixer {
 }
 
 // Run the fixer
-if (require.main === module) {
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const fixer = new EnvLoaderPathFixer();
   fixer.fix().catch(console.error);
 }
 
-module.exports = EnvLoaderPathFixer;
+export default EnvLoaderPathFixer;

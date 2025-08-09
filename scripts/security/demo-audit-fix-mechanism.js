@@ -5,9 +5,9 @@
  * Script demo để giải thích cơ chế hoạt động của npm audit fix
  */
 
-const { execSync } = require('child_process');
-const fs = require('fs');
-const path = require('path');
+import { execSync  } from 'child_process';
+import fs from 'fs';
+import path from 'path';
 const chalk = require('chalk');
 
 // Màu sắc cho output
@@ -336,11 +336,11 @@ function runDemo() {
 }
 
 // Chạy demo nếu được gọi trực tiếp
-if (require.main === module) {
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
   runDemo();
 }
 
-module.exports = {
+export default {
   demoDependencyAnalysis,
   demoSafeVersionFinding,
   demoDependencyUpdate,

@@ -4,7 +4,7 @@
  * Handles the complete startup sequence for Event Sourcing
  */
 
-const { spawn, exec } = require('child_process');
+import { spawn, exec  } from 'child_process';
 const axios = require('axios');
 const util = require('util');
 
@@ -398,7 +398,7 @@ class EventSourcingStarter {
 }
 
 // CLI interface
-if (require.main === module) {
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const args = process.argv.slice(2);
   const options = {
     skipInfrastructure: args.includes('--skip-infrastructure'),
@@ -413,4 +413,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = EventSourcingStarter;
+export default EventSourcingStarter;

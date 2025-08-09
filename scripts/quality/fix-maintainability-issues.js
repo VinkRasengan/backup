@@ -1,6 +1,6 @@
-const { execSync } = require('child_process');
-const fs = require('fs');
-const path = require('path');
+import { execSync  } from 'child_process';
+import fs from 'fs';
+import path from 'path';
 
 class MaintainabilityFixer {
   constructor() {
@@ -290,7 +290,7 @@ class MaintainabilityFixer {
 }
 
 // Chạy script
-if (require.main === module) {
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const fixer = new MaintainabilityFixer();
   fixer.fixMaintainabilityIssues().catch(error => {
     console.error('❌ Lỗi:', error.message);
@@ -298,4 +298,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = MaintainabilityFixer;
+export default MaintainabilityFixer;

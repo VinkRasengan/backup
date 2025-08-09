@@ -264,9 +264,9 @@ class AnalyticsDemoRunner {
 }
 
 // Run if called directly
-if (require.main === module) {
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
     const demo = new AnalyticsDemoRunner();
     demo.runDemo().catch(console.error);
 }
 
-module.exports = AnalyticsDemoRunner;
+export default AnalyticsDemoRunner;

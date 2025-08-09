@@ -162,4 +162,4 @@ if (command === 'clear') {
   verifyData();
 }
 
-module.exports = { verifyData, clearAllData };
+export default { verifyData, clearAllData };

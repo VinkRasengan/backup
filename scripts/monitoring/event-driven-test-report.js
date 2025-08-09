@@ -6,7 +6,7 @@
  */
 
 const axios = require('axios');
-const fs = require('fs');
+import fs from 'fs';
 
 class EventDrivenTestReport {
   constructor() {
@@ -309,9 +309,9 @@ class EventDrivenTestReport {
 }
 
 // Run comprehensive test
-if (require.main === module) {
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const tester = new EventDrivenTestReport();
   tester.generateReport().catch(console.error);
 }
 
-module.exports = EventDrivenTestReport;
+export default EventDrivenTestReport;

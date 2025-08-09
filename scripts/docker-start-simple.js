@@ -5,9 +5,9 @@
  * Starts the full FactCheck Platform using docker-compose.yml
  */
 
-const { exec } = require('child_process');
-const path = require('path');
-const fs = require('fs');
+import { exec  } from 'child_process';
+import path from 'path';
+import fs from 'fs';
 
 class SimpleDockerStart {
   constructor() {
@@ -160,9 +160,9 @@ class SimpleDockerStart {
 }
 
 // Run if called directly
-if (require.main === module) {
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const deployment = new SimpleDockerStart();
   deployment.start();
 }
 
-module.exports = SimpleDockerStart;
+export default SimpleDockerStart;

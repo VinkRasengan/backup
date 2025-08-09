@@ -4,7 +4,7 @@
  * Checks the health of all Docker services
  */
 
-const { exec } = require('child_process');
+import { exec  } from 'child_process';
 const util = require('util');
 
 const execAsync = util.promisify(exec);

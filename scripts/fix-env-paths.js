@@ -1,3 +1,7 @@
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 #!/usr/bin/env node
 
 /**
@@ -5,8 +9,8 @@
  * Ensures all services can properly load root .env file
  */
 
-const fs = require('fs');
-const path = require('path');
+import fs from 'fs';
+import path from 'path';
 
 class EnvPathFixer {
   constructor() {
@@ -182,9 +186,9 @@ class EnvPathFixer {
 }
 
 // Run the fixer
-if (require.main === module) {
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const fixer = new EnvPathFixer();
   fixer.fix().catch(console.error);
 }
 
-module.exports = EnvPathFixer;
+export default EnvPathFixer;

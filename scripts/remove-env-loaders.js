@@ -1,3 +1,7 @@
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 #!/usr/bin/env node
 
 /**
@@ -5,8 +9,8 @@
  * Replace with simple dotenv loading from root .env
  */
 
-const fs = require('fs');
-const path = require('path');
+import fs from 'fs';
+import path from 'path';
 
 class EnvLoaderRemover {
   constructor() {
@@ -265,9 +269,9 @@ require('dotenv').config({ path: require('path').join(__dirname, '../../../.env'
 }
 
 // Run the remover
-if (require.main === module) {
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const remover = new EnvLoaderRemover();
   remover.remove().catch(console.error);
 }
 
-module.exports = EnvLoaderRemover;
+export default EnvLoaderRemover;

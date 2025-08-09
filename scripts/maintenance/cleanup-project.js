@@ -5,9 +5,9 @@
  * Comprehensive cleanup for development environment
  */
 
-const { execSync, spawn } = require('child_process');
-const fs = require('fs');
-const path = require('path');
+import { execSync, spawn  } from 'child_process';
+import fs from 'fs';
+import path from 'path';
 
 console.log('🧹 FactCheck Platform - Project Cleanup');
 console.log('=====================================\n');
@@ -277,11 +277,11 @@ function main() {
 }
 
 // Run cleanup
-if (require.main === module) {
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
   main();
 }
 
-module.exports = {
+export default {
   cleanupNodeModules,
   cleanupBuildFiles,
   cleanupCacheFiles,

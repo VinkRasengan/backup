@@ -1,8 +1,12 @@
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 #!/usr/bin/env node
 
-const { execSync } = require('child_process');
-const path = require('path');
-const fs = require('fs');
+import { execSync  } from 'child_process';
+import path from 'path';
+import fs from 'fs';
 
 /**
  * Script to convert Markdown files to DOCX format using Pandoc
@@ -156,8 +160,8 @@ Requirements:
 }
 
 // Run the script
-if (require.main === module) {
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
   main();
 }
 
-module.exports = { convertMarkdownToDocx }; 
+export default { convertMarkdownToDocx }; 

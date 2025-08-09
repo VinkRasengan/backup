@@ -4,10 +4,10 @@
  * Enhanced Simple Start Script - Cross-platform with Environment Validation
  */
 
-const { spawn } = require('child_process');
-const path = require('path');
-const os = require('os');
-const fs = require('fs');
+import { spawn  } from 'child_process';
+import path from 'path';
+import os from 'os';
+import fs from 'fs';
 
 class SimpleStart {
   constructor() {
@@ -512,9 +512,9 @@ class SimpleStart {
 }
 
 // Run if called directly
-if (require.main === module) {
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const starter = new SimpleStart();
   starter.start().catch(console.error);
 }
 
-module.exports = SimpleStart;
+export default SimpleStart;

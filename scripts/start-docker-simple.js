@@ -4,7 +4,7 @@
  * Starts all services with Docker Compose without complex health checks
  */
 
-const { exec } = require('child_process');
+import { exec  } from 'child_process';
 const util = require('util');
 
 const execAsync = util.promisify(exec);

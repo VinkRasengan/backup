@@ -1,11 +1,15 @@
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 #!/usr/bin/env node
 /**
  * Smart Start Handler for FactCheck Platform
  * Handles: npm start [separate|together]
  */
 
-const { spawn } = require('child_process');
-const path = require('path');
+import { spawn  } from 'child_process';
+import path from 'path';
 
 // Get command line arguments
 const args = process.argv.slice(2);

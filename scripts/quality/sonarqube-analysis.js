@@ -1,7 +1,7 @@
-const { execSync } = require('child_process');
+import { execSync  } from 'child_process';
 const chalk = require('chalk');
-const fs = require('fs');
-const path = require('path');
+import fs from 'fs';
+import path from 'path';
 
 const SONAR_TOKEN = process.env.SONAR_TOKEN || 'your-sonar-token';
 const SONAR_HOST = process.env.SONAR_HOST || 'http://localhost:9000';

@@ -4,9 +4,9 @@
  * Starts all services including frontend and monitoring via Docker Compose
  */
 
-const { spawn, exec } = require('child_process');
+import { spawn, exec  } from 'child_process';
 const util = require('util');
-const os = require('os');
+import os from 'os';
 
 const execAsync = util.promisify(exec);
 

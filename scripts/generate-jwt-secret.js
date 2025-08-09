@@ -20,7 +20,7 @@ function generateSecureSecret() {
   return secret;
 }
 
-if (require.main === module) {
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
   console.log('🔐 Generating JWT Secret...');
   console.log('');
   
@@ -39,7 +39,7 @@ if (require.main === module) {
   console.log('   Both are equally secure - choose what you prefer');
 }
 
-module.exports = {
+export default {
   generateJWTSecret,
   generateSecureSecret
 }; 

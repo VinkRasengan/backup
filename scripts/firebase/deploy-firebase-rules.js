@@ -5,9 +5,9 @@
  * Automates Firebase configuration deployment
  */
 
-const { execSync } = require('child_process');
-const fs = require('fs');
-const path = require('path');
+import { execSync  } from 'child_process';
+import fs from 'fs';
+import path from 'path';
 
 console.log('🔥 Firebase Rules & Indexes Deployment');
 console.log('=====================================');
@@ -196,11 +196,11 @@ async function deployFirebase() {
 }
 
 // Run deployment if called directly
-if (require.main === module) {
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
     deployFirebase().catch(error => {
         console.error('❌ Deployment failed:', error);
         process.exit(1);
     });
 }
 
-module.exports = { deployFirebase, deployRules, deployIndexes };
+export default { deployFirebase, deployRules, deployIndexes };

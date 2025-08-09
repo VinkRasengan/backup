@@ -5,9 +5,10 @@
  * Check project health and status after cleanup
  */
 
-const { execSync } = require('child_process');
-const fs = require('fs');
-const path = require('path');
+import { execSync  } from 'child_process';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
 console.log('🔍 FactCheck Platform - Project Status Check');
 console.log('==========================================\n');
@@ -99,7 +100,7 @@ function checkNpmVersion() {
 function checkDiskSpace() {
   try {
     const stats = fs.statSync('.');
-    const freeSpace = require('child_process').execSync('wmic logicaldisk get size,freespace,caption', { encoding: 'utf8' });
+    const freeSpace = execSync('wmic logicaldisk get size,freespace,caption', { encoding: 'utf8' });
     log('✅ Disk Space: Available', 'green');
     return true;
   } catch (error) {
@@ -211,11 +212,11 @@ function main() {
 }
 
 // Run status check
-if (require.main === module) {
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
   main();
 }
 
-module.exports = {
+export default {
   checkFileExists,
   checkDirectoryExists,
   checkPortStatus,

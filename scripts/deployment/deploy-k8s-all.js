@@ -5,9 +5,9 @@
  * Deploys all services and client to Kubernetes cluster
  */
 
-const { exec, spawn } = require('child_process');
-const path = require('path');
-const fs = require('fs');
+import { exec, spawn  } from 'child_process';
+import path from 'path';
+import fs from 'fs';
 
 class KubernetesDeployment {
   constructor() {
@@ -519,9 +519,9 @@ spec:
 }
 
 // Run deployment
-if (require.main === module) {
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const deployment = new KubernetesDeployment();
   deployment.deploy().catch(console.error);
 }
 
-module.exports = KubernetesDeployment;
+export default KubernetesDeployment;

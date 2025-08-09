@@ -1,13 +1,15 @@
-#!/usr/bin/env node
+import { execSync, spawn  } from 'child_process';
+import fs from 'fs';
+import path from 'path';
 
-/**
- * Event Sourcing Deployment Script
- * Deploys Event Sourcing infrastructure to production
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+cture to production
  */
 
-const { execSync, spawn } = require('child_process');
-const fs = require('fs');
-const path = require('path');
+import { execSync, spawn  } from 'child_process';
+import fs from 'fs';
+import path from 'path';
 
 class EventSourcingDeployer {
   constructor() {

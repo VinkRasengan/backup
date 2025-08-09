@@ -4,23 +4,41 @@
  * Starts all services and frontend together with better logging
  */
 
-const { spawn } = require('child_process');
-const path = require('path');
-const fs = require('fs');
+import { spawn, exec } from 'child_process';
+import path from 'path';
+import fs from 'fs';
+import { fileURLToPath } from 'url';
 
 class FastTogetherStart {
   constructor() {
     this.rootDir = process.cwd();
     
-    // Services with optimized concurrently setup
+    // Services with optimized concurrently setup - Full FactCheck Platform
     this.services = [
+      // Core Infrastructure
+      { name: 'event-bus', dir: 'services/event-bus-service', port: 3009, color: 'bgGray.bold' },
+      
+      // Essential Services
       { name: 'auth', dir: 'services/auth-service', port: 3001, color: 'bgBlue.bold' },
       { name: 'gateway', dir: 'services/api-gateway', port: 8080, color: 'bgWhite.bold' },
+      
+      // Core Business Services
       { name: 'community', dir: 'services/community-service', port: 3003, color: 'bgGreen.bold' },
       { name: 'link', dir: 'services/link-service', port: 3002, color: 'bgMagenta.bold' },
       { name: 'chat', dir: 'services/chat-service', port: 3004, color: 'bgYellow.bold' },
       { name: 'news', dir: 'services/news-service', port: 3005, color: 'bgRed.bold' },
       { name: 'admin', dir: 'services/admin-service', port: 3006, color: 'bgCyan.bold' },
+      
+      // Big Data & Analytics Services
+      { name: 'spark', dir: 'services/spark-service', port: 3010, color: 'bgYellow.bold' },
+      { name: 'etl', dir: 'services/etl-service', port: 3011, color: 'bgBlue.bold' },
+      { name: 'analytics', dir: 'services/analytics-service', port: 3012, color: 'bgMagenta.bold' },
+      
+      // Security Services
+      { name: 'phishtank', dir: 'services/phishtank-service', port: 3013, color: 'bgRed.bold' },
+      { name: 'criminalip', dir: 'services/criminalip-service', port: 3014, color: 'bgRed.bold' },
+      
+      // Frontend
       { name: 'frontend', dir: 'client', port: 3000, color: 'bgMagenta.bold' }
     ];
   }
@@ -126,8 +144,9 @@ class FastTogetherStart {
     console.log('  ⏱️  This will show all service logs in one terminal...');
     console.log('  🎨 Each service has a different color prefix\n');
 
-    // Start concurrently
-    const child = spawn('npx', ['concurrently', ...concurrentlyArgs], {
+    // Start concurrently using local installation
+    const concurrentlyPath = path.join(this.rootDir, 'node_modules', '.bin', 'concurrently' + (process.platform === 'win32' ? '.cmd' : ''));
+    const child = spawn(concurrentlyPath, concurrentlyArgs, {
       cwd: this.rootDir,
       stdio: 'inherit',
       env: {
@@ -168,7 +187,6 @@ class FastTogetherStart {
       const isWindows = process.platform === 'win32';
       
       if (isWindows) {
-        const { exec } = require('child_process');
         exec(`netstat -ano | findstr :${port}`, (error, stdout) => {
           if (stdout) {
             const lines = stdout.split('\n');
@@ -183,7 +201,6 @@ class FastTogetherStart {
           resolve();
         });
       } else {
-        const { exec } = require('child_process');
         exec(`lsof -ti:${port} | xargs kill -9 2>/dev/null`, () => resolve());
       }
     });
@@ -229,7 +246,6 @@ class FastTogetherStart {
    */
   execAsync(command, options = {}) {
     return new Promise((resolve, reject) => {
-      const { exec } = require('child_process');
       const timeout = options.timeout || 30000;
       const child = exec(command, options, (error, stdout, stderr) => {
         if (error) reject(error);
@@ -251,9 +267,9 @@ process.on('SIGINT', () => {
 });
 
 // Run fast start
-if (require.main === module) {
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const fastStart = new FastTogetherStart();
   fastStart.start().catch(console.error);
 }
 
-module.exports = FastTogetherStart;
+export default FastTogetherStart;

@@ -1,4 +1,4 @@
-const { execSync } = require('child_process');
+import { execSync  } from 'child_process';
 const chalk = require('chalk');
 const https = require('https');
 const http = require('http');

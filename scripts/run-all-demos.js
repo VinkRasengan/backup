@@ -293,9 +293,9 @@ class BigDataDemoRunner {
 }
 
 // Run if called directly
-if (require.main === module) {
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
     const runner = new BigDataDemoRunner();
     runner.runAllDemos().catch(console.error);
 }
 
-module.exports = BigDataDemoRunner;
+export default BigDataDemoRunner;

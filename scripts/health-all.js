@@ -5,9 +5,9 @@
  * Performs detailed health checks across all deployment methods
  */
 
-const { exec } = require('child_process');
-const path = require('path');
-const fs = require('fs');
+import { exec  } from 'child_process';
+import path from 'path';
+import fs from 'fs';
 
 class UniversalHealthCheck {
   constructor() {
@@ -336,7 +336,7 @@ class UniversalHealthCheck {
 
     // Check system resources
     try {
-      const os = require('os');
+      import os from 'os';
       const cpuUsage = os.loadavg();
       const memoryUsage = {
         total: os.totalmem(),
@@ -514,9 +514,9 @@ class UniversalHealthCheck {
 }
 
 // Run health check
-if (require.main === module) {
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const healthCheck = new UniversalHealthCheck();
   healthCheck.performHealthCheck().catch(console.error);
 }
 
-module.exports = UniversalHealthCheck;
+export default UniversalHealthCheck;

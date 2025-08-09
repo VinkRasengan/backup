@@ -3,8 +3,8 @@
  * Stop all services running on their respective ports
  */
 
-const { exec } = require('child_process');
-const os = require('os');
+import { exec  } from 'child_process';
+import os from 'os';
 
 const services = [
   { name: 'Auth Service', port: 3001 },

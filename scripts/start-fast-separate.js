@@ -4,10 +4,14 @@
  * Starts all services and frontend in separate terminals quickly
  */
 
-const { spawn, exec } = require('child_process');
-const path = require('path');
-const os = require('os');
-const fs = require('fs');
+import { spawn, exec } from 'child_process';
+import path from 'path';
+import os from 'os';
+import fs from 'fs';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 class FastSeparateStart {
   constructor() {
@@ -311,9 +315,10 @@ process.on('SIGINT', () => {
 });
 
 // Run fast start
-if (require.main === module) {
+const scriptPath = fileURLToPath(import.meta.url);
+if (process.argv[1] === scriptPath) {
   const fastStart = new FastSeparateStart();
   fastStart.start().catch(console.error);
 }
 
-module.exports = FastSeparateStart;
+export default FastSeparateStart;

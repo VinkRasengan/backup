@@ -5,10 +5,10 @@
  * Deploys all services and client locally using npm start
  */
 
-const { spawn, exec } = require('child_process');
-const path = require('path');
-const fs = require('fs');
-const os = require('os');
+import { spawn, exec  } from 'child_process';
+import path from 'path';
+import fs from 'fs';
+import os from 'os';
 
 class LocalDeployment {
   constructor() {
@@ -178,7 +178,7 @@ class LocalDeployment {
 
     try {
       // Check if Docker is available
-      const { exec } = require('child_process');
+      import { exec  } from 'child_process';
       const util = require('util');
       const execAsync = util.promisify(exec);
 
@@ -462,9 +462,9 @@ process.on('SIGINT', () => {
 });
 
 // Run deployment
-if (require.main === module) {
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const deployment = new LocalDeployment();
   deployment.deploy().catch(console.error);
 }
 
-module.exports = LocalDeployment;
+export default LocalDeployment;

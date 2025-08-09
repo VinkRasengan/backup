@@ -5,10 +5,10 @@
  * Shows status of all services across different deployment methods
  */
 
-const { exec } = require('child_process');
-const path = require('path');
-const fs = require('fs');
-const os = require('os');
+import { exec  } from 'child_process';
+import path from 'path';
+import fs from 'fs';
+import os from 'os';
 
 class UniversalStatus {
   constructor() {
@@ -382,9 +382,9 @@ class UniversalStatus {
 }
 
 // Run status check
-if (require.main === module) {
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const status = new UniversalStatus();
   status.checkStatus().catch(console.error);
 }
 
-module.exports = UniversalStatus;
+export default UniversalStatus;

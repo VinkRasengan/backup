@@ -1,3 +1,7 @@
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 #!/usr/bin/env node
 
 /**
@@ -5,9 +9,9 @@
  * Safely stops all services across different platforms
  */
 
-const { spawn } = require('child_process');
-const os = require('os');
-const path = require('path');
+import { spawn  } from 'child_process';
+import os from 'os';
+import path from 'path';
 
 class CrossPlatformStopper {
   constructor() {
@@ -144,9 +148,9 @@ class CrossPlatformStopper {
 }
 
 // Run stop if called directly
-if (require.main === module) {
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const stopper = new CrossPlatformStopper();
   stopper.stop();
 }
 
-module.exports = CrossPlatformStopper;
+export default CrossPlatformStopper;

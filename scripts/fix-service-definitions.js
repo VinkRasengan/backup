@@ -5,8 +5,8 @@
  * Fixes the "service is not defined" error in all services
  */
 
-const fs = require('fs');
-const path = require('path');
+import fs from 'fs';
+import path from 'path';
 
 class ServiceDefinitionFixer {
   constructor() {
@@ -151,9 +151,9 @@ const service = {
 }
 
 // Run the fixer
-if (require.main === module) {
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const fixer = new ServiceDefinitionFixer();
   fixer.fix().catch(console.error);
 }
 
-module.exports = ServiceDefinitionFixer;
+export default ServiceDefinitionFixer;

@@ -1,12 +1,14 @@
-#!/usr/bin/env node
-/**
- * Docker Health Check Script
+import { exec  } from 'child_process';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+h Check Script
  * Checks the health and status of all Docker services
  */
 
-const { exec } = require('child_process');
+import { exec  } from 'child_process';
 const util = require('util');
-const path = require('path');
+import path from 'path';
 
 const execAsync = util.promisify(exec);
 
@@ -293,7 +295,7 @@ const args = process.argv.slice(2);
 const quickMode = args.includes('--quick') || args.includes('-q');
 
 // Run health check if called directly
-if (require.main === module) {
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const checker = new DockerHealthChecker();
   
   if (quickMode) {
@@ -303,4 +305,4 @@ if (require.main === module) {
   }
 }
 
-module.exports = DockerHealthChecker;
+export default DockerHealthChecker;

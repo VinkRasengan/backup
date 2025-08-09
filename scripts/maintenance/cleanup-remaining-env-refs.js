@@ -1,3 +1,7 @@
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 #!/usr/bin/env node
 
 /**
@@ -5,8 +9,8 @@
  * Remove any remaining references to old env-loader system
  */
 
-const fs = require('fs');
-const path = require('path');
+import fs from 'fs';
+import path from 'path';
 
 class EnvReferenceCleaner {
   constructor() {
@@ -181,9 +185,9 @@ class EnvReferenceCleaner {
 }
 
 // Run the cleaner
-if (require.main === module) {
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const cleaner = new EnvReferenceCleaner();
   cleaner.cleanup().catch(console.error);
 }
 
-module.exports = EnvReferenceCleaner;
+export default EnvReferenceCleaner;

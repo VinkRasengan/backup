@@ -1,3 +1,7 @@
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 #!/usr/bin/env node
 
 /**
@@ -5,9 +9,9 @@
  * Thực hiện security audit bằng npm audit cho toàn bộ dự án
  */
 
-const { execSync, spawn } = require('child_process');
-const fs = require('fs');
-const path = require('path');
+import { execSync, spawn  } from 'child_process';
+import fs from 'fs';
+import path from 'path';
 const chalk = require('chalk');
 
 // Cấu hình màu sắc cho output
@@ -314,8 +318,8 @@ async function main() {
 }
 
 // Chạy script nếu được gọi trực tiếp
-if (require.main === module) {
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
   main();
 }
 
-module.exports = SecurityAuditor;
+export default SecurityAuditor;

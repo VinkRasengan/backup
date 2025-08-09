@@ -317,8 +317,8 @@ async function seedData() {
 }
 
 // Run seeding
-if (require.main === module) {
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
   seedData();
 }
 
-module.exports = { seedData };
+export default { seedData };

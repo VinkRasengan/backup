@@ -60,7 +60,7 @@ async function testNetworkConnectivity() {
   for (const url of testUrls) {
     try {
       const https = require('https');
-      const { URL } = require('url');
+      import { URL  } from 'url';
       const parsedUrl = new URL(url);
       
       const result = await new Promise((resolve, reject) => {

@@ -5,9 +5,9 @@
  * Deploys complete microservices architecture with Event Sourcing
  */
 
-const { execSync, spawn } = require('child_process');
-const fs = require('fs');
-const path = require('path');
+import { execSync, spawn  } from 'child_process';
+import fs from 'fs';
+import path from 'path';
 
 class FullStackDeployer {
   constructor() {
@@ -417,7 +417,7 @@ class FullStackDeployer {
    */
   async checkHealthEndpoint(port) {
     try {
-      const { execSync } = require('child_process');
+      import { execSync  } from 'child_process';
       execSync(`curl -f http://localhost:${port}/health`, { stdio: 'pipe' });
       return true;
     } catch (error) {

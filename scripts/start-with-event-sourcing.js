@@ -4,10 +4,10 @@
  * Starts infrastructure and services with proper Event Sourcing setup
  */
 
-const { spawn, exec } = require('child_process');
+import { spawn, exec  } from 'child_process';
 const axios = require('axios');
 const util = require('util');
-const os = require('os');
+import os from 'os';
 
 const execAsync = util.promisify(exec);
 
@@ -410,7 +410,7 @@ class EventSourcingPlatformStarter {
 }
 
 // Run if called directly
-if (require.main === module) {
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const starter = new EventSourcingPlatformStarter();
   starter.start().catch(error => {
     console.error('💥 Platform startup failed:', error.message);
@@ -418,4 +418,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = EventSourcingPlatformStarter;
+export default EventSourcingPlatformStarter;

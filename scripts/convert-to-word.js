@@ -1,5 +1,5 @@
-const fs = require('fs');
-const path = require('path');
+import fs from 'fs';
+import path from 'path';
 const { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType } = require('docx');
 
 async function convertMarkdownToWord() {

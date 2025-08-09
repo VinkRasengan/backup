@@ -5,10 +5,10 @@
  * Ensures stable deployment on any machine with just "git pull"
  */
 
-const fs = require('fs');
-const path = require('path');
-const { spawn, exec } = require('child_process');
-const os = require('os');
+import fs from 'fs';
+import path from 'path';
+import { spawn, exec  } from 'child_process';
+import os from 'os';
 
 class CrossPlatformDeployer {
   constructor() {
@@ -252,9 +252,9 @@ class CrossPlatformDeployer {
 }
 
 // Run deployment if called directly
-if (require.main === module) {
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const deployer = new CrossPlatformDeployer();
   deployer.deploy();
 }
 
-module.exports = CrossPlatformDeployer;
+export default CrossPlatformDeployer;

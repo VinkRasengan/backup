@@ -5,9 +5,9 @@
  * Handles both "together" and "separate" modes
  */
 
-const { spawn, exec } = require('child_process');
-const os = require('os');
-const path = require('path');
+import { spawn, exec  } from 'child_process';
+import os from 'os';
+import path from 'path';
 
 class EnhancedStop {
   constructor() {
@@ -344,9 +344,9 @@ class EnhancedStop {
 }
 
 // Run if called directly
-if (require.main === module) {
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const stopper = new EnhancedStop();
   stopper.stop().catch(console.error);
 }
 
-module.exports = EnhancedStop;
+export default EnhancedStop;

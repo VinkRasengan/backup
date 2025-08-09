@@ -5,9 +5,9 @@
  * This is the main entry point for fullstack development
  */
 
-const { spawn, exec } = require('child_process');
-const path = require('path');
-const fs = require('fs');
+import { spawn, exec  } from 'child_process';
+import path from 'path';
+import fs from 'fs';
 
 class FullstackStarter {
   constructor() {
@@ -223,9 +223,9 @@ process.on('SIGINT', () => {
 });
 
 // Run fullstack start
-if (require.main === module) {
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const fullstackStarter = new FullstackStarter();
   fullstackStarter.start().catch(console.error);
 }
 
-module.exports = FullstackStarter; 
+export default FullstackStarter; 

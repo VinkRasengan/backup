@@ -4,9 +4,9 @@
  * Cross-platform script using Node.js
  */
 
-const { spawn } = require('child_process');
-const path = require('path');
-const os = require('os');
+import { spawn  } from 'child_process';
+import path from 'path';
+import os from 'os';
 
 const services = [
   { name: 'API Gateway', dir: 'services/api-gateway', port: 8080, color: '\x1b[37m', priority: 1 },

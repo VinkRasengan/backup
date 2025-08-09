@@ -4,7 +4,7 @@
  * Docker Stop Fullstack - Stop all Docker services
  */
 
-const { exec } = require('child_process');
+import { exec  } from 'child_process';
 
 class DockerStopFullstack {
   constructor() {
@@ -70,9 +70,9 @@ class DockerStopFullstack {
 }
 
 // Run stop
-if (require.main === module) {
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const stopper = new DockerStopFullstack();
   stopper.stop().catch(console.error);
 }
 
-module.exports = DockerStopFullstack;
+export default DockerStopFullstack;

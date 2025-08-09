@@ -1,3 +1,7 @@
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 #!/usr/bin/env node
 
 /**
@@ -6,9 +10,9 @@
  */
 
 const axios = require('axios');
-const { exec } = require('child_process');
-const fs = require('fs');
-const path = require('path');
+import { exec  } from 'child_process';
+import fs from 'fs';
+import path from 'path';
 
 // Configuration
 const CONFIG = {
@@ -390,9 +394,9 @@ class QualityAssurance {
 }
 
 // Run the quality assurance tests
-if (require.main === module) {
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
     const qa = new QualityAssurance();
     qa.runAllTests().catch(console.error);
 }
 
-module.exports = QualityAssurance; 
+export default QualityAssurance; 

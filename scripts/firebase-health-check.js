@@ -1,12 +1,14 @@
-#!/usr/bin/env node
+import path from 'path';
+import fs from 'fs';
 
-/**
- * Firebase Health Check for All Services
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+eck for All Services
  * Comprehensive Firebase connectivity test for Docker deployment
  */
 
-const path = require('path');
-const fs = require('fs');
+import path from 'path';
+import fs from 'fs';
 
 // Load environment variables
 require('dotenv').config({ path: path.join(__dirname, '../.env') });
@@ -64,7 +66,8 @@ async function testNetworkConnectivity() {
   for (const url of testUrls) {
     try {
       const https = require('https');
-      const { URL } = require('url');
+      import { URL  } from 'url';
+import { fileURLToPath } from 'url';
       const parsedUrl = new URL(url);
       
       const result = await new Promise((resolve, reject) => {

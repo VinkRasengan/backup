@@ -5,10 +5,10 @@
  * Starts Redis and RabbitMQ using alternative methods when Docker is not available
  */
 
-const { exec } = require('child_process');
+import { exec  } from 'child_process';
 const util = require('util');
-const fs = require('fs');
-const path = require('path');
+import fs from 'fs';
+import path from 'path';
 
 const execAsync = util.promisify(exec);
 
@@ -198,7 +198,7 @@ ENABLE_EVENT_DRIVEN=true
 }
 
 // CLI usage
-if (require.main === module) {
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const infrastructure = new InfrastructureFallback();
   
   const command = process.argv[2] || 'start';
@@ -228,4 +228,4 @@ if (require.main === module) {
   }
 }
 
-module.exports = InfrastructureFallback;
+export default InfrastructureFallback;

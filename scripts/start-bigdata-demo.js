@@ -1,13 +1,6 @@
-#!/usr/bin/env node
-
-/**
- * Start Complete Big Data Demo Stack
- * Khởi động Frontend + Big Data Services + Demo Server
- */
-
-const { spawn } = require('child_process');
+import { spawn  } from 'child_process';
 const axios = require('axios');
-const path = require('path');
+import path from 'path';
 const chalk = require('chalk');
 
 class BigDataDemoStarter {
@@ -333,10 +326,18 @@ class BigDataDemoStarter {
 }
 
 // Run if called directly
-if (require.main === module) {
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
     const starter = new BigDataDemoStarter();
     starter.setupGracefulShutdown();
     starter.startAll().catch(console.error);
 }
 
-module.exports = BigDataDemoStarter;
+export default BigDataDemoStarter;
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+r();
+    starter.setupGracefulShutdown();
+    starter.startAll().catch(console.error);
+}
+
+export default BigDataDemoStarter;

@@ -6,7 +6,7 @@
  */
 
 const admin = require('firebase-admin');
-const path = require('path');
+import path from 'path';
 
 // Initialize Firebase Admin
 const serviceAccountPath = path.join(__dirname, '../server/serviceAccountKey.json');
@@ -293,7 +293,7 @@ async function initializeFirestore() {
 }
 
 // Run initialization
-if (require.main === module) {
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
   initializeFirestore()
     .then(() => {
       console.log('\n✨ Ready for Sprint 2 testing!');
@@ -305,4 +305,4 @@ if (require.main === module) {
     });
 }
 
-module.exports = { initializeFirestore };
+export default { initializeFirestore };

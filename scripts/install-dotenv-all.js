@@ -5,9 +5,9 @@
  * Ensures all services can load environment variables from root .env
  */
 
-const { exec, spawn } = require('child_process');
-const path = require('path');
-const fs = require('fs');
+import { exec, spawn  } from 'child_process';
+import path from 'path';
+import fs from 'fs';
 
 class DotenvInstaller {
   constructor() {
@@ -134,9 +134,9 @@ class DotenvInstaller {
 }
 
 // Run the installer
-if (require.main === module) {
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const installer = new DotenvInstaller();
   installer.install().catch(console.error);
 }
 
-module.exports = DotenvInstaller;
+export default DotenvInstaller;

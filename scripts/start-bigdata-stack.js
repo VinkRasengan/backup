@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
-const { spawn, exec } = require('child_process');
-const { promisify } = require('util');
+import { spawn, exec  } from 'child_process';
+import { promisify  } from 'util';
 const execAsync = promisify(exec);
 
 class BigDataStackManager {
@@ -337,9 +337,9 @@ class BigDataStackManager {
 }
 
 // Run if called directly
-if (require.main === module) {
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const manager = new BigDataStackManager();
   manager.start().catch(console.error);
 }
 
-module.exports = BigDataStackManager;
+export default BigDataStackManager;

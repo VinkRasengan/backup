@@ -1,3 +1,7 @@
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 #!/usr/bin/env node
 
 /**
@@ -5,8 +9,8 @@
  * Provides various operations for the platform
  */
 
-const { spawn } = require('child_process');
-const path = require('path');
+import { spawn  } from 'child_process';
+import path from 'path';
 
 const command = process.argv[2];
 const args = process.argv.slice(3);

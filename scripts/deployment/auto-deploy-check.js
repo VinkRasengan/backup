@@ -5,7 +5,7 @@
  * Automatically deploys all services with Docker and performs comprehensive health checks
  */
 
-const { exec, spawn } = require('child_process');
+import { exec, spawn  } from 'child_process';
 const util = require('util');
 const http = require('http');
 
@@ -240,7 +240,7 @@ class AutoDeployChecker {
 }
 
 // Run if called directly
-if (require.main === module) {
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const checker = new AutoDeployChecker();
   checker.run().catch(error => {
     console.error('💥 Fatal error:', error);
@@ -248,4 +248,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = AutoDeployChecker;
+export default AutoDeployChecker;

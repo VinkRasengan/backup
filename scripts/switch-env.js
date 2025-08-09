@@ -5,8 +5,8 @@
  * Helps developers switch between different deployment environments
  */
 
-const fs = require('fs');
-const path = require('path');
+import fs from 'fs';
+import path from 'path';
 
 const environments = {
   local: {

@@ -6,7 +6,7 @@
  */
 
 const axios = require('axios');
-const fs = require('fs');
+import fs from 'fs';
 
 // Production service URLs - Current deployment
 const PRODUCTION_SERVICES = {
@@ -269,8 +269,8 @@ Examples:
   process.exit(0);
 }
 
-if (require.main === module) {
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
   main();
 }
 
-module.exports = { ProductionHealthChecker };
+export default { ProductionHealthChecker };

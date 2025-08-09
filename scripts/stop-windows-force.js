@@ -5,9 +5,9 @@
  * Specifically designed for Windows to force kill all service processes and close terminals
  */
 
-const { exec, spawn } = require('child_process');
-const path = require('path');
-const fs = require('fs');
+import { exec, spawn  } from 'child_process';
+import path from 'path';
+import fs from 'fs';
 
 class WindowsForceStop {
   constructor() {
@@ -308,7 +308,7 @@ process.on('SIGINT', () => {
 });
 
 // Run force stop
-if (require.main === module) {
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
   if (process.platform !== 'win32') {
     console.log('❌ This script is designed for Windows only!');
     console.log('💡 Use "npm run stop" for cross-platform stopping');
@@ -321,4 +321,4 @@ if (require.main === module) {
     .catch(() => process.exit(1));
 }
 
-module.exports = WindowsForceStop;
+export default WindowsForceStop;

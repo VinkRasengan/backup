@@ -5,9 +5,9 @@
  * Shows logs from all services across different deployment methods
  */
 
-const { exec, spawn } = require('child_process');
-const path = require('path');
-const fs = require('fs');
+import { exec, spawn  } from 'child_process';
+import path from 'path';
+import fs from 'fs';
 const readline = require('readline');
 
 class UniversalLogs {
@@ -473,9 +473,9 @@ class UniversalLogs {
 }
 
 // Run log viewer
-if (require.main === module) {
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const logs = new UniversalLogs();
   logs.showLogs().catch(console.error);
 }
 
-module.exports = UniversalLogs;
+export default UniversalLogs;

@@ -1,12 +1,14 @@
-#!/usr/bin/env node
-/**
- * Simple Docker Start Script
+import { exec  } from 'child_process';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+r Start Script
  * Starts all services with Docker Compose for development
  */
 
-const { exec } = require('child_process');
+import { exec  } from 'child_process';
 const util = require('util');
-const path = require('path');
+import path from 'path';
 
 const execAsync = util.promisify(exec);
 
@@ -74,7 +76,7 @@ class DockerStarter {
   async checkEnvironment() {
     console.log('2. 🔧 Checking environment...');
     
-    const fs = require('fs');
+    import fs from 'fs';
     const envPath = path.join(this.rootDir, '.env');
     
     if (!fs.existsSync(envPath)) {
@@ -90,7 +92,7 @@ class DockerStarter {
   async copyEnvironmentToServices() {
     console.log('3. 📋 Setting up service-specific environment files...');
 
-    const fs = require('fs');
+    import fs from 'fs';
     const envPath = path.join(this.rootDir, '.env');
 
     if (!fs.existsSync(envPath)) {
@@ -311,7 +313,7 @@ class DockerStarter {
    * Create service-specific .env file with intelligent variable extraction
    */
   async createServiceEnvFile(serviceName, envPath) {
-    const fs = require('fs');
+    import fs from 'fs';
 
     // Service configuration mapping (simplified for docker-start)
     const serviceConfigs = {
@@ -388,7 +390,7 @@ class DockerStarter {
    * Create client-specific .env file
    */
   async createClientEnvFile(envPath) {
-    const fs = require('fs');
+    import fs from 'fs';
 
     const content = `# CLIENT (REACT APP) - ENVIRONMENT CONFIGURATION
 REACT_APP_API_URL=${process.env.REACT_APP_API_URL || 'http://localhost:8080'}
@@ -409,9 +411,9 @@ REACT_APP_FIREBASE_PROJECT_ID=${process.env.REACT_APP_FIREBASE_PROJECT_ID || pro
 }
 
 // Start if called directly
-if (require.main === module) {
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const starter = new DockerStarter();
   starter.start().catch(console.error);
 }
 
-module.exports = DockerStarter;
+export default DockerStarter;

@@ -5,9 +5,9 @@
  * Alternative deployment without Docker Desktop dependency
  */
 
-const { spawn, execSync } = require('child_process');
-const fs = require('fs');
-const path = require('path');
+import { spawn, execSync  } from 'child_process';
+import fs from 'fs';
+import path from 'path';
 
 class LocalEventDrivenDeployer {
   constructor() {
@@ -388,7 +388,7 @@ FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\\nMIIEvQIBADANBgkqhkiG9w0BAQEF
 
   async isPortInUse(port) {
     return new Promise((resolve) => {
-      const { exec } = require('child_process');
+      import { exec  } from 'child_process';
       exec(`netstat -an | findstr :${port}`, (error, stdout) => {
         resolve(stdout.includes(`0.0.0.0:${port}`) || stdout.includes(`127.0.0.1:${port}`));
       });
@@ -410,9 +410,9 @@ FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\\nMIIEvQIBADANBgkqhkiG9w0BAQEF
 }
 
 // Run deployment
-if (require.main === module) {
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const deployer = new LocalEventDrivenDeployer();
   deployer.deploy().catch(console.error);
 }
 
-module.exports = LocalEventDrivenDeployer;
+export default LocalEventDrivenDeployer;

@@ -5,8 +5,8 @@
  * Helps new developers set up their environment correctly
  */
 
-const fs = require('fs');
-const path = require('path');
+import fs from 'fs';
+import path from 'path';
 
 class EnvironmentSetup {
   constructor() {
@@ -441,9 +441,9 @@ DEBUG=false
 }
 
 // Run if called directly
-if (require.main === module) {
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const setup = new EnvironmentSetup();
   setup.setup().catch(console.error);
 }
 
-module.exports = EnvironmentSetup; 
+export default EnvironmentSetup; 

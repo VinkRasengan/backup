@@ -5,7 +5,7 @@
  * Script demo để show cách sử dụng npm audit
  */
 
-const { execSync } = require('child_process');
+import { execSync  } from 'child_process';
 const chalk = require('chalk');
 
 // Màu sắc cho output
@@ -321,11 +321,11 @@ function runDemo() {
 }
 
 // Chạy demo nếu được gọi trực tiếp
-if (require.main === module) {
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
   runDemo();
 }
 
-module.exports = {
+export default {
   demoBasicAudit,
   demoAuditWithLevel,
   demoAuditFix,

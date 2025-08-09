@@ -6,7 +6,8 @@
   "type": "module",
   "scripts": {
     "// === CORE DEVELOPMENT ===": "",
-    "start": "node scripts/start-fast-separate.js",
+    "start": "node scripts/start-essential.js",
+    "start:essential": "node scripts/start-essential.js",
     "start:separate": "node scripts/start-fast-separate.js",
     "start:together": "node scripts/start-fast-together.js",
     "stop": "node scripts/stop-all.js",

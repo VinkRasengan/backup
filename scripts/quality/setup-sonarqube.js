@@ -1,7 +1,11 @@
-const { execSync } = require('child_process');
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+import { execSync  } from 'child_process';
 const chalk = require('chalk');
-const fs = require('fs');
-const path = require('path');
+import fs from 'fs';
+import path from 'path';
 
 console.log(chalk.blue('🚀 Khởi động SonarQube...'));
 
