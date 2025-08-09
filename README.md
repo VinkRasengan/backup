@@ -96,16 +96,16 @@ cp .env.example .env
 
 3. **Start Development Environment**
 ```bash
-# Quick Start (Recommended)
-npm start                    # Start all services and infrastructure
+# Quick Start (Recommended) - Auto-detects Docker
+npm start                    # Start fullstack (Docker if available, local if not)
 
 # Alternative Options:
-# Option 1: Full Docker stack (recommended for production-like testing)
+# Option 1: Docker fullstack (recommended for production-like testing)
 npm run docker:start
 
-# Option 2: Local services with Docker infrastructure
-npm run infrastructure:start  # Start Redis + RabbitMQ + KurrentDB
-npm run dev                   # Start all services locally
+# Option 2: Local development modes
+npm run start:together       # All services in one terminal
+npm run start:separate       # Each service in separate terminal
 
 # Option 3: Individual service development
 npm run dev:auth             # Start auth service only

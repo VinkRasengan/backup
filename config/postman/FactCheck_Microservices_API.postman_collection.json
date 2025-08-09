@@ -1,0 +1,581 @@
+{
+	"info": {
+		"_postman_id": "factcheck-microservices-api",
+		"name": "FactCheck Microservices API",
+		"description": "Collection để test tất cả các API endpoints của hệ thống microservices FactCheck Platform",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "12345678"
+	},
+	"item": [
+		{
+			"name": "🔐 Authentication",
+			"item": [
+				{
+					"name": "Register User",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"test@example.com\",\n  \"password\": \"password123\",\n  \"displayName\": \"Test User\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/auth/register",
+							"host": ["{{base_url}}"],
+							"path": ["api", "auth", "register"]
+						}
+					}
+				},
+				{
+					"name": "Login User",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"test@example.com\",\n  \"password\": \"password123\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/auth/login",
+							"host": ["{{base_url}}"],
+							"path": ["api", "auth", "login"]
+						}
+					}
+				},
+				{
+					"name": "Get User Profile",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/auth/profile",
+							"host": ["{{base_url}}"],
+							"path": ["api", "auth", "profile"]
+						}
+					}
+				},
+				{
+					"name": "Verify Token",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"token\": \"{{auth_token}}\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/auth/verify-token",
+							"host": ["{{base_url}}"],
+							"path": ["api", "auth", "verify-token"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "🔗 Link Service",
+			"item": [
+				{
+					"name": "Verify URL",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"url\": \"https://example.com\",\n  \"description\": \"Test URL verification\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/links/verify",
+							"host": ["{{base_url}}"],
+							"path": ["api", "links", "verify"]
+						}
+					}
+				},
+				{
+					"name": "Get Scan History",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/links/history",
+							"host": ["{{base_url}}"],
+							"path": ["api", "links", "history"]
+						}
+					}
+				},
+				{
+					"name": "Report Suspicious Link",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"url\": \"https://suspicious-site.com\",\n  \"reason\": \"Phishing attempt\",\n  \"description\": \"This site appears to be a phishing scam\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/links/report",
+							"host": ["{{base_url}}"],
+							"path": ["api", "links", "report"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "👥 Community Service",
+			"item": [
+				{
+					"name": "Get All Posts",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/community/posts",
+							"host": ["{{base_url}}"],
+							"path": ["api", "community", "posts"]
+						}
+					}
+				},
+				{
+					"name": "Create Post",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"title\": \"Test Post\",\n  \"content\": \"This is a test post content\",\n  \"category\": \"general\",\n  \"tags\": [\"test\", \"example\"]\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/community/posts",
+							"host": ["{{base_url}}"],
+							"path": ["api", "community", "posts"]
+						}
+					}
+				},
+				{
+					"name": "Vote on Post",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"voteType\": \"upvote\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/community/posts/{{post_id}}/vote",
+							"host": ["{{base_url}}"],
+							"path": ["api", "community", "posts", "{{post_id}}", "vote"]
+						}
+					}
+				},
+				{
+					"name": "Add Comment",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"content\": \"This is a test comment\",\n  \"postId\": \"{{post_id}}\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/community/comments",
+							"host": ["{{base_url}}"],
+							"path": ["api", "community", "comments"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "💬 Chat Service",
+			"item": [
+				{
+					"name": "Send Message",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"message\": \"Hello, can you help me verify this link?\",\n  \"conversationId\": \"{{conversation_id}}\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/chat/message",
+							"host": ["{{base_url}}"],
+							"path": ["api", "chat", "message"]
+						}
+					}
+				},
+				{
+					"name": "Get Chat History",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/chat/history",
+							"host": ["{{base_url}}"],
+							"path": ["api", "chat", "history"]
+						}
+					}
+				},
+				{
+					"name": "Analyze Content",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"content\": \"This is some content to analyze for fact-checking\",\n  \"type\": \"text\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/chat/analyze",
+							"host": ["{{base_url}}"],
+							"path": ["api", "chat", "analyze"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "📰 News Service",
+			"item": [
+				{
+					"name": "Get News Articles",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/news/articles",
+							"host": ["{{base_url}}"],
+							"path": ["api", "news", "articles"]
+						}
+					}
+				},
+				{
+					"name": "Get News Alerts",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/news/alerts",
+							"host": ["{{base_url}}"],
+							"path": ["api", "news", "alerts"]
+						}
+					}
+				},
+				{
+					"name": "Search News",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"query\": \"fact-checking\",\n  \"category\": \"technology\",\n  \"limit\": 10\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/news/search",
+							"host": ["{{base_url}}"],
+							"path": ["api", "news", "search"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "⚙️ Admin Service",
+			"item": [
+				{
+					"name": "Get Admin Dashboard",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/admin/dashboard",
+							"host": ["{{base_url}}"],
+							"path": ["api", "admin", "dashboard"]
+						}
+					}
+				},
+				{
+					"name": "Get All Users",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/admin/users",
+							"host": ["{{base_url}}"],
+							"path": ["api", "admin", "users"]
+						}
+					}
+				},
+				{
+					"name": "Moderate Content",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"contentId\": \"{{content_id}}\",\n  \"action\": \"approve\",\n  \"reason\": \"Content meets guidelines\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/admin/moderate",
+							"host": ["{{base_url}}"],
+							"path": ["api", "admin", "moderate"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "🏥 Health Checks",
+			"item": [
+				{
+					"name": "API Gateway Health",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/health",
+							"host": ["{{base_url}}"],
+							"path": ["health"]
+						}
+					}
+				},
+				{
+					"name": "Auth Service Health",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/auth/health",
+							"host": ["{{base_url}}"],
+							"path": ["auth", "health"]
+						}
+					}
+				},
+				{
+					"name": "Link Service Health",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/link/health",
+							"host": ["{{base_url}}"],
+							"path": ["link", "health"]
+						}
+					}
+				},
+				{
+					"name": "Community Service Health",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/community/health",
+							"host": ["{{base_url}}"],
+							"path": ["community", "health"]
+						}
+					}
+				},
+				{
+					"name": "Chat Service Health",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/chat/health",
+							"host": ["{{base_url}}"],
+							"path": ["chat", "health"]
+						}
+					}
+				},
+				{
+					"name": "News Service Health",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/news/health",
+							"host": ["{{base_url}}"],
+							"path": ["news", "health"]
+						}
+					}
+				},
+				{
+					"name": "Admin Service Health",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/admin/health",
+							"host": ["{{base_url}}"],
+							"path": ["admin", "health"]
+						}
+					}
+				}
+			]
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"// Auto-set auth token from login response",
+					"if (pm.response && pm.response.json() && pm.response.json().token) {",
+					"    pm.collectionVariables.set('auth_token', pm.response.json().token);",
+					"}"
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:8082",
+			"type": "string"
+		},
+		{
+			"key": "auth_token",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "post_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "conversation_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "content_id",
+			"value": "",
+			"type": "string"
+		}
+	]
+} 

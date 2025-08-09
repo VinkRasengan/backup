@@ -163,6 +163,12 @@ test-*.html
 *-test.js
 check-*.js
 
+# Config directory organization
+config/environments/.env.*
+config/postman/*.collection.json
+config/postman/*.environment.json
+config/eslint/.eslintrc.*
+
 # Keep all deployment scripts - they are needed for cross-platform compatibility
 # All deployment scripts should be version controlled
 !deploy-*.sh
